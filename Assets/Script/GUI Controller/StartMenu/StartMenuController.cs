@@ -1,6 +1,7 @@
 using System;
 using Script.Save_Controller;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -52,7 +53,12 @@ namespace Script.GUI_Controller.StartMenu
 
         public Button optionsPanelBackBtn;
 
-        
+        [Header("CreateNewWorldPanel")] 
+        public GameObject createNewWorldPanel;
+
+        public TMP_InputField inputWorldName;
+        public Button createNewWorldBtn;
+        public Button backChooseSavePanel;
         
         public static StartMenuController Instance { get; set; }
 
@@ -69,23 +75,75 @@ namespace Script.GUI_Controller.StartMenu
             //btn back
             chooseSavePanelBackBtn.onClick.AddListener(OpenHomeMenuPanel);
             optionsPanelBackBtn.onClick.AddListener(OpenHomeMenuPanel);
+            backChooseSavePanel.onClick.AddListener(OpenChooseSavePanel);
             //nuts info chưa làm
-            
+            newGame.onClick.AddListener(OpenCreateNewGamePanel);
+            //btn create new world
+            createNewWorldBtn.onClick.AddListener(createNewWorldAction);
             
             //chạy hàm kiểm tra và tạo thư mục lưu file saves
             SaveManager.Instance.InitializeSaves();
         }
 
+        public void createNewWorldAction()
+        {
+            if (inputWorldName != null)
+            {
+                SaveManager.Instance.CreateWorldSave(inputWorldName.text);//tạo thế giới mới dựa theo tên truyền vào
+                //script tạo thế giới dduowjc goij owr ddaay
+            }
+           
+        }
         public void PreSave()
         {
-            Debug.Log("Button PreSave clicked!");
+            int preIndex = currentWorldIndex;//khởi tạo số trước giảm 1 đơn vị
+            preIndex--;
+            if (preIndex <= 0)//nếu số trước = 0
+            {
+                currentWorldIndex = 1;
+            }
+            else
+            {
+                currentWorldIndex = preIndex;
+            }
+            //Debug.Log("Button PreSave clicked!");
+            DisplayWorldInfo();
+            UpdateTotalWorldTmp();
         }
 
         public void NextSave()
         {
-            Debug.Log("Button NextSave clicked!");
+            int nextIndex = currentWorldIndex;
+            nextIndex++;
+            if (nextIndex >= totalWorld)
+            {
+                currentWorldIndex = totalWorld;
+            }
+            else
+            {
+                currentWorldIndex = nextIndex;
+            }
+            //Debug.Log("Button NextSave clicked!");
+            DisplayWorldInfo();
+            UpdateTotalWorldTmp();
         }
+       
         
+        public void DisplayWorldInfo()
+        {
+            SaveManager.WorldInfo worldInfo = SaveManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
+
+            if (worldInfo != null)
+            {
+                worldName.text = worldInfo.Name;
+                worldPlayTime.text = worldInfo.CreationDate.ToString();
+                //Debug.Log($"DisplayWorldInfo: World Name: {worldInfo.Name}, Creation Date: {worldInfo.CreationDate}");
+            }
+            else
+            {
+                Debug.Log("DisplayWorldInfo: No world info found for the given index.");
+            }
+        }
         //cập nhật tổng số thế giới=====================
         /*
         int currentWorldIndex 
@@ -116,6 +174,7 @@ namespace Script.GUI_Controller.StartMenu
             homeMenuPanel.SetActive(false);
             chooseSavePanel.SetActive(false);
             optionsPanel.SetActive(false);
+            createNewWorldPanel.SetActive(false);
         }
         
         public void OpenHomeMenuPanel()
@@ -123,6 +182,12 @@ namespace Script.GUI_Controller.StartMenu
             
             SetActiveFalseAllPanel();
             homeMenuPanel.SetActive(true);
+        }
+
+        public void OpenCreateNewGamePanel()
+        {
+            SetActiveFalseAllPanel();
+            createNewWorldPanel.SetActive(true);
         }
         public void OpenChooseSavePanel()
         {
@@ -139,6 +204,7 @@ namespace Script.GUI_Controller.StartMenu
             if (totalWorld != 0)
             {
                 FoundWorldSave();
+                DisplayWorldInfo();
             }
             else
             {
@@ -162,6 +228,7 @@ namespace Script.GUI_Controller.StartMenu
             emptySaveTMP.SetActive(false);
             worldInfoContainer.SetActive(true);
         }
-        
+
+       
     }
 }

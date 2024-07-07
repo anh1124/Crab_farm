@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using Script.GUI_Controller.StartMenu;
+using Script.Data_Model;
 
 namespace Script.Save_Controller
 {
     public class SaveManager : MonoBehaviour
     {
         public static SaveManager Instance { get; private set; }
+        public string whatSavesNameUse;
         private void Awake()     
         {
             if (Instance == null)
@@ -21,6 +23,8 @@ namespace Script.Save_Controller
                 Destroy(gameObject); // Nếu đã tồn tại ingstance khác, hủy bản sao này
             }                         
         }
+        
+        // Class này chứa thông tin cơ bản của thế giới
         public class WorldInfo
         {
             public string Name { get; set; }
@@ -64,23 +68,55 @@ namespace Script.Save_Controller
         public void CreateWorldSave(string worldName)
         {
             string worldPath = Path.Combine(saveRootPath, worldName);
-
+ 
             if (!Directory.Exists(worldPath))
             {
                 Directory.CreateDirectory(worldPath);
-                Directory.CreateDirectory(Path.Combine(worldPath, "advancements"));
-                Directory.CreateDirectory(Path.Combine(worldPath, "playerdata"));
                 Directory.CreateDirectory(Path.Combine(worldPath, "map"));
-                Directory.CreateDirectory(Path.Combine(worldPath, "stats"));
 
+                // Create an empty player data file
+                string playerDataPath = Path.Combine(worldPath, "playerData.json");
+                if (!File.Exists(playerDataPath))
+                {
+                    PlayerData emptyPlayerData = new PlayerData();
+                    SavePlayerDataToJson(emptyPlayerData, playerDataPath);
+                }
+                
                 Debug.Log("Created new world save directories for: " + worldName);
             }
             else
             {
                 Debug.Log("World save directories already exist for: " + worldName);
             }
+            //theem hamf go playscene
+            //thêm hàm load play save
         }
+        
+        //player data save load=======================================================
+        private void SavePlayerDataToJson(PlayerData playerData, string playerDataPath)
+        {
+            string playerDataJson = JsonUtility.ToJson(playerData);
+            File.WriteAllText(playerDataPath, playerDataJson);
+            Debug.Log("Player data saved to: " + playerDataPath);
+        }
+        public void LoadPlayerDataFromJson(PlayerData playerData, string worldName)
+        {
+            string worldPath = Path.Combine(saveRootPath, worldName);
+            string playerDataPath = Path.Combine(worldPath, "playerData.json");
 
+            if (File.Exists(playerDataPath))
+            {
+                string playerDataJson = File.ReadAllText(playerDataPath);
+                JsonUtility.FromJsonOverwrite(playerDataJson, playerData);
+                Debug.Log("Player data loaded from: " + playerDataPath);
+            }
+            else
+            {
+                Debug.LogWarning("No player data file found in: " + playerDataPath);
+            }
+        }
+        
+        
         // Hàm kiểm tra xem một save có tồn tại hay không
         public bool SaveExists(string worldName)
         {
@@ -88,8 +124,7 @@ namespace Script.Save_Controller
             return Directory.Exists(worldPath);
         }
         
-        // Class này chứa thông tin cơ bản của thế giới
-     
+       
         
         // Hàm lấy danh sách các thư mục trong root và chuyển đổi thành danh sách các đối tượng WorldInfo
         public void LoadWorldInfos()
@@ -123,5 +158,25 @@ namespace Script.Save_Controller
         {
             return WorldInfos.Count;
         }
+        
+        // Hàm trả về đối tượng WorldInfo theo chỉ số mảng
+        public WorldInfo GetWorldInfoByIndex(int index)
+        {
+            if (index >= 1 && index <= WorldInfos.Count)
+            {
+                WorldInfo worldInfo = WorldInfos[index - 1]; // index = 1 tương đương vị trí mảng = 0
+
+                // Thông báo debug để xem dữ liệu trả về
+                //Debug.Log($"GetWorldInfoByIndex: , World Name: {worldInfo.Name}, Creation Date: {worldInfo.CreationDate}");
+
+                return worldInfo;
+            }
+            else
+            {
+                Debug.LogError("GetWorldInfoByIndex: Index out of range");
+                return null;
+            }
+        }
+        
     }
 }
