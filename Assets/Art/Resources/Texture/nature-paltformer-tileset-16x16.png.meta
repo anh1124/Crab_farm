@@ -1533,8 +1533,8 @@ TextureImporter:
       name: nature-paltformer-tileset-16x16_67
       rect:
         serializedVersion: 2
-        x: 32
-        y: 0
+        x: 80
+        y: 16
         width: 16
         height: 16
       alignment: 0
@@ -1554,8 +1554,8 @@ TextureImporter:
       name: nature-paltformer-tileset-16x16_68
       rect:
         serializedVersion: 2
-        x: 48
-        y: 0
+        x: 96
+        y: 16
         width: 16
         height: 16
       alignment: 0
@@ -1575,7 +1575,7 @@ TextureImporter:
       name: nature-paltformer-tileset-16x16_69
       rect:
         serializedVersion: 2
-        x: 64
+        x: 32
         y: 0
         width: 16
         height: 16
@@ -1588,6 +1588,90 @@ TextureImporter:
       bones: []
       spriteID: 561e93124085e8c4db421b41b9e4bcb5
       internalID: 1370686423
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: nature-paltformer-tileset-16x16_70
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c6e4aa3d1e956e04089c583e9dcc14ed
+      internalID: 2074416380
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: nature-paltformer-tileset-16x16_71
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 37260843dd79a6e48bad3184a0468e2a
+      internalID: 1206355832
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: nature-paltformer-tileset-16x16_72
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 36ca091a4235fcb48a31bd080b762771
+      internalID: -869673325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: nature-paltformer-tileset-16x16_73
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 60be9c9bb08454340a08d8d68bf3e142
+      internalID: 148580117
       vertices: []
       indices: 
       edges: []
@@ -1671,6 +1755,10 @@ TextureImporter:
       nature-paltformer-tileset-16x16_68: -1070254967
       nature-paltformer-tileset-16x16_69: 1370686423
       nature-paltformer-tileset-16x16_7: -1238585626
+      nature-paltformer-tileset-16x16_70: 2074416380
+      nature-paltformer-tileset-16x16_71: 1206355832
+      nature-paltformer-tileset-16x16_72: -869673325
+      nature-paltformer-tileset-16x16_73: 148580117
       nature-paltformer-tileset-16x16_8: 1989967738
       nature-paltformer-tileset-16x16_9: 1151709837
   mipmapLimitGroupName: 
