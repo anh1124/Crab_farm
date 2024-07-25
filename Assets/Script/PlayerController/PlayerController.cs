@@ -18,6 +18,8 @@ using UnityEngine;
                 Destroy(gameObject);
             }
         }
+
+        public TriggerHelper triggerHelper;
         
         public GameObject player;
         public Rigidbody2D rb;
@@ -26,24 +28,26 @@ using UnityEngine;
         
         public int direction;
         //public bool jumpPress;
-        public bool isGrounded;
-        
         //public int jumpForce;
+        public bool isGrounded;
         public int moveSpeed;
-        
         public bool isDie = false;
+        
+        private float _coinPressStartTime = 0f;
+        private bool _coinButtonHeld = false;
+        private float _coinLogTimer = 0f;
 
-        private bool useCoin = false;
-        private float coinPressStartTime = 0f;
-        private bool coinButtonHeld = false;
-        private float coinLogTimer = 0f;
-
+        
+        public GameObject coin;
+        public Collider2D currentStructureCollider;
+        
         private void Start()
         {
            
             rb = gameObject.GetComponentInChildren<Rigidbody2D>();
             player = rb.gameObject;
-
+            triggerHelper = player.GetComponent<TriggerHelper>();
+            
             status = player.GetComponent<Status>();
             direction = 0;
             //jumpPress= false;
@@ -64,6 +68,7 @@ using UnityEngine;
         private void Update()
         {
             UpdateStatus();
+            currentStructureCollider = triggerHelper.structureCollider2D;
             //caapj nhaajt ground check
             //cap nhật player chét chua
 
@@ -104,6 +109,8 @@ using UnityEngine;
                 rb.AddForce(Vector2.up * jumpForce);
             }
         }*/
+
+        #region moveAction
 
         public void Movement(int direction)
         {
@@ -154,39 +161,73 @@ using UnityEngine;
             jumpPress = true;
             
         }*/
+        #endregion
         public void UseCoinDownAction()
         {
-            useCoin = true;
-            coinButtonHeld = true;
-            coinPressStartTime = Time.time;
-            coinLogTimer = 0f; // Reset the timer when the button is pressed down
+            _coinButtonHeld = true;
+            _coinPressStartTime = Time.time;
+            _coinLogTimer = 0f; // Reset the timer when the button is pressed down
         }
 
         public void UseCoinUpAction()
         {
-            useCoin = false;
-            coinButtonHeld = false;
+            _coinButtonHeld = false;
 
-            float pressDuration = Time.time - coinPressStartTime;
+            float pressDuration = Time.time - _coinPressStartTime;
             if (pressDuration < 0.5f)
             {
                 Debug.LogWarning("dropCoin");
+                --status.coin;
             }
         }
 
-        public void UseCoinAction()
+        /*public void UseCoinAction()
         {
-            if (coinButtonHeld)
+            if (_coinButtonHeld)
             {
-                float pressDuration = Time.time - coinPressStartTime;
+                float pressDuration = Time.time - _coinPressStartTime;
                 if (pressDuration >= 0.5f)
                 {
-                    if (Time.time - coinLogTimer >= 0.5f)
+                    if (Time.time - _coinLogTimer >= 0.5f)
                     {
                         Debug.Log("use Coin");
-                        coinLogTimer = Time.time; // Update the timer
+                        _coinLogTimer = Time.time; // Update the timer
+                    }
+                }
+            }
+        }*/
+        
+        public void UseCoinAction()
+        {
+            if (_coinButtonHeld)
+            {
+                float pressDuration = Time.time - _coinPressStartTime;
+                if (pressDuration >= 0.5f)
+                {
+                    if (Time.time - _coinLogTimer >= 0.5f)
+                    {
+                        _coinLogTimer = Time.time;
+
+                        if (currentStructureCollider != null)
+                        {
+                            TownCentrer townCentrer = currentStructureCollider.GetComponent<TownCentrer>();
+                            if (!townCentrer.readyToUpgrade)
+                            {
+                                if (townCentrer.currentCoinCount <= townCentrer.coinQuantity)
+                                {
+                                    townCentrer.InsertCoin(status , player);//truyền tham chiếu script coin của player vào 
+                                }
+                            }
+                            else
+                            {
+                                Debug.LogWarning("Công trình đã sẵn sàng nâng cấp");
+                            }
+                        }
                     }
                 }
             }
         }
+
+       
+       
     }

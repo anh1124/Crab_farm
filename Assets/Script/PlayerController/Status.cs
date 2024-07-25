@@ -7,6 +7,7 @@ public class Status : MonoBehaviour
     public int hp;
     public int jumpForce;
     public int moveSpeed;
+    public int coin;
 
     public bool isGround;
     

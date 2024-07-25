@@ -3,7 +3,10 @@ guid: a7314a43da306c144b0c2397324382cb
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - coinSlotPrefab: {fileID: 9131483258529145134, guid: 00c8c248ccb96644ebd4bbf202bac74e, type: 3}
+  - coinEmpty: {fileID: 21300000, guid: 00ebcb4d2f9ca514a9560a1cfc61a5ed, type: 3}
+  - coinLocked: {fileID: 21300000, guid: ddebb303d56add84c82fc12e76dbe8f2, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
