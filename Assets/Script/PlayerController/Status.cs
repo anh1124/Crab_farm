@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Status : MonoBehaviour
@@ -24,4 +25,11 @@ public class Status : MonoBehaviour
         isGround = Physics2D.OverlapCircle(bounds.center, bounds.extents.x, groundLayer) != null;
         
     }
+
+    public void AddCoin(GameObject coinGameObject)
+    {
+        coin++;
+        Destroy(coinGameObject);
+    }
+
 }

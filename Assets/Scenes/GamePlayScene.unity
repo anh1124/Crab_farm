@@ -681,11 +681,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 292632732}
   m_CullTransparentMesh: 1
---- !u!1 &314715785 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5938808828433451200, guid: ba140da6665828445aa66e29dc98baf7, type: 3}
-  m_PrefabInstance: {fileID: 879805624}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &394790186
 GameObject:
   m_ObjectHideFlags: 0
@@ -841,7 +836,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -88.145996, y: -10.9279785}
+  m_AnchoredPosition: {x: -88.14601, y: -10.9279785}
   m_SizeDelta: {x: -248.011, y: -85}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &399684376
@@ -1076,27 +1071,80 @@ MonoBehaviour:
   coinSlotPrefab: {fileID: 9131483258529145134, guid: 00c8c248ccb96644ebd4bbf202bac74e, type: 3}
   coinEmpty: {fileID: 21300000, guid: 00ebcb4d2f9ca514a9560a1cfc61a5ed, type: 3}
   coinLocked: {fileID: 21300000, guid: f4f6dd70f2a00cb49a3b8e7463463f7c, type: 3}
+  coinSlotList: []
   x: 1.6
   y: 1.5
   curvature: 0.5
+--- !u!1001 &538213805
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3.99
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -3.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_Name
+      value: Coin (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+      propertyPath: m_TagString
+      value: Coin
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
 --- !u!4 &621706877 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1207333865757873293, guid: ba140da6665828445aa66e29dc98baf7, type: 3}
   m_PrefabInstance: {fileID: 879805624}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &621706878
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 314715785}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bdef68b5823c98e439739493f28cd31e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  structureCollider2D: {fileID: 0}
 --- !u!1 &746598232
 GameObject:
   m_ObjectHideFlags: 0
@@ -1422,10 +1470,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5938808828433451200, guid: ba140da6665828445aa66e29dc98baf7, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 621706878}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ba140da6665828445aa66e29dc98baf7, type: 3}
 --- !u!1 &924158326
 GameObject:
@@ -2027,11 +2072,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.47635698
+      value: -2.35
       objectReference: {fileID: 0}
     - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.7
+      value: -4.11
       objectReference: {fileID: 0}
     - target: {fileID: 771385157444855577, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
       propertyPath: m_LocalPosition.z
@@ -4013,7 +4058,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4952579968058476769, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
       propertyPath: coinMoveSpeed
-      value: 2
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 4952579968058476769, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
       propertyPath: coinSlotLocation
@@ -4095,3 +4140,4 @@ SceneRoots:
   - {fileID: 948386337}
   - {fileID: 1940309163}
   - {fileID: 1402816156}
+  - {fileID: 538213805}

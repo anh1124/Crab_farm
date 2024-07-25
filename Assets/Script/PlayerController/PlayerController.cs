@@ -118,12 +118,14 @@ using UnityEngine;
             {
                 if (direction == -1)
                 {
-                    rb.transform.Translate( Vector2.left * moveSpeed * Time.deltaTime);
+                    rb.velocity = Vector2.left * moveSpeed;
+
                 
                 }
                 if (direction == 1)
                 {
-                    rb.transform.Translate( Vector2.right * moveSpeed * Time.deltaTime);
+                    rb.velocity = Vector2.right * moveSpeed;
+
                 }
             }
         }

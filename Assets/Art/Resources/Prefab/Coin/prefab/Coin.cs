@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,8 +11,11 @@ public class Coin : MonoBehaviour
     public float fallSpeed = 7f;  // Tốc độ rơi của coin
     public float groundCheckRadius = 0.1f; // Bán kính kiểm tra mặt đất
 
+    public bool pickupAble;
+
     void Start()
     {
+        pickupAble = true;
         // Gán animator cho component Animator của object này
         animator = GetComponent<Animator>();
     }
@@ -58,6 +62,18 @@ public class Coin : MonoBehaviour
             // Di chuyển coin xuống dưới với tốc độ fallSpeed
             StopRotate();
             transform.Translate(Vector2.down * fallSpeed * Time.deltaTime);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            if (pickupAble)
+            {
+                Status status = other.GetComponent<Status>();
+                status.AddCoin(gameObject);
+            }
         }
     }
 }

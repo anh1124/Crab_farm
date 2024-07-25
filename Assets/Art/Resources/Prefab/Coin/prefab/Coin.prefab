@@ -167,5 +167,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   floating: 0
   rayLength: 1
-  fallSpeed: 2
+  fallSpeed: 10
   groundCheckRadius: 0.1
+  pickupAble: 0
