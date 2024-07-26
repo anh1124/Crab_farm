@@ -1,11 +1,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Script.Game.Item.Coin;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class TownCentrer : MonoBehaviour
+public class CoinUser : MonoBehaviour
 {
+    
+    public Action actionHaveEnoughCoin;//chạy trong UpgradeStructure
+    
     public BoxCollider2D boxCollider2D;
     public int coinQuantity;
     public int currentCoinCount = 0;
@@ -27,7 +31,6 @@ public class TownCentrer : MonoBehaviour
 
     private void Start()
     {
-        boxCollider2D = gameObject.GetComponent<BoxCollider2D>();
 
         coinSlotLocation = GameObject.Find("CoinSlotLocation");
         coinSlotLocation.SetActive(false);
@@ -124,7 +127,8 @@ public class TownCentrer : MonoBehaviour
         Coin coinScriptInstance = coin.GetComponent<Coin>();
         if (coinScriptInstance != null)//chuyển trạng thái coin thành bay
         {
-            coinScriptInstance.pickupAble = false;
+            coinScriptInstance.playerPickupAble = false;
+            coinScriptInstance.denizensPickupAble = false;
             coinScriptInstance.floating = true;
         }
         
@@ -189,6 +193,8 @@ public class TownCentrer : MonoBehaviour
     {
         readyToUpgrade = true;
         Debug.Log("cong trinh da san sang nang cap");
+        actionHaveEnoughCoin?.Invoke();
+        
         DeleteCoinsInTransitList();
         
         coinSlotLocation.SetActive(false);
@@ -209,7 +215,8 @@ public class TownCentrer : MonoBehaviour
             if (coinScriptInstance != null)
             {
                 coinScriptInstance.floating = false;
-                coinScriptInstance.pickupAble = true;
+                coinScriptInstance.playerPickupAble = true;
+                coinScriptInstance.denizensPickupAble = true;
             }
         }
         StopAllMoveCoinCoroutines();

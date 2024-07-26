@@ -21,6 +21,7 @@ public class InstanceCoinSlot : MonoBehaviour
     
     public Sprite coinEmpty;
     public Sprite coinLocked;
+    
     public List<GameObject> coinSlotList = new List<GameObject>(); //danh sách lưu vị trí các coinSLot
     
     public float x = 1.6f;

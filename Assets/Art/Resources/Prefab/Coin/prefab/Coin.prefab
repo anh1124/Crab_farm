@@ -168,5 +168,6 @@ MonoBehaviour:
   floating: 0
   rayLength: 1
   fallSpeed: 10
-  groundCheckRadius: 0.1
-  pickupAble: 0
+  playerPickupAble: 1
+  denizensPickupAble: 1
+  pickupAbleCooldown: 3

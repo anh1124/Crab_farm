@@ -9,6 +9,7 @@ TagManager:
   - CharactorContainer
   - Structure
   - Coin
+  - Denizens
   layers:
   - Default
   - TransparentFX

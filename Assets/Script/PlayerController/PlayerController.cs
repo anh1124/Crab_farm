@@ -178,11 +178,23 @@ using UnityEngine;
             float pressDuration = Time.time - _coinPressStartTime;
             if (pressDuration < 0.5f)
             {
-                Debug.LogWarning("dropCoin");
-                --status.coin;
+                //Debug.LogWarning("dropCoin");
+                if (status.coin > 0)
+                {
+                    --status.coin;
+                    Spawner.Instance.DropByPlayer(player.transform.position);
+                }
+                else
+                {
+                    Debug.LogWarning("hết tiền rồi");
+                }
+               
             }
         }
-
+        
+        
+     
+        
         /*public void UseCoinAction()
         {
             if (_coinButtonHeld)
@@ -212,13 +224,22 @@ using UnityEngine;
 
                         if (currentStructureCollider != null)
                         {
-                            TownCentrer townCentrer = currentStructureCollider.GetComponent<TownCentrer>();
-                            if (!townCentrer.readyToUpgrade)
+                            CoinUser coinUser = currentStructureCollider.GetComponent<CoinUser>();
+                            if (!coinUser.readyToUpgrade)
                             {
-                                if (townCentrer.currentCoinCount <= townCentrer.coinQuantity)
+                                if (coinUser.currentCoinCount <= coinUser.coinQuantity )//nếu số xu hiện tại ít hơn tổng xu có trong công trình hoặc player có xu 
                                 {
-                                    townCentrer.InsertCoin(status , player);//truyền tham chiếu script coin của player vào 
+                                    if (status.coin > 0)
+                                    {
+                                        coinUser.InsertCoin(status , player);//truyền tham chiếu script coin của player vào 
+                                        status.coin--;
+                                    }
+                                    else
+                                    {
+                                        Debug.Log("đang nâng cấp nhưng không đủ tiền ");
+                                    }
                                 }
+                                
                             }
                             else
                             {
