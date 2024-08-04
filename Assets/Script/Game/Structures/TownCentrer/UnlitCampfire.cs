@@ -1,3 +1,4 @@
+using Script.Game.Item.Coin;
 using UnityEngine;
 
 namespace Script.Game.Structures.TownCentrer
@@ -5,7 +6,8 @@ namespace Script.Game.Structures.TownCentrer
    public class UnlitCampfire : MonoBehaviour
    {
       private CoinUser _coinUser;
-
+      [SerializeField] private GameObject nextUpgrade;
+      
       private void Start()
       {
          _coinUser = GetComponent<CoinUser>();

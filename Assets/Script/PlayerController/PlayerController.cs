@@ -1,4 +1,5 @@
 using System;
+using Script.Game.Item.Coin;
 using Script.GUI_Controller.PlayerGui;
 using UnityEngine;
 
@@ -36,9 +37,7 @@ using UnityEngine;
         private float _coinPressStartTime = 0f;
         private bool _coinButtonHeld = false;
         private float _coinLogTimer = 0f;
-
         
-        public GameObject coin;
         public Collider2D currentStructureCollider;
         
         private void Start()
