@@ -22,15 +22,17 @@ public class InstanceCoinSlot : MonoBehaviour
     public Sprite coinEmpty;
     public Sprite coinLocked;
     
-    public List<GameObject> coinSlotList = new List<GameObject>(); //danh sách lưu vị trí các coinSLot
+    
     
     public float x = 1.6f;
     public float y = 1.0f;
     public float curvature = 0.5f; // Giá trị điều chỉnh độ cong (có thể điều chỉnh bên ngoài hàm)
 
+    public GameObject locations;
+     
     public List<GameObject>  CreateCoinSlot(int coinQuantity, GameObject createLocation)
     {
-        
+     List<GameObject> coinSlotList = new List<GameObject>(); //danh sách lưu vị trí các coinSLot
         Vector3[] positions = CalculatePositions(coinQuantity);
         // Clear previous coin slots if necessary
         coinSlotList.Clear();
@@ -41,11 +43,13 @@ public class InstanceCoinSlot : MonoBehaviour
             coinSlot.transform.localPosition = position;
             
             // Add the newly created coin slot to the list
-            this.coinSlotList.Add(coinSlot);
+            coinSlotList.Add(coinSlot);
         }
 
         return coinSlotList;
     }
+
+  
 
 
 

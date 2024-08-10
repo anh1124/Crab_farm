@@ -5,27 +5,18 @@ namespace Script.Game.Structures.TownCentrer
 {
    public class UnlitCampfire : MonoBehaviour
    {
-      private CoinUser _coinUser;
-      [SerializeField] private GameObject nextUpgrade;
       
-      private void Start()
+      [SerializeField]
+      private bool readyToUpgrade;
+
+      public bool ReadyToUpgrade
       {
-         _coinUser = GetComponent<CoinUser>();
-         if (_coinUser != null)
-         {
-            _coinUser.actionHaveEnoughCoin += ActionHaveEnoughCoin;
-         }
-         else
-         {
-            Debug.LogWarning(gameObject.name +"cần có Script CoinUser") ;
-         }
+         get => readyToUpgrade;
+         set => readyToUpgrade = value;
       }
-      private void OnDestroy()
+      public void DoUpgrade()
       {
-         if (_coinUser != null)
-         {
-            _coinUser.actionHaveEnoughCoin -= ActionHaveEnoughCoin;
-         }
+         Debug.Log(gameObject.name + " is upgrading...");
       }
 
       private void ActionHaveEnoughCoin()

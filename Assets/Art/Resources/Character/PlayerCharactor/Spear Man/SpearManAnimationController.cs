@@ -11,15 +11,16 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         private PlayerController _playerController;
         public Status status;
 
-        private Animator animator;
-        private Vector2 previousPosition;
-        private bool isFacingRight = true;
+        private Animator _animator;
+        private Vector2 _previousPosition;
+        private bool _isFacingRight = true;
 
+        public float speedNeedToShowRun = 0.1f;
         private void Start()
         {
             status = gameObject.GetComponent<Status>();
-            animator = GetComponent<Animator>();
-            previousPosition = rb.position;
+            _animator = GetComponent<Animator>();
+            _previousPosition = rb.position;
         }
 
         private void Update()
@@ -37,23 +38,23 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         private void UpdateFacingDirection()
         {
             Vector2 currentPosition = rb.position;
-            Vector2 movement = currentPosition - previousPosition;
+            Vector2 movement = currentPosition - _previousPosition;
 
-            if (movement.x > 0 && !isFacingRight)
+            if (movement.x > 0 && !_isFacingRight)
             {
                 Flip();
             }
-            else if (movement.x < 0 && isFacingRight)
+            else if (movement.x < 0 && _isFacingRight)
             {
                 Flip();
             }
 
-            previousPosition = currentPosition;
+            _previousPosition = currentPosition;
         }
 
         private void Flip()
         {
-            isFacingRight = !isFacingRight;
+            _isFacingRight = !_isFacingRight;
             Vector3 localScale = transform.localScale;
             localScale.x *= -1;
             transform.localScale = localScale;
@@ -65,13 +66,13 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
 
             if (isGround)
             {
-                if (speed > 0.1f)
+                if (speed >= speedNeedToShowRun)
                 {
-                    animator.Play("Run");
+                    _animator.Play("Run");
                 }
                 else
                 {
-                    animator.Play("Idle");
+                    _animator.Play("Idle");
                 }
             }
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using Script.Data_Model;
 using UnityEngine;
 
@@ -8,41 +9,45 @@ namespace Script.Game.Item.Coin
 {
     public class CoinUser : MonoBehaviour
     {
-    
-        public Action actionHaveEnoughCoin;//chạy trong UpgradeStructure
-    
-        private BoxCollider2D _boxCollider2D;
+
         public int coinQuantity;
         public int currentCoinCount = 0;
-    
-        private GameObject _coinPrefab;
-    
         public float timeCurrentFloatCoin;
-        private float _timeMaxFloatCoin;
-    
-        private GameObject _coinSlotLocation;
-    
-        private float _coinMoveSpeed;
+        [SerializeField] private GameObject coinSlotLocation;
+        /*lưu ý:
+         biến readyToUpgrade dưới không được truyền vào các script khác,
+         nó chỉ có trách nhiệm làm biến để đo xem coin đã được lắp đủ chưa
+         nếu đủ thì dừng đếm
+         */
+        
         public bool readyToUpgrade;
-
-        private bool _isCounting = false;
-        private List<GameObject> _coinSlotList = new List<GameObject>(); //danh sách lưu vị trí các coinSLot
+        
+        
+        public List<GameObject> coinSlotList = new List<GameObject>(); //danh sách lưu vị trí các coinSLot
+        
+        private BoxCollider2D _boxCollider2D;
+        private float _timeMaxFloatCoin;
+        private float _coinMoveSpeed;
+        private bool _isCounting ;
         private int _currentSlotIndex = 0; // bộ đếm coin đang được chuyển đến vị trí 
         private List<GameObject> coinsInTransit = new List<GameObject>(); // Lưu danh sách các coin đang di chuyển
         private List<Coroutine> moveCoinCoroutines = new List<Coroutine>(); // Lưu danh sách các Coroutine của hàm chuyển 
-
+        private GameObject _coinPrefab;
+        
         private void Start()
         {
             _coinPrefab = PrefabInit.Instance.coinPrefab;
             _coinMoveSpeed = PrefabInit.Instance.coinMoveSpeed;
             _timeMaxFloatCoin = PrefabInit.Instance.timeMaxFloatCoin;
             
-            _coinSlotLocation = GameObject.Find("CoinSlotLocation");
-            _coinSlotLocation.SetActive(false);
+            
+            coinSlotLocation = gameObject.transform.GetChild(0).gameObject;
+            
+             coinSlotLocation.SetActive(false);
 
         
         }
-        public int GetChildCount(GameObject parent)//kiểm tra Con
+        public int GetChildCount(GameObject parent)//kiểm tra só lượng object Con
         {
             if (parent == null)
             {
@@ -64,13 +69,14 @@ namespace Script.Game.Item.Coin
                 if (!readyToUpgrade)
                 {
                     //kiểm tra xem có đủ coinslot không,nếu không đủ thì tạo thêm
-                    _coinSlotLocation.SetActive(true);
-                    int currentSlot = GetChildCount(_coinSlotLocation);
+                    coinSlotLocation.SetActive(true);
+                    int currentSlot = GetChildCount(coinSlotLocation);
                     if (currentSlot < coinQuantity)
                     {
-                        DestroyAllChildren(_coinSlotLocation);
+                        DestroyAllChildren(coinSlotLocation);
                         //hàm bên dưới vừa tạo 1 coinslot vừa truyền thao chiếu vào list bên 
-                        _coinSlotList = InstanceCoinSlot.Instance.CreateCoinSlot(coinQuantity, _coinSlotLocation);
+                        coinSlotList = InstanceCoinSlot.Instance.CreateCoinSlot(coinQuantity, coinSlotLocation);
+                        
                     }
                 
                 }
@@ -83,7 +89,7 @@ namespace Script.Game.Item.Coin
             if (other.CompareTag("Player"))
             {
                 //Debug.Log("Player leave this collider!");
-                _coinSlotLocation.SetActive(false);
+                coinSlotLocation.SetActive(false);
            
                 ResetCoinStatusInTransit();
                 _currentSlotIndex = 0;
@@ -117,7 +123,7 @@ namespace Script.Game.Item.Coin
         //hàm di chuyển coin đến vị trí slot
         public void TransferCoin(GameObject player)
         {
-            if (_coinSlotList.Count == 0) // Check if there are no slots available
+            if (this.coinSlotList.Count == 0) // Check if there are no slots available
             {
                 Debug.LogWarning("No coin slots available.");
                 return;
@@ -125,7 +131,7 @@ namespace Script.Game.Item.Coin
 
         
             Vector3 playerPosition = player.transform.position;
-            Vector3 targetPosition = _coinSlotList[_currentSlotIndex].transform.position;
+            Vector3 targetPosition = coinSlotList[_currentSlotIndex].transform.position;
 
             GameObject coin = Instantiate(_coinPrefab, playerPosition, Quaternion.identity);
         
@@ -143,7 +149,7 @@ namespace Script.Game.Item.Coin
             Coroutine coroutine = StartCoroutine(MoveCoinToSlot(coin, targetPosition));  //chạy coin từ player vào slot
             moveCoinCoroutines.Add(coroutine); // Lưu Coroutine vào danh sách
         
-            _currentSlotIndex = (_currentSlotIndex + 1) % _coinSlotList.Count; // di chuyển bộ đếm slot coin
+            _currentSlotIndex = (_currentSlotIndex + 1) % coinSlotList.Count; // di chuyển bộ đếm slot coin
         }
         private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition)//hàm di chuyển hình ảnh của coin
         {
@@ -192,21 +198,91 @@ namespace Script.Game.Item.Coin
                 _currentSlotIndex = 0;
             }
         }
+        
+        
+        public enum ComponentResult
+        {
+            Skip, // Được sử dụng để biểu thị rằng component nên được bỏ qua
+            NotFound, // Được sử dụng khi thuộc tính hoặc phương thức không được tìm thấy
+            Found // Được sử dụng khi thuộc tính hoặc phương thức được tìm thấy
+        }
+        //public void A
+        public object GetVarComponent(Component component, string name, out ComponentResult result)
+        {
+            System.Type type = component.GetType();
 
+            // Bỏ qua các component không cần thiết
+            if (type == typeof(BoxCollider2D) || type == typeof(SpriteRenderer) || type == typeof(Transform) || type == typeof(CoinUser))
+            {
+                result = ComponentResult.Skip;
+                return null;
+            }
 
+            // Kiểm tra và trả về PropertyInfo nếu tìm thấy thuộc tính
+            PropertyInfo property = type.GetProperty(name);
+            if (property != null)
+            {
+                result = ComponentResult.Found;
+                return property;
+            }
 
+            // Kiểm tra và trả về MethodInfo nếu tìm thấy phương thức
+            MethodInfo method = type.GetMethod(name);
+            if (method != null)
+            {
+                result = ComponentResult.Found;
+                return method;
+            }
+
+            result = ComponentResult.NotFound;
+            return null;
+        }
         public void UpgradeStructure()
         {
-            readyToUpgrade = true;
-            Debug.Log("cong trinh da san sang nang cap");
-            actionHaveEnoughCoin?.Invoke();
-        
             DeleteCoinsInTransitList();
-        
-            _coinSlotLocation.SetActive(false);
+            coinSlotLocation.SetActive(false);
             _currentSlotIndex = 0;
+            readyToUpgrade = true;
+
+            // Lặp qua tất cả các component trong GameObject
+            Component[] components = GetComponents<Component>();
+            foreach (var component in components)
+            {
+                ComponentResult result;
+
+                /*// Sử dụng GetVarComponent để lấy PropertyInfo hoặc MethodInfo
+                PropertyInfo buildCostProperty = GetVarComponent(component, "buildCost", out result) as PropertyInfo;
+                if (result == ComponentResult.Skip)
+                {
+                    continue; // Bỏ qua nếu component không cần thiết
+                }
+                if (result == ComponentResult.NotFound)
+                {
+                    Debug.LogWarning($"{component.GetType().Name} không có script nào chứa biến buildCost");
+                }
+                else
+                {
+                    int buildCost = (int)buildCostProperty.GetValue(component);
+                    coinQuantity = buildCost;
+                }*/
+
+                MethodInfo doUpgradeMethod = GetVarComponent(component, "DoUpgrade", out result) as MethodInfo;
+                if (result == ComponentResult.Skip)
+                {
+                    continue; // Bỏ qua nếu component không cần thiết
+                }
+                if (result == ComponentResult.NotFound)
+                {
+                    Debug.LogWarning($"{component.GetType().Name} không có script nào chứa hàm DoUpgrade");
+                }
+                else
+                {
+                    doUpgradeMethod.Invoke(component, null);
+                }
+            }
         }
-    
+
+        
   
 
 
