@@ -57,12 +57,28 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Size.x
+      value: 2.758068
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Size.y
+      value: 3.3208795
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Offset.x
+      value: 0.14032173
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Offset.y
+      value: 1.6604397
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_SpriteTilingProperty.oldSize.y
       value: 4.8
       objectReference: {fileID: 0}
     - target: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_Name
-      value: Wall_Stone_Wall Variant
+      value: Wall_Stone_Wall
       objectReference: {fileID: 0}
     - target: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_TagString

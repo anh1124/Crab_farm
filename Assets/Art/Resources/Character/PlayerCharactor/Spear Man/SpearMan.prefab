@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 1741431696939278040}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.23, y: -3.2, z: 0}
+  m_LocalPosition: {x: -0.23, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -95,7 +95,7 @@ GameObject:
   - component: {fileID: 7038960417187168570}
   m_Layer: 8
   m_Name: SpearMan
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -114,6 +114,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6896945981950860906}
+  - {fileID: 6645369135533791887}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!50 &1457712919463588002
@@ -175,7 +176,7 @@ CapsuleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.02679348, y: -1.718672}
+  m_Offset: {x: 0.02679348, y: 1.59}
   m_Size: {x: 1.21558, y: 3.3572469}
   m_Direction: 0
 --- !u!212 &7235647182857197577
@@ -216,8 +217,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 1591732571
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 175150952, guid: b211a6e344b1de14db6cf02dbb19c2b6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -266,7 +267,7 @@ MonoBehaviour:
   hp: 0
   jumpForce: 200
   moveSpeed: 10
-  coin: 0
+  coin: 10
   isGround: 0
   groundLayer:
     serializedVersion: 2
@@ -287,6 +288,7 @@ MonoBehaviour:
   rb: {fileID: 1457712919463588002}
   isGround: 0
   status: {fileID: 0}
+  speedNeedToShowRun: 5
 --- !u!114 &7038960417187168570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -300,3 +302,34 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   structureCollider2D: {fileID: 0}
+--- !u!1 &6752379391725988446
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6645369135533791887}
+  m_Layer: 8
+  m_Name: CameraTaget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6645369135533791887
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6752379391725988446}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1207333865757873293}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

@@ -57,16 +57,36 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Size.x
+      value: 3.1528015
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Size.y
+      value: 4.6260076
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Offset.x
+      value: 0.14468193
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Offset.y
+      value: 2.3130038
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_SpriteTilingProperty.oldSize.y
       value: 4.8
       objectReference: {fileID: 0}
     - target: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_Name
-      value: Wall_ Iron_Wall Variant
+      value: Wall_ Iron_Wall
       objectReference: {fileID: 0}
     - target: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_TagString
       value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 6041736128915486639, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 6.17
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -1,0 +1,181 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1595070778010574993
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8862165295465698764}
+  - component: {fileID: 7567741772578441490}
+  - component: {fileID: 8461418768698195358}
+  - component: {fileID: 9035146963247413293}
+  - component: {fileID: 7479803545423749147}
+  - component: {fileID: 425193365867354460}
+  - component: {fileID: 462543996321563134}
+  m_Layer: 0
+  m_Name: GM
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8862165295465698764
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7567741772578441490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba1b93a3aec310d449a9d21fd1234486, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 0}
+--- !u!114 &8461418768698195358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1089468f53d33734e9caa71f022533c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinThrowForce: 10
+  coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+--- !u!114 &9035146963247413293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7314a43da306c144b0c2397324382cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinSlotPrefab: {fileID: 9131483258529145134, guid: 00c8c248ccb96644ebd4bbf202bac74e, type: 3}
+  coinEmpty: {fileID: 21300000, guid: 00ebcb4d2f9ca514a9560a1cfc61a5ed, type: 3}
+  coinLocked: {fileID: 21300000, guid: f4f6dd70f2a00cb49a3b8e7463463f7c, type: 3}
+  x: 1.6
+  y: 1.5
+  curvature: 0.5
+  locations: {fileID: 0}
+--- !u!114 &7479803545423749147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4633b0cd12656b4495dc0efff176b3e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+  coinMoveSpeed: 0.5
+  timeMaxFloatCoin: 3
+--- !u!114 &425193365867354460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b89a3b3d0fbfc144ab1ce42e8c32e121, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wallList:
+  - tier: 0
+    name: Wall_Dirt_Mound
+    buildCost: 1
+    rebuilding: 0
+    blessing: 0
+    baseHp: 0
+    blessedHp: 0
+    stump: {fileID: 0}
+    nextUpgrade: {fileID: 0}
+  - tier: 1
+    name: Wall_Spikes
+    buildCost: 1
+    rebuilding: 1
+    blessing: 0
+    baseHp: 25
+    blessedHp: 45
+    stump: {fileID: 0}
+    nextUpgrade: {fileID: 0}
+  - tier: 2
+    name: Wall_Palisade
+    buildCost: 3
+    rebuilding: 2
+    blessing: 0
+    baseHp: 50
+    blessedHp: 90
+    stump: {fileID: 0}
+    nextUpgrade: {fileID: 0}
+  - tier: 3
+    name: Wall_Stone_Wall
+    buildCost: 5
+    rebuilding: 3
+    blessing: 0
+    baseHp: 200
+    blessedHp: 360
+    stump: {fileID: 0}
+    nextUpgrade: {fileID: 0}
+  - tier: 4
+    name: Wall_Tall_Stone_Wall
+    buildCost: 8
+    rebuilding: 4
+    blessing: 0
+    baseHp: 400
+    blessedHp: 750
+    stump: {fileID: 0}
+    nextUpgrade: {fileID: 0}
+  - tier: 5
+    name: Wall_ Iron_Wall
+    buildCost: 6
+    rebuilding: 12
+    blessing: 0
+    baseHp: 400
+    blessedHp: 750
+    stump: {fileID: 0}
+    nextUpgrade: {fileID: 0}
+  stumpList: []
+--- !u!114 &462543996321563134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f8cf1172db726b4f8dc3178b1657401, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  townCentrerList: []

@@ -105,7 +105,7 @@ MonoBehaviour:
   timeCurrentFloatCoin: 0
   coinSlotLocation: {fileID: 0}
   readyToUpgrade: 0
-  _coinSlotList: []
+  coinSlotList: []
 --- !u!114 &420379867295080351
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118,18 +118,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6146f8b365e7cd746b4ac1471a3d0eb9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wallData: {fileID: 11400000, guid: ced65e934e2f67144b9edcb19f14e440, type: 2}
-  coinUser: {fileID: 0}
   tier: 0
   name: 
-  upgradeCost: 0
   rebuilding: 0
+  buildCost: 0
   baseHp: 0
   blessing: 0
   blessedHp: 0
   currentHp: 0
   stump: {fileID: 0}
   nextUpgrade: {fileID: 0}
+  readyToUpgrade: 0
 --- !u!61 &1172007204605336266
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -162,7 +161,7 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 1.8}
+  m_Offset: {x: 0, y: 0.4951589}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -173,7 +172,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 3.6, y: 3.6}
+  m_Size: {x: 3.6, y: 0.9903178}
   m_EdgeRadius: 0
 --- !u!1 &7788292574185275152
 GameObject:

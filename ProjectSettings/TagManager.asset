@@ -11,6 +11,7 @@ TagManager:
   - Coin
   - Denizens
   - StructureContainer
+  - CameraTaget
   layers:
   - Default
   - TransparentFX
@@ -23,7 +24,7 @@ TagManager:
   - Player
   - Prop
   - Wall
-  - 
+  - Structure
   - 
   - 
   - 
@@ -51,17 +52,23 @@ TagManager:
   - name: Ground
     uniqueID: 1887296005
     locked: 0
-  - name: Player
-    uniqueID: 1591732571
-    locked: 0
-  - name: ForgeGround
-    uniqueID: 1365292773
-    locked: 0
   - name: Enemy
     uniqueID: 135369569
     locked: 0
+  - name: structure prop
+    uniqueID: 275455829
+    locked: 0
+  - name: structure
+    uniqueID: 2817326543
+    locked: 0
+  - name: Player
+    uniqueID: 1591732571
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: ForgeGround
+    uniqueID: 1365292773
     locked: 0
   - name: UI
     uniqueID: 2194541319

@@ -15,9 +15,7 @@ public class TownCentrerList : MonoBehaviour
         public bool blessing;
 
         public GameObject nextUpgrade;
-        
+        public List<GameObject> atribute;
     }
-    
-    
     [SerializeField] private List<TownCentrerData> townCentrerList;
 }

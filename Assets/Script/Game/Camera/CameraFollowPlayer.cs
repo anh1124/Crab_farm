@@ -1,34 +1,58 @@
 using UnityEngine;
-using System.Collections;
 
 public class CameraFollowPlayer : MonoBehaviour {
 
-    public float interpVelocity;
-    public float minDistance;
-    public float followDistance;
+    public float targetDistance = 1.0f; // Distance the camera will adjust based on target movement
+    public float smoothTime = 0.3f; // Time it takes for the camera to reach the target position smoothly
     public GameObject target;
-    public Vector3 offset;
-    Vector3 targetPos;
+    public Vector3 offset; // Optional offset for camera position
+
+    private float previousTargetX; // Stores the previous X position of the target
+    private float currentTargetX;  // Stores the current X position of the target
+    private Vector3 velocity = Vector3.zero; // Velocity reference used by SmoothDamp
+
     // Use this for initialization
-    void Start () {
-        targetPos = transform.position;
-        target = GameObject.FindWithTag("Player");
+    void Start() {
+        // Find the target object
+        target = GameObject.FindWithTag("CameraTaget");
+
+        if (target != null) {
+            // Initialize the camera position to the target's position with an optional offset
+            Vector3 startPosition = target.transform.position + offset;
+            startPosition.z = -1; // Set the Z position of the camera
+            transform.position = startPosition;
+
+            // Initialize previousTargetX to the target's initial X position
+            previousTargetX = target.transform.position.x;
+        }
     }
+
     // Update is called once per frame
-    void FixedUpdate () {
-        if (target)
-        {
-            Vector3 posNoZ = transform.position;
-            posNoZ.z = target.transform.position.z;
+    void FixedUpdate() {
+        if (target != null) {
+            // Update the current X position of the target
+            currentTargetX = target.transform.position.x;
 
-            Vector3 targetDirection = (target.transform.position - posNoZ);
+            // Determine the target position for the camera
+            Vector3 targetPosition = transform.position;
 
-            interpVelocity = targetDirection.magnitude * 5f;
+            if (currentTargetX > previousTargetX) {
+                // Target is moving to the right
+                targetPosition.x = target.transform.position.x + targetDistance;
+            } else if (currentTargetX < previousTargetX) {
+                // Target is moving to the left
+                targetPosition.x = target.transform.position.x - targetDistance;
+            }
 
-            targetPos = transform.position + (targetDirection.normalized * interpVelocity * Time.deltaTime); 
+            // Maintain the Y position of the camera with the offset
+            targetPosition.y = target.transform.position.y + offset.y;
+            targetPosition.z = -1; // Ensure the Z position is fixed
 
-            transform.position = Vector3.Lerp( transform.position, targetPos + offset, 0.25f);
+            // Smoothly move the camera towards the target position using SmoothDamp
+            transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
 
+            // Update previousTargetX for the next frame
+            previousTargetX = currentTargetX;
         }
     }
 }

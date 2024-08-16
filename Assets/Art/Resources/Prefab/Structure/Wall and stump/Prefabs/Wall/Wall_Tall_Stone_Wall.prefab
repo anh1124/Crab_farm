@@ -57,19 +57,98 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Size.x
+      value: 2.4774227
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Size.y
+      value: 4.6386843
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Offset.x
+      value: -0.09761524
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      propertyPath: m_Offset.y
+      value: 2.3193421
+      objectReference: {fileID: 0}
+    - target: {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_SpriteTilingProperty.oldSize.y
       value: 4.8
       objectReference: {fileID: 0}
     - target: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_Name
-      value: Wall_Tall_Stone_Wall Variant
+      value: Wall_Tall_Stone_Wall
       objectReference: {fileID: 0}
     - target: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
       propertyPath: m_TagString
       value: Structure
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1172007204605336266, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3481383344852633082}
   m_SourcePrefab: {fileID: 100100000, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+--- !u!1 &6594779622634727778 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+  m_PrefabInstance: {fileID: 1677562693281018658}
+  m_PrefabAsset: {fileID: 0}
+--- !u!60 &3481383344852633082
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6594779622634727778}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0}
+    oldSize: {x: 3.6, y: 4.8}
+    newSize: {x: 0.36, y: 0.36}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: -1.0950184, y: 0.90201056}
+      - {x: -1.2999172, y: 0.29233438}
+      - {x: -1.310009, y: -0.020570874}
+      - {x: 1.5082886, y: -0.0038329363}
+      - {x: 1.0899041, y: 0.6994443}
+      - {x: 1.1226234, y: 4.618966}
+      - {x: 0.2939335, y: 4.6110926}
+      - {x: -0.08772126, y: 4.500367}
+      - {x: -0.71407664, y: 3.8041072}
+  m_UseDelaunayMesh: 0
