@@ -18,20 +18,34 @@ namespace Script.Game.Enemy.Base
             CurrentHp = MaxHp;
             Rb = GetComponent<Rigidbody2D>();
         }
+        public void DoDamage(int damageAmount)
+        {
+            // do dame for wall or other mod
+        }
         
         #region Health / Die Functions
 
-        public void Damage(int damageAmount)
+       
+        public void TakeDamage(int damageAmount)
         {
-            CurrentHp -= damageAmount;
-            if (CurrentHp <= 0)
+            //add script show dame on screen
+            Debug.Log(gameObject.name + "take dame " + damageAmount );
+            if (damageAmount >= CurrentHp)
             {
                 Die();
             }
+            else
+            {
+                CurrentHp -= damageAmount;
+            }
         }
+
+  
 
         public void Die()
         {
+            //do animation die
+            Destroy(gameObject);
         }
 
         #endregion    

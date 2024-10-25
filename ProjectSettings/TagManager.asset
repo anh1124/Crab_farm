@@ -12,6 +12,13 @@ TagManager:
   - Denizens
   - StructureContainer
   - CameraTaget
+  - CoinContainer
+  - NatureContainer
+  - LootMob
+  - Tree
+  - Wall
+  - AnimalSpawner
+  - Enemy
   layers:
   - Default
   - TransparentFX
@@ -21,11 +28,11 @@ TagManager:
   - UI
   - Ground
   - Enemy
-  - Player
-  - Prop
-  - Wall
-  - Structure
+  - Nature
+  - Ally
+  - Mobs
   - 
+  - Structure
   - 
   - 
   - 

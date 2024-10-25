@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using Script.Data_Model;
 using UnityEngine;
 
 namespace Script.Game.Item.Coin
@@ -6,12 +8,12 @@ namespace Script.Game.Item.Coin
     public class Coin : MonoBehaviour
     {
         public bool floating;
-        public float rayLength =1;  // Độ dài của raycast
-        public float fallSpeed =10 ;  // Tốc độ rơi của coin
+        public float rayLength = 0.6f;  // Độ dài của raycast
+        public int fallSpeed =10 ;  // Tốc độ rơi của coin
     
     
         private Animator _animator;
-        private float groundCheckRadius = 0.1f; // Bán kính kiểm tra mặt đất
+        //private float groundCheckRadius = 0.1f; // Bán kính kiểm tra mặt đất
         // // Pickup abilities
         public bool playerPickupAble = true;
         public bool denizensPickupAble  = true;
@@ -23,7 +25,8 @@ namespace Script.Game.Item.Coin
     
         void Start()
         {
-            
+            fallSpeed = PrefabData.Instance.fallSpeed;
+            pickupAbleCooldown = PrefabData.Instance.timeMaxFloatCoin;
             // Gán animator cho component Animator của object này
             _animator = GetComponent<Animator>();
         }
@@ -34,6 +37,9 @@ namespace Script.Game.Item.Coin
             {
                 Falling();
             }
+            // Vẽ raycast trong Scene View
+            Debug.DrawRay(transform.position, Vector2.down * rayLength, Color.red);
+
         }
 
         public void StopRotate()
@@ -50,31 +56,27 @@ namespace Script.Game.Item.Coin
 
         public void Falling()
         {
-            // Vẽ raycast hướng xuống
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength);
-        
-            // Vẽ raycast trong Scene View
-            Debug.DrawRay(transform.position, Vector2.down * rayLength, Color.red);
+            // Vẽ raycast hướng xuống với chiều dài rayLength
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, LayerMask.GetMask("Ground"));
 
-            // Kiểm tra va chạm mặt đất bằng OverlapCircle
-            bool isGrounded = Physics2D.OverlapCircle(transform.position - new Vector3(0, rayLength / 2, 0), groundCheckRadius, LayerMask.GetMask("Ground"));
-
-            if (isGrounded)
+            // Kiểm tra va chạm mặt đất dựa trên kết quả của raycast
+            if (hit.collider != null)
             {
-                // Dừng di chuyển xuống
+                // Dừng di chuyển xuống khi va chạm mặt đất
                 floating = true;
                 StartRotate();
             }
             else
             {
-                // Di chuyển coin xuống dưới với tốc độ fallSpeed
+                // Di chuyển coin xuống dưới với tốc độ fallSpeed nếu không chạm đất
                 StopRotate();
                 transform.Translate(Vector2.down * fallSpeed * Time.deltaTime);
             }
         }
 
+
     
-       
+        //cái này phải sửa lại,nhỡ đâu player drop xong detizen nhặt rồi player lại drop 
 
         public void CallFunctionCoolDown(string characterType)
         {
@@ -94,6 +96,7 @@ namespace Script.Game.Item.Coin
             }
         }
         
+
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.CompareTag("Player"))

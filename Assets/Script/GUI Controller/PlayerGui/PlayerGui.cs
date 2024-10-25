@@ -38,15 +38,24 @@ namespace Script.GUI_Controller.PlayerGui
         [Header("other Button")]
         public Button useCoin;
         // Events
-        
+        public Action OnSkill3PressedACT;//debug btn
         
         private void Start()
         {
             // Add event triggers for move buttons
             AddEventTriggers(moveLeft, PlayerController.Instance.MoveLeftDown, PlayerController.Instance.MoveLeftUp);
             AddEventTriggers(moveRight, PlayerController.Instance.MoveRightDown, PlayerController.Instance.MoveRightUp);
-            
             AddEventTriggers(useCoin, PlayerController.Instance.UseCoinDownAction, PlayerController.Instance.UseCoinUpAction);
+            skill3.onClick.AddListener(OnSkill3Pressed);
+            
+        }
+        // Hàm được gọi khi skill3 được nhấn
+        private void OnSkill3Pressed()
+        {
+            Debug.Log("Skill 3 button pressed!");
+
+            // Gọi event nếu có class nào đó đã đăng ký lắng nghe
+            OnSkill3PressedACT?.Invoke();
         }
         private void AddEventTriggers(Button button, Action onPointerDown, Action onPointerUp)
         {

@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using Script.Data_Model;
 using UnityEngine;
 
@@ -9,332 +8,236 @@ namespace Script.Game.Item.Coin
 {
     public class CoinUser : MonoBehaviour
     {
+        /// <summary>
+        /// khi player va chạm với collider của gameobject chứa coinUser thì se kiểm tra :
+        /// -có đang va chạm với player không?
+        /// -script CoinUser.isReadyToUpgrade có false không thì mới hiện các coin slot
+        /// </summary>
+        [Header("Upgrade Settings")]
+        public int requiredCoins; // tổng số coin cần để thực hiện hành động upgrade
+        public Action onUpgradeComplete; // cái này sẽ được gọi khi nhét đủ coin
 
-        public int coinQuantity;
-        public int currentCoinCount = 0;
-        public float timeCurrentFloatCoin;
-        [SerializeField] private GameObject coinSlotLocation;
-        /*lưu ý:
-         biến readyToUpgrade dưới không được truyền vào các script khác,
-         nó chỉ có trách nhiệm làm biến để đo xem coin đã được lắp đủ chưa
-         nếu đủ thì dừng đếm
-         */
-        
-        public bool readyToUpgrade;
-        
-        
-        public List<GameObject> coinSlotList = new List<GameObject>(); //danh sách lưu vị trí các coinSLot
-        
-        private BoxCollider2D _boxCollider2D;
-        private float _timeMaxFloatCoin;
-        private float _coinMoveSpeed;
-        private bool _isCounting ;
-        private int _currentSlotIndex = 0; // bộ đếm coin đang được chuyển đến vị trí 
-        private List<GameObject> coinsInTransit = new List<GameObject>(); // Lưu danh sách các coin đang di chuyển
-        private List<Coroutine> moveCoinCoroutines = new List<Coroutine>(); // Lưu danh sách các Coroutine của hàm chuyển 
-        private GameObject _coinPrefab;
-        
+        [Header("Coin Collection")]
+        public int collectedCoins ; // số coin hiện tại đã lấy được
+        public float coinCollectionTimeout ; // Time before coin collection resets
+        public float coinCollectionTimer; //  biến đếm ngược
+        [SerializeField] private GameObject coinSlotParent; // Parent object for coin slots
+
+        [Header("Upgrade Status")]
+        public bool isReadyToUpgrade; // Indicates if enough coins have been collected for upgrade
+
+        [Header("Coin Prefabs")]
+        [SerializeField] private GameObject coinPrefab;
+
+        [SerializeField] private List<GameObject> coinSlots = new List<GameObject>(); // List of coin slot positions
+        [SerializeField] private List<GameObject> coinsInTransit = new List<GameObject>(); // List of coins being moved
+         private List<Coroutine> coinMoveCoroutines = new List<Coroutine>();
+
+        private float coinMoveSpeed;
+        private int currentSlotIndex ;
+        private bool isCollectingCoins ;
+
+        public bool playerTrigger;
         private void Start()
         {
-            _coinPrefab = PrefabInit.Instance.coinPrefab;
-            _coinMoveSpeed = PrefabInit.Instance.coinMoveSpeed;
-            _timeMaxFloatCoin = PrefabInit.Instance.timeMaxFloatCoin;
-            
-            
-            coinSlotLocation = gameObject.transform.GetChild(0).gameObject;
-            
-             coinSlotLocation.SetActive(false);
+            InitializeCoinUser();
+        }
 
-        
-        }
-        public int GetChildCount(GameObject parent)//kiểm tra só lượng object Con
+        private void InitializeCoinUser()
         {
-            if (parent == null)
+            coinPrefab = PrefabData.Instance.coinPrefab;
+            coinMoveSpeed = PrefabData.Instance.coinMoveSpeed;
+            coinCollectionTimeout = PrefabData.Instance.timeMaxFloatCoin;
+
+            if (coinSlotParent == null)
             {
-                Debug.LogWarning("Parent GameObject is null.");
-                return 0;
+                coinSlotParent = transform.GetChild(0).gameObject;
             }
-        
-            // Get the Transform component of the parent GameObject
-            Transform parentTransform = parent.transform;
-        
-            // Return the number of child transforms
-            return parentTransform.childCount;
+            coinSlotParent.SetActive(false);
         }
+
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (other.CompareTag("Player"))
+            if (other.CompareTag("Player") && !isReadyToUpgrade)
             {
-                //Debug.Log("Player triggered this collider!");
-                if (!readyToUpgrade)
-                {
-                    //kiểm tra xem có đủ coinslot không,nếu không đủ thì tạo thêm
-                    coinSlotLocation.SetActive(true);
-                    int currentSlot = GetChildCount(coinSlotLocation);
-                    if (currentSlot < coinQuantity)
-                    {
-                        DestroyAllChildren(coinSlotLocation);
-                        //hàm bên dưới vừa tạo 1 coinslot vừa truyền thao chiếu vào list bên 
-                        coinSlotList = InstanceCoinSlot.Instance.CreateCoinSlot(coinQuantity, coinSlotLocation);
-                        
-                    }
-                
-                }
-        
+                SetupCoinSlots();
+                playerTrigger = true;
             }
         }
-    
+
         private void OnTriggerExit2D(Collider2D other)
         {
             if (other.CompareTag("Player"))
             {
-                //Debug.Log("Player leave this collider!");
-                coinSlotLocation.SetActive(false);
-           
-                ResetCoinStatusInTransit();
-                _currentSlotIndex = 0;
-                //coinSlotList.Clear();
+                //ResetCoinCollection();
+                ClearCoinSlots();
+                playerTrigger = false;
             }
         }
-        // Phương thức để xóa tất cả các đối tượng con
-        private void DestroyAllChildren(GameObject parent)
+
+        private void SetupCoinSlots()
         {
-            foreach (Transform child in parent.transform)
+            coinSlotParent.SetActive(true);
+            int currentSlotCount = coinSlotParent.transform.childCount;
+            if (currentSlotCount < requiredCoins)
+            {
+                ClearCoinSlots();
+                coinSlots = InstanceCoinSlot.Instance.CreateCoinSlot(requiredCoins, coinSlotParent);
+            }
+        }
+
+        private void ClearCoinSlots()
+        {
+            foreach (Transform child in coinSlotParent.transform)
             {
                 Destroy(child.gameObject);
             }
-            _currentSlotIndex = 0;
+            currentSlotIndex = 0;
         }
 
-        public void InsertCoin(Status playerInsertCoinStatus, GameObject playerGameObject)//hàm nhét tiền
+        public void InsertCoin(int availableCoins, GameObject player)
         {
-            if (playerInsertCoinStatus.coin <= 0 && coinQuantity > currentCoinCount)//nếu đang chuyển tiền mà hết tiền
+            if (availableCoins <= 0 || isReadyToUpgrade)
             {
-                ResetCoinStatusInTransit();
                 return;
             }
-            TransferCoin(playerGameObject);
-            _isCounting = true;//bật bộ đếm
-            timeCurrentFloatCoin = _timeMaxFloatCoin;//đặt lại bộ đếm thời gian 
-       
-      
+            StartCoinTransfer(player);
+            isCollectingCoins = true;
+            coinCollectionTimer = coinCollectionTimeout; 
         }
-    
-        //hàm di chuyển coin đến vị trí slot
-        public void TransferCoin(GameObject player)
+        private void Update()
         {
-            if (this.coinSlotList.Count == 0) // Check if there are no slots available
+            // Kiểm tra và giảm dần giá trị đếm ngược
+            if (isCollectingCoins && !isReadyToUpgrade)
             {
-                Debug.LogWarning("No coin slots available.");
+                coinCollectionTimer -= Time.deltaTime;
+                if (coinCollectionTimer <= 0)
+                {
+                    ReleaseCoins();
+                }
+            }
+        }
+        private void StartCoinTransfer(GameObject player)
+        {
+            if (coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count)
+            {
+                Debug.LogWarning("No available coin slots.");
                 return;
             }
 
-        
-            Vector3 playerPosition = player.transform.position;
-            Vector3 targetPosition = coinSlotList[_currentSlotIndex].transform.position;
+            Vector3 playerPosition = player.transform.position;//chỗ này cho y cao hơn 1 tí 
+            Vector3 targetPosition = coinSlots[currentSlotIndex].transform.position;
 
-            GameObject coin = Instantiate(_coinPrefab, playerPosition, Quaternion.identity);
-        
-            //chuyển các coin vừa được instance ra thành floatting 
-            Coin coinScriptInstance = coin.GetComponent<Coin>();
-            if (coinScriptInstance != null)//chuyển trạng thái coin thành bay
-            {
-                coinScriptInstance.playerPickupAble = false;
-                coinScriptInstance.denizensPickupAble = false;
-                coinScriptInstance.floating = true;
-            }
-        
-            coinsInTransit.Add(coin);//thêm coin đó vào danh sách chờ 
-     
-            Coroutine coroutine = StartCoroutine(MoveCoinToSlot(coin, targetPosition));  //chạy coin từ player vào slot
-            moveCoinCoroutines.Add(coroutine); // Lưu Coroutine vào danh sách
-        
-            _currentSlotIndex = (_currentSlotIndex + 1) % coinSlotList.Count; // di chuyển bộ đếm slot coin
+            GameObject coin = Instantiate(coinPrefab, playerPosition, Quaternion.identity);
+            SetCoinProperties(coin);
+            
+            coinsInTransit.Add(coin);
+            Coroutine coroutine = StartCoroutine(MoveCoinToSlot(coin, targetPosition));
+            coinMoveCoroutines.Add(coroutine);
+
+            currentSlotIndex++;
         }
-        private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition)//hàm di chuyển hình ảnh của coin
-        {
-        
-            float elapsedTime = 0.0f;
-            Vector3 startingPosition = coin.transform.position;
 
-            while (elapsedTime < _coinMoveSpeed)
+        private void SetCoinProperties(GameObject coin)
+        {
+            Coin coinScript = coin.GetComponent<Coin>();
+            if (coinScript != null)
             {
-                coin.transform.position = Vector3.Lerp(startingPosition, targetPosition, elapsedTime / _coinMoveSpeed);
+                coinScript.playerPickupAble = false;
+                coinScript.denizensPickupAble = false;
+                coinScript.floating = true;
+            }
+        }
+
+        private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition)
+        {
+            Vector3 startPosition = coin.transform.position;
+            float elapsedTime = 0f;
+
+            while (elapsedTime < coinMoveSpeed)
+            {
+                coin.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / coinMoveSpeed);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
+
             coin.transform.position = targetPosition;
-            currentCoinCount++;//tổng coin hiện tại
-            CheckUpgrade();
+            collectedCoins++;
+            CheckUpgradeStatus();
         }
 
-        public void CheckUpgrade()
+        private void CheckUpgradeStatus()
         {
-            if (currentCoinCount == coinQuantity)//nếu đủ tiền thi nâng cấp và hủy khả năng thêm coin
+            if (collectedCoins >= requiredCoins)
             {
-                UpgradeStructure();
-                _isCounting = false;//dừng đếm trong update
-                _currentSlotIndex = 0;
-            }
-        }
-    
-        private void Update()
-        {
-            if (_isCounting)
-            {
-                CountdownCoin();
-            }
-        
-        }
-
-        public void CountdownCoin()
-        {
-
-            timeCurrentFloatCoin -= Time.deltaTime;
-            if (timeCurrentFloatCoin <= 0f)
-            {
-                ResetCoinStatusInTransit();
-                _isCounting = false;
-                _currentSlotIndex = 0;
-            }
-        }
-        
-        
-        public enum ComponentResult
-        {
-            Skip, // Được sử dụng để biểu thị rằng component nên được bỏ qua
-            NotFound, // Được sử dụng khi thuộc tính hoặc phương thức không được tìm thấy
-            Found // Được sử dụng khi thuộc tính hoặc phương thức được tìm thấy
-        }
-        //public void A
-        public object GetVarComponent(Component component, string name, out ComponentResult result)
-        {
-            System.Type type = component.GetType();
-
-            // Bỏ qua các component không cần thiết
-            if (type == typeof(BoxCollider2D) || type == typeof(SpriteRenderer) || type == typeof(Transform) || type == typeof(CoinUser))
-            {
-                result = ComponentResult.Skip;
-                return null;
-            }
-
-            // Kiểm tra và trả về PropertyInfo nếu tìm thấy thuộc tính
-            PropertyInfo property = type.GetProperty(name);
-            if (property != null)
-            {
-                result = ComponentResult.Found;
-                return property;
-            }
-
-            // Kiểm tra và trả về MethodInfo nếu tìm thấy phương thức
-            MethodInfo method = type.GetMethod(name);
-            if (method != null)
-            {
-                result = ComponentResult.Found;
-                return method;
-            }
-
-            result = ComponentResult.NotFound;
-            return null;
-        }
-        public void UpgradeStructure()
-        {
-            DeleteCoinsInTransitList();
-            coinSlotLocation.SetActive(false);
-            _currentSlotIndex = 0;
-            readyToUpgrade = true;
-
-            // Lặp qua tất cả các component trong GameObject
-            Component[] components = GetComponents<Component>();
-            foreach (var component in components)
-            {
-                ComponentResult result;
-
-                /*// Sử dụng GetVarComponent để lấy PropertyInfo hoặc MethodInfo
-                PropertyInfo buildCostProperty = GetVarComponent(component, "buildCost", out result) as PropertyInfo;
-                if (result == ComponentResult.Skip)
-                {
-                    continue; // Bỏ qua nếu component không cần thiết
-                }
-                if (result == ComponentResult.NotFound)
-                {
-                    Debug.LogWarning($"{component.GetType().Name} không có script nào chứa biến buildCost");
-                }
-                else
-                {
-                    int buildCost = (int)buildCostProperty.GetValue(component);
-                    coinQuantity = buildCost;
-                }*/
-
-                MethodInfo doUpgradeMethod = GetVarComponent(component, "DoUpgrade", out result) as MethodInfo;
-                if (result == ComponentResult.Skip)
-                {
-                    continue; // Bỏ qua nếu component không cần thiết
-                }
-                if (result == ComponentResult.NotFound)
-                {
-                    Debug.LogWarning($"{component.GetType().Name} không có script nào chứa hàm DoUpgrade");
-                }
-                else
-                {
-                    doUpgradeMethod.Invoke(component, null);
-                }
+                PerformUpgrade();
             }
         }
 
-        
-  
-
-
-
-        //chuyển các coin về lại trạng thái rơi
-        //và xóa danh sách coin đang chơ 
-        public void ResetCoinStatusInTransit()
-        {
+     
+        private void ReleaseCoins()
+        {   
+            Debug.LogWarning("đã gọi hàm ReleaseCoins");
             foreach (GameObject coin in coinsInTransit)
             {
-                Coin coinScriptInstance = coin.GetComponent<Coin>();
-                if (coinScriptInstance != null)
+                if (coin != null)
                 {
-                    coinScriptInstance.floating = false;
-                    coinScriptInstance.playerPickupAble = true;
-                    coinScriptInstance.denizensPickupAble = true;
+                    
+                    ReleaseCoin(coin);
                 }
             }
-            StopAllMoveCoinCoroutines();
-            coinsInTransit.Clear();
-            currentCoinCount = 0;
-            _currentSlotIndex = 0;
+            StopAllCoinCoroutines();
+            ClearTransitCoins();
+            isCollectingCoins = false;
+            currentSlotIndex = 0;
         }
-        // Hàm để dừng tất cả các Coroutine trong danh sách moveCoinCoroutines
-        private void StopAllMoveCoinCoroutines()
-        {
         
-            foreach (Coroutine coroutine in moveCoinCoroutines)
+        private void ReleaseCoin(GameObject coin)
+        {
+            Coin coinScript = coin.GetComponent<Coin>();
+            if (coinScript != null)
+            {
+                coinScript.floating = false;
+                coinScript.playerPickupAble = true;
+                coinScript.denizensPickupAble = true;
+            }
+        }
+        
+        private void StopAllCoinCoroutines()
+        {
+            foreach (Coroutine coroutine in coinMoveCoroutines)
             {
                 if (coroutine != null)
                 {
                     StopCoroutine(coroutine);
                 }
             }
-            moveCoinCoroutines.Clear();
-        }
-    
-        // Hàm để hủy tất cả các GameObject trong danh sách coinsInTransit
-        private void DeleteCoinsInTransitList()
-        {
-            StopAllMoveCoinCoroutines(); 
-            foreach (GameObject coin in coinsInTransit)
-            {
-                if (coin != null)
-                {
-                    Destroy(coin);
-                }
-            }
-            coinsInTransit.Clear();
-            currentCoinCount = 0;
-            _currentSlotIndex = 0;
+            coinMoveCoroutines.Clear();
         }
 
+        private void ClearTransitCoins()
+        {
+            coinsInTransit.Clear();
+            collectedCoins = 0;
+        }
+
+        private void PerformUpgrade()
+        {
+            if (collectedCoins >= requiredCoins)
+            {
+                foreach (GameObject coin in coinsInTransit)
+                {
+                    if (coin != null)
+                    {
+                        Destroy(coin);
+                    }
+                }
+                ClearTransitCoins();
+                coinSlotParent.SetActive(false);
+                currentSlotIndex = 0;
+                isReadyToUpgrade = true;
+                onUpgradeComplete?.Invoke();
+            }
+        }
     }
 }

@@ -20,6 +20,10 @@ using UnityEngine;
             }
         }
 
+
+        
+        public CoinUser coinUser;
+         
         public TriggerHelper triggerHelper;
         
         public GameObject player;
@@ -170,6 +174,7 @@ using UnityEngine;
             _coinLogTimer = 0f; // Reset the timer when the button is pressed down
         }
 
+        
         public void UseCoinUpAction()
         {
             _coinButtonHeld = false;
@@ -181,7 +186,11 @@ using UnityEngine;
                 if (status.coin > 0)
                 {
                     --status.coin;
-                    Spawner.Instance.DropByPlayer(player.transform.position);
+                    
+                    Vector2 direction = new Vector2(player.transform.localScale.x, 0);
+                    //dùng scalex của player để xác định nhân vật đang quay trái hay phải 
+                    
+                    Spawner.Instance.DropByPlayer(player.transform.position,1,direction);
                 }
                 else
                 {
@@ -190,25 +199,6 @@ using UnityEngine;
                
             }
         }
-        
-        
-     
-        
-        /*public void UseCoinAction()
-        {
-            if (_coinButtonHeld)
-            {
-                float pressDuration = Time.time - _coinPressStartTime;
-                if (pressDuration >= 0.5f)
-                {
-                    if (Time.time - _coinLogTimer >= 0.5f)
-                    {
-                        Debug.Log("use Coin");
-                        _coinLogTimer = Time.time; // Update the timer
-                    }
-                }
-            }
-        }*/
         
         public void UseCoinAction()
         {
@@ -223,14 +213,14 @@ using UnityEngine;
 
                         if (currentStructureCollider != null)
                         {
-                            CoinUser coinUser = currentStructureCollider.GetComponent<CoinUser>();
-                            if (!coinUser.readyToUpgrade)
+                             coinUser = currentStructureCollider.GetComponent<CoinUser>();
+                            if (!coinUser.isReadyToUpgrade)
                             {
-                                if (coinUser.currentCoinCount <= coinUser.coinQuantity )//nếu số xu hiện tại ít hơn tổng xu có trong công trình hoặc player có xu 
+                                if (coinUser.collectedCoins <= coinUser.requiredCoins )//nếu số xu hiện tại ít hơn tổng xu có trong công trình hoặc player có xu 
                                 {
                                     if (status.coin > 0)
                                     {
-                                        coinUser.InsertCoin(status , player);//truyền tham chiếu script coin của player vào 
+                                        coinUser.InsertCoin(status.coin , player);//truyền tham chiếu script coin của player vào 
                                         status.coin--;
                                     }
                                     else
@@ -238,7 +228,6 @@ using UnityEngine;
                                         Debug.Log("đang nâng cấp nhưng không đủ tiền ");
                                     }
                                 }
-                                
                             }
                             else
                             {
