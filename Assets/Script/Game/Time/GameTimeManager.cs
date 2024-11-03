@@ -1,7 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
+using Script.Save_Controller;
 using UnityEngine;
 using TMPro;
+using System;
 
 public class GameTimeManager : MonoBehaviour
 {
@@ -21,7 +25,43 @@ public class GameTimeManager : MonoBehaviour
     private const int MONTHS_PER_YEAR = 4;
     private const int DAYS_PER_MONTH = 30;
 
+    #region Init Hour Even Action
+    public event Action Hour5;
+    public event Action Hour6;
+
+    #endregion
     private void Awake()
+    {
+        AddSingleton();
+    }
+
+    public void TimeEvent()
+    {
+        switch (gameHour)
+        {
+            case 5:
+                Hour5?.Invoke();
+                break;
+                //
+            case 6:
+                Hour6?.Invoke(); //đã có
+                //bụi cỏ spawm thỏ 
+                break;
+            case 17:
+                // Thêm sự kiện cho 17 giờ chiều
+                // Ví dụ: tạo làn sóng quái vật hoặc gọi sự kiện khác
+                // Event17?.Invoke();
+                break;
+            // Thêm các case khác nếu bạn muốn kích hoạt sự kiện vào các giờ khác
+            // case <giờ>:
+            //      Event?.Invoke();
+            //      break;
+            default:
+                break;
+        }
+    }
+
+    public void AddSingleton()
     {
         if (Instance == null)
         {
@@ -33,11 +73,10 @@ public class GameTimeManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-
     void Start()
     {
         timeMultiplier = 86400f / realSecondsPerGameDay;
-        UpdateTimeDisplay();
+       // UpdateTimeDisplay();
     }
 
     void Update()
@@ -60,6 +99,8 @@ public class GameTimeManager : MonoBehaviour
             {
                 gameMinute = 0;
                 gameHour++;
+                //timeEvent được gọi thi giờ được cật nhật 
+               TimeEvent();//gọi các event khi đến time được đăng ký 
 
                 if (gameHour >= 24)
                 {
@@ -95,6 +136,30 @@ public class GameTimeManager : MonoBehaviour
         gameMonth = Mathf.Clamp(month, 1, MONTHS_PER_YEAR);
         gameYear = year;
         UpdateTimeDisplay();
+    }
+
+    public void SetGameTimeSave()
+    {
+        string saveFilePath = LoadFromSave.Instance.saveFilePath;
+        string worldInfoPath = Path.Combine(saveFilePath, "worldInfo.json");
+        // Kiểm tra nếu file JSON tồn tại
+        if (File.Exists(worldInfoPath))
+        {
+            
+            // Đọc dữ liệu từ file JSON
+            string json = File.ReadAllText(worldInfoPath);
+
+            SaveManager.WorldInfo worldInfo = JsonConvert.DeserializeObject<SaveManager.WorldInfo>(json);
+            
+            SetGameTime(worldInfo.GameHour,worldInfo.GameMinute,worldInfo.GameDay,worldInfo.GameMonth,worldInfo.GameYear);
+            Debug.Log($"Loaded WorldInfo: Name={worldInfo.Name}, GameTime={worldInfo.GameHour}:{worldInfo.GameMinute}, Date={worldInfo.GameDay}/{worldInfo.GameMonth}/{worldInfo.GameYear}");
+        }
+        else
+        {
+            Debug.LogError("File worldInfo.json không tồn tại trong thư mục " + saveFilePath);
+            Debug.LogError("hệ thống sẽ khởi tạo Time mặc định " );
+            SetGameTime(0,0,0,0,0);
+        }
     }
 
     public string GetGameTime()

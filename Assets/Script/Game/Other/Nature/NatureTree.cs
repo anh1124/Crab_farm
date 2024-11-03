@@ -3,14 +3,32 @@ using Script.Data_Model;
 using Script.Game.Item.Coin;
 using UnityEngine;
 namespace Script.Game.Other.Nature
-{
+{   
     public class NatureTree: MonoBehaviour,IDropReward
-    {
+    {   
         /*
-         * lắp script này vào tree,
-         * lưu ý, thêm ,4 loại cây sẽ ở trước player,4 luoaij cây sẽ ở sau player 
-         * tag Tree,layer NatureBack
+         * để ý:
+         * có thể cần 1 hàm để load tree từ save
          */
+        public class SaveTree
+        {
+            public float positionX;
+            public int Type;
+            public int TreeChopCost;
+            public int TreeHp;
+            public bool IsReadyToChop;
+
+            public SaveTree(int type, int treeChopCost, int treeHp, bool isReadyToChop, float positionX, float positionY)
+            {
+                Type = type;
+                TreeChopCost = treeChopCost;
+                TreeHp = treeHp;
+                IsReadyToChop = isReadyToChop;
+                this.positionX = positionX;
+            }
+        }
+       
+        public int Type;//loại cây,nhớ thêm biến này trong editto
         public int treeChopCost;
         public int treeHp;
 

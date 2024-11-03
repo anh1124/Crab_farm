@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Script;
 using Script.Data_Model;
 using Script.Game.Item.Coin;
 using UnityEngine;
@@ -16,12 +17,9 @@ public class Spawner : MonoBehaviour
     
     public static Spawner Instance { get; private set; }
     public float coinThrowForce = 10f;
-   
     public GameObject coinPrefab;
     
-    public GameObject StructureContainer;// spawm các gameobject thuộc lớp Structure ở đây
-    public GameObject CoinContainer;//spawm coin trong này
-    public GameObject NatureContainer;//spawm cây trong này
+
     
     int yOffset = 2;
     private void Awake()
@@ -42,44 +40,11 @@ public class Spawner : MonoBehaviour
     {
         
         coinPrefab = PrefabData.Instance.coinPrefab;
-        SetUpContainer();
+   
     }
 
 
-    private void SetUpContainer()
-    {
-        // Gắn StructureContainer bằng tag hoặc tạo mới nếu không tìm thấy
-        if (StructureContainer == null)
-        {
-            StructureContainer = GameObject.FindGameObjectWithTag("StructureContainer");
-            if (StructureContainer == null)
-            {
-                StructureContainer = new GameObject("StructureContainer");
-                StructureContainer.tag = "StructureContainer";
-            }
-        }
-
-        // Gắn CoinContainer bằng tag hoặc tạo mới nếu không tìm thấy
-        if (CoinContainer == null)
-        {
-            CoinContainer = GameObject.FindGameObjectWithTag("CoinContainer");
-            if (CoinContainer == null)
-            {
-                CoinContainer = new GameObject("CoinContainer");
-                CoinContainer.tag = "CoinContainer";
-            }
-        }
-        // Gắn NatureContainer bằng tag hoặc tạo mới nếu không tìm thấy
-        if (NatureContainer == null)
-        {
-            NatureContainer = GameObject.FindGameObjectWithTag("NatureContainer");
-            if (NatureContainer == null)
-            {
-                NatureContainer = new GameObject("NatureContainer");
-                NatureContainer.tag = "NatureContainer";
-            }
-        }
-    }
+ 
     #region Coin Spawn
     public int GetRandomNumber( int max)
     {
@@ -110,7 +75,7 @@ public class Spawner : MonoBehaviour
         {
             
             newPosition = new Vector2(position.x + direction.x * i, position.y + yOffset + (i * 0.1f));
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, CoinContainer.transform);
+            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, SetUpContainer.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
             if (coinScriptInstance != null)
@@ -131,7 +96,7 @@ public class Spawner : MonoBehaviour
             
 
             Vector2 newPosition = new Vector2(position.x + direction.x * i, position.y + yOffset);
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, CoinContainer.transform);
+            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, SetUpContainer.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
             if (coinScriptInstance != null)
@@ -153,7 +118,7 @@ public class Spawner : MonoBehaviour
            
 
             Vector2 newPosition = new Vector2(position.x + direction.x * i, position.y);
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, CoinContainer.transform);
+            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, SetUpContainer.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
             if (coinScriptInstance != null)

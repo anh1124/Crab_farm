@@ -7,14 +7,19 @@ using UnityEngine;
 
 public class EnemyWaveSystem : MonoBehaviour
 {
+
     public static EnemyWaveSystem Instance { get; private set; }
   
-    public int growthRate = 2;
+    public int growthRate = 2;//tỉ lệ tăng số lượng quái 2%
     private int currentWavePower;
+    
+    public GameObject portalSummond;//cánh cổng nguyên mẫu -spawm ra cái này
+    public GameObject portalL;//cánh cổng bên trái vương quốc
+    public GameObject portalR;//cánh cổng bên phải vương quốc
+    
     
     // Lưu danh sách enemy được chọn cho wave hiện tại
     public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
-
     private void Awake()
     {
         if (Instance == null)
@@ -31,9 +36,20 @@ public class EnemyWaveSystem : MonoBehaviour
     private void Start()
     {
         GenerateWave();
-        PlayerGui.Instance.OnSkill3PressedACT += OnSkill3ButtonPressed;
+      
     }
-   
+    //phải hoàn thành hàm build map mới có thể làm tiếp 
+    
+   //pỏtal thêm id LR
+    //
+    //tạo 1 danh sách lưu gameobejct cổng
+    //tạo hàm thêm cổng ở 2 bên vương quốc
+            //thêm player không thể đi xuyên qua cổng 
+    //thêm hàm xóa cổng ở list và kiểm tra ,nếu cổng trái bị xóa thì thêm 1 cổng bên trái vương quốc cách cổng hiện tại xa hơn 1 tí
+    //sau này thêm hàm gen map thì gen tiếp cái map
+    
+    
+    
     private void OnSkill3ButtonPressed()
     {
         GenerateWave();

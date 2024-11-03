@@ -8,10 +8,10 @@ namespace Script.Game.Structures.Archer_tower
     public class ArcherTowerList : MonoBehaviour
     {
         /*add this script to GM GameObject
-     * 
-     * istrigger true
-     * add slot carry acher
-     */
+         * 
+         * istrigger true
+         * add slot carry acher
+         */
         [System.Serializable]
         public class ArcherTowerData
         {

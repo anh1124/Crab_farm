@@ -19,6 +19,10 @@ GameObject:
   - component: {fileID: 9144216874767433334}
   - component: {fileID: 7097226026259167694}
   - component: {fileID: 1785875979016078859}
+  - component: {fileID: 6439472928953053899}
+  - component: {fileID: 4628210728400573778}
+  - component: {fileID: 1557313042388775290}
+  - component: {fileID: 814197313591573416}
   m_Layer: 0
   m_Name: GM
   m_TagString: Untagged
@@ -53,7 +57,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba1b93a3aec310d449a9d21fd1234486, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
 --- !u!114 &8461418768698195358
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -68,9 +71,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coinThrowForce: 10
   coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
-  StructureContainer: {fileID: 0}
-  CoinContainer: {fileID: 0}
-  NatureContainer: {fileID: 0}
 --- !u!114 &9035146963247413293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -283,6 +283,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   greed: {fileID: 0}
+  circleHead: {fileID: 0}
+  shieldBot: {fileID: 0}
+  twoHeadBot: {fileID: 0}
+  stormHead: {fileID: 0}
+  toucher: {fileID: 0}
 --- !u!114 &1785875979016078859
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -296,4 +301,65 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   growthRate: 5
+  portalSummond: {fileID: 0}
+  portalL: {fileID: 0}
+  portalR: {fileID: 0}
   currentWaveEnemies: []
+--- !u!114 &6439472928953053899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5570bdb9c7e363340bdbdf95c4b137f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  seed: 0
+  folderPath: Prefab/GroundChunk
+  currentCreatChunk: 15
+  chunkPrefabsList: []
+  chunkList: []
+--- !u!114 &4628210728400573778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8dedbdf52520ab41a8ead08d59c2c07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  structureContainer: {fileID: 0}
+  coinContainer: {fileID: 0}
+  natureContainer: {fileID: 0}
+  chunkContainer: {fileID: 0}
+--- !u!114 &1557313042388775290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19b854e817e4c6746bd362e42c3adf56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  saveRootPath: 
+--- !u!114 &814197313591573416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9da208acbbd84c849820ebc982b66db6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

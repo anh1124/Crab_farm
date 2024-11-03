@@ -42,12 +42,13 @@ namespace Script.GUI_Controller.PlayerGui
         
         private void Start()
         {
+            
+            //cái này phải sửa lại,không được đặt nó vào hàm start
             // Add event triggers for move buttons
             AddEventTriggers(moveLeft, PlayerController.Instance.MoveLeftDown, PlayerController.Instance.MoveLeftUp);
             AddEventTriggers(moveRight, PlayerController.Instance.MoveRightDown, PlayerController.Instance.MoveRightUp);
             AddEventTriggers(useCoin, PlayerController.Instance.UseCoinDownAction, PlayerController.Instance.UseCoinUpAction);
             skill3.onClick.AddListener(OnSkill3Pressed);
-            
         }
         // Hàm được gọi khi skill3 được nhấn
         private void OnSkill3Pressed()

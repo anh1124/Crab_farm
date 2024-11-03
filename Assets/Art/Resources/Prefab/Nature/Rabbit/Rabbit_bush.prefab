@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5054938324979576504}
   m_Layer: 0
   m_Name: Rabbit_bush
-  m_TagString: AnimalSpawner
+  m_TagString: RabbitBush
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

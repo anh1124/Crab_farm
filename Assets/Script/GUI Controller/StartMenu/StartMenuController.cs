@@ -4,6 +4,8 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 namespace Script.GUI_Controller.StartMenu
 {
@@ -14,7 +16,7 @@ namespace Script.GUI_Controller.StartMenu
         public TextMeshProUGUI versionText;
         
         public Button buttonSetting;
-        public Button buttonPlay; 
+        [FormerlySerializedAs("buttonPlay")] public Button buttonOpenChooseSavePanel; 
         public Button buttonInfo; 
         
         [Header("chooseSavePanel")]
@@ -24,7 +26,7 @@ namespace Script.GUI_Controller.StartMenu
         public Button chooseSavePanelBackBtn;
         public Button playBtn;
         public Button newGame;
-
+        
         //save info
         public GameObject emptySaveTMP;//cái này sẽ setactive = true nếu ko tìm dc save nào
     
@@ -57,6 +59,8 @@ namespace Script.GUI_Controller.StartMenu
         public GameObject createNewWorldPanel;
 
         public TMP_InputField inputWorldName;
+        public TMP_InputField inputWorldSeed;
+        
         public Button createNewWorldBtn;
         public Button backChooseSavePanel;
         
@@ -65,9 +69,18 @@ namespace Script.GUI_Controller.StartMenu
         private void Start()
         {
             OpenHomeMenuPanel();
+            AssignButtonActions();
+            //chạy hàm kiểm tra và tạo thư mục lưu file saves
+            SaveManager.Instance.CreateSavesFolderIfNotExists();
             
+            inputWorldSeed.characterLimit = 10;
+            inputWorldSeed.contentType = TMP_InputField.ContentType.IntegerNumber;
+        }
+    
+        public void AssignButtonActions()
+        {
             //gán nút
-            buttonPlay.onClick.AddListener(OpenChooseSavePanel);
+            buttonOpenChooseSavePanel.onClick.AddListener(OpenChooseSavePanel);
             buttonSetting.onClick.AddListener(OpenOptionsPanel);
             //change save
             nextSave.onClick.AddListener(NextSave);
@@ -80,18 +93,28 @@ namespace Script.GUI_Controller.StartMenu
             newGame.onClick.AddListener(OpenCreateNewGamePanel);
             //btn create new world
             createNewWorldBtn.onClick.AddListener(createNewWorldAction);
+            deleteSave.onClick.AddListener(DeleteCurrentWorldSave);
             
-            //chạy hàm kiểm tra và tạo thư mục lưu file saves
-            SaveManager.Instance.InitializeSaves();
+            //truyền save path đến screenGamePlay
+            //đối với save đã có sẵn 
+            playBtn.onClick.AddListener(() => SendDataAndOpenPlayScreend(worldName.text));
+            //đối với save được tạo bằng createBtn thì được ghi bên trong luôn 
         }
 
+        public void SendDataAndOpenPlayScreend(string name)
+        {
+            PlayerPrefs.SetString("SaveFilePath",  SaveManager.Instance.GetWorldFolderPath(name)); 
+            SceneManager.LoadScene("GamePlayScene");
+        }
         public void createNewWorldAction()
         {
             if (inputWorldName != null)
             {
-                SaveManager.Instance.CreateWorldSave(inputWorldName.text);//tạo thế giới mới dựa theo tên truyền vào
-                //script tạo thế giới dduowjc goij owr ddaay
+                SaveManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
+                //mở thế giới vừa được tạo ra 
+                SendDataAndOpenPlayScreend(inputWorldName.text);
             }
+            
            
         }
         public void PreSave()
@@ -176,10 +199,11 @@ namespace Script.GUI_Controller.StartMenu
             optionsPanel.SetActive(false);
             createNewWorldPanel.SetActive(false);
         }
-        
+
+        #region Open panel metho
+
         public void OpenHomeMenuPanel()
         {
-            
             SetActiveFalseAllPanel();
             homeMenuPanel.SetActive(true);
         }
@@ -188,7 +212,15 @@ namespace Script.GUI_Controller.StartMenu
         {
             SetActiveFalseAllPanel();
             createNewWorldPanel.SetActive(true);
+            ClearCreateNewGamePanel();
         }
+
+        public void ClearCreateNewGamePanel()
+        {
+            inputWorldName.text = "";
+            inputWorldSeed.text = "";
+        }
+        
         public void OpenChooseSavePanel()
         {
             EmptyWorldSave();//mặc định là không tìm thấy thế giới
@@ -196,7 +228,7 @@ namespace Script.GUI_Controller.StartMenu
             SetActiveFalseAllPanel();
             chooseSavePanel.SetActive(true);
             //cập nhật thế tổng số thế giới
-            SaveManager.Instance.LoadWorldInfos();
+            SaveManager.Instance.LoadWorldInfosToChooseSavePanel();
             UpdateTotalWorld(SaveManager.Instance.CountWorldArr());
             UpdateCurrentWorldIndex(currentWorldIndex);
             UpdateTotalWorldTmp();
@@ -217,6 +249,11 @@ namespace Script.GUI_Controller.StartMenu
             optionsPanel.SetActive(true);
         }
         //Cập nhật lại giao diện nếu tìm thấy thế giới
+
+
+        #endregion
+  
+        
         public void EmptyWorldSave()
         {
             emptySaveTMP.SetActive(true);
@@ -229,6 +266,26 @@ namespace Script.GUI_Controller.StartMenu
             worldInfoContainer.SetActive(true);
         }
 
-       
+        public void DeleteCurrentWorldSave()
+        {
+            string worldNameToDelete = worldName.text;
+            SaveManager.Instance.DeleteWorldSave(worldNameToDelete);
+
+            // Cập nhật danh sách thế giới sau khi xóa
+            SaveManager.Instance.LoadWorldInfosToChooseSavePanel();
+            UpdateTotalWorld(SaveManager.Instance.CountWorldArr());
+
+            if (totalWorld == 0)
+            {
+                EmptyWorldSave();
+            }
+            else
+            {
+                currentWorldIndex = 1;
+                DisplayWorldInfo();
+                UpdateTotalWorldTmp();
+            }
+        }
+
     }
 }

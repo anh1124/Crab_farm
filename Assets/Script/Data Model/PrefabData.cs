@@ -160,11 +160,12 @@ namespace Script.Data_Model
         
         public int treeChopCost =1;
         public int treeHp =5;//số lần cần để chặt cây
-        
-       
-  
+
+
+
 
         [Space(15)] 
+        public int maxDistanceFromBush = 5;
         public GameObject rabbitBush;
         public int maxRabbitLimit;
         

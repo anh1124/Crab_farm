@@ -9,6 +9,10 @@ public class SummondPortal : MonoBehaviour
     public float spawnInterval = 2f; // Thời gian giữa mỗi lần spawn
     private List<EnemyWaveData> enemyWaveData;
    
+    //mỗi enemy trong list này sẽ thêm 1 cái ví dụ L1,R1 để xác định nó ở cổng trái hay cổng phải và ở vị trí nào
+    //khi nó chết tì truyền vào lại hàm enemyOndie để xóa cái id đấy trong listnayf đi 
+    
+    
     private void Start()
     {
         // Lấy danh sách enemy từ EnemyWaveSystem
@@ -16,9 +20,7 @@ public class SummondPortal : MonoBehaviour
     }
     public void StartSpawning()
     {
-       
             StartCoroutine(SpawnEnemies());
-        
     }
     private IEnumerator SpawnEnemies()
     {

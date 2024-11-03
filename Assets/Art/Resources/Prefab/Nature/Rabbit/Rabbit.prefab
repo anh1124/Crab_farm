@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 444137620307001719}
   m_Layer: 10
   m_Name: Rabbit
-  m_TagString: LootMob
+  m_TagString: Rabbit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -165,6 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fa56da0a73d43fd8029043b0a8a84e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rabbitHp: 0
-  rabbitSpeed: 0
+  hp: 0
+  speed: 0
   rabbitDieReward: 0
+  rabbitBush: {fileID: 0}

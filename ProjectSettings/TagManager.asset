@@ -17,8 +17,11 @@ TagManager:
   - LootMob
   - Tree
   - Wall
-  - AnimalSpawner
   - Enemy
+  - ChunkContainer
+  - RabbitBush
+  - Rabbit
+  - ArcherTower
   layers:
   - Default
   - TransparentFX
