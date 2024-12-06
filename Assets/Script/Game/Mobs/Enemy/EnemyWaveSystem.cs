@@ -7,7 +7,11 @@ using UnityEngine;
 
 public class EnemyWaveSystem : MonoBehaviour
 {
-
+    //ở đây,khi xây lửa trại thì xẽ hiện 2 cái cổng trái phải
+    //tạo hàm làm việc này 
+    /// <summary>
+    /// script này thực hiện việc tính toán số lượng enemy theo ngày ,sinh ra cổng khi lưa trại được thắp sáng
+    /// </summary>
     public static EnemyWaveSystem Instance { get; private set; }
   
     public int growthRate = 2;//tỉ lệ tăng số lượng quái 2%
@@ -16,11 +20,22 @@ public class EnemyWaveSystem : MonoBehaviour
     public GameObject portalSummond;//cánh cổng nguyên mẫu -spawm ra cái này
     public GameObject portalL;//cánh cổng bên trái vương quốc
     public GameObject portalR;//cánh cổng bên phải vương quốc
-    
+
+    public List<GameObject> portalLEnemyList;
+    public List<GameObject> portalREnemyList;
     
     // Lưu danh sách enemy được chọn cho wave hiện tại
     public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
     private void Awake()
+    {
+        AddSingleton();
+    }
+
+    public int EnemyRemaining()
+    {
+        return portalLEnemyList.Count + portalREnemyList.Count;
+    }
+    private void AddSingleton()
     {
         if (Instance == null)
         {
@@ -32,11 +47,9 @@ public class EnemyWaveSystem : MonoBehaviour
             Destroy(gameObject);
         }
     }
-
     private void Start()
     {
-        GenerateWave();
-      
+        //GenerateWave();
     }
     //phải hoàn thành hàm build map mới có thể làm tiếp 
     
@@ -48,12 +61,7 @@ public class EnemyWaveSystem : MonoBehaviour
     //thêm hàm xóa cổng ở list và kiểm tra ,nếu cổng trái bị xóa thì thêm 1 cổng bên trái vương quốc cách cổng hiện tại xa hơn 1 tí
     //sau này thêm hàm gen map thì gen tiếp cái map
     
-    
-    
-    private void OnSkill3ButtonPressed()
-    {
-        GenerateWave();
-    }
+   
 
     public void GenerateWave()
     {

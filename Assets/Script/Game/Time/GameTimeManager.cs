@@ -28,6 +28,7 @@ public class GameTimeManager : MonoBehaviour
     #region Init Hour Even Action
     public event Action Hour5;
     public event Action Hour6;
+    public event Action Hour7;
 
     #endregion
     private void Awake()
@@ -41,11 +42,16 @@ public class GameTimeManager : MonoBehaviour
         {
             case 5:
                 Hour5?.Invoke();
+                //enemy rút lui 
                 break;
                 //
             case 6:
                 Hour6?.Invoke(); //đã có
                 //bụi cỏ spawm thỏ 
+                break;
+            case 7:
+                Hour7?.Invoke(); //đã có
+                //các vagrant trở lại idle
                 break;
             case 17:
                 // Thêm sự kiện cho 17 giờ chiều
@@ -84,6 +90,10 @@ public class GameTimeManager : MonoBehaviour
         UpdateGameTime();
         //ở đây gọi các hàm như trời tối 
         UpdateTimeDisplay();
+    }
+    public bool IsDaytime()
+    {
+        return gameHour >= 6 && gameHour < 18;
     }
 
     void UpdateGameTime()

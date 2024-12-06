@@ -22,6 +22,7 @@ TagManager:
   - RabbitBush
   - Rabbit
   - ArcherTower
+  - 'Player '
   layers:
   - Default
   - TransparentFX
@@ -34,9 +35,9 @@ TagManager:
   - Nature
   - Ally
   - Mobs
-  - 
+  - Coin
   - Structure
-  - 
+  - Player
   - 
   - 
   - 
@@ -68,11 +69,14 @@ TagManager:
   - name: structure prop
     uniqueID: 275455829
     locked: 0
-  - name: structure
+  - name: Structure
     uniqueID: 2817326543
     locked: 0
   - name: Player
     uniqueID: 1591732571
+    locked: 0
+  - name: Coin
+    uniqueID: 1445729485
     locked: 0
   - name: Default
     uniqueID: 0

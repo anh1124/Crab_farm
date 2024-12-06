@@ -4,7 +4,7 @@ namespace Script.Game.Enemy.Enemy_Type
 {
     public class Penguin : Base.Enemy
     {
-        public enum AllState
+        public enum PenguinState
         {
             Idle,
             Walk,
@@ -18,7 +18,7 @@ namespace Script.Game.Enemy.Enemy_Type
 
         public GameObject raycastHolder;
 
-        [SerializeField] private AllState currentState;
+        [SerializeField] private PenguinState currentState;
         [SerializeField] private float idleTimer;
         private Animator _animator;
 
@@ -26,22 +26,22 @@ namespace Script.Game.Enemy.Enemy_Type
         {
             Initialize();
             _animator = GetComponent<Animator>();
-            currentState = AllState.Walk;
+            currentState = PenguinState.Walk;
         }
 
         private void Update()
         {
             switch (currentState)
             {
-                case AllState.Idle:
+                case PenguinState.Idle:
                     _animator.Play("idle");
                     HandleIdleState();
                     break;
-                case AllState.Walk:
+                case PenguinState.Walk:
                     _animator.Play("walk");
                     HandleWalkState();
                     break;
-                case AllState.Attack:
+                case PenguinState.Attack:
                     _animator.Play("attack");
                     HandleAttackState();
                     break;
@@ -54,7 +54,7 @@ namespace Script.Game.Enemy.Enemy_Type
             if (idleTimer >= idleDuration)
             {
                 idleTimer = 0;
-                currentState = AllState.Walk;
+                currentState = PenguinState.Walk;
                 Flip();
             }
         }
@@ -74,7 +74,7 @@ namespace Script.Game.Enemy.Enemy_Type
 
             if (hit.collider != null && hit.collider.CompareTag("Ground"))
             {
-                currentState = AllState.Idle;
+                currentState = PenguinState.Idle;
                 Rb.velocity = Vector2.zero;
             }
         }

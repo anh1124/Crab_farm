@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1366324087439834988}
   - component: {fileID: 4481964558640038999}
   - component: {fileID: 1572977492962338554}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Coin
   m_TagString: Coin
   m_Icon: {fileID: 0}
@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 7335347916630574833}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.47635698, y: -1.8799902, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

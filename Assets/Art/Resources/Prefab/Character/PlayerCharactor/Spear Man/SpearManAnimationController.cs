@@ -5,6 +5,9 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
 {
     public class SpearManAnimationController : MonoBehaviour
     {
+        
+        //lưu ý:
+        //tất cả các player phải có tag Player và layer Player 
         public Rigidbody2D rb;
         public bool isGround;
 
