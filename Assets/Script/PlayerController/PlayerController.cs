@@ -2,9 +2,10 @@ using System;
 using Script.Game.Item.Coin;
 using Script.GUI_Controller.PlayerGui;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
-    public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour
     {
         public static PlayerController Instance { get; private set; }
         
@@ -23,7 +24,8 @@ using UnityEngine;
 
         
         public CoinUser coinUser;
-         
+
+        private PlayerTriggerShowCoinSlotHelper playerTriggerShowCoinSlotHelper;
         public TriggerHelper triggerHelper;
         
         public GameObject player;
@@ -42,7 +44,7 @@ using UnityEngine;
         private bool _coinButtonHeld = false;
         private float _coinLogTimer = 0f;
         
-        public Collider2D currentStructureCollider;
+        public GameObject currentStructureShowCoinSlot;
         
         private void Start()
         {
@@ -50,6 +52,7 @@ using UnityEngine;
             rb = gameObject.GetComponentInChildren<Rigidbody2D>();
             player = rb.gameObject;
             triggerHelper = player.GetComponent<TriggerHelper>();
+            playerTriggerShowCoinSlotHelper = player.GetComponent<PlayerTriggerShowCoinSlotHelper>();
             
             status = player.GetComponent<Status>();
             direction = 0;
@@ -71,7 +74,8 @@ using UnityEngine;
         private void Update()
         {
             UpdateStatus();
-            currentStructureCollider = triggerHelper.structureCollider2D;
+          
+            currentStructureShowCoinSlot = playerTriggerShowCoinSlotHelper.nowStructureCollider2D;
             //caapj nhaajt ground check
             //cap nhật player chét chua
 
@@ -211,9 +215,9 @@ using UnityEngine;
                     {
                         _coinLogTimer = Time.time;
 
-                        if (currentStructureCollider != null)
+                        if (currentStructureShowCoinSlot != null)
                         {
-                             coinUser = currentStructureCollider.GetComponent<CoinUser>();
+                             coinUser = currentStructureShowCoinSlot.GetComponent<CoinUser>();
                             if (!coinUser.isReadyToUpgrade)
                             {
                                 if (coinUser.collectedCoins <= coinUser.requiredCoins )//nếu số xu hiện tại ít hơn tổng xu có trong công trình hoặc player có xu 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -11,19 +12,39 @@ public class Status : MonoBehaviour
     public int coin;
 
     public bool isGround;
-    
-    public LayerMask groundLayer;
-    public Collider2D groundCheckCollider2D;//is trigger
+    private TriggerCheckSetup triggerCheckSetup;//script này chứa danh sách trigger
+    private List<GameObject> collidingObjectsList;//danh sách này của triggerCheckSetup
+   
+    private void Start()
+    {
+        triggerCheckSetup = gameObject.GetComponent<TriggerCheckSetup>();
+        if (triggerCheckSetup == null)
+        {
+            // Nếu chưa có, thêm vào
+            triggerCheckSetup = gameObject.AddComponent<TriggerCheckSetup>();
+            Debug.Log("TriggerCheckSetup script has been added to the GameObject.");
+        }
+    }
+
+
     private void Update()
     {
         GroundCheck();
     }
     public void GroundCheck()
     {
-        // Sử dụng OverlapCircle để kiểm tra sự va chạm với lớp groundLayer
-        var bounds = groundCheckCollider2D.bounds;
-        isGround = Physics2D.OverlapCircle(bounds.center, bounds.extents.x, groundLayer) != null;
-        
+        collidingObjectsList = triggerCheckSetup.GetCollidingObjects();
+
+        // Kiểm tra xem có bất kỳ đối tượng nào trong danh sách thuộc layer "Tilemap"
+        isGround = false; // Đặt mặc định là false
+        foreach (GameObject obj in collidingObjectsList)
+        {
+            if (obj != null && obj.layer == LayerMask.NameToLayer("Ground"))
+            {
+                isGround = true;
+                break; // Thoát vòng lặp ngay khi tìm thấy
+            }
+        }
     }
 
     public void AddCoin(GameObject coinGameObject)

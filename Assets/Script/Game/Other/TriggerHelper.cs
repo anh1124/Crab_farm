@@ -6,10 +6,10 @@ using UnityEngine;
 
 public class TriggerHelper : MonoBehaviour
 {
+    //script này sinh ra để giúp cho việc nhét tiền trong playeycontroller.đừng sờ vào nó
+    
+    
     public Collider2D structureCollider2D;
-     
-  
-
     private void OnTriggerEnter2D(Collider2D other)
     {
         // Kiểm tra nếu tag của collider nằm trong danh sách tags
@@ -19,7 +19,6 @@ public class TriggerHelper : MonoBehaviour
             // Debug.Log("Player entered structure trigger.");
         }
     }
-
     private void OnTriggerExit2D(Collider2D other)
     {
         // Kiểm tra nếu tag của collider nằm trong danh sách tags

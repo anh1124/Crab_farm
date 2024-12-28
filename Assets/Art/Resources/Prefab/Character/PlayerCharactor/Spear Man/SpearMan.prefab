@@ -93,6 +93,7 @@ GameObject:
   - component: {fileID: 995598333647392615}
   - component: {fileID: 1316814979545364949}
   - component: {fileID: 7038960417187168570}
+  - component: {fileID: 3654314619067390282}
   m_Layer: 8
   m_Name: SpearMan
   m_TagString: Player
@@ -218,7 +219,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1591732571
-  m_SortingLayer: -1
+  m_SortingLayer: -2
   m_SortingOrder: 0
   m_Sprite: {fileID: 175150952, guid: b211a6e344b1de14db6cf02dbb19c2b6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -269,10 +270,6 @@ MonoBehaviour:
   moveSpeed: 10
   coin: 10
   isGround: 0
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  groundCheckCollider2D: {fileID: 8623560012001947088}
 --- !u!114 &1316814979545364949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -302,8 +299,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   structureCollider2D: {fileID: 0}
-  tags:
-  - Structure
+--- !u!114 &3654314619067390282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c7e3d60e8d9b8d43b28a0cb6950a248, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  triggerLayerName: TriggerLayer
+  collidingObjectsList: []
 --- !u!1 &6752379391725988446
 GameObject:
   m_ObjectHideFlags: 0

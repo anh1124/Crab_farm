@@ -56,7 +56,18 @@ namespace Script.Game.Item.Coin
             coinSlotParent.SetActive(false);
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
+        public void PlayerTriggerOn()
+        {
+            SetupCoinSlots();
+            playerTrigger = true;
+        }
+
+        public void PlayerTriggerOff()
+        {
+            ClearCoinSlots();
+            playerTrigger = false;
+        }
+        /*private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.CompareTag("Player") && !isReadyToUpgrade)
             {
@@ -73,7 +84,7 @@ namespace Script.Game.Item.Coin
                 ClearCoinSlots();
                 playerTrigger = false;
             }
-        }
+        }*/
 
         private void SetupCoinSlots()
         {
