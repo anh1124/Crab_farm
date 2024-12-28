@@ -5,7 +5,7 @@ using Script.Data_Model;
 using Script.Game.Item.Coin;
 using UnityEngine;
 
-public class PlayerTriggerShowCoinSlotHelper : MonoBehaviour
+public class PlayerTriggerHelper : MonoBehaviour
 {
     private TriggerCheckSetup triggerCheckSetup;//script này chứa danh sách trigger 
     private List<GameObject> collidingObjectsList;      //danh sách này của triggerCheckSetup chứa các trigger mới
@@ -29,18 +29,17 @@ public class PlayerTriggerShowCoinSlotHelper : MonoBehaviour
 
     private void ShowCoinSlotOfStructurePlayerInTrigger()
     {
-        collidingObjectsList = triggerCheckSetup.GetCollidingObjects(); // Lấy danh sách đang va chạm
+        // Tạo một bản sao của danh sách để duyệt qua
+        List<GameObject> objectsToProcess = new List<GameObject>(triggerCheckSetup.GetCollidingObjects());
 
-        foreach (GameObject obj in collidingObjectsList)
+        foreach (GameObject obj in objectsToProcess)
         {
-            // Kiểm tra nếu tag của collider nằm trong danh sách tags
             if (PrefabData.Instance.playerCoinUserInteractable.Contains(obj.tag))
             {
                 nowStructureCollider2D = obj;
                 CoinUser nowStructureCollider2DCoinUser = nowStructureCollider2D.GetComponent<CoinUser>();
                 nowStructureCollider2DCoinUser.PlayerTriggerOn();
 
-                // Nếu `gameObjectHasShowCoinSlot` khác với `nowStructureCollider2D`, xử lý tắt trigger
                 if (gameObjectHasShowCoinSlot != null && gameObjectHasShowCoinSlot != nowStructureCollider2D)
                 {
                     CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();
@@ -50,13 +49,16 @@ public class PlayerTriggerShowCoinSlotHelper : MonoBehaviour
                     }
                 }
 
-                // Cập nhật `gameObjectHasShowCoinSlot` sau khi xử lý
                 gameObjectHasShowCoinSlot = nowStructureCollider2D;
-                return; // Thoát khỏi phương thức sau khi xử lý xong
+                return;
+            }
+            if (obj.tag == "Coin")
+            {
+                Coin coin = obj.GetComponent<Coin>();
+                coin.HandlePlayerPickup(gameObject);
             }
         }
 
-        // Nếu không có đối tượng hợp lệ trong danh sách, tắt trigger của `gameObjectHasShowCoinSlot`
         if (gameObjectHasShowCoinSlot != null)
         {
             CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();
@@ -64,7 +66,7 @@ public class PlayerTriggerShowCoinSlotHelper : MonoBehaviour
             {
                 gameObjectHasShowCoinSlotCoinUser.PlayerTriggerOff();
             }
-            gameObjectHasShowCoinSlot = null; // Đặt về null sau khi tắt
+            gameObjectHasShowCoinSlot = null;
         }
     }
 

@@ -25,7 +25,7 @@ public class PlayerController : MonoBehaviour
         
         public CoinUser coinUser;
 
-        private PlayerTriggerShowCoinSlotHelper playerTriggerShowCoinSlotHelper;
+        private PlayerTriggerHelper playerTriggerHelper;
         public TriggerHelper triggerHelper;
         
         public GameObject player;
@@ -52,7 +52,7 @@ public class PlayerController : MonoBehaviour
             rb = gameObject.GetComponentInChildren<Rigidbody2D>();
             player = rb.gameObject;
             triggerHelper = player.GetComponent<TriggerHelper>();
-            playerTriggerShowCoinSlotHelper = player.GetComponent<PlayerTriggerShowCoinSlotHelper>();
+            playerTriggerHelper = player.GetComponent<PlayerTriggerHelper>();
             
             status = player.GetComponent<Status>();
             direction = 0;
@@ -75,7 +75,7 @@ public class PlayerController : MonoBehaviour
         {
             UpdateStatus();
           
-            currentStructureShowCoinSlot = playerTriggerShowCoinSlotHelper.nowStructureCollider2D;
+            currentStructureShowCoinSlot = playerTriggerHelper.nowStructureCollider2D;
             //caapj nhaajt ground check
             //cap nhật player chét chua
 

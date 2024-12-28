@@ -99,17 +99,17 @@ namespace Script.Game.Item.Coin
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (other.CompareTag("Player"))
+            /*if (other.CompareTag("Player"))
             {
                 HandlePlayerPickup(other);
-            }
-            else if (other.CompareTag("Denizens"))
+            }*/
+             if (other.CompareTag("Denizens"))
             {
                 HandleDenizensPickup(other);
             }
         }
 
-        private void HandlePlayerPickup(Collider2D player)
+        public void HandlePlayerPickup(GameObject player)
         {
             if (playerPickupAble)
             {
