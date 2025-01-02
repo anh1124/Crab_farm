@@ -5,7 +5,7 @@ using Script.Data_Model;
 using Script.Game.Item.Coin;
 using UnityEngine;
 
-public class PlayerTriggerHelper : MonoBehaviour
+public class TriggerCheckHelper : MonoBehaviour
 {
     private TriggerCheckSetup triggerCheckSetup;//script này chứa danh sách trigger 
     private List<GameObject> collidingObjectsList;      //danh sách này của triggerCheckSetup chứa các trigger mới
@@ -29,17 +29,28 @@ public class PlayerTriggerHelper : MonoBehaviour
 
     private void ShowCoinSlotOfStructurePlayerInTrigger()
     {
-        // Tạo một bản sao của danh sách để duyệt qua
+        // Kiểm tra triggerCheckSetup không null
+        if (triggerCheckSetup == null) return;
+
         List<GameObject> objectsToProcess = new List<GameObject>(triggerCheckSetup.GetCollidingObjects());
+
+        // Lọc ra các object không null
+        objectsToProcess = objectsToProcess.FindAll(obj => obj != null);
 
         foreach (GameObject obj in objectsToProcess)
         {
             if (PrefabData.Instance.playerCoinUserInteractable.Contains(obj.tag))
             {
                 nowStructureCollider2D = obj;
+                
+                // Kiểm tra component CoinUser
                 CoinUser nowStructureCollider2DCoinUser = nowStructureCollider2D.GetComponent<CoinUser>();
-                nowStructureCollider2DCoinUser.PlayerTriggerOn();
+                if (nowStructureCollider2DCoinUser != null)
+                {
+                    nowStructureCollider2DCoinUser.PlayerTriggerOn();
+                }
 
+                // Kiểm tra gameObjectHasShowCoinSlot không null và khác với nowStructureCollider2D
                 if (gameObjectHasShowCoinSlot != null && gameObjectHasShowCoinSlot != nowStructureCollider2D)
                 {
                     CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();
@@ -52,13 +63,18 @@ public class PlayerTriggerHelper : MonoBehaviour
                 gameObjectHasShowCoinSlot = nowStructureCollider2D;
                 return;
             }
-            if (obj.tag == "Coin")
+            
+            if (obj != null && obj.tag == "Coin")
             {
                 Coin coin = obj.GetComponent<Coin>();
-                coin.HandlePlayerPickup(gameObject);
+                if (coin != null)
+                {
+                    coin.HandlePlayerPickup(gameObject);
+                }
             }
         }
 
+        // Kiểm tra cuối cùng cho gameObjectHasShowCoinSlot
         if (gameObjectHasShowCoinSlot != null)
         {
             CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();

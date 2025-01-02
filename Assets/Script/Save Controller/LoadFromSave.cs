@@ -2,21 +2,22 @@ using System;
 using System.IO;
 using Newtonsoft.Json;
 using Script;
+using Script.Data_Model;
 using Script.Save_Controller;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class LoadFromSave : MonoBehaviour
 {
+    /*
+     *lưu ý,các hàm được chạy khi bắt đầu được load từ world.json sẽ lấy thông tin world từ LoadFromSave.worldInfo
+     */
+    
     public static LoadFromSave Instance { get; private set; }
     public string saveFilePath;
-    public SaveManager.WorldInfo worldInfo;
+    public WorldInfo worldInfo;
    
-    #region worldSaveJson
-
-    public int seed;
-    public string worldName;
-    
-    #endregion
+  
     private void Awake()
     {
         AddSingleton();
@@ -33,71 +34,61 @@ public class LoadFromSave : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    public void DoLoadFromSave()
+    public bool DoLoadFromSaveFilePath(string filePath)
     {
-        //kiểm tra đường dẫn file
-        if (!saveFilePathCheck())
+        saveFilePath = filePath;
+        
+        //kiểm tra đường dẫn file null?
+        if (string.IsNullOrEmpty(saveFilePath))
         {
-            Debug.LogError("Save file path is not set in PlayerPrefs.");
-            return;
+            Debug.LogError("filepath is null or empty");
+            return false;
         }
         
+        
         //kiểm tra file worldInfo.json
-        LoadWorldInfoJson();
-        GameTimeManager.Instance.SetGameTimeSave();
+        //và lấy data trong worldInfo.json truyền vào class worldInfo ở script này
+        if (!ExtractDataFromWorldInfoJson()) { return false; }
+        
         //các structure và map hoặc linh tinh sẽ được load ở hàm dưới vì nó phụ thuộc vào việc map đã được tạo hay chưa 
         LoadMapJson();
+        
+        GameTimeManager.Instance.SetGameTimeFromSave();
+        
+        //instance OtherCharactor on container
+        SetUpContainer.Instance.LoadAllContainer();
+        return true;
     }
 
     private void LoadMapJson()
     {
         //kiểm tra file map.json
         string mapFilePath = Path.Combine(saveFilePath, "map.json");
-        if (File.Exists(mapFilePath))
+        if (File.Exists(mapFilePath))// File map đã tồn tại, load map từ file
         {
-            // File map đã tồn tại, load map từ file
             ChunkManager.Instance.LoadMapFromJson(mapFilePath);
             Debug.Log("Đã load map từ file save.");
-            
-            SetUpContainer.Instance.LoadTrees();
         }
-        else
+        else  // File map chưa tồn tại, tạo map mới từ seed
         {
-            // File map chưa tồn tại, tạo map mới từ seed
-            Debug.Log($"File map.json không tồn tại, tạo map mới với seed: {seed}");
-            ChunkManager.Instance.GenerateFirstMap(seed);
+            Debug.Log($"File map.json không tồn tại, tạo map mới với seed: {worldInfo.Seed}");
+            ChunkManager.Instance.GenerateFirstMap(worldInfo.Seed);
             
             // Sau khi tạo map mới, lưu lại ngay
             ChunkManager.Instance.SaveMapToJson(saveFilePath);
         }
     }
-    private void LoadWorldInfoJson()
+    private bool ExtractDataFromWorldInfoJson()
     {
-        string worldInfoPath = Path.Combine(saveFilePath, "worldInfo.json");
+        string worldInfoJsonPath = Path.Combine(saveFilePath, "worldInfo.json");
 
-        if (File.Exists(worldInfoPath))
+        if (File.Exists(worldInfoJsonPath))
         {
             try
             {
-                string json = File.ReadAllText(worldInfoPath);
-                worldInfo = JsonConvert.DeserializeObject<SaveManager.WorldInfo>(json);
-
-                // Kiểm tra Seed
-                if (worldInfo.Seed == 0)
-                {
-                    worldInfo.Seed = UnityEngine.Random.Range(1, 10000000);
-                    Debug.Log($"Seed not found, generated random Seed: {worldInfo.Seed}");
-                    
-                    // Ghi lại Seed mới vào file worldInfo.json
-                    string updatedJson = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
-                    File.WriteAllText(worldInfoPath, updatedJson);
-                    Debug.Log("Updated Seed and saved back to worldInfo.json.");
-                }
-                else
-                {
-                    Debug.Log($"Loaded Seed: {worldInfo.Seed}");
-                }
-
+                string json = File.ReadAllText(worldInfoJsonPath);
+                worldInfo = JsonConvert.DeserializeObject<WorldInfo>(json);
+                
                 // Kiểm tra CreationDate
                 if (worldInfo.CreationDate == default(DateTime))
                 {
@@ -107,35 +98,24 @@ public class LoadFromSave : MonoBehaviour
                 {
                     Debug.Log($"Loaded CreationDate: {worldInfo.CreationDate}");
                 }
-
                 // Debug thông tin khác
-             
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Failed to load worldInfo.json. Error: {ex.Message}");
+                return false;
             }
         }
         else
         {
+            
             Debug.LogWarning($"worldInfo.json not found in directory: {saveFilePath}");
-        }
-
-        seed = worldInfo.Seed;
-        worldName = worldInfo.Name;
-    }
-    public bool saveFilePathCheck()
-    {
-        // Lấy đường dẫn lưu trữ từ PlayerPrefs
-         saveFilePath = PlayerPrefs.GetString("SaveFilePath", "");
-        // Kiểm tra xem đường dẫn có hợp lệ không
-        if (string.IsNullOrEmpty(saveFilePath))
-        {
             return false;
         }
+
         return true;
     }
-    
+ 
     
     //kiểm tra file có tồn tại trong path không
     public bool ExistenceFileCheck(string saveFilePath,string fileName)

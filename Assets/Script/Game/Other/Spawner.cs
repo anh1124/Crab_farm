@@ -135,8 +135,5 @@ public class Spawner : MonoBehaviour
 
 
     #endregion
-    public void SummonMods(GameObject gameObject,Vector2 position )
-    {
-        Instantiate(gameObject, position,Quaternion.identity);
-    }
+   
 }

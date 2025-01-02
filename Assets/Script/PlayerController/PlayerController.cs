@@ -1,4 +1,5 @@
 using System;
+using Script.Data_Model;
 using Script.Game.Item.Coin;
 using Script.GUI_Controller.PlayerGui;
 using UnityEngine;
@@ -8,7 +9,30 @@ using UnityEngine.Serialization;
 public class PlayerController : MonoBehaviour
     {
         public static PlayerController Instance { get; private set; }
+
+        #region Helper script,component
+        public CoinUser coinUser;
+        private TriggerCheckHelper triggerCheckHelper;
+      
+        public Rigidbody2D rb;
+        public Status status;
+        #endregion 
         
+        
+        public GameObject player;
+        public int direction;
+        public bool isGrounded;
+        public int moveSpeed;
+
+        public bool isActiveUpdate;
+        
+        public bool isAlive = true;
+        
+        private float _coinPressStartTime = 0f;
+        private bool  _coinButtonHeld = false;
+        private float _coinLogTimer = 0f;
+        
+        public GameObject currentStructureShowCoinSlot;
         private void Awake()
         {
             if (Instance == null)
@@ -20,65 +44,40 @@ public class PlayerController : MonoBehaviour
                 Destroy(gameObject);
             }
         }
+      
 
-
-        
-        public CoinUser coinUser;
-
-        private PlayerTriggerHelper playerTriggerHelper;
-        public TriggerHelper triggerHelper;
-        
-        public GameObject player;
-        public Rigidbody2D rb;
-        public Status status;
-       
-        
-        public int direction;
-        //public bool jumpPress;
-        //public int jumpForce;
-        public bool isGrounded;
-        public int moveSpeed;
-        public bool isDie = false;
-        
-        private float _coinPressStartTime = 0f;
-        private bool _coinButtonHeld = false;
-        private float _coinLogTimer = 0f;
-        
-        public GameObject currentStructureShowCoinSlot;
-        
-        private void Start()
+        public void SetUpControllerPlayer()
         {
-           
-            rb = gameObject.GetComponentInChildren<Rigidbody2D>();
-            player = rb.gameObject;
-            triggerHelper = player.GetComponent<TriggerHelper>();
-            playerTriggerHelper = player.GetComponent<PlayerTriggerHelper>();
-            
+            GetPlayerCharactorComponent();
+            isActiveUpdate = true;
+        }
+        
+        public void GetPlayerCharactorComponent()
+        {
+            rb = player.GetComponent<Rigidbody2D>();
+            triggerCheckHelper = player.GetComponent<TriggerCheckHelper>();
             status = player.GetComponent<Status>();
             direction = 0;
-            //jumpPress= false;
-            
-            //jumpForce = status.jumpForce;
             moveSpeed = status.moveSpeed;
-
         }
+        
+     
+        
+        private void Update()
+        {
+            if (isActiveUpdate)
+            {
+                UpdateStatus();
+          
+                currentStructureShowCoinSlot = triggerCheckHelper.nowStructureCollider2D;
 
+            }
+        }
         public void UpdateStatus()
         {
             //jumpForce = status.jumpForce;
             moveSpeed = status.moveSpeed;
             isGrounded = status.isGround;
-
-        }
-        
-        private void Update()
-        {
-            UpdateStatus();
-          
-            currentStructureShowCoinSlot = playerTriggerHelper.nowStructureCollider2D;
-            //caapj nhaajt ground check
-            //cap nhật player chét chua
-
         }
         
         
@@ -105,8 +104,8 @@ public class PlayerController : MonoBehaviour
 
         public void Die()
         {
-            isDie = true;
-            Destroy(player);
+            isAlive = false;
+            player.SetActive(false);
         }
 
         /*public void Jump()

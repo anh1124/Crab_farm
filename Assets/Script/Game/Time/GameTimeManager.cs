@@ -148,28 +148,12 @@ public class GameTimeManager : MonoBehaviour
         UpdateTimeDisplay();
     }
 
-    public void SetGameTimeSave()
+    public void SetGameTimeFromSave()
     {
-        string saveFilePath = LoadFromSave.Instance.saveFilePath;
-        string worldInfoPath = Path.Combine(saveFilePath, "worldInfo.json");
-        // Kiểm tra nếu file JSON tồn tại
-        if (File.Exists(worldInfoPath))
-        {
-            
-            // Đọc dữ liệu từ file JSON
-            string json = File.ReadAllText(worldInfoPath);
-
-            SaveManager.WorldInfo worldInfo = JsonConvert.DeserializeObject<SaveManager.WorldInfo>(json);
+            WorldInfo worldInfo = LoadFromSave.Instance.worldInfo;
             
             SetGameTime(worldInfo.GameHour,worldInfo.GameMinute,worldInfo.GameDay,worldInfo.GameMonth,worldInfo.GameYear);
             Debug.Log($"Loaded WorldInfo: Name={worldInfo.Name}, GameTime={worldInfo.GameHour}:{worldInfo.GameMinute}, Date={worldInfo.GameDay}/{worldInfo.GameMonth}/{worldInfo.GameYear}");
-        }
-        else
-        {
-            Debug.LogError("File worldInfo.json không tồn tại trong thư mục " + saveFilePath);
-            Debug.LogError("hệ thống sẽ khởi tạo Time mặc định " );
-            SetGameTime(0,0,0,0,0);
-        }
     }
 
     public string GetGameTime()

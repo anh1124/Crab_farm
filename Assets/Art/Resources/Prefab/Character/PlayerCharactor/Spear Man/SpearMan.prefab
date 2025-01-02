@@ -94,6 +94,7 @@ GameObject:
   - component: {fileID: 1316814979545364949}
   - component: {fileID: 3654314619067390282}
   - component: {fileID: 4325251575502946318}
+  - component: {fileID: -3560308634815069677}
   m_Layer: 8
   m_Name: SpearMan
   m_TagString: Player
@@ -265,7 +266,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82688dba79b114745b4ff757bbc3f675, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hp: 0
+  maxHp: 0
+  currentHp: 0
+  maxMp: 0
+  currentMp: 0
+  maxStamina: 0
+  currentStamina: 0
+  def: 0
+  atk: 0
+  ats: 0
+  critRate: 0
+  critDame: 0
   jumpForce: 200
   moveSpeed: 10
   coin: 10
@@ -314,6 +325,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameObjectHasShowCoinSlot: {fileID: 0}
   nowStructureCollider2D: {fileID: 0}
+--- !u!114 &-3560308634815069677
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05e1ac23c20c5884e92821d6f65c0639, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6752379391725988446
 GameObject:
   m_ObjectHideFlags: 0

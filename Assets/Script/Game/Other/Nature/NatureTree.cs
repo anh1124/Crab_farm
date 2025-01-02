@@ -10,7 +10,7 @@ namespace Script.Game.Other.Nature
          * để ý:
          * có thể cần 1 hàm để load tree từ save
          */
-        public class SaveTree
+        public class TreeStatus
         {
             public float positionX;
             public int Type;
@@ -18,7 +18,7 @@ namespace Script.Game.Other.Nature
             public int TreeHp;
             public bool IsReadyToChop;
 
-            public SaveTree(int type, int treeChopCost, int treeHp, bool isReadyToChop, float positionX, float positionY)
+            public TreeStatus(int type, int treeChopCost, int treeHp, bool isReadyToChop, float positionX, float positionY)
             {
                 Type = type;
                 TreeChopCost = treeChopCost;

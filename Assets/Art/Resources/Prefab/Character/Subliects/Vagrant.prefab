@@ -198,8 +198,8 @@ MonoBehaviour:
   runSpeed: 3.5
   roadToTarget: 0
   targetPosition: {x: 0, y: 0}
-  Coin: {fileID: 0}
-  currentState: 0
+  coin: {fileID: 0}
+  currentState: 1
 --- !u!114 &2454466822937412082
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -214,9 +214,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rayColor: {r: 1, g: 0, b: 0, a: 1}
   raycastDistance: 5
-  raycastOffsetY: 2
+  raycastOffsetY: 0.81
   isDrawRay: 1
   raycastLayerMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 2176
   hitObjects: []

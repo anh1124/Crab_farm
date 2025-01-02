@@ -16,7 +16,7 @@ namespace Script.GUI_Controller.StartMenu
         public TextMeshProUGUI versionText;
         
         public Button buttonSetting;
-        [FormerlySerializedAs("buttonPlay")] public Button buttonOpenChooseSavePanel; 
+        public Button buttonOpenChooseSavePanel; 
         public Button buttonInfo; 
         
         [Header("chooseSavePanel")]
@@ -65,7 +65,8 @@ namespace Script.GUI_Controller.StartMenu
         public Button backChooseSavePanel;
         
         public static StartMenuController Instance { get; set; }
-
+        
+        
         private void Start()
         {
             OpenHomeMenuPanel();
@@ -91,6 +92,7 @@ namespace Script.GUI_Controller.StartMenu
             backChooseSavePanel.onClick.AddListener(OpenChooseSavePanel);
             //nuts info chưa làm
             newGame.onClick.AddListener(OpenCreateNewGamePanel);
+            
             //btn create new world
             createNewWorldBtn.onClick.AddListener(createNewWorldAction);
             deleteSave.onClick.AddListener(DeleteCurrentWorldSave);
@@ -106,16 +108,20 @@ namespace Script.GUI_Controller.StartMenu
             PlayerPrefs.SetString("SaveFilePath",  SaveManager.Instance.GetWorldFolderPath(name)); 
             SceneManager.LoadScene("GamePlayScene");
         }
+        
         public void createNewWorldAction()
         {
-            if (inputWorldName != null)
+            bool createWorldDone = false;
+            
+            createWorldDone = SaveManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
+            //createWorldDone sẽ true nếu tạo thành công
+            
+            if (createWorldDone)
             {
-                SaveManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
                 //mở thế giới vừa được tạo ra 
                 SendDataAndOpenPlayScreend(inputWorldName.text);
             }
-            
-           
+            //ở hàm SaveManager.Instance.CreateWorldSave đã có sẵn debug khi sai rồi nên không cần tạo nữa
         }
         public void PreSave()
         {
@@ -133,7 +139,6 @@ namespace Script.GUI_Controller.StartMenu
             DisplayWorldInfo();
             UpdateTotalWorldTmp();
         }
-
         public void NextSave()
         {
             int nextIndex = currentWorldIndex;
@@ -150,11 +155,10 @@ namespace Script.GUI_Controller.StartMenu
             DisplayWorldInfo();
             UpdateTotalWorldTmp();
         }
-       
         
         public void DisplayWorldInfo()
         {
-            SaveManager.WorldInfo worldInfo = SaveManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
+            WorldInfo worldInfo = SaveManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
 
             if (worldInfo != null)
             {
@@ -178,7 +182,6 @@ namespace Script.GUI_Controller.StartMenu
             totalWorld = a;
             UpdateTotalWorldTmp();
         }
-
         public void UpdateCurrentWorldIndex(int a)
         {
             currentWorldIndex = a;
@@ -188,7 +191,6 @@ namespace Script.GUI_Controller.StartMenu
         {
             totalWorldTmp.text = "World " + currentWorldIndex.ToString() + "/" + totalWorld.ToString();
         }
-
         
         //===============================================
 
@@ -252,7 +254,6 @@ namespace Script.GUI_Controller.StartMenu
 
 
         #endregion
-  
         
         public void EmptyWorldSave()
         {
@@ -287,5 +288,6 @@ namespace Script.GUI_Controller.StartMenu
             }
         }
 
+        
     }
 }

@@ -28,11 +28,13 @@ namespace Script.GUI_Controller.PauseMenu
         
         private void Start()
         {
+            
             ExitMenu();
             openPauseMenuBtn.onClick.AddListener(OpenMenu);
             continueBtn.onClick.AddListener(ExitMenu);
             optionBtn.onClick.AddListener(OpenOption);
             saveExitBtn.onClick.AddListener(SaveAndExit);
+            gameObject.SetActive(false);//ẩn đi
         }
 
         public void ExitMenu()

@@ -29,34 +29,9 @@ namespace Script.Save_Controller
             saveRootPath = Path.Combine(rootPath, "saves");
         }
         
-        // Class này chứa thông tin cơ bản của thế giới
-        public class WorldInfo
-        {
-            public string Name;  // Đổi từ thuộc tính thành trường công khai
-            public int Seed;
-            public System.DateTime CreationDate;
-
-            public int GameHour;
-            public int GameMinute;
-            public int GameDay;
-            public int GameMonth;
-            public int GameYear;
-
-            public WorldInfo(string name, System.DateTime creationDate, int seed,
-                int gameHour = 0, int gameMinute = 0, int gameDay = 1,
-                int gameMonth = 1, int gameYear = 1)
-            {
-                Name = name;
-                CreationDate = creationDate;
-                Seed = seed;
-                GameHour = gameHour;
-                GameMinute = gameMinute;
-                GameDay = gameDay;
-                GameMonth = gameMonth;
-                GameYear = gameYear;
-            }
-        }
+       
         public List<WorldInfo> WorldInfos { get; private set; } // Danh sách lưu trữ các đối tượng WorldInfo
+        
         
         //tạo thư mục saves
         public void CreateSavesFolderIfNotExists()
@@ -73,42 +48,54 @@ namespace Script.Save_Controller
             }
         }
         
+        
+        
         // Hàm tạo thư mục lưu trữ mới cho một thế giới và tạo file JSON từ WorldInfo
-        public void CreateWorldSave(string worldName, string seedValue)
+        public bool CreateWorldSave(string worldName, string seedValue)
         {
+            //kiểm tra hợp lệ của thế giới
+
+            #region kiểm tra hợp lệ của input world
+
             if (string.IsNullOrEmpty(worldName))
             {
-                worldName = "NewWorld";
+                Debug.LogError("Tên thế giới để trống nên không thể tạo được");
+                return false;
             }
 
             int seed;
             if (!int.TryParse(seedValue, out seed))
             {
                 seed = 0; // Nếu không chuyển đổi được, gán seed là 0
+                Debug.LogWarning("seed nhập vào không thể chuyển đổi,được đặt mặc định là 0");
             }
 
-            string baseWorldName = worldName;
             string worldPath = Path.Combine(saveRootPath, worldName);
-            int counter = 1;
 
             // Kiểm tra và tạo tên mới nếu thư mục đã tồn tại
             while (Directory.Exists(worldPath))
             {
-                worldName = $"{baseWorldName}_{counter}";
-                worldPath = Path.Combine(saveRootPath, worldName);
-                counter++;
+                Debug.LogError("Tên thế giới đã tồn tại,không thể tạo được");
+                return false;
             }
 
-            // Tạo thư mục world
+            #endregion
+
+            
+
+             // Tạo thư mục world
             Directory.CreateDirectory(worldPath);
-
-            // Tạo thư mục con 'map' bên trong world để lưu trữ dữ liệu bản đồ
-            Directory.CreateDirectory(Path.Combine(worldPath, "map"));
-
             // Ghi thông tin WorldInfo vào file JSON
             SaveWorldInfoToJson(worldName, seed, worldPath);
     
             Debug.Log($"Created new world save directories for: {worldName}");
+            
+            
+            //cái hàm này phải bỏ vào chỗ khác
+            // Tạo thư mục con 'map' bên trong world để lưu trữ dữ liệu bản đồ
+            Directory.CreateDirectory(Path.Combine(worldPath, "map"));
+            
+            return true;
         }
         
         // Hàm tạo file JSON từ đối tượng WorldInfo
@@ -120,9 +107,9 @@ namespace Script.Save_Controller
                 seed: seed,
                 gameHour: 0,
                 gameMinute: 0,
-                gameDay: 1,
-                gameMonth: 1,
-                gameYear: 1
+                gameDay: 0,
+                gameMonth: 0,
+                gameYear: 0
             );
 
             string worldInfoPath = Path.Combine(worldPath, "worldInfo.json");
@@ -138,8 +125,8 @@ namespace Script.Save_Controller
             //thêm các hàm save từ SetUpcontainer bỏ vào đây
             SetUpContainer.Instance.SaveAllContainer();
             ChunkManager.Instance.SaveMapToJson(PlayerPrefs.GetString("SaveFilePath", ""));
-            
         }
+        
         #region StartMenuController use
 
         //hàm này trả về path của fodel có tên được truyền vào trong /saves/ 

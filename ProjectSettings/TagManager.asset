@@ -6,7 +6,6 @@ TagManager:
   tags:
   - Ground
   - PlayerContainer
-  - CharactorContainer
   - Structure
   - Coin
   - Denizens
@@ -23,6 +22,11 @@ TagManager:
   - Rabbit
   - ArcherTower
   - 'Player '
+  - EnemyContainer
+  - AnimalsContainer
+  - WanderersContainer
+  - VillagersContainer
+  - StatuesContainer
   layers:
   - Default
   - TransparentFX
@@ -38,8 +42,8 @@ TagManager:
   - Coin
   - Structure
   - Player
-  - 
-  - 
+  - TriggerLayer
+  - Wall
   - 
   - 
   - 

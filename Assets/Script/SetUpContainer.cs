@@ -8,28 +8,39 @@ using UnityEngine;
 
 namespace Script
 {
-    public class SetUpContainer : MonoBehaviour
-    {
-        /*
-     * todo: làm tiếp những cái container khác
+    /*
+     * vậy thì khi save game, 
+em tạo hàm find gameobejct theo list tag, rồi chuyển từng cái gameobject cùng loại như tree vào listTrees,animal vào listAnimals
+có ổn không anh,
      */
-
+    public class SetUpContainer : MonoBehaviour
+    { 
+        /*
+       * todo: làm tiếp những cái container khác
+       */
         public static SetUpContainer Instance { get; private set; }
-        public GameObject structureContainer; // spawm các gameobject thuộc lớp Structure ở đây
-        public GameObject coinContainer; //spawm coin trong này
-        public GameObject natureContainer; //spawm cây trong này
 
-        public GameObject chunkContainer; //gameobject chứa các chunk được instance ra
 
-        //portal
-        //ally
-        //
+        public GameObject playerContainer;
+        public GameObject chunkContainer; //gameobject chứa các chunk được instance ra,đã có riêng 1 script để save và load chunk
+        public GameObject coinContainer; 
+        
+        public GameObject structureContainer;//công trình của làng
+        
+        public GameObject natureContainer; //spawm cây,RabbitBush
+        public GameObject animalsContainer;//spawn thỏ
+        
+        public GameObject enemyContainer;//chứa portal và enemy
+        
+        public GameObject wanderersContainer;
+        public GameObject villagersContainer;
+        public GameObject statuesContainer;
+       
         private void Awake()
         {
             AddSingleton();
             SetUp();
         }
-
         private void AddSingleton()
         {
             if (Instance == null)
@@ -41,10 +52,20 @@ namespace Script
                 Destroy(gameObject);
             }
         }
-
-
+        
         private void SetUp()
         {
+            // Gắn StructureContainer bằng tag hoặc tạo mới nếu không tìm thấy
+            if (playerContainer == null)
+            {
+                playerContainer = GameObject.FindGameObjectWithTag("PlayerContainer");
+                if (playerContainer == null)
+                {
+                    playerContainer = new GameObject("PlayerContainer");
+                    playerContainer.tag = "PlayerContainer";
+                }
+            }
+
             // Gắn StructureContainer bằng tag hoặc tạo mới nếu không tìm thấy
             if (structureContainer == null)
             {
@@ -88,9 +109,80 @@ namespace Script
                     chunkContainer.tag = "ChunkContainer";
                 }
             }
+            
+            // Gắn enemyContainer bằng tag hoặc tạo mới nếu không tìm thấy
+            if (enemyContainer == null)
+            {
+                enemyContainer = GameObject.FindGameObjectWithTag("EnemyContainer");
+                if (enemyContainer == null)
+                {
+                    enemyContainer = new GameObject("EnemyContainer");
+                    enemyContainer.tag = "EnemyContainer";
+                }
+            }
+            
+            // Gắn animalsContainer bằng tag hoặc tạo mới nếu không tìm thấy
+            if (animalsContainer == null)
+            {
+                animalsContainer = GameObject.FindGameObjectWithTag("AnimalsContainer");
+                if (animalsContainer == null)
+                {
+                    animalsContainer = new GameObject("AnimalsContainer");
+                    animalsContainer.tag = "AnimalsContainer";
+                }
+            }
+            
+            // Gắn wanderersContainer bằng tag hoặc tạo mới nếu không tìm thấy
+            if (wanderersContainer == null)
+            {
+                wanderersContainer = GameObject.FindGameObjectWithTag("WanderersContainer");
+                if (wanderersContainer == null)
+                {
+                    wanderersContainer = new GameObject("WanderersContainer");
+                    wanderersContainer.tag = "WanderersContainer";
+                }
+            }
+            
+            // Gắn villagersContainer bằng tag hoặc tạo mới nếu không tìm thấy
+            if (villagersContainer == null)
+            {
+                villagersContainer = GameObject.FindGameObjectWithTag("VillagersContainer");
+                if (villagersContainer == null)
+                {
+                    villagersContainer = new GameObject("VillagersContainer");
+                    villagersContainer.tag = "VillagersContainer";
+                }
+            }
+            
+            // Gắn statuesContainer bằng tag hoặc tạo mới nếu không tìm thấy
+            if (statuesContainer == null)
+            {
+                statuesContainer = GameObject.FindGameObjectWithTag("StatuesContainer");
+                if (statuesContainer == null)
+                {
+                    statuesContainer = new GameObject("StatuesContainer");
+                    statuesContainer.tag = "StatuesContainer";
+                }
+            }
+            
         }
 
-        public List<GameObject> GetObjectsFromContainer(GameObject container)
+      
+        
+        public GameObject InstanceAndMoveToContainer(GameObject prefab, Vector2 position)
+        {
+            // Tạo instance mới từ prefab
+            GameObject instance = Instantiate(prefab, position, Quaternion.identity);
+    
+            // Chuyển instance (không phải prefab) vào container
+            MoveObjectToContainer(instance);
+    
+            // Trả về instance để có thể sử dụng sau này nếu cần
+            return instance;
+        }
+        
+        
+        public List<GameObject> GetObjectsFromContainerList(GameObject container)
         {
             List<GameObject> objectsList = new List<GameObject>();
 
@@ -108,28 +200,59 @@ namespace Script
 
             return objectsList;
         }
-
-        //chuyển gameobject input vào container theo tag của nó
+        
+        //chuyển 1 gameobject vào container theo tag của nó
         public void MoveObjectToContainer(GameObject obj)
         {
-            if (obj.CompareTag("Tree"))
+            switch (obj.tag)
             {
-                obj.transform.SetParent(natureContainer.transform, true);
-            }
-            else if (obj.CompareTag("Structure"))
-            {
-                obj.transform.SetParent(structureContainer.transform, true);
-            }
-            else if (obj.CompareTag("Coin"))
-            {
-                obj.transform.SetParent(coinContainer.transform, true);
+                case "Player":
+                    obj.transform.SetParent(playerContainer.transform, true);
+                    break;
+                
+                case "Structure":
+                    obj.transform.SetParent(structureContainer.transform, true);
+                    break;
+                
+                case "Coin":
+                    obj.transform.SetParent(coinContainer.transform, true);
+                    break;
+                
+                case "Tree":
+                case "RabbitBush":
+                    obj.transform.SetParent(natureContainer.transform, true);
+                    break;
+                
+                case "Rabbit":
+                    obj.transform.SetParent(animalsContainer.transform, true);
+                    break;
+                
+                case "Enemy":
+                    obj.transform.SetParent(enemyContainer.transform, true);
+                    break;
+                
+                case "Wanderer":
+                    obj.transform.SetParent(wanderersContainer.transform, true);
+                    break;
+                
+                case "Villager":
+                    obj.transform.SetParent(villagersContainer.transform, true);
+                    break;
+                
+                case "Statues":
+                    obj.transform.SetParent(statuesContainer.transform, true);
+                    break;
+                
+                default:
+                    Debug.LogWarning("Object with unknown tag: " + obj.tag);
+                    break;
             }
         }
-
-        //chuyển gameobject container của gameobject input vào theo tag của nó
+        
+        //chuyển toàn bộ gameobject con của nó vào container theo tag
         public void MoveChildrenToContainers(GameObject parent)
         {
-            Transform containerTransform = parent.transform.Find("Container");
+            Transform containerTransform = parent.transform.Find("statuesContainer");
             if (containerTransform != null)
             {
                 List<Transform> children = new List<Transform>();
@@ -145,22 +268,42 @@ namespace Script
             }
         }
 
+        
         public void SaveAllContainer()
         {
-            SaveTrees();
+            SaveNatures();
             SaveStructures();
         }
 
         public void LoadAllContainer()
         {
-            LoadTrees();
+            //player  sẽ được instance riêng trong hàm load
+            //ở đây,nếu ko tìm dc json thì tự tạo mới,còn nếu tìm dc thì load từ đó ra
+            LoadNatures();
             LoadStructures();
         }
 
+      
+
+        #region Natures
         /*
-     *chú ý:tree được khởi tạo khi tạo các chunk nên chỉ được load,save trong chunkmanager hoặc hàm save trong game
-     */
-        #region Tree
+         *tree ,rabbit,rabitbush
+         */
+        public void SaveNatures()
+        {
+            SaveTrees();
+            SaveRabbitBush();
+        }
+        public void LoadNatures()
+        {
+            LoadTrees();
+            LoadRabbitBush();
+        }
+        
+        /*
+         *chú ý:tree được khởi tạo khi tạo các chunk nên chỉ được load,save trong chunkmanager hoặc hàm save trong game
+         */
+       
         public void SaveTrees()
         {
             // Kiểm tra container cây
@@ -171,8 +314,8 @@ namespace Script
             }
 
             // Lấy danh sách cây từ NatureContainer
-            List<GameObject> treeObjects = GetObjectsFromContainer(natureContainer);
-            List<NatureTree.SaveTree> saveTrees = new List<NatureTree.SaveTree>();
+            List<GameObject> treeObjects = GetObjectsFromContainerList(natureContainer);
+            List<NatureTree.TreeStatus> saveTrees = new List<NatureTree.TreeStatus>();
 
             // Duyệt qua từng cây và thêm vào danh sách saveTrees nếu tag là "Tree"
             foreach (GameObject treeObject in treeObjects)
@@ -183,7 +326,7 @@ namespace Script
                     if (treeComponent != null)
                     {
                         var position = treeObject.transform.position;
-                        NatureTree.SaveTree saveTree = new NatureTree.SaveTree(
+                        NatureTree.TreeStatus treeStatus = new NatureTree.TreeStatus(
                             treeComponent.Type,
                             treeComponent.treeChopCost,
                             treeComponent.treeHp,
@@ -191,7 +334,7 @@ namespace Script
                             position.x,
                             position.y
                         );
-                        saveTrees.Add(saveTree);
+                        saveTrees.Add(treeStatus);
                     }
                 }
             }
@@ -220,10 +363,10 @@ namespace Script
             {
                 // Đọc dữ liệu từ file JSON
                 string json = File.ReadAllText(filePath);
-                List<NatureTree.SaveTree> savedTrees = JsonConvert.DeserializeObject<List<NatureTree.SaveTree>>(json);
+                List<NatureTree.TreeStatus> savedTrees = JsonConvert.DeserializeObject<List<NatureTree.TreeStatus>>(json);
 
                 // Duyệt qua mỗi SaveTree và khởi tạo cây
-                foreach (NatureTree.SaveTree saveTree in savedTrees)
+                foreach (NatureTree.TreeStatus saveTree in savedTrees)
                 {
                     // Lấy prefab cây dựa vào Type
                     if (saveTree.Type >= 0 && saveTree.Type < PrefabData.Instance.treePrefabs.Count)
@@ -258,23 +401,6 @@ namespace Script
                 Debug.LogError("Lỗi khi load dữ liệu cây từ trees.json: " + ex.Message);
             }
         }
-        #endregion
-
-        #region Natures
-        /*
-         *tree cũng được lưu trong này 
-         */
-        public void SaveNatures()
-        {
-            SaveTrees();
-            SaveRabbitBush();
-        }
-
-        public void LoadNatures()
-        {
-            LoadTrees();
-            LoadRabbitBush();
-        }
         public void SaveRabbitBush()
         {
             if (natureContainer == null)
@@ -283,7 +409,7 @@ namespace Script
                 return;
             }
 
-            List<GameObject> rabbitBushObjects = GetObjectsFromContainer(natureContainer);
+            List<GameObject> rabbitBushObjects = GetObjectsFromContainerList(natureContainer);
             List<RabbitBush.SaveRabbitBush> saveRabbitBushes = new List<RabbitBush.SaveRabbitBush>();
 
             foreach (GameObject rabbitBushObject in rabbitBushObjects)
@@ -372,17 +498,16 @@ namespace Script
                 Debug.LogError("Lỗi khi load dữ liệu RabbitBush từ rabbitBushes.json: " + ex.Message);
             }
         }
+        
         #endregion
 
         #region Structure
-
         public void SaveStructures()
         {
         }
         public void LoadStructures()
         {
         }
-
         #endregion
     }
 }

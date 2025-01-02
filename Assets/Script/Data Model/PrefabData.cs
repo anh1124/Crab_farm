@@ -15,7 +15,12 @@ namespace Script.Data_Model
      
         public static PrefabData Instance { get; private set; }
 
-        public GameObject Player;
+        public GameObject player;
+        public Camera mainCamera;
+        
+        [Header("Player Character")]
+        [Space(5)]
+        public List<GameObject> PlayerCharactorList = new List<GameObject>(); 
 
         [Header("Wall and Stump ")]
         [Space(5)]
@@ -180,7 +185,7 @@ namespace Script.Data_Model
 
         [Space(15)] [Header("EnemyStruction ")] [Space(5)]
 
-        public GameObject summondPortal;
+        public GameObject summoningPortal;
         
         #endregion
 
@@ -201,8 +206,67 @@ namespace Script.Data_Model
             }
             playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree"}; 
             CallOtherListToGetData();
+            
+            // Loại bỏ tất cả các phần tử null khỏi danh sách charactor 
+            PlayerCharactorList.RemoveAll(item => item == null);
+            RequirePrefabCheck();
         }
         
+        private void RequirePrefabCheck()
+        {
+            AddCurrentPlayerCharactor();
+            FindMainCamera();
+        }
+        public void FindMainCamera()
+        {
+            if (mainCamera == null)
+            {
+                // Tìm camera dựa trên tag "MainCamera"
+                mainCamera = Camera.main;
+
+                // Nếu không tìm thấy camera có tag "MainCamera"
+                if (mainCamera == null)
+                {
+                    // Tìm tất cả các Camera trong Scene
+                    Camera[] cameras = FindObjectsOfType<Camera>();
+
+                    if (cameras.Length > 0)
+                    {
+                        mainCamera = cameras[0]; // Gán camera đầu tiên tìm thấy
+                        Debug.LogWarning("No camera with 'MainCamera' tag found. Using the first available camera.");
+                    }
+                    else
+                    {
+                        Debug.LogError("No camera found in the scene!");
+                    }
+                }
+                else
+                {
+                    Debug.Log("Main camera found and assigned.");
+                }
+            }
+            else
+            {
+                Debug.Log("Main camera is already assigned.");
+            }
+        }
+
+        public void AddCurrentPlayerCharactor()
+        {
+            if (player == null)
+            {
+                
+                // Kiểm tra nếu danh sách rỗng
+                if (PlayerCharactorList != null && PlayerCharactorList.Count > 0)
+                {
+                    player = PlayerCharactorList[0]; // Lấy phần tử đầu tiên trong danh sách
+                }
+                else
+                {
+                    Debug.LogWarning("PlayerCharactorList is empty or null. Cannot assign player.");
+                }
+            }
+        }
         private void CallOtherListToGetData()
         {
             WallDataList.Instance.InitializeWallData();
