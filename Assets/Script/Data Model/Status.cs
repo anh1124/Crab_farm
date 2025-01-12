@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class Status : MonoBehaviour
 {
-    private TriggerCheckSetup triggerCheckSetup;
+     
     
     //thông số cơ bản
     public int maxHp;
@@ -35,11 +35,22 @@ public class Status : MonoBehaviour
 
     private void Start()
     {
-        triggerCheckSetup = GetComponent<TriggerCheckSetup>();
+        CheckRequireScript();
     }
 
-    private void Update()
+    void CheckRequireScript()
     {
+        GroundCheck groundCheck = gameObject.GetComponent<GroundCheck>();
+        if (groundCheck == null)
+        {
+            Debug.LogWarning(gameObject.name+" không có scriptGroundCheck");
+        }
+
+        TriggerCheckSetup triggerCheckSetup = gameObject.GetComponent<TriggerCheckSetup>();
+        if (triggerCheckSetup == null)
+        {
+            Debug.LogWarning(gameObject.name+" không có TriggerCheckSetup");
+        }
         
     }
 

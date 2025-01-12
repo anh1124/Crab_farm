@@ -81,7 +81,7 @@ namespace Script.Game.Other.Nature
                 Vector2 spawnPosition = new Vector2(transform.position.x, 0);
 
                 // Dùng Spawner để sinh thỏ
-                SetUpContainer.Instance.InstanceAndMoveToContainer(rabbit, spawnPosition);                   
+                SetUpContainer.Instance.InstanceAndMoveObjectToContainer(rabbit, spawnPosition);                   
 
                 // Lưu thỏ vào danh sách
                 GameObject spawnedRabbit = Instantiate(rabbit, spawnPosition, Quaternion.identity);

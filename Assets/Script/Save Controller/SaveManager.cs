@@ -13,6 +13,8 @@ namespace Script.Save_Controller
         public static SaveManager Instance { get; private set; }
         public string saveRootPath;
         
+        
+        //singeleton-get save path
         private void Awake()     
         {
             if (Instance == null)
@@ -29,10 +31,11 @@ namespace Script.Save_Controller
             saveRootPath = Path.Combine(rootPath, "saves");
         }
         
-       
+        //new new world list for chosse save
         public List<WorldInfo> WorldInfos { get; private set; } // Danh sách lưu trữ các đối tượng WorldInfo
-        
-        
+
+        #region save file edit
+
         //tạo thư mục saves
         public void CreateSavesFolderIfNotExists()
         {
@@ -47,9 +50,7 @@ namespace Script.Save_Controller
                 Debug.Log("Saves directory already exists at: " + saveRootPath);
             }
         }
-        
-        
-        
+
         // Hàm tạo thư mục lưu trữ mới cho một thế giới và tạo file JSON từ WorldInfo
         public bool CreateWorldSave(string worldName, string seedValue)
         {
@@ -83,7 +84,7 @@ namespace Script.Save_Controller
 
             
 
-             // Tạo thư mục world
+            // Tạo thư mục world
             Directory.CreateDirectory(worldPath);
             // Ghi thông tin WorldInfo vào file JSON
             SaveWorldInfoToJson(worldName, seed, worldPath);
@@ -97,6 +98,12 @@ namespace Script.Save_Controller
             
             return true;
         }
+        
+        #endregion
+
+        
+        
+
         
         // Hàm tạo file JSON từ đối tượng WorldInfo
         private void SaveWorldInfoToJson(string worldName, int seed, string worldPath)
@@ -120,9 +127,16 @@ namespace Script.Save_Controller
             Debug.Log("World info saved to: " + worldInfoPath);
         }
 
-        public void SaveGame()//hàm cho nút save game
+        public void SaveCurrentMap()
         {
-            //thêm các hàm save từ SetUpcontainer bỏ vào đây
+            var declaringType = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().DeclaringType;
+            if (declaringType != null)
+            {
+                string callingScript = declaringType.Name;
+                Debug.Log($"{callingScript} save map");
+            }
+
+            // Các logic save game
             SetUpContainer.Instance.SaveAllContainer();
             ChunkManager.Instance.SaveMapToJson(PlayerPrefs.GetString("SaveFilePath", ""));
         }

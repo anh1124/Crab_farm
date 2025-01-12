@@ -15,7 +15,6 @@ GameObject:
   - component: {fileID: 7479803545423749147}
   - component: {fileID: 425193365867354460}
   - component: {fileID: 462543996321563134}
-  - component: {fileID: 542873494335387791}
   - component: {fileID: 9144216874767433334}
   - component: {fileID: 7097226026259167694}
   - component: {fileID: 1785875979016078859}
@@ -57,6 +56,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba1b93a3aec310d449a9d21fd1234486, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pauseMenuPanel: {fileID: 0}
 --- !u!114 &8461418768698195358
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102,7 +102,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4633b0cd12656b4495dc0efff176b3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Player: {fileID: 0}
+  player: {fileID: 0}
+  mainCamera: {fileID: 0}
+  PlayerCharactorList: []
   wallDirtMound0: {fileID: 0}
   wallSpike1: {fileID: 0}
   wallPalisade2: {fileID: 0}
@@ -151,13 +153,14 @@ MonoBehaviour:
   treePrefabs: []
   treeChopCost: 1
   treeHp: 10
+  maxDistanceFromBush: 5
   rabbitBush: {fileID: 0}
   maxRabbitLimit: 0
   rabbit: {fileID: 0}
   rabbitHp: 1
   rabbitSpeed: 1
   rabbitDieReward: 1
-  summondPortal: {fileID: 0}
+  summoningPortal: {fileID: 0}
   playerCoinUserInteractable: []
 --- !u!114 &425193365867354460
 MonoBehaviour:
@@ -239,18 +242,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   townCentrerList: []
---- !u!114 &542873494335387791
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80701defd8e33de4a90057de8da2f364, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &9144216874767433334
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -304,6 +295,8 @@ MonoBehaviour:
   portalSummond: {fileID: 0}
   portalL: {fileID: 0}
   portalR: {fileID: 0}
+  portalLEnemyList: []
+  portalREnemyList: []
   currentWaveEnemies: []
 --- !u!114 &6439472928953053899
 MonoBehaviour:
@@ -321,6 +314,7 @@ MonoBehaviour:
   folderPath: Prefab/GroundChunk
   currentCreatChunk: 15
   chunkPrefabsList: []
+  emptyChunk: {fileID: 0}
   chunkList: []
 --- !u!114 &4628210728400573778
 MonoBehaviour:
@@ -334,10 +328,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8dedbdf52520ab41a8ead08d59c2c07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  structureContainer: {fileID: 0}
-  coinContainer: {fileID: 0}
-  natureContainer: {fileID: 0}
+  playerContainer: {fileID: 0}
   chunkContainer: {fileID: 0}
+  coinContainer: {fileID: 0}
+  structureContainer: {fileID: 0}
+  natureContainer: {fileID: 0}
+  animalsContainer: {fileID: 0}
+  enemyContainer: {fileID: 0}
+  wanderersContainer: {fileID: 0}
+  villagersContainer: {fileID: 0}
+  statuesContainer: {fileID: 0}
 --- !u!114 &1557313042388775290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -363,3 +363,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9da208acbbd84c849820ebc982b66db6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  saveFilePath: 

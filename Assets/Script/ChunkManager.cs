@@ -194,9 +194,14 @@ public class ChunkManager : MonoBehaviour
 
     public void SaveMapToJson(string saveFilePath)
     {
+        //kiểm tra script nào đã gọi
+        var stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+        string callingScript = stackFrame.GetMethod().DeclaringType.Name;
+        string methodName = stackFrame.GetMethod().Name;
+        
         if (saveFilePath == null)
         {
-            Debug.LogError("saveFilePath trống");
+            Debug.LogError($"{callingScript}.{methodName}: saveFilePath trống");
         }
         MapSaveData mapData = new MapSaveData(
             seed,
@@ -209,7 +214,9 @@ public class ChunkManager : MonoBehaviour
         string jsonData = JsonConvert.SerializeObject(mapData, Formatting.Indented);
         string mapFilePath = Path.Combine(saveFilePath, "map.json");
         File.WriteAllText(mapFilePath, jsonData);
-        Debug.Log($"Đã lưu map vào: {mapFilePath}");
+        
+      
+        Debug.Log($" Đã lưu map vào: {mapFilePath}");
     }
 
     public void LoadMapFromJson(string mapFilePath)

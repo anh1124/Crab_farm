@@ -1,4 +1,5 @@
 using System;
+using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -29,12 +30,14 @@ namespace Script.GUI_Controller.PauseMenu
         private void Start()
         {
             
-            ExitMenu();
+           
             openPauseMenuBtn.onClick.AddListener(OpenMenu);
             continueBtn.onClick.AddListener(ExitMenu);
             optionBtn.onClick.AddListener(OpenOption);
             saveExitBtn.onClick.AddListener(SaveAndExit);
+            ExitMenu();
             gameObject.SetActive(false);//ẩn đi
+            
         }
 
         public void ExitMenu()
@@ -57,7 +60,7 @@ namespace Script.GUI_Controller.PauseMenu
 
         public void SaveAndExit()
         {
-            
+            SaveManager.Instance.SaveCurrentMap();
         }
     }
 }

@@ -20,7 +20,7 @@ có ổn không anh,
        */
         public static SetUpContainer Instance { get; private set; }
 
-
+        public List<GameObject> treeObjects;
         public GameObject playerContainer;
         public GameObject chunkContainer; //gameobject chứa các chunk được instance ra,đã có riêng 1 script để save và load chunk
         public GameObject coinContainer; 
@@ -52,124 +52,33 @@ có ổn không anh,
                 Destroy(gameObject);
             }
         }
-        
         private void SetUp()
         {
-            // Gắn StructureContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (playerContainer == null)
-            {
-                playerContainer = GameObject.FindGameObjectWithTag("PlayerContainer");
-                if (playerContainer == null)
-                {
-                    playerContainer = new GameObject("PlayerContainer");
-                    playerContainer.tag = "PlayerContainer";
-                }
-            }
-
-            // Gắn StructureContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (structureContainer == null)
-            {
-                structureContainer = GameObject.FindGameObjectWithTag("StructureContainer");
-                if (structureContainer == null)
-                {
-                    structureContainer = new GameObject("StructureContainer");
-                    structureContainer.tag = "StructureContainer";
-                }
-            }
-
-            // Gắn CoinContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (coinContainer == null)
-            {
-                coinContainer = GameObject.FindGameObjectWithTag("CoinContainer");
-                if (coinContainer == null)
-                {
-                    coinContainer = new GameObject("CoinContainer");
-                    coinContainer.tag = "CoinContainer";
-                }
-            }
-
-            // Gắn NatureContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (natureContainer == null)
-            {
-                natureContainer = GameObject.FindGameObjectWithTag("NatureContainer");
-                if (natureContainer == null)
-                {
-                    natureContainer = new GameObject("NatureContainer");
-                    natureContainer.tag = "NatureContainer";
-                }
-            }
-
-            // Gắn ChunkContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (chunkContainer == null)
-            {
-                chunkContainer = GameObject.FindGameObjectWithTag("ChunkContainer");
-                if (chunkContainer == null)
-                {
-                    chunkContainer = new GameObject("ChunkContainer");
-                    chunkContainer.tag = "ChunkContainer";
-                }
-            }
-            
-            // Gắn enemyContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (enemyContainer == null)
-            {
-                enemyContainer = GameObject.FindGameObjectWithTag("EnemyContainer");
-                if (enemyContainer == null)
-                {
-                    enemyContainer = new GameObject("EnemyContainer");
-                    enemyContainer.tag = "EnemyContainer";
-                }
-            }
-            
-            // Gắn animalsContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (animalsContainer == null)
-            {
-                animalsContainer = GameObject.FindGameObjectWithTag("AnimalsContainer");
-                if (animalsContainer == null)
-                {
-                    animalsContainer = new GameObject("AnimalsContainer");
-                    animalsContainer.tag = "AnimalsContainer";
-                }
-            }
-            
-            // Gắn wanderersContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (wanderersContainer == null)
-            {
-                wanderersContainer = GameObject.FindGameObjectWithTag("WanderersContainer");
-                if (wanderersContainer == null)
-                {
-                    wanderersContainer = new GameObject("WanderersContainer");
-                    wanderersContainer.tag = "WanderersContainer";
-                }
-            }
-            
-            // Gắn villagersContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (villagersContainer == null)
-            {
-                villagersContainer = GameObject.FindGameObjectWithTag("VillagersContainer");
-                if (villagersContainer == null)
-                {
-                    villagersContainer = new GameObject("VillagersContainer");
-                    villagersContainer.tag = "VillagersContainer";
-                }
-            }
-            
-            // Gắn statuesContainer bằng tag hoặc tạo mới nếu không tìm thấy
-            if (statuesContainer == null)
-            {
-                statuesContainer = GameObject.FindGameObjectWithTag("StatuesContainer");
-                if (statuesContainer == null)
-                {
-                    statuesContainer = new GameObject("StatuesContainer");
-                    statuesContainer.tag = "StatuesContainer";
-                }
-            }
-            
+            playerContainer = SetupContainerHelper("PlayerContainer", ref playerContainer);
+            structureContainer = SetupContainerHelper("StructureContainer", ref structureContainer);
+            coinContainer = SetupContainerHelper("CoinContainer", ref coinContainer);
+            natureContainer = SetupContainerHelper("NatureContainer", ref natureContainer);
+            chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
+            enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
+            animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
+            wanderersContainer = SetupContainerHelper("WanderersContainer", ref wanderersContainer);
+            villagersContainer = SetupContainerHelper("VillagersContainer", ref villagersContainer);
+            statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
         }
-
-      
-        
-        public GameObject InstanceAndMoveToContainer(GameObject prefab, Vector2 position)
+        private GameObject SetupContainerHelper(string containerName, ref GameObject container)
+        {
+            if (container == null)
+            {
+                container = GameObject.FindGameObjectWithTag(containerName);
+                if (container == null)
+                {
+                    container = new GameObject(containerName);
+                    container.tag = containerName;
+                }
+            }
+            return container;
+        }
+        public GameObject InstanceAndMoveObjectToContainer(GameObject prefab, Vector2 position)
         {
             // Tạo instance mới từ prefab
             GameObject instance = Instantiate(prefab, position, Quaternion.identity);
@@ -180,8 +89,6 @@ có ổn không anh,
             // Trả về instance để có thể sử dụng sau này nếu cần
             return instance;
         }
-        
-        
         public List<GameObject> GetObjectsFromContainerList(GameObject container)
         {
             List<GameObject> objectsList = new List<GameObject>();
@@ -200,7 +107,6 @@ có ổn không anh,
 
             return objectsList;
         }
-        
         //chuyển 1 gameobject vào container theo tag của nó
         public void MoveObjectToContainer(GameObject obj)
         {
@@ -248,7 +154,6 @@ có ổn không anh,
                     break;
             }
         }
-        
         //chuyển toàn bộ gameobject con của nó vào container theo tag
         public void MoveChildrenToContainers(GameObject parent)
         {
@@ -289,13 +194,33 @@ có ổn không anh,
         /*
          *tree ,rabbit,rabitbush
          */
+        public void MoveTreesFromChunks()
+        {
+            if (chunkContainer == null)
+            {
+                Debug.LogWarning("ChunkContainer is null!");
+                return;
+            }
+
+            // Chỉ tìm các cây trong chunkContainer
+            Transform[] allObjectsInChunks = chunkContainer.GetComponentsInChildren<Transform>(true);
+            foreach (Transform obj in allObjectsInChunks)
+            {
+                if (obj.CompareTag("Tree"))
+                {
+                    MoveObjectToContainer(obj.gameObject);
+                }
+            }
+        }
         public void SaveNatures()
         {
+            MoveTreesFromChunks();
             SaveTrees();
             SaveRabbitBush();
         }
         public void LoadNatures()
         {
+            
             LoadTrees();
             LoadRabbitBush();
         }
@@ -314,7 +239,7 @@ có ổn không anh,
             }
 
             // Lấy danh sách cây từ NatureContainer
-            List<GameObject> treeObjects = GetObjectsFromContainerList(natureContainer);
+            treeObjects = GetObjectsFromContainerList(natureContainer);
             List<NatureTree.TreeStatus> saveTrees = new List<NatureTree.TreeStatus>();
 
             // Duyệt qua từng cây và thêm vào danh sách saveTrees nếu tag là "Tree"
@@ -369,9 +294,9 @@ có ổn không anh,
                 foreach (NatureTree.TreeStatus saveTree in savedTrees)
                 {
                     // Lấy prefab cây dựa vào Type
-                    if (saveTree.Type >= 0 && saveTree.Type < PrefabData.Instance.treePrefabs.Count)
+                    if (saveTree.type >= 0 && saveTree.type < PrefabData.Instance.treePrefabs.Count)
                     {
-                        GameObject treePrefab = PrefabData.Instance.treePrefabs[saveTree.Type];
+                        GameObject treePrefab = PrefabData.Instance.treePrefabs[saveTree.type];
 
                         // Khởi tạo cây ở vị trí xác định
                         Vector3 position = new Vector3(saveTree.positionX, 0, 0); // Đặt Y và Z nếu cần
@@ -382,7 +307,7 @@ có ổn không anh,
                         NatureTree treeComponent = treeObject.GetComponent<NatureTree>();
                         if (treeComponent != null)
                         {
-                            treeComponent.Type = saveTree.Type;
+                            treeComponent.Type = saveTree.type;
                             treeComponent.treeChopCost = saveTree.TreeChopCost;
                             treeComponent.treeHp = saveTree.TreeHp;
                             treeComponent.isReadyToChop = saveTree.IsReadyToChop;

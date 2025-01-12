@@ -350,6 +350,7 @@ MonoBehaviour:
   direction: 0
   isGrounded: 0
   moveSpeed: 0
+  isActiveUpdate: 0
   isAlive: 1
   currentStructureShowCoinSlot: {fileID: 0}
 --- !u!1 &1284934382

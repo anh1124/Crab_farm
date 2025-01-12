@@ -13,14 +13,14 @@ namespace Script.Game.Other.Nature
         public class TreeStatus
         {
             public float positionX;
-            public int Type;
+            public int type;
             public int TreeChopCost;
             public int TreeHp;
             public bool IsReadyToChop;
 
             public TreeStatus(int type, int treeChopCost, int treeHp, bool isReadyToChop, float positionX, float positionY)
             {
-                Type = type;
+                this.type = type;
                 TreeChopCost = treeChopCost;
                 TreeHp = treeHp;
                 IsReadyToChop = isReadyToChop;

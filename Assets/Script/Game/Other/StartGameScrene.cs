@@ -34,7 +34,7 @@ public class StartGameScrene : MonoBehaviour
         if (PrefabData.Instance.player != null)
         {
             // Tạo instance và lưu reference của instance được tạo ra
-            GameObject playerInstance = SetUpContainer.Instance.InstanceAndMoveToContainer(PrefabData.Instance.player, Vector2.zero);
+            GameObject playerInstance = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
         
             // Gán instance đã tạo (không phải prefab) cho PlayerController
             PlayerController.Instance.player = playerInstance;
