@@ -30,7 +30,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+               
             }
             else
             {

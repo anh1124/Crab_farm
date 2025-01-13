@@ -198,7 +198,6 @@ namespace Script.Data_Model
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
             }
             else
             {

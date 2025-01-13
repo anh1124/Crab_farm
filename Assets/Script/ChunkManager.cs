@@ -58,7 +58,7 @@ public class ChunkManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            //DontDestroyOnLoad(gameObject);
+          
         }
         else
         {

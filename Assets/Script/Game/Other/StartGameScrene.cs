@@ -22,23 +22,27 @@ public class StartGameScrene : MonoBehaviour
            // SceneManager.LoadScene("MainMenuScene");//về màn hình chính
         }
         //instancePlayer
-        InstancePlayer();
-        
+        InstancePlayerAndSetCamera();
+       
         //thêm setup lại mấy cái gui ở dưới
         pauseMenuPanel.SetActive(true);
 
     }
 
-    public void InstancePlayer()
+    public void InstancePlayerAndSetCamera()
     {
         if (PrefabData.Instance.player != null)
         {
             // Tạo instance và lưu reference của instance được tạo ra
             GameObject playerInstance = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
         
+            
+            
             // Gán instance đã tạo (không phải prefab) cho PlayerController
             PlayerController.Instance.player = playerInstance;
             PlayerController.Instance.SetUpControllerPlayer();
+            //set tảger cho camera
+            CameraFollowPlayer.Instance.setCameraTarget();
         }
         else
         {

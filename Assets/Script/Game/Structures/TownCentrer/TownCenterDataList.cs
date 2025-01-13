@@ -62,7 +62,7 @@ namespace Script.Game.Structures.TownCentrer
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+                
             }
             else
             {

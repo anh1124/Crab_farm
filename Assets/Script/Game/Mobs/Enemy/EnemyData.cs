@@ -22,7 +22,7 @@ namespace Script.Game.Enemy
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+               
             }
             else
             {

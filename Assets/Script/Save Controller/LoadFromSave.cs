@@ -27,7 +27,7 @@ public class LoadFromSave : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+          
         }
         else
         {

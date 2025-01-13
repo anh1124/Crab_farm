@@ -27,43 +27,16 @@ public class TriggerCheckHelper : MonoBehaviour
        ShowCoinSlotOfStructurePlayerInTrigger();
     }
 
-    private void ShowCoinSlotOfStructurePlayerInTrigger()
+      private void ShowCoinSlotOfStructurePlayerInTrigger()
     {
-        // Kiểm tra triggerCheckSetup không null
         if (triggerCheckSetup == null) return;
 
         List<GameObject> objectsToProcess = new List<GameObject>(triggerCheckSetup.GetCollidingObjects());
-
-        // Lọc ra các object không null
         objectsToProcess = objectsToProcess.FindAll(obj => obj != null);
 
+        // First handle coins to ensure they're always processed
         foreach (GameObject obj in objectsToProcess)
         {
-            if (PrefabData.Instance.playerCoinUserInteractable.Contains(obj.tag))
-            {
-                nowStructureCollider2D = obj;
-                
-                // Kiểm tra component CoinUser
-                CoinUser nowStructureCollider2DCoinUser = nowStructureCollider2D.GetComponent<CoinUser>();
-                if (nowStructureCollider2DCoinUser != null)
-                {
-                    nowStructureCollider2DCoinUser.PlayerTriggerOn();
-                }
-
-                // Kiểm tra gameObjectHasShowCoinSlot không null và khác với nowStructureCollider2D
-                if (gameObjectHasShowCoinSlot != null && gameObjectHasShowCoinSlot != nowStructureCollider2D)
-                {
-                    CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();
-                    if (gameObjectHasShowCoinSlotCoinUser != null)
-                    {
-                        gameObjectHasShowCoinSlotCoinUser.PlayerTriggerOff();
-                    }
-                }
-
-                gameObjectHasShowCoinSlot = nowStructureCollider2D;
-                return;
-            }
-            
             if (obj != null && obj.tag == "Coin")
             {
                 Coin coin = obj.GetComponent<Coin>();
@@ -74,7 +47,47 @@ public class TriggerCheckHelper : MonoBehaviour
             }
         }
 
-        // Kiểm tra cuối cùng cho gameObjectHasShowCoinSlot
+        // Then handle structures
+        foreach (GameObject obj in objectsToProcess)
+        {
+            if (PrefabData.Instance.playerCoinUserInteractable.Contains(obj.tag))
+            {
+                HandleStructureInteraction(obj);
+                return; // Exit after handling one structure
+            }
+        }
+
+        // If no valid structures found, clear the current structure
+        if (!objectsToProcess.Exists(obj => PrefabData.Instance.playerCoinUserInteractable.Contains(obj.tag)))
+        {
+            ClearCurrentStructure();
+        }
+    }
+
+    private void HandleStructureInteraction(GameObject structure)
+    {
+        nowStructureCollider2D = structure;
+        
+        CoinUser nowStructureCollider2DCoinUser = nowStructureCollider2D.GetComponent<CoinUser>();
+        if (nowStructureCollider2DCoinUser != null)
+        {
+            nowStructureCollider2DCoinUser.PlayerTriggerOn();
+        }
+
+        if (gameObjectHasShowCoinSlot != null && gameObjectHasShowCoinSlot != nowStructureCollider2D)
+        {
+            CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();
+            if (gameObjectHasShowCoinSlotCoinUser != null)
+            {
+                gameObjectHasShowCoinSlotCoinUser.PlayerTriggerOff();
+            }
+        }
+
+        gameObjectHasShowCoinSlot = nowStructureCollider2D;
+    }
+
+    private void ClearCurrentStructure()
+    {
         if (gameObjectHasShowCoinSlot != null)
         {
             CoinUser gameObjectHasShowCoinSlotCoinUser = gameObjectHasShowCoinSlot.GetComponent<CoinUser>();

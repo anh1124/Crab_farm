@@ -40,7 +40,7 @@ public class EnemyWaveSystem : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+          
         }
         else
         {

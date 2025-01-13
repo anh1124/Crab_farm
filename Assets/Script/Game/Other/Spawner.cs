@@ -28,7 +28,7 @@ public class Spawner : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject);
+           
         }
         else
         {

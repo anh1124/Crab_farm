@@ -188,7 +188,19 @@ có ổn không anh,
             LoadStructures();
         }
 
-      
+        public void RemoveAllChildObjects(GameObject parent)
+        {
+            // Kiểm tra nếu parent không null
+            if (parent != null)
+            {
+                // Duyệt qua từng child của parent
+                foreach (Transform child in parent.transform)
+                {
+                    // Hủy đối tượng con
+                    Destroy(child.gameObject);
+                }
+            }
+        }
 
         #region Natures
         /*
@@ -220,6 +232,7 @@ có ổn không anh,
         }
         public void LoadNatures()
         {
+            RemoveAllChildObjects(natureContainer);
             
             LoadTrees();
             LoadRabbitBush();

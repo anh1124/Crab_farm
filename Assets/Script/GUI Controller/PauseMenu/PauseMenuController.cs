@@ -1,6 +1,7 @@
 using System;
 using Script.Save_Controller;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Script.GUI_Controller.PauseMenu
@@ -61,6 +62,7 @@ namespace Script.GUI_Controller.PauseMenu
         public void SaveAndExit()
         {
             SaveManager.Instance.SaveCurrentMap();
+            SceneManager.LoadScene("MainMenuScene");
         }
     }
 }

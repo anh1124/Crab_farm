@@ -72,7 +72,7 @@ public class GameTimeManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+          
         }
         else
         {

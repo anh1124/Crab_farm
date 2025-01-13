@@ -2,15 +2,28 @@ using UnityEngine;
 
 public class CameraFollowPlayer : MonoBehaviour {
 
+    public static CameraFollowPlayer Instance { get; private set; } // Singleton instance
+
+    
     public float targetDistance = 1.0f; // Distance the camera will adjust based on target movement
     public float smoothTime = 0.3f; // Time it takes for the camera to reach the target position smoothly
     public GameObject target;
-    public Vector3 offset; // Optional offset for camera position
+    public Vector3 offset ; // Optional offset for camera position
 
     private float previousTargetX; // Stores the previous X position of the target
     private float currentTargetX;  // Stores the current X position of the target
     private Vector3 velocity = Vector3.zero; // Velocity reference used by SmoothDamp
 
+    
+    private void Awake() {
+        // Singleton initialization
+        if (Instance == null) {
+            Instance = this;
+        } else {
+            Destroy(gameObject);
+        }
+    }
+    
     // Use this for initialization
     void Start() {
         // Find the target object
@@ -27,6 +40,12 @@ public class CameraFollowPlayer : MonoBehaviour {
         }
     }
 
+    public void setCameraTarget()
+    {
+        target = GameObject.FindWithTag("CameraTaget");
+
+        offset = new Vector3(0,4.5f,0);
+    }
     // Update is called once per frame
     void FixedUpdate() {
         if (target != null) {

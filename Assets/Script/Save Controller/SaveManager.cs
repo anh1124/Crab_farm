@@ -20,7 +20,7 @@ namespace Script.Save_Controller
             if (Instance == null)
             {
                 Instance = this;
-               // DontDestroyOnLoad(gameObject);
+               
             }
             else
             {
