@@ -46,7 +46,7 @@ public class BuildMenu : MonoBehaviour
     private GameObject structureToSpawn; // Prefab được chọn để xây dựng
     private bool isBuilding = false;
     public GameObject player;
-    
+    public bool ShowBuildMenu;
     private void Start()
     {
         InitializePlayer();
@@ -90,7 +90,15 @@ public class BuildMenu : MonoBehaviour
 
     public void OpenBuildMenu()
     {
-        ShowBuildButtons();
+        if (ShowBuildMenu)
+        {
+            HideAllBuildButtons();
+        }
+        else
+        {
+            ShowBuildButtons();
+        }
+      
     }
     private void StartBuildingPreview(GameObject structurePrefab)
     {
@@ -136,6 +144,7 @@ public class BuildMenu : MonoBehaviour
         buildTownCenterBtn.gameObject.SetActive(false);
         buildFarm.gameObject.SetActive(false);
         buildTower.gameObject.SetActive(false);
+        ShowBuildMenu = false;
     }
     private void ShowBuildButtons()
     {
@@ -145,6 +154,7 @@ public class BuildMenu : MonoBehaviour
         buildTownCenterBtn.gameObject.SetActive(true);
         buildFarm.gameObject.SetActive(true);
         buildTower.gameObject.SetActive(true);
+        ShowBuildMenu = true;
     }
     private void OnConfirmBuildClicked()
     {

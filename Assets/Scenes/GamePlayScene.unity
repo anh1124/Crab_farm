@@ -310,6 +310,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 510060679}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1127443315 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1186805596678180315, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+  m_PrefabInstance: {fileID: 5788159800298087748}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1159096412
 GameObject:
   m_ObjectHideFlags: 0
@@ -1011,11 +1016,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1691250493302182253, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -93.701996
+      value: -93.70203
       objectReference: {fileID: 0}
     - target: {fileID: 1691250493302182253, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -22.161003
+      value: -22.16101
       objectReference: {fileID: 0}
     - target: {fileID: 1877620999695329599, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchorMax.x
@@ -1114,6 +1119,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 600821716}
     - target: {fileID: 3978673942675159998, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: buttonContainer
+      value: 
+      objectReference: {fileID: 1127443315}
+    - target: {fileID: 3978673942675159998, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: confirmBuildBtn
       value: 
       objectReference: {fileID: 5788159800298087751}
@@ -1175,7 +1184,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4740269615289073010, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 27.000092
+      value: 27.000122
       objectReference: {fileID: 0}
     - target: {fileID: 4882830887230363714, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1383,7 +1392,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5894371527820798687, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 274.00003
+      value: 274.00006
       objectReference: {fileID: 0}
     - target: {fileID: 5894371527820798687, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y

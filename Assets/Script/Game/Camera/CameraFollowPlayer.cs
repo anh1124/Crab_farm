@@ -65,13 +65,23 @@ public class CameraFollowPlayer : MonoBehaviour {
 
             // Maintain the Y position of the camera with the offset
             targetPosition.y = target.transform.position.y + offset.y;
-            targetPosition.z = -1; // Ensure the Z position is fixed
+        
+            // Ensure the Z position is less than or equal to -1
+            targetPosition.z = Mathf.Min(-1, targetPosition.z);
 
             // Smoothly move the camera towards the target position using SmoothDamp
             transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
+
+            // Ensure the camera's Z position remains <= -1 after smoothing
+            if (transform.position.z > -1) {
+                Vector3 correctedPosition = transform.position;
+                correctedPosition.z = -1;
+                transform.position = correctedPosition;
+            }
 
             // Update previousTargetX for the next frame
             previousTargetX = currentTargetX;
         }
     }
+
 }
