@@ -147,7 +147,6 @@ namespace Script.Data_Model
         [Header("Subjects ")]
         [Space(5)]  
         #region Nature
-        
         public GameObject tree;//đây là tree nguyên bản,nhưng khi lấy tree thì phải dùng hàm get random tree
         // Thêm danh sách prefab Tree
         public List<GameObject> treePrefabs = new List<GameObject>();
@@ -162,7 +161,6 @@ namespace Script.Data_Model
             int randomIndex = UnityEngine.Random.Range(0, treePrefabs.Count);
             return treePrefabs[randomIndex];
         }
-        
         public int treeChopCost =1;
         public int treeHp =5;//số lần cần để chặt cây
 
@@ -189,7 +187,12 @@ namespace Script.Data_Model
         
         #endregion
 
-  
+        [Space(15)] [Header("GUI ")] 
+        public GameObject gameObjectHaveCanvas;
+        public GameObject confirmationPanel;
+        
+        [Space(5)]  
+        [Header("other ")]
         //danh sách những thứ có coinUser và tag để hiện coin slot
         public List<string> playerCoinUserInteractable ; 
       

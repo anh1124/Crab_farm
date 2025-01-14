@@ -123,6 +123,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &79677590 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 255392512313492701, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+  m_PrefabInstance: {fileID: 5788159800298087748}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &168870343
 GameObject:
   m_ObjectHideFlags: 0
@@ -765,6 +770,10 @@ PrefabInstance:
       propertyPath: townCenterTownHall3
       value: 
       objectReference: {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: gameObjectHaveCanvas
+      value: 
+      objectReference: {fileID: 79677590}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: townCenterBigTownHall4
       value: 

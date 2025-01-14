@@ -161,6 +161,8 @@ MonoBehaviour:
   rabbitSpeed: 1
   rabbitDieReward: 1
   summoningPortal: {fileID: 0}
+  gameObjectHaveCanvas: {fileID: 0}
+  confirmationPanel: {fileID: 1899307974243404924, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
   playerCoinUserInteractable: []
 --- !u!114 &425193365867354460
 MonoBehaviour:
@@ -184,7 +186,7 @@ MonoBehaviour:
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
     maxLevel: 0
-  - tier: 1
+  - tier: 0
     upgradeCost: 0
     rebuildCost: 0
     normalMaxHp: 0
@@ -193,7 +195,7 @@ MonoBehaviour:
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
     maxLevel: 0
-  - tier: 2
+  - tier: 0
     upgradeCost: 0
     rebuildCost: 0
     normalMaxHp: 0
@@ -202,7 +204,7 @@ MonoBehaviour:
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
     maxLevel: 0
-  - tier: 3
+  - tier: 0
     upgradeCost: 0
     rebuildCost: 0
     normalMaxHp: 0
@@ -211,7 +213,7 @@ MonoBehaviour:
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
     maxLevel: 0
-  - tier: 4
+  - tier: 0
     upgradeCost: 0
     rebuildCost: 0
     normalMaxHp: 0
@@ -220,7 +222,7 @@ MonoBehaviour:
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
     maxLevel: 0
-  - tier: 5
+  - tier: 0
     upgradeCost: 0
     rebuildCost: 0
     normalMaxHp: 0
@@ -328,6 +330,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8dedbdf52520ab41a8ead08d59c2c07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  treeObjects: []
   playerContainer: {fileID: 0}
   chunkContainer: {fileID: 0}
   coinContainer: {fileID: 0}
