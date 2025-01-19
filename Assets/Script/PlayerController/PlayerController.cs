@@ -1,5 +1,6 @@
 using System;
 using Script.Data_Model;
+using Script.Data_Model.Status;
 using Script.Game.Item.Coin;
 using Script.GUI_Controller.PlayerGui;
 using UnityEngine;
@@ -15,14 +16,13 @@ public class PlayerController : MonoBehaviour
         private TriggerCheckHelper triggerCheckHelper;
       
         public Rigidbody2D rb;
-        public Status status;
+        public PlayerStatus playerStatus;
+        
         #endregion 
-        
-        
         public GameObject player;
         public int direction;
         public bool isGrounded;
-        public int moveSpeed;
+        public float moveSpeed;
 
         public bool isActiveUpdate;
         
@@ -44,8 +44,6 @@ public class PlayerController : MonoBehaviour
                 Destroy(gameObject);
             }
         }
-      
-
         public void SetUpControllerPlayer()
         {
             GetPlayerCharactorComponent();
@@ -56,9 +54,9 @@ public class PlayerController : MonoBehaviour
         {
             rb = player.GetComponent<Rigidbody2D>();
             triggerCheckHelper = player.GetComponent<TriggerCheckHelper>();
-            status = player.GetComponent<Status>();
+            playerStatus = player.GetComponent<PlayerStatus>();
             direction = 0;
-            moveSpeed = status.moveSpeed;
+            moveSpeed = playerStatus.moveSpeed;
         }
         
      
@@ -76,8 +74,8 @@ public class PlayerController : MonoBehaviour
         public void UpdateStatus()
         {
             //jumpForce = status.jumpForce;
-            moveSpeed = status.moveSpeed;
-            isGrounded = status.isGround;
+            moveSpeed = playerStatus.moveSpeed;
+            isGrounded = playerStatus.isGround;
         }
         
         
@@ -186,9 +184,9 @@ public class PlayerController : MonoBehaviour
             if (pressDuration < 0.5f)
             {
                 //Debug.LogWarning("dropCoin");
-                if (status.coin > 0)
+                if (playerStatus.Coin > 0)
                 {
-                    --status.coin;
+                    --playerStatus.Coin;
                     
                     Vector2 direction = new Vector2(player.transform.localScale.x, 0);
                     //dùng scalex của player để xác định nhân vật đang quay trái hay phải 
@@ -221,10 +219,10 @@ public class PlayerController : MonoBehaviour
                             {
                                 if (coinUser.collectedCoins <= coinUser.requiredCoins )//nếu số xu hiện tại ít hơn tổng xu có trong công trình hoặc player có xu 
                                 {
-                                    if (status.coin > 0)
+                                    if (playerStatus.Coin > 0)
                                     {
-                                        coinUser.InsertCoin(status.coin , player);//truyền tham chiếu script coin của player vào 
-                                        status.coin--;
+                                        coinUser.InsertCoin(playerStatus.Coin , player);//truyền tham chiếu script coin của player vào 
+                                        playerStatus.Coin--;
                                     }
                                     else
                                     {

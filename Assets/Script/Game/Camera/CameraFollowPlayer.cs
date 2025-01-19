@@ -83,5 +83,10 @@ public class CameraFollowPlayer : MonoBehaviour {
             previousTargetX = currentTargetX;
         }
     }
+    // Instantly moves the camera to the specified position
+    public void TeleportCameraTo(Vector3 newPosition) {
+        newPosition.z = Mathf.Min(-1, newPosition.z); // Ensure the Z position is <= -1
+        transform.position = newPosition;
+    }
 
 }

@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 8607574719995925977}
   - component: {fileID: 4563411836016793751}
   - component: {fileID: 8696114519552286638}
+  - component: {fileID: 1347347115286631322}
   m_Layer: 8
   m_Name: Tree0
   m_TagString: Tree
@@ -131,11 +132,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a5e0abcfd2d4749aa9997247b234e8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Type: 0
-  treeChopCost: 0
-  treeHp: 0
-  isReadyToChop: 0
+  status: {fileID: 0}
   coinUser: {fileID: 0}
+  treeChopCost: 0
 --- !u!114 &4563411836016793751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -203,3 +202,20 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1.4859071, y: 3.6860638}
   m_EdgeRadius: 0
+--- !u!114 &1347347115286631322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3987282262224497692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f7d207b00dfd740b7247b558573885, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  positionX: 0
+  type: 0
+  currentWorkProgress: 0
+  maxWorkProgress: 0
+  isReadyToChop: 0

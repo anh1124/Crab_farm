@@ -51,9 +51,10 @@ public class Spawner : MonoBehaviour
         return Random.Range(0, max); 
     }
      
+    // Phương thức để drop coin khi cây bị đốn
     public void DropByNature(Vector2 position, int amount, Vector2 direction)
     {
-        Debug.LogWarning("roi ra "+ amount);
+        // Chờ đợi và spawn coin, gọi một coroutine
         StartCoroutine(DropByNatureCoroutine(position, direction, amount));
     }
 

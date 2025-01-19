@@ -1,18 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class ICoinable : MonoBehaviour
+namespace Script.Data_Model.Interfaces
 {
-    // Start is called before the first frame update
-    void Start()
+    public interface ICoinable 
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        int Coin { get; set; }
+        void DropCoin(GameObject whoDrop);
+        void AddCoin(GameObject coinGameObject);
     }
 }

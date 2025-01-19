@@ -1,18 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class TreeStatus : MonoBehaviour
+namespace Script.Data_Model.Status
 {
-    // Start is called before the first frame update
-    void Start()
+    public class TreeStatus : MonoBehaviour 
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        public float positionX;
+        public int type;
+        public int currentWorkProgress;
+        public int maxWorkProgress;
+        public bool isReadyToChop;
     }
 }

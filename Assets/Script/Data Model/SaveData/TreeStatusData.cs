@@ -1,18 +1,30 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using System;
+using Script.Data_Model.Status;
+using UnityEngine.Serialization;
 
-public class TreeStatusData : MonoBehaviour
+namespace Script.Data_Model.SaveData
 {
-    // Start is called before the first frame update
-    void Start()
+    [Serializable]
+    public class TreeStatusData 
     {
+        public float positionX;
+        public int type;
+        public int currentWorkProgress;
+        public int maxWorkProgress;
+        public bool isReadyToChop;
         
+        public TreeStatusData()
+        {
+        }
+        public TreeStatusData(TreeStatus status)
+        {
+            positionX = status.positionX;
+            type = status.type;
+            currentWorkProgress = status.currentWorkProgress;
+            maxWorkProgress = status.maxWorkProgress;
+            isReadyToChop = status.isReadyToChop;
+        }
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+   
+  
 }

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Script.Data_Model;
+using Script.Data_Model.SaveData;
+using Script.Data_Model.Status;
 using Script.Game.Other.Nature;
 using UnityEngine;
 
@@ -18,9 +20,11 @@ có ổn không anh,
         /*
        * todo: làm tiếp những cái container khác
        */
-        public static SetUpContainer Instance { get; private set; }
-
+        public static SetUpContainer Instance { get; private set; } 
         public List<GameObject> treeObjects;
+        public List<TreeStatusData> treeStatusDatas;
+
+        
         public GameObject playerContainer;
         public GameObject chunkContainer; //gameobject chứa các chunk được instance ra,đã có riêng 1 script để save và load chunk
         public GameObject coinContainer; 
@@ -80,12 +84,25 @@ có ổn không anh,
         }
         public GameObject InstanceAndMoveObjectToContainer(GameObject prefab, Vector2 position)
         {
+            // Kiểm tra prefab không null
+            if (prefab == null)
+            {
+                Debug.LogError("Prefab được truyền vào là null.");
+                return null;
+            }
+
             // Tạo instance mới từ prefab
             GameObject instance = Instantiate(prefab, position, Quaternion.identity);
-    
-            // Chuyển instance (không phải prefab) vào container
+
+            // Kiểm tra xem instance có khác prefab không
+            if (instance == prefab)
+            {
+                Debug.LogError("Đối tượng được sinh ra là chính prefab gốc, điều này không nên xảy ra.");
+            }
+
+            // Chuyển instance vào container
             MoveObjectToContainer(instance);
-    
+
             // Trả về instance để có thể sử dụng sau này nếu cần
             return instance;
         }
@@ -172,22 +189,23 @@ có ổn không anh,
                 }
             }
         }
-
         
         public void SaveAllContainer()
         {
+           
             SaveNatures();
             SaveStructures();
+            SavePlayer();
         }
-
+    
         public void LoadAllContainer()
         {
-            //player  sẽ được instance riêng trong hàm load
-            //ở đây,nếu ko tìm dc json thì tự tạo mới,còn nếu tìm dc thì load từ đó ra
+            //player  sẽ được instance và load riêng trong hàm load thế giới
+           
             LoadNatures();
             LoadStructures();
         }
-
+    
         public void RemoveAllChildObjects(GameObject parent)
         {
             // Kiểm tra nếu parent không null
@@ -202,6 +220,80 @@ có ổn không anh,
             }
         }
 
+        #region Player
+        public void SavePlayer()
+        {
+            try
+            {
+                // Lấy PlayerStatus từ player hiện tại
+                PlayerStatus status = PlayerController.Instance.player.GetComponent<PlayerStatus>();
+                if (status == null)
+                {
+                    Debug.LogError("Không tìm thấy PlayerStatus component!");
+                    return;
+                }
+
+                // Tạo đối tượng lưu trữ dữ liệu
+                PlayerStatusData saveData = new PlayerStatusData(status);
+
+                // Chuyển đổi sang JSON
+                string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
+                
+                // Lưu vào file
+                string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "player.json");
+                File.WriteAllText(filePath, json);
+
+                Debug.Log("Đã lưu dữ liệu player vào " + filePath);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Lỗi khi save player: " + ex.Message);
+            }
+        }
+
+        public void LoadPlayer()
+        {
+            if (PlayerController.Instance == null)
+            {
+                Debug.LogError("PlayerController.Instance is null!");
+                return;
+            }
+            string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "player.json");
+
+            // Kiểm tra file tồn tại
+            if (!File.Exists(filePath))
+            {
+                Debug.LogWarning("File player.json không tồn tại!");
+                return;
+            }
+
+            // Đọc JSON từ file
+            string json = File.ReadAllText(filePath);
+            PlayerStatusData loadedData = JsonConvert.DeserializeObject<PlayerStatusData>(json);
+
+            // Lấy PlayerStatus component
+            PlayerStatus status = PlayerController.Instance.player.GetComponent<PlayerStatus>();
+            if (status == null)
+            {
+                Debug.LogError("Không tìm thấy PlayerStatus component!");
+                return;
+            }
+            
+            // Gán dữ liệu đã load vào player
+            status.MaxHp = loadedData.maxHp;
+            status.CurrentHp = loadedData.currentHp;
+            status.Coin = loadedData.coin;
+            status.moveSpeed = loadedData.moveSpeed;
+            status.transform.position = new Vector2(loadedData.positionX, loadedData.positionY);
+            status.AttackDame = loadedData.attackDame;
+            status.AttackSpeed = loadedData.attackSpeed;
+
+            Debug.Log("Đã load dữ liệu player từ " + filePath);
+            
+        
+        }
+        #endregion
+        
         #region Natures
         /*
          *tree ,rabbit,rabitbush
@@ -339,6 +431,9 @@ có ổn không anh,
                 Debug.LogError("Lỗi khi load dữ liệu cây từ trees.json: " + ex.Message);
             }
         }
+
+
+        
         public void SaveRabbitBush()
         {
             if (natureContainer == null)

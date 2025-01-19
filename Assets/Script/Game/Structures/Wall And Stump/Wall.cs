@@ -14,15 +14,13 @@ namespace Script.Game.Structures.Wall_And_Stump
          *         wall ở layer wall
          *          layer wall
          */
-        
         // Properties từ IDamageable
         public int MaxHp { get; set; }
-        public float CurrentHp { get; set; }
+        public int CurrentHp { get; set; }
         
         public bool getData;
         [SerializeField] private int tier;
         
-     
         [SerializeField] private int normalMaxHp;
         [SerializeField] private int blessedMaxHp;
         
@@ -35,8 +33,6 @@ namespace Script.Game.Structures.Wall_And_Stump
         
         [SerializeField] private bool readyToUpgrade;
         [SerializeField] private bool maxLevel;
-        
-        
   
         [SerializeField] private CoinUser coinUser;
         
@@ -90,12 +86,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             coinUser.onUpgradeComplete = DoUpgrade;
         }
 
-        public void TakeDamage(int damage)
+        public void TakeDamage(int damageAmount, GameObject whoDoDame)
         {
-            CurrentHp -= damage;
+            CurrentHp -= damageAmount;
             if (CurrentHp <= 0)
             {
-                Die();
+                Die(whoDoDame);
             }
         }
 
@@ -105,7 +101,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             CurrentHp = MaxHp;
         }
 
-        public void Die()
+        public void Die(GameObject WhoDoDame)
         {
             GameObject stump =Instantiate(stumpPrefab, transform.position, Quaternion.identity);
             Stump stumpScriptInstance = stump.GetComponent<Stump>();

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Script.Game.Enemy.Interfaces
 {
-    public interface ITakeDamageable
+    public interface IDamageable
     {
         int MaxHp { get; set; }
         int CurrentHp { get; set; }

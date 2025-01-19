@@ -5,17 +5,17 @@ using UnityEngine;
 
 namespace Script.Game.Enemy.Base
 {
-    public class Enemy : MonoBehaviour, IDamageable, IEnemyMoveable
+    public class Enemy : MonoBehaviour, IDamageable, IMoveable
     {
-        [field: SerializeField] public int MaxHp { get; set; } = 100;
-        public float CurrentHp { get; set; }
-        
+        [field: SerializeField] public int maxHp { get; set; } = 100;
+        public int CurrentHp { get; set; }
+        public int MaxHp{ get; set; }
         public Rigidbody2D Rb { get; set; }
         public bool IsFacingRight { get; set; } = true;
         
         protected void Initialize()
         {
-            CurrentHp = MaxHp;
+            CurrentHp = maxHp;
             Rb = GetComponent<Rigidbody2D>();
         }
         public void DoDamage(int damageAmount)
@@ -26,13 +26,13 @@ namespace Script.Game.Enemy.Base
         #region Health / Die Functions
 
        
-        public void TakeDamage(int damageAmount)
+        public void TakeDamage(int damageAmount, GameObject whoDoDame)
         {
             //add script show dame on screen
             Debug.Log(gameObject.name + "take dame " + damageAmount );
             if (damageAmount >= CurrentHp)
             {
-                Die();
+                Die(whoDoDame);
             }
             else
             {
@@ -42,7 +42,7 @@ namespace Script.Game.Enemy.Base
 
   
 
-        public void Die()
+        public void Die(GameObject WhoDoDame)
         {
             //do animation die
             Destroy(gameObject);

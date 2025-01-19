@@ -12,7 +12,7 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         public bool isGround;
 
         private PlayerController _playerController;
-        public Status status;
+        public BaseStatus status;
 
         private Animator _animator;
         private Vector2 _previousPosition;
@@ -21,7 +21,7 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         public float speedNeedToShowRun = 0.1f;
         private void Start()
         {
-            status = gameObject.GetComponent<Status>();
+            status = gameObject.GetComponent<BaseStatus>();
             _animator = GetComponent<Animator>();
             _previousPosition = rb.position;
         }

@@ -114,7 +114,7 @@ namespace Script.Game.Item.Coin
             if (playerPickupAble)
             {
                 StopAllCoroutines();
-                Status playerStatus = player.GetComponent<Status>();
+                BaseStatus playerStatus = player.GetComponent<BaseStatus>();
                 playerStatus.AddCoin(gameObject); // This method should handle coin destruction
             }
         }
@@ -124,7 +124,7 @@ namespace Script.Game.Item.Coin
             if (denizensPickupAble)
             {
                 StopAllCoroutines();
-                Status denizensStatus = denizens.GetComponent<Status>();
+                BaseStatus denizensStatus = denizens.GetComponent<BaseStatus>();
                 denizensStatus.AddCoin(gameObject); // This method should handle coin destruction
             }
         }

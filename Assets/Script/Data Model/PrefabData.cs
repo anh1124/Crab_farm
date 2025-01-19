@@ -16,6 +16,7 @@ namespace Script.Data_Model
         public static PrefabData Instance { get; private set; }
 
         public GameObject player;
+        public float playerSpeed = 7;
         public Camera mainCamera;
         
         [Header("Player Character")]
@@ -161,8 +162,9 @@ namespace Script.Data_Model
             int randomIndex = UnityEngine.Random.Range(0, treePrefabs.Count);
             return treePrefabs[randomIndex];
         }
-        public int treeChopCost =1;
-        public int treeHp =5;//số lần cần để chặt cây
+        public int treeChopCost =1;//số xu cần dể chặt cây
+        public int TreeMaxWorkProgress = 5;//số lần cần để chặt cây
+        
 
 
 

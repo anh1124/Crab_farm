@@ -5,12 +5,12 @@ public class GroundCheck : MonoBehaviour
 {
     private TriggerCheckSetup triggerCheckSetup; // Script quản lý danh sách các trigger
     private List<GameObject> collidingObjectsList; // Danh sách các đối tượng đang va chạm
-    private Status status; // Truy cập trạng thái từ script Status
+    private BaseStatus status; // Truy cập trạng thái từ script Status
 
     private void Start()
     {
         // Lấy tham chiếu tới script Status
-        status = gameObject.GetComponent<Status>();
+        status = gameObject.GetComponent<BaseStatus>();
         // Lấy tham chiếu tới TriggerCheckSetup
         triggerCheckSetup = gameObject.GetComponent<TriggerCheckSetup>();
         if (triggerCheckSetup == null)

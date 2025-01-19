@@ -47,13 +47,31 @@ public class BuildMenu : MonoBehaviour
     private bool isBuilding = false;
     public GameObject player;
     public bool ShowBuildMenu;
+    
+    public static BuildMenu Instance { get; private set; }
+
+    private void Awake()
+    {
+        AddSingleton();
+    }
+
     private void Start()
     {
-        InitializePlayer();
         SetupButtonListeners();
         HideAllBuildButtons();
     }
-       private void InitializePlayer()
+    private void AddSingleton()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+    public void InitializePlayer()
     {
         player = PlayerController.Instance?.player;
         if (player == null)

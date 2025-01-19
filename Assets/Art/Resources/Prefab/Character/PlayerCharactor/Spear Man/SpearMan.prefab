@@ -90,11 +90,11 @@ GameObject:
   - component: {fileID: 6321366706948349825}
   - component: {fileID: 7235647182857197577}
   - component: {fileID: 5869260686601916359}
-  - component: {fileID: 995598333647392615}
   - component: {fileID: 1316814979545364949}
   - component: {fileID: 3654314619067390282}
   - component: {fileID: 4325251575502946318}
   - component: {fileID: -3560308634815069677}
+  - component: {fileID: 8514044053820796137}
   m_Layer: 8
   m_Name: SpearMan
   m_TagString: Player
@@ -254,33 +254,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &995598333647392615
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5938808828433451200}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82688dba79b114745b4ff757bbc3f675, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHp: 0
-  currentHp: 0
-  maxMp: 0
-  currentMp: 0
-  maxStamina: 0
-  currentStamina: 0
-  def: 0
-  atk: 0
-  ats: 0
-  critRate: 0
-  critDame: 0
-  jumpForce: 200
-  moveSpeed: 10
-  coin: 10
-  isGround: 0
 --- !u!114 &1316814979545364949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -337,6 +310,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e1ac23c20c5884e92821d6f65c0639, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &8514044053820796137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHp: 0
+  currentHp: 0
+  moveSpeed: 0
+  position: {x: 0, y: 0}
+  coin: 0
+  isGround: 0
+  shield: 0
+  atk: 0
+  attackSpeed: 0
 --- !u!1 &6752379391725988446
 GameObject:
   m_ObjectHideFlags: 0

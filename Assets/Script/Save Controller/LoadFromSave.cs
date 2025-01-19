@@ -72,7 +72,7 @@ public class LoadFromSave : MonoBehaviour
         }
         else  // File map chưa tồn tại, tạo map mới từ seed
         {
-            Debug.Log($"File map.json không tồn tại, tạo map mới với seed: {worldInfo.Seed}");
+            Debug.Log($"File map.json không tồn tại, tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
             ChunkManager.Instance.GenerateFirstMap(worldInfo.Seed);
             
             // Sau khi tạo map mới, lưu lại ngay

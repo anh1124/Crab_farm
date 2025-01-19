@@ -126,7 +126,8 @@ namespace Script.Save_Controller
             File.WriteAllText(worldInfoPath, worldInfoJson);
             Debug.Log("World info saved to: " + worldInfoPath);
         }
-
+        
+        //hàm này là hàm save chính 
         public void SaveCurrentMap()
         {
             var declaringType = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().DeclaringType;
