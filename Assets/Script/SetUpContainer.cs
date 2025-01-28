@@ -21,7 +21,8 @@ có ổn không anh,
        * todo: làm tiếp những cái container khác
        */
         public static SetUpContainer Instance { get; private set; } 
-        public List<GameObject> treeObjects;
+        public List<GameObject> treeObjects= new List<GameObject>();
+        
         public List<TreeStatusData> treeStatusDatas;
 
         
@@ -336,104 +337,122 @@ có ổn không anh,
        
         public void SaveTrees()
         {
-            // Kiểm tra container cây
-            if (natureContainer == null)
+            try 
             {
-                Debug.LogError("NatureContainer không được thiết lập.");
-                return;
-            }
+                // Tạo thư mục nếu chưa tồn tại
+                Directory.CreateDirectory(LoadFromSave.Instance.saveFilePath);
+                
+                // Clear các list cũ
+                treeObjects.Clear();
+                treeStatusDatas = new List<TreeStatusData>();
 
-            // Lấy danh sách cây từ NatureContainer
-            treeObjects = GetObjectsFromContainerList(natureContainer);
-            List<NatureTree.TreeStatus> saveTrees = new List<NatureTree.TreeStatus>();
-
-            // Duyệt qua từng cây và thêm vào danh sách saveTrees nếu tag là "Tree"
-            foreach (GameObject treeObject in treeObjects)
-            {
-                if (treeObject.CompareTag("Tree")) // Kiểm tra tag là "Tree"
+                // Kiểm tra nature container
+                if (natureContainer == null)
                 {
-                    NatureTree treeComponent = treeObject.GetComponent<NatureTree>();
-                    if (treeComponent != null)
+                    Debug.LogError("Nature Container chưa được gán!");
+                    return;
+                }
+
+                // Lấy tất cả gameobject trong nature container
+                foreach (Transform child in natureContainer.transform)
+                {
+                    if (child.CompareTag("Tree"))
                     {
-                        var position = treeObject.transform.position;
-                        NatureTree.TreeStatus treeStatus = new NatureTree.TreeStatus(
-                            treeComponent.Type,
-                            treeComponent.treeChopCost,
-                            treeComponent.treeHp,
-                            treeComponent.isReadyToChop,
-                            position.x,
-                            position.y
-                        );
-                        saveTrees.Add(treeStatus);
+                        treeObjects.Add(child.gameObject);
                     }
                 }
-            }
 
-            // Chuyển đổi danh sách saveTrees thành JSON và lưu vào file
-            string json = JsonConvert.SerializeObject(saveTrees, Formatting.Indented);
-            string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "trees.json");
-            File.WriteAllText(filePath, json);
+                Debug.Log($"Tìm thấy {treeObjects.Count} cây trong nature container");
 
-            Debug.Log("Saved tree data to " + filePath);
-        }
-        public void LoadTrees()
-        {
-            string saveFilePath = LoadFromSave.Instance.saveFilePath;
-            string filePath = Path.Combine(saveFilePath, "trees.json");
-
-            // Kiểm tra nếu file JSON tồn tại
-            if (!File.Exists(filePath))
-            {
-                Debug.LogError("File trees.json không tồn tại trong thư mục " + saveFilePath);
-                Debug.LogError("hãy xóa file map đi để tạo lại file tree ");
-                return;
-            }
-
-            try
-            {
-                // Đọc dữ liệu từ file JSON
-                string json = File.ReadAllText(filePath);
-                List<NatureTree.TreeStatus> savedTrees = JsonConvert.DeserializeObject<List<NatureTree.TreeStatus>>(json);
-
-                // Duyệt qua mỗi SaveTree và khởi tạo cây
-                foreach (NatureTree.TreeStatus saveTree in savedTrees)
+                // Chuyển đổi từ GameObject sang TreeStatusData
+                foreach (GameObject treeObject in treeObjects)
                 {
-                    // Lấy prefab cây dựa vào Type
-                    if (saveTree.type >= 0 && saveTree.type < PrefabData.Instance.treePrefabs.Count)
+                    TreeStatus treeStatus = treeObject.GetComponent<TreeStatus>();
+                    if (treeStatus != null)
                     {
-                        GameObject treePrefab = PrefabData.Instance.treePrefabs[saveTree.type];
-
-                        // Khởi tạo cây ở vị trí xác định
-                        Vector3 position = new Vector3(saveTree.positionX, 0, 0); // Đặt Y và Z nếu cần
-                        GameObject treeObject = Instantiate(treePrefab, position, Quaternion.identity,
-                            natureContainer.transform);
-
-                        // Gán các thuộc tính cho cây
-                        NatureTree treeComponent = treeObject.GetComponent<NatureTree>();
-                        if (treeComponent != null)
+                        TreeStatusData treeData = new TreeStatusData()
                         {
-                            treeComponent.Type = saveTree.type;
-                            treeComponent.treeChopCost = saveTree.TreeChopCost;
-                            treeComponent.treeHp = saveTree.TreeHp;
-                            treeComponent.isReadyToChop = saveTree.IsReadyToChop;
-                        }
+                            positionX = treeObject.transform.position.x,
+                            type = treeStatus.type,
+                            currentWorkProgress = treeStatus.currentWorkProgress,
+                            maxWorkProgress = treeStatus.maxWorkProgress,
+                            isReadyToChop = treeStatus.isReadyToChop
+                        };
+                        
+                        treeStatusDatas.Add(treeData);
                     }
                     else
                     {
-                        Debug.LogWarning("Type cây không hợp lệ hoặc vượt quá danh sách prefab.");
+                        Debug.LogWarning($"Tree object không có component TreeStatus: {treeObject.name}");
                     }
                 }
 
-                Debug.Log("Load dữ liệu cây từ " + filePath + " thành công.");
+                // Lưu vào file json
+                string savePath = GetTreeSavePath();
+                string json = JsonConvert.SerializeObject(treeStatusDatas, Formatting.Indented);
+                File.WriteAllText(savePath, json);
+                
+                Debug.Log($"Đã lưu {treeStatusDatas.Count} cây vào {savePath}");
             }
             catch (Exception ex)
             {
-                Debug.LogError("Lỗi khi load dữ liệu cây từ trees.json: " + ex.Message);
+                Debug.LogError($"Lỗi khi save trees: {ex.Message}\nStack trace: {ex.StackTrace}");
+            }
+        }
+        // Trong phần LoadTrees
+        public void LoadTrees()
+        {
+            treeObjects.Clear();
+            ClearNatureContainer();
+
+            if (!File.Exists(GetTreeSavePath())) return;
+
+            string json = File.ReadAllText(GetTreeSavePath());
+            List<TreeStatusData> loadedData = JsonConvert.DeserializeObject<List<TreeStatusData>>(json);
+
+            foreach (TreeStatusData data in loadedData)
+            {
+                if (data.type < 0 || data.type >= PrefabData.Instance.treePrefabs.Count)
+                    continue;
+
+                // Tạo vị trí với Y = 0
+                Vector3 position = new Vector3(data.positionX, 0f, 0f);
+                
+                GameObject newTree = Instantiate(
+                    PrefabData.Instance.treePrefabs[data.type],
+                    position, // Sử dụng position đã tạo
+                    Quaternion.identity,
+                    natureContainer.transform
+                );
+
+                TreeStatus status = newTree.GetComponent<TreeStatus>();
+                if (status != null)
+                {
+                    status.type = data.type;
+                    status.currentWorkProgress = data.currentWorkProgress;
+                    status.maxWorkProgress = data.maxWorkProgress;
+                    status.isReadyToChop = data.isReadyToChop;
+                }
+
+                treeObjects.Add(newTree);
             }
         }
 
-
-        
+        private string GetTreeSavePath()
+        {
+            // Sử dụng cùng đường dẫn với các file save khác
+            return Path.Combine(LoadFromSave.Instance.saveFilePath, "trees.json");
+        }
+        private void ClearNatureContainer()
+        {
+            foreach (Transform child in natureContainer.transform)
+            {
+                if (child.CompareTag("Tree"))
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+        }
         public void SaveRabbitBush()
         {
             if (natureContainer == null)
