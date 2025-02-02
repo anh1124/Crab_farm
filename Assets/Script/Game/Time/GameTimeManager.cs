@@ -1,186 +1,153 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using Newtonsoft.Json;
 using Script.Save_Controller;
 using UnityEngine;
 using TMPro;
-using System;
 
 public class GameTimeManager : MonoBehaviour
 {
     public static GameTimeManager Instance { get; private set; }
     public TextMeshProUGUI timeDisplay;
-    
-    public int gameHour = 0;
-    public int gameMinute = 0;
-    public int gameDay = 1;
-    public int gameMonth = 1;
-    public int gameYear = 1;
 
-    public float realSecondsPerGameDay = 240f;
-    private float timeMultiplier;
-    private float elapsedTime = 0f;
+    // Time properties with auto-correction
+    private int _totalMinutes;
+    public int GameHour => _totalMinutes / 60 % 24;
+    public int GameMinute => _totalMinutes % 60;
+    public int GameDay => (_totalMinutes / 1440 % 30) + 1;
+    public int GameMonth => (_totalMinutes / 43200 % 4) + 1;
+    public int GameYear => (_totalMinutes / 172800) + 1;
 
-    private const int MONTHS_PER_YEAR = 4;
-    private const int DAYS_PER_MONTH = 30;
+    [SerializeField] private float realSecondsPerGameDay = 240f;
+    private float _secondsPerMinute;
 
-    #region Init Hour Even Action
-    public event Action Hour5;
-    public event Action Hour6;
-    public event Action Hour7;
+    // Event system
+    private readonly Dictionary<int, Action> _hourlyEvents = new();
+    private int _lastProcessedHour = -1;
 
-    #endregion
-    private void Awake()
-    {
-        AddSingleton();
-    }
+    private void Awake() => InitializeSingleton();
+    private void Start() => InitializeTimeSystem();
 
-    public void TimeEvent()
-    {
-        switch (gameHour)
-        {
-            case 5:
-                Hour5?.Invoke();
-                //enemy rút lui 
-                break;
-                //
-            case 6:
-                Hour6?.Invoke(); //đã có
-                //bụi cỏ spawm thỏ 
-                break;
-            case 7:
-                Hour7?.Invoke(); //đã có
-                //các vagrant trở lại idle
-                break;
-            case 17:
-                // Thêm sự kiện cho 17 giờ chiều
-                // Ví dụ: tạo làn sóng quái vật hoặc gọi sự kiện khác
-                // Event17?.Invoke();
-                break;
-            // Thêm các case khác nếu bạn muốn kích hoạt sự kiện vào các giờ khác
-            // case <giờ>:
-            //      Event?.Invoke();
-            //      break;
-            default:
-                break;
-        }
-    }
-
-    public void AddSingleton()
+    #region Initialization
+    private void InitializeSingleton()
     {
         if (Instance == null)
         {
             Instance = this;
-          
+           
         }
         else
         {
             Destroy(gameObject);
         }
     }
-    void Start()
-    {
-        timeMultiplier = 86400f / realSecondsPerGameDay;
-       // UpdateTimeDisplay();
-    }
 
-    void Update()
+    private void InitializeTimeSystem()
     {
-        UpdateGameTime();
-        //ở đây gọi các hàm như trời tối 
-        UpdateTimeDisplay();
+        _secondsPerMinute = realSecondsPerGameDay / 1440f;
+  
+        StartCoroutine(TimeUpdateCoroutine());
     }
-    public bool IsDaytime()
-    {
-        return gameHour >= 6 && gameHour < 18;
-    }
+    #endregion
 
-    void UpdateGameTime()
+    #region Event Management
+    
+    private void CheckForHourlyEvent()
     {
-        elapsedTime += Time.deltaTime * timeMultiplier;
-
-        if (elapsedTime >= 60f)
+        if (GameHour == _lastProcessedHour) return;
+        
+        if (_hourlyEvents.TryGetValue(GameHour, out Action action))
         {
-            gameMinute += (int)(elapsedTime / 60);
-            elapsedTime = 0f;
-
-            if (gameMinute >= 60)
+            action?.Invoke();
+        }
+        _lastProcessedHour = GameHour;
+    }
+    public void SubscribeToHourlyEvent(int hour, Action callback)
+    {
+        if (_hourlyEvents.ContainsKey(hour))
+        {
+            _hourlyEvents[hour] += callback;
+        }
+        else
+        {
+            _hourlyEvents[hour] = callback;
+        }
+    }
+    public void UnsubscribeFromHourlyEvent(int hour, Action callback)
+    {
+        if (_hourlyEvents.ContainsKey(hour))
+        {
+            _hourlyEvents[hour] -= callback;
+            
+            // If no subscribers left, remove the key
+            if (_hourlyEvents[hour] == null)
             {
-                gameMinute = 0;
-                gameHour++;
-                //timeEvent được gọi thi giờ được cật nhật 
-               TimeEvent();//gọi các event khi đến time được đăng ký 
-
-                if (gameHour >= 24)
-                {
-                    gameHour = 0;
-                    gameDay++;
-                    CheckNewMonth();
-                }
+                _hourlyEvents.Remove(hour);
             }
         }
     }
+    #endregion
 
-    void CheckNewMonth()
+    #region Time Calculation
+    public void AddMinutes(int minutes) => _totalMinutes += minutes;
+
+    public bool IsDaytime => GameHour >= 6 && GameHour < 18;
+
+    private IEnumerator TimeUpdateCoroutine()
     {
-        if (gameDay > DAYS_PER_MONTH)
+        while (true)
         {
-            gameDay = 1;
-            gameMonth++;
-
-            if (gameMonth > MONTHS_PER_YEAR)
-            {
-                gameMonth = 1;
-                gameYear++;
-            }
+            yield return new WaitForSeconds(_secondsPerMinute);
+            _totalMinutes++;
+            UpdateTimeDisplay();
+            CheckForHourlyEvent();
         }
     }
-
-   
-    public void SetGameTime(int hour, int minute, int day, int month, int year)
+    public int GetElapsedDays()
     {
-        gameHour = Mathf.Clamp(hour, 0, 23);
-        gameMinute = Mathf.Clamp(minute, 0, 59);
-        gameDay = Mathf.Clamp(day, 1, DAYS_PER_MONTH);
-        gameMonth = Mathf.Clamp(month, 1, MONTHS_PER_YEAR);
-        gameYear = year;
-        UpdateTimeDisplay();
+        return _totalMinutes / 1440;
     }
-
     public void SetGameTimeFromSave()
     {
-            WorldInfo worldInfo = LoadFromSave.Instance.worldInfo;
-            
-            SetGameTime(worldInfo.GameHour,worldInfo.GameMinute,worldInfo.GameDay,worldInfo.GameMonth,worldInfo.GameYear);
-            Debug.Log($"Loaded WorldInfo: Name={worldInfo.Name}, GameTime={worldInfo.GameHour}:{worldInfo.GameMinute}, Date={worldInfo.GameDay}/{worldInfo.GameMonth}/{worldInfo.GameYear}");
-    }
-
-    public string GetGameTime()
-    {
-        return string.Format("{0:D2}:{1:D2} - {2}/{3}/{4}", gameHour, gameMinute, gameDay, gameMonth, gameYear);
-    }
-
-    void UpdateTimeDisplay()
-    {
-        if (timeDisplay != null)
+        if (LoadFromSave.Instance == null || LoadFromSave.Instance.worldInfo == null)
         {
-            timeDisplay.text = GetGameTime();
+            Debug.LogWarning("No save data found!");
+            return;
         }
+
+        WorldInfo worldInfo = LoadFromSave.Instance.worldInfo;
+        
+        // Convert saved time to total minutes
+        int totalMinutes = (worldInfo.GameYear - 1) * 172800 + 
+                           (worldInfo.GameMonth - 1) * 43200 + 
+                           (worldInfo.GameDay - 1) * 1440 + 
+                           worldInfo.GameHour * 60 + 
+                           worldInfo.GameMinute;
+
+        SetGameTime(totalMinutes);
+        
+        Debug.Log($"Loaded WorldInfo: Name={worldInfo.Name}, " +
+                  $"GameTime={worldInfo.GameHour}:{worldInfo.GameMinute}, " +
+                  $"Date={worldInfo.GameDay}/{worldInfo.GameMonth}/{worldInfo.GameYear}");
+    }
+    #endregion
+
+    #region Time Display
+    private void UpdateTimeDisplay()
+    {
+        if (timeDisplay == null) return;
+        
+        timeDisplay.text = $"{GameHour:D2}:{GameMinute:D2} - {GameDay:D2}/{GameMonth:D2}/{GameYear:D4}";
+    }
+    #endregion
+
+    #region Save/Load Integration
+    public void SetGameTime(int totalMinutes)
+    {
+        _totalMinutes = Mathf.Max(totalMinutes, 0);
+        UpdateTimeDisplay();
     }
     
-    public int GetTotalDaysElapsed()
-    {
-        // Tính tổng số ngày của các năm trước (giả sử mỗi năm có 4 tháng x 30 ngày)
-        int daysInPreviousYears = (gameYear - 1) * (MONTHS_PER_YEAR * DAYS_PER_MONTH);
-
-        // Tính tổng số ngày của các tháng trước trong năm hiện tại
-        int daysInPreviousMonths = (gameMonth - 1) * DAYS_PER_MONTH;
-
-        // Tổng số ngày đã qua bao gồm tháng hiện tại
-        int totalDaysElapsed = daysInPreviousYears + daysInPreviousMonths + (gameDay - 1);
-
-        return totalDaysElapsed;
-    }
-
+    public int GetTotalMinutes => _totalMinutes;
+    #endregion
 }

@@ -49,6 +49,7 @@ public class LoadFromSave : MonoBehaviour
         //kiểm tra file worldInfo.json
         //và lấy data trong worldInfo.json truyền vào class worldInfo ở script này
         if (!ExtractDataFromWorldInfoJson()) { return false; }
+
         
         //các structure và map hoặc linh tinh sẽ được load ở hàm dưới vì nó phụ thuộc vào việc map đã được tạo hay chưa 
         LoadMapJson();
@@ -79,6 +80,8 @@ public class LoadFromSave : MonoBehaviour
             ChunkManager.Instance.SaveMapToJson(saveFilePath);
         }
     }
+  
+
     private bool ExtractDataFromWorldInfoJson()
     {
         string worldInfoJsonPath = Path.Combine(saveFilePath, "worldInfo.json");

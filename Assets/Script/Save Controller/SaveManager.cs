@@ -140,8 +140,40 @@ namespace Script.Save_Controller
             // Các logic save game
             SetUpContainer.Instance.SaveAllContainer();
             ChunkManager.Instance.SaveMapToJson(PlayerPrefs.GetString("SaveFilePath", ""));
+            SaveGameTime();
         }
-        
+        public void SaveGameTime()
+        {
+            // Giả sử bạn đã có đối tượng WorldInfo hiện hành
+            WorldInfo worldInfo = LoadFromSave.Instance?.worldInfo;
+            if (worldInfo == null)
+            {
+                Debug.LogWarning("Không có dữ liệu WorldInfo để lưu thời gian.");
+                return;
+            }
+
+            // Lấy thời gian hiện tại từ GameTimeManager
+            worldInfo.GameHour = GameTimeManager.Instance.GameHour;
+            worldInfo.GameMinute = GameTimeManager.Instance.GameMinute;
+            worldInfo.GameDay = GameTimeManager.Instance.GameDay;
+            worldInfo.GameMonth = GameTimeManager.Instance.GameMonth;
+            worldInfo.GameYear = GameTimeManager.Instance.GameYear;
+
+            // Lấy đường dẫn tới file worldInfo.json (giả sử tên world được lưu trong worldInfo.Name)
+            string worldFolder = GetWorldFolderPath(worldInfo.Name);
+            if (worldFolder == null)
+            {
+                Debug.LogError("Không tìm thấy folder của world để lưu thời gian.");
+                return;
+            }
+            string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
+
+            // Serialize và ghi file JSON
+            string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
+            File.WriteAllText(worldInfoPath, json);
+            Debug.Log("Game time đã được lưu vào " + worldInfoPath);
+        }
+    
         #region StartMenuController use
 
         //hàm này trả về path của fodel có tên được truyền vào trong /saves/ 

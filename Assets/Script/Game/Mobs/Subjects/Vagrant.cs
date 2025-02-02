@@ -58,12 +58,21 @@ namespace Script.Game.Mobs.Subjects
         }
         private void InitializeVagrant()
         {
-            GameTimeManager.Instance.Hour6 += HandleTimeChange;//đăng ký múi giờ tự động chuyển về idle khi trời sáng
             roadToTarget = 0f;
             currentState = VagrantState.Idle;//khởi tạo idle ban đầu
             animator = GetComponent<Animator>();
             StartCheckRoutine();//bắt đầu hàm kiểm tra mỗi 0.5f
         }
+        private void OnEnable()
+        {
+            GameTimeManager.Instance.SubscribeToHourlyEvent(6, HandleTimeChange);
+        }
+
+        private void OnDisable()
+        {
+            GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, HandleTimeChange);
+        }
+
         private void Update()
         {
             UpdateStateHandler();
@@ -231,7 +240,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleTimeChange()
         {
-            if (GameTimeManager.Instance.IsDaytime() && EnemyWaveSystem.Instance.EnemyRemaining() <= 0)
+            if (GameTimeManager.Instance.IsDaytime && EnemyWaveSystem.Instance.EnemyRemaining() <= 0)
             {
                 StartCheckRoutine();
                 currentState = VagrantState.Idle;

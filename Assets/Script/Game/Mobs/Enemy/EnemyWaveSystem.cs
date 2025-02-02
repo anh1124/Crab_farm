@@ -66,7 +66,7 @@ public class EnemyWaveSystem : MonoBehaviour
     public void GenerateWave()
     {
         // Lấy số ngày đã trôi qua từ GameTimeManager
-        int daysElapsed = GameTimeManager.Instance.GetTotalDaysElapsed();
+        int daysElapsed = GameTimeManager.Instance.GetElapsedDays();
         // Tính toán power cho wave hiện tại
         currentWavePower = CalculateWavePower(daysElapsed);
         

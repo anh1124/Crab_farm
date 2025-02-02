@@ -40,9 +40,16 @@ namespace Script.Game.Other.Nature
            
             // Khởi tạo danh sách thỏ
             rabbitList = new List<GameObject>();
-            
+          
+        }
+        private void OnEnable()
+        {
             // Đăng ký sự kiện của GameTimeManager
-            GameTimeManager.Instance.Hour6 += SpawnRandomRabbits;
+            GameTimeManager.Instance.SubscribeToHourlyEvent(6, SpawnRandomRabbits);
+        }
+        private void OnDisable()
+        {
+            GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, SpawnRandomRabbits);
         }
         // Hàm sinh thỏ và thêm vào danh sách
         public void SpawnRandomRabbits()
@@ -99,12 +106,7 @@ namespace Script.Game.Other.Nature
                 Destroy(deadRabbit); // Hủy thỏ
             }
         }
-        private void OnDestroy()
-        {
-            // Hủy đăng ký sự kiện khi RabbitBush bị hủy
-            GameTimeManager.Instance.Hour6 -= SpawnRandomRabbits;
-        }
-      
+     
         
     }
     
