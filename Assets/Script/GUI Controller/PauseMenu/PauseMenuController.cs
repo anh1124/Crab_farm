@@ -2,16 +2,16 @@ using System;
 using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Script.GUI_Controller.PauseMenu
 {
     public class PauseMenuController : MonoBehaviour
     {
-        
 
-        public GameObject guiCanvas;
 
+        private GuiCanvasManager guiCanvasManager;
         #region Pause menu component
 
         
@@ -19,10 +19,10 @@ namespace Script.GUI_Controller.PauseMenu
         
         public GameObject pauseMenuPanel;
         
-        public GameObject openPauseMenu;
-        public Button openPauseMenuBtn;
         
-        public Button continueBtn;
+         public Button pauseButton;
+        
+        public Button resumeButton;
         public Button optionBtn;
         public Button saveExitBtn;
         
@@ -30,28 +30,28 @@ namespace Script.GUI_Controller.PauseMenu
         
         private void Start()
         {
-            
+            guiCanvasManager = gameObject.transform.parent.GetComponent<GuiCanvasManager>();
            
-            openPauseMenuBtn.onClick.AddListener(OpenMenu);
-            continueBtn.onClick.AddListener(ExitMenu);
+            pauseButton.onClick.AddListener(OpenMenu);
+            resumeButton.onClick.AddListener(Resume);
             optionBtn.onClick.AddListener(OpenOption);
             saveExitBtn.onClick.AddListener(SaveAndExit);
-            ExitMenu();
+            Resume();
             gameObject.SetActive(false);//ẩn đi
             
         }
 
-        public void ExitMenu()
+        public void Resume()
         {
             Time.timeScale = 1f;
             pauseMenuPanel.SetActive(false);
-            openPauseMenu.SetActive(true);
+            guiCanvasManager.SetMainGameplayUI();
         }
         public void OpenMenu()
         {
             Time.timeScale = 0f;
             pauseMenuPanel.SetActive(true);
-            openPauseMenu.SetActive(false);
+            pauseButton.gameObject.SetActive(false);
         }
 
         public void OpenOption()
