@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Script.Data_Model;
-using Script.Data_Model.SaveData;
+using Script.Data_Model.Interfaces;
 using Script.Data_Model.Status;
 using Script.Game.Other.Nature;
 using UnityEngine;
@@ -23,7 +23,7 @@ có ổn không anh,
         public static SetUpContainer Instance { get; private set; } 
         public List<GameObject> treeObjects= new List<GameObject>();
         
-        public List<TreeStatusData> treeStatusDatas;
+        public List<TreeStatus.TreeStatusData> treeStatusDatas;
 
         
         public GameObject playerContainer;
@@ -41,6 +41,7 @@ có ổn không anh,
         public GameObject villagersContainer;
         public GameObject statuesContainer;
        
+        public GameObject otherContainer;
         private void Awake()
         {
             AddSingleton();
@@ -69,6 +70,7 @@ có ổn không anh,
             wanderersContainer = SetupContainerHelper("WanderersContainer", ref wanderersContainer);
             villagersContainer = SetupContainerHelper("VillagersContainer", ref villagersContainer);
             statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
+            otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
         }
         private GameObject SetupContainerHelper(string containerName, ref GameObject container)
         {
@@ -168,7 +170,8 @@ có ổn không anh,
                     break;
                 
                 default:
-                    Debug.LogWarning("Object with unknown tag: " + obj.tag);
+                    obj.transform.SetParent(otherContainer.transform, true);
+                    Debug.Log($"Đã chuyển {obj.name} vào OtherContainer");
                     break;
             }
         }
@@ -235,7 +238,7 @@ có ổn không anh,
                 }
 
                 // Tạo đối tượng lưu trữ dữ liệu
-                PlayerStatusData saveData = new PlayerStatusData(status);
+                PlayerStatus.PlayerStatusData saveData = new PlayerStatus.PlayerStatusData(status);
 
                 // Chuyển đổi sang JSON
                 string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
@@ -254,44 +257,34 @@ có ổn không anh,
 
         public void LoadPlayer()
         {
-            if (PlayerController.Instance == null)
-            {
-                Debug.LogError("PlayerController.Instance is null!");
-                return;
-            }
             string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "player.json");
-
-            // Kiểm tra file tồn tại
             if (!File.Exists(filePath))
             {
                 Debug.LogWarning("File player.json không tồn tại!");
                 return;
             }
 
-            // Đọc JSON từ file
             string json = File.ReadAllText(filePath);
-            PlayerStatusData loadedData = JsonConvert.DeserializeObject<PlayerStatusData>(json);
+            PlayerStatus.PlayerStatusData loadedData = JsonConvert.DeserializeObject<PlayerStatus.PlayerStatusData>(json);
 
-            // Lấy PlayerStatus component
+            // Kiểm tra và khởi tạo Player nếu chưa tồn tại
+            if (PlayerController.Instance.player == null)
+            {
+                GameObject playerPrefab = PrefabData.Instance.player; // Giả định có prefab player
+                GameObject playerInstance = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+                PlayerController.Instance.player = playerInstance;
+                Instance.MoveObjectToContainer(playerInstance);
+            }
+
             PlayerStatus status = PlayerController.Instance.player.GetComponent<PlayerStatus>();
             if (status == null)
             {
                 Debug.LogError("Không tìm thấy PlayerStatus component!");
                 return;
             }
-            
-            // Gán dữ liệu đã load vào player
-            status.MaxHp = loadedData.maxHp;
-            status.CurrentHp = loadedData.currentHp;
-            status.Coin = loadedData.coin;
-            status.moveSpeed = loadedData.moveSpeed;
-            status.transform.position = new Vector2(loadedData.positionX, loadedData.positionY);
-            status.AttackDame = loadedData.attackDame;
-            status.AttackSpeed = loadedData.attackSpeed;
 
+            status.RestoreData(loadedData); // Sử dụng RestoreData để áp dụng dữ liệu
             Debug.Log("Đã load dữ liệu player từ " + filePath);
-            
-        
         }
         #endregion
         
@@ -344,7 +337,7 @@ có ổn không anh,
                 
                 // Clear các list cũ
                 treeObjects.Clear();
-                treeStatusDatas = new List<TreeStatusData>();
+                treeStatusDatas = new List<TreeStatus.TreeStatusData>();
 
                 // Kiểm tra nature container
                 if (natureContainer == null)
@@ -370,7 +363,7 @@ có ổn không anh,
                     TreeStatus treeStatus = treeObject.GetComponent<TreeStatus>();
                     if (treeStatus != null)
                     {
-                        TreeStatusData treeData = new TreeStatusData()
+                        TreeStatus.TreeStatusData treeData = new TreeStatus.TreeStatusData()
                         {
                             positionX = treeObject.transform.position.x,
                             type = treeStatus.type,
@@ -408,19 +401,18 @@ có ổn không anh,
             if (!File.Exists(GetTreeSavePath())) return;
 
             string json = File.ReadAllText(GetTreeSavePath());
-            List<TreeStatusData> loadedData = JsonConvert.DeserializeObject<List<TreeStatusData>>(json);
+            List<TreeStatus.TreeStatusData> loadedData = JsonConvert.DeserializeObject<List<TreeStatus.TreeStatusData>>(json);
 
-            foreach (TreeStatusData data in loadedData)
+            foreach (TreeStatus.TreeStatusData data in loadedData)
             {
                 if (data.type < 0 || data.type >= PrefabData.Instance.treePrefabs.Count)
                     continue;
 
-                // Tạo vị trí với Y = 0
-                Vector3 position = new Vector3(data.positionX, 0f, 0f);
-                
+                // Sử dụng cả positionX và positionY từ data
+                Vector3 position = new Vector3(data.positionX, data.positionY, 0f);
                 GameObject newTree = Instantiate(
                     PrefabData.Instance.treePrefabs[data.type],
-                    position, // Sử dụng position đã tạo
+                    position,
                     Quaternion.identity,
                     natureContainer.transform
                 );
@@ -428,10 +420,7 @@ có ổn không anh,
                 TreeStatus status = newTree.GetComponent<TreeStatus>();
                 if (status != null)
                 {
-                    status.type = data.type;
-                    status.currentWorkProgress = data.currentWorkProgress;
-                    status.maxWorkProgress = data.maxWorkProgress;
-                    status.isReadyToChop = data.isReadyToChop;
+                    status.RestoreData(data); // Gọi RestoreData để áp dụng dữ liệu
                 }
 
                 treeObjects.Add(newTree);
@@ -561,5 +550,43 @@ có ổn không anh,
         {
         }
         #endregion
+        public void LoadOtherContainer()
+        {
+            string path = Path.Combine(LoadFromSave.Instance.saveFilePath, "other_container.json");
+            if (!File.Exists(path)) return;
+
+            string json = File.ReadAllText(path);
+            List<SavedObject> loadedData = JsonConvert.DeserializeObject<List<SavedObject>>(json);
+
+            foreach (var item in loadedData)
+            {
+                GameObject prefab = PrefabData.Instance.GetPrefabByID(item.prefabID);
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"Không tìm thấy prefab với ID: {item.prefabID}");
+                    continue;
+                }
+
+                GameObject instance = Instantiate(prefab, otherContainer.transform);
+                ISaveable saveable = instance.GetComponent<ISaveable>();
+        
+                if (saveable != null)
+                {
+                    saveable.RestoreData(item.data);
+                }
+                else
+                {
+                    Debug.LogWarning($"Prefab {item.prefabID} không triển khai ISaveable");
+                }
+            }
+        }
+
+        [System.Serializable]
+        public class SavedObject
+        {
+            public string prefabID;
+            public object data;
+        }
+        
     }
 }

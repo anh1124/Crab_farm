@@ -149,8 +149,12 @@ namespace Script.Data_Model
         [Space(5)]  
         #region Nature
         public GameObject tree;//đây là tree nguyên bản,nhưng khi lấy tree thì phải dùng hàm get random tree
+        
         // Thêm danh sách prefab Tree
-        public List<GameObject> treePrefabs = new List<GameObject>();
+        [Header("Tree Prefabs")]
+        public List<GameObject> treePrefabs = new();
+        
+        private Dictionary<string, GameObject> _prefabDict = new();
         public GameObject GetRandomTree()
         {
             if (treePrefabs.Count == 0)
@@ -208,6 +212,12 @@ namespace Script.Data_Model
             {
                 Destroy(gameObject);
             }
+            // Đăng ký các prefab tree
+            for(int i = 0; i < treePrefabs.Count; i++)
+            {
+                _prefabDict.Add($"tree_{i}", treePrefabs[i]);
+            }
+            
             playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree"}; 
             CallOtherListToGetData();
             
@@ -215,7 +225,10 @@ namespace Script.Data_Model
             PlayerCharactorList.RemoveAll(item => item == null);
             RequirePrefabCheck();
         }
-        
+        public GameObject GetPrefabByID(string id)
+        {
+            return _prefabDict.TryGetValue(id, out GameObject prefab) ? prefab : null;
+        }
         private void RequirePrefabCheck()
         {
             AddCurrentPlayerCharactor();
@@ -276,9 +289,5 @@ namespace Script.Data_Model
             WallDataList.Instance.InitializeWallData();
             TownCenterDataList.Instance.InitializeWallData();
         }
-      
-      
-      
-     
     }
 }
