@@ -25,8 +25,7 @@ namespace Script.Game.Other
             
             //instancePlayer
             InstancePlayerAndSetCamera();
-            //set status player
-            SetUpContainer.Instance.LoadPlayer();
+            
             //gán player cho các script cần thiết player khác
             BuildMenu.Instance.InitializePlayer();
             
@@ -39,52 +38,33 @@ namespace Script.Game.Other
                 Debug.LogError("SetUpContainer.Instance is null.");
             }
 
-          
+            
+
         }
 
         public void InstancePlayerAndSetCamera()
         {
-            
-            // Kiểm tra prefab player
-            if (PrefabData.Instance.player == null)
+            if (PlayerController.Instance.player != null)
             {
-                Debug.LogError("Player character prefab is not assigned in PrefabData.");
+                // Nếu player đã được load, chỉ cần set lại camera
+                CameraFollowPlayer.Instance.setCameraTarget();
+                CameraFollowPlayer.Instance.TeleportCameraTo(PlayerController.Instance.player.transform.position);
                 return;
             }
-            
-            // Tạo instance của player từ prefab
+
+            // Nếu player chưa tồn tại thì tạo mới
             GameObject player = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
-    
-            // Kiểm tra xem instance có được tạo thành công không
             if (player == null)
             {
-                Debug.LogError("Failed to create Player instance from Prefab.");
+                Debug.LogError("Failed to instantiate Player from prefab.");
                 return;
             }
-
-            // Gán instance player vào PlayerController
             PlayerController.Instance.player = player;
-
-            // Thiết lập controller cho player
             PlayerController.Instance.SetUpControllerPlayer();
-
-            // Thiết lập camera theo dõi player
             CameraFollowPlayer.Instance.setCameraTarget();
             CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
-            
-            // Khởi tạo BuildMenu với player mới
-            if (BuildMenu.Instance != null)
-            {
-                BuildMenu.Instance.InitializePlayer();
-            }
-            else
-            {
-                Debug.LogWarning("BuildMenu.Instance is null, unable to initialize player in BuildMenu.");
-            }
-
-            // Thông báo hoàn tất khởi tạo player
-            Debug.Log("Player successfully instantiated and initialized.");
         }
+
         public static void DevelopTest()
         {
             //add some coin for player test

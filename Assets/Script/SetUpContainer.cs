@@ -5,26 +5,19 @@ using Newtonsoft.Json;
 using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Data_Model.Status;
-using Script.Game.Other.Nature;
 using UnityEngine;
 
 namespace Script
 {
-    /*
-     * vậy thì khi save game, 
-em tạo hàm find gameobejct theo list tag, rồi chuyển từng cái gameobject cùng loại như tree vào listTrees,animal vào listAnimals
-có ổn không anh,
-     */
+   
     public class SetUpContainer : MonoBehaviour
     { 
         /*
        * todo: làm tiếp những cái container khác
        */
         public static SetUpContainer Instance { get; private set; } 
-        public List<GameObject> treeObjects= new List<GameObject>();
         
-        public List<TreeStatus.TreeStatusData> treeStatusDatas;
-
+        public List<GameObject> allContainers; 
         
         public GameObject playerContainer;
         public GameObject chunkContainer; //gameobject chứa các chunk được instance ra,đã có riêng 1 script để save và load chunk
@@ -71,6 +64,24 @@ có ổn không anh,
             villagersContainer = SetupContainerHelper("VillagersContainer", ref villagersContainer);
             statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
             otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
+            
+            PopulateAllContainersList(); 
+        }
+        private void PopulateAllContainersList()
+        {
+            allContainers = new List<GameObject>
+            {
+                playerContainer,
+                structureContainer,
+                coinContainer,
+                natureContainer,
+                enemyContainer,
+                animalsContainer,
+                wanderersContainer,
+                villagersContainer,
+                statuesContainer,
+                otherContainer
+            };
         }
         private GameObject SetupContainerHelper(string containerName, ref GameObject container)
         {
@@ -193,23 +204,177 @@ có ổn không anh,
                 }
             }
         }
-        
         public void SaveAllContainer()
         {
-           
-            SaveNatures();
-            SaveStructures();
-            SavePlayer();
+            MoveTreesFromChunks(); // Di chuyển cây vào container trước khi save
+            Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
+            
+            foreach (var container in allContainers)
+            {
+                Debug.Log($"Saving container: {container.name}, child count: {container.transform.childCount}");
+            }
+
+            foreach (var container in allContainers)
+            {
+                SaveContainer(container);
+            }
         }
-    
         public void LoadAllContainer()
         {
-            //player  sẽ được instance và load riêng trong hàm load thế giới
-           
-            LoadNatures();
-            LoadStructures();
+            Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
+            foreach (var container in allContainers)
+            {
+                if (container == playerContainer)
+                {
+                    LoadAndSetupPlayer(); // Hàm mới để xử lý riêng player
+                }
+                else
+                {
+                    LoadContainer(container);
+                }
+            }
+            Time.timeScale = 1;//dòng này fix lỗi time scale 0 khi load map
         }
-    
+        private void LoadAndSetupPlayer()
+        {
+            string playerPath = Path.Combine(LoadFromSave.Instance.saveFilePath, "PlayerContainer.json");
+            if (!File.Exists(playerPath))
+            {
+                Debug.LogWarning("Không tìm thấy file save của player, tạo player mới");
+                CreateNewPlayer();
+                return;
+            }
+
+            try
+            {
+                // Instance player mới từ prefab
+                GameObject player = InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
+                if (player == null)
+                {
+                    Debug.LogError("Không thể tạo instance của player!");
+                    return;
+                }
+
+                // Gán player vào PlayerController
+                PlayerController.Instance.player = player;
+
+                // Load data từ file save
+                var json = File.ReadAllText(playerPath);
+                var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json,
+                    new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+
+                // Áp dụng data vào player
+                if (savedObjects != null && savedObjects.Count > 0)
+                {
+                    var saveable = player.GetComponent<ISaveable>();
+                    saveable?.RestoreData(savedObjects[0].data);
+                }
+
+                // Setup các thành phần liên quan
+                PlayerController.Instance.SetUpControllerPlayer();
+                CameraFollowPlayer.Instance.setCameraTarget();
+                CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
+
+                Debug.Log("Đã load và setup player thành công");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Lỗi khi load player: {e.Message}");
+                CreateNewPlayer();
+            }
+        }
+
+        private void CreateNewPlayer()
+        {
+            GameObject player = InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
+            PlayerController.Instance.player = player;
+            PlayerController.Instance.SetUpControllerPlayer();
+            CameraFollowPlayer.Instance.setCameraTarget();
+            CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
+            Debug.Log("Đã tạo player mới");
+        }
+        
+        private void SaveContainer(GameObject container)
+        {
+            if (container == null)
+            {
+                Debug.LogError("Container is null, skipping save.");
+                return;
+            }
+
+            var savedObjects = new List<SavedObject>();
+            foreach (Transform child in container.transform)
+            {
+                var saveable = child.GetComponent<ISaveable>();
+                if (saveable != null)
+                {
+                    savedObjects.Add(new SavedObject
+                    {
+                        prefabID = saveable.GetPrefabID(),
+                        data = saveable.CaptureData()
+                    });
+                }
+            }
+
+            Debug.Log($"Saving {container.name} with {savedObjects.Count} objects");
+
+            if (savedObjects.Count == 0)
+            {
+                Debug.LogWarning($"No saveable objects found in {container.name}");
+            }
+
+            var json = JsonConvert.SerializeObject(savedObjects, Formatting.Indented,
+                new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+            
+            var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
+            Debug.Log($"Saving to path: {path}");
+            File.WriteAllText(path, json);
+        }
+
+        private void LoadContainer(GameObject container)
+        {
+            if (container == null) return;
+
+            var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
+            if (!File.Exists(path)) return;
+
+            // Xóa toàn bộ object cũ trong container
+            foreach (Transform child in container.transform)
+            {
+                Destroy(child.gameObject);
+            }
+
+            // Load và tạo object mới
+            var json = File.ReadAllText(path);
+            var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
+                new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+
+            foreach (Transform child in container.transform)
+            {
+                Destroy(child.gameObject);
+            }
+
+            foreach (var savedObject in savedObjects)
+            {
+                var prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
+                if (prefab == null)
+                {
+                    Debug.LogError($"Prefab not found: {savedObject.prefabID}");
+                    continue;
+                }
+
+                var instance = Instantiate(prefab, container.transform);
+                var saveable = instance.GetComponent<ISaveable>();
+                if (saveable != null)
+                {
+                    saveable.RestoreData(savedObject.data);
+                }
+                else
+                {
+                    Debug.LogError($"ISaveable not found on {instance.name}");
+                }
+            }
+        }   
         public void RemoveAllChildObjects(GameObject parent)
         {
             // Kiểm tra nếu parent không null
@@ -224,74 +389,7 @@ có ổn không anh,
             }
         }
 
-        #region Player
-        public void SavePlayer()
-        {
-            try
-            {
-                // Lấy PlayerStatus từ player hiện tại
-                PlayerStatus status = PlayerController.Instance.player.GetComponent<PlayerStatus>();
-                if (status == null)
-                {
-                    Debug.LogError("Không tìm thấy PlayerStatus component!");
-                    return;
-                }
-
-                // Tạo đối tượng lưu trữ dữ liệu
-                PlayerStatus.PlayerStatusData saveData = new PlayerStatus.PlayerStatusData(status);
-
-                // Chuyển đổi sang JSON
-                string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
-                
-                // Lưu vào file
-                string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "player.json");
-                File.WriteAllText(filePath, json);
-
-                Debug.Log("Đã lưu dữ liệu player vào " + filePath);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError("Lỗi khi save player: " + ex.Message);
-            }
-        }
-
-        public void LoadPlayer()
-        {
-            string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "player.json");
-            if (!File.Exists(filePath))
-            {
-                Debug.LogWarning("File player.json không tồn tại!");
-                return;
-            }
-
-            string json = File.ReadAllText(filePath);
-            PlayerStatus.PlayerStatusData loadedData = JsonConvert.DeserializeObject<PlayerStatus.PlayerStatusData>(json);
-
-            // Kiểm tra và khởi tạo Player nếu chưa tồn tại
-            if (PlayerController.Instance.player == null)
-            {
-                GameObject playerPrefab = PrefabData.Instance.player; // Giả định có prefab player
-                GameObject playerInstance = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
-                PlayerController.Instance.player = playerInstance;
-                Instance.MoveObjectToContainer(playerInstance);
-            }
-
-            PlayerStatus status = PlayerController.Instance.player.GetComponent<PlayerStatus>();
-            if (status == null)
-            {
-                Debug.LogError("Không tìm thấy PlayerStatus component!");
-                return;
-            }
-
-            status.RestoreData(loadedData); // Sử dụng RestoreData để áp dụng dữ liệu
-            Debug.Log("Đã load dữ liệu player từ " + filePath);
-        }
-        #endregion
-        
-        #region Natures
-        /*
-         *tree ,rabbit,rabitbush
-         */
+      
         public void MoveTreesFromChunks()
         {
             if (chunkContainer == null)
@@ -310,277 +408,9 @@ có ổn không anh,
                 }
             }
         }
-        public void SaveNatures()
-        {
-            MoveTreesFromChunks();
-            SaveTrees();
-            SaveRabbitBush();
-        }
-        public void LoadNatures()
-        {
-            RemoveAllChildObjects(natureContainer);
-            
-            LoadTrees();
-            LoadRabbitBush();
-        }
-        
         /*
          *chú ý:tree được khởi tạo khi tạo các chunk nên chỉ được load,save trong chunkmanager hoặc hàm save trong game
          */
-       
-        public void SaveTrees()
-        {
-            try 
-            {
-                // Tạo thư mục nếu chưa tồn tại
-                Directory.CreateDirectory(LoadFromSave.Instance.saveFilePath);
-                
-                // Clear các list cũ
-                treeObjects.Clear();
-                treeStatusDatas = new List<TreeStatus.TreeStatusData>();
-
-                // Kiểm tra nature container
-                if (natureContainer == null)
-                {
-                    Debug.LogError("Nature Container chưa được gán!");
-                    return;
-                }
-
-                // Lấy tất cả gameobject trong nature container
-                foreach (Transform child in natureContainer.transform)
-                {
-                    if (child.CompareTag("Tree"))
-                    {
-                        treeObjects.Add(child.gameObject);
-                    }
-                }
-
-                Debug.Log($"Tìm thấy {treeObjects.Count} cây trong nature container");
-
-                // Chuyển đổi từ GameObject sang TreeStatusData
-                foreach (GameObject treeObject in treeObjects)
-                {
-                    TreeStatus treeStatus = treeObject.GetComponent<TreeStatus>();
-                    if (treeStatus != null)
-                    {
-                        TreeStatus.TreeStatusData treeData = new TreeStatus.TreeStatusData()
-                        {
-                            positionX = treeObject.transform.position.x,
-                            type = treeStatus.type,
-                            currentWorkProgress = treeStatus.currentWorkProgress,
-                            maxWorkProgress = treeStatus.maxWorkProgress,
-                            isReadyToChop = treeStatus.isReadyToChop
-                        };
-                        
-                        treeStatusDatas.Add(treeData);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"Tree object không có component TreeStatus: {treeObject.name}");
-                    }
-                }
-
-                // Lưu vào file json
-                string savePath = GetTreeSavePath();
-                string json = JsonConvert.SerializeObject(treeStatusDatas, Formatting.Indented);
-                File.WriteAllText(savePath, json);
-                
-                Debug.Log($"Đã lưu {treeStatusDatas.Count} cây vào {savePath}");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Lỗi khi save trees: {ex.Message}\nStack trace: {ex.StackTrace}");
-            }
-        }
-        // Trong phần LoadTrees
-        public void LoadTrees()
-        {
-            treeObjects.Clear();
-            ClearNatureContainer();
-
-            if (!File.Exists(GetTreeSavePath())) return;
-
-            string json = File.ReadAllText(GetTreeSavePath());
-            List<TreeStatus.TreeStatusData> loadedData = JsonConvert.DeserializeObject<List<TreeStatus.TreeStatusData>>(json);
-
-            foreach (TreeStatus.TreeStatusData data in loadedData)
-            {
-                if (data.type < 0 || data.type >= PrefabData.Instance.treePrefabs.Count)
-                    continue;
-
-                // Sử dụng cả positionX và positionY từ data
-                Vector3 position = new Vector3(data.positionX, data.positionY, 0f);
-                GameObject newTree = Instantiate(
-                    PrefabData.Instance.treePrefabs[data.type],
-                    position,
-                    Quaternion.identity,
-                    natureContainer.transform
-                );
-
-                TreeStatus status = newTree.GetComponent<TreeStatus>();
-                if (status != null)
-                {
-                    status.RestoreData(data); // Gọi RestoreData để áp dụng dữ liệu
-                }
-
-                treeObjects.Add(newTree);
-            }
-        }
-
-        private string GetTreeSavePath()
-        {
-            // Sử dụng cùng đường dẫn với các file save khác
-            return Path.Combine(LoadFromSave.Instance.saveFilePath, "trees.json");
-        }
-        private void ClearNatureContainer()
-        {
-            foreach (Transform child in natureContainer.transform)
-            {
-                if (child.CompareTag("Tree"))
-                {
-                    Destroy(child.gameObject);
-                }
-            }
-        }
-        public void SaveRabbitBush()
-        {
-            if (natureContainer == null)
-            {
-                Debug.LogError("NatureContainer không được thiết lập.");
-                return;
-            }
-
-            List<GameObject> rabbitBushObjects = GetObjectsFromContainerList(natureContainer);
-            List<RabbitBush.SaveRabbitBush> saveRabbitBushes = new List<RabbitBush.SaveRabbitBush>();
-
-            foreach (GameObject rabbitBushObject in rabbitBushObjects)
-            {
-                if (rabbitBushObject.CompareTag("RabbitBush"))//kiểm tra lại tag
-                {
-                    RabbitBush rabbitBushComponent = rabbitBushObject.GetComponent<RabbitBush>();
-                    if (rabbitBushComponent != null)
-                    {
-                        RabbitBush.SaveRabbitBush saveRabbitBush = new RabbitBush.SaveRabbitBush
-                        {
-                            positionX = rabbitBushObject.transform.position.x,
-                            positionY = 0,
-                            rabbits = new List<RabbitBush.SaveRabbit>()
-                        };
-
-                        foreach (GameObject rabbit in rabbitBushComponent.rabbitList)
-                        {
-                            Rabbit rabbitComponent = rabbit.GetComponent<Rabbit>();
-                            if (rabbitComponent != null)
-                            {
-                                RabbitBush.SaveRabbit saveRabbit = new RabbitBush.SaveRabbit
-                                {
-                                    hp = rabbitComponent.hp,
-                                    positionX = rabbit.transform.position.x,
-                                    positionY = 0
-                                };
-                                saveRabbitBush.rabbits.Add(saveRabbit);
-                            }
-                        }
-                        saveRabbitBushes.Add(saveRabbitBush);
-                    }
-                }
-            }
-
-            string json = JsonConvert.SerializeObject(saveRabbitBushes, Formatting.Indented);
-            string filePath = Path.Combine(LoadFromSave.Instance.saveFilePath, "rabbitBushes.json");
-            File.WriteAllText(filePath, json);
-
-            Debug.Log("Saved rabbit bush data to " + filePath);
-        }
-        public void LoadRabbitBush()
-        {
-            string saveFilePath = LoadFromSave.Instance.saveFilePath;
-            string filePath = Path.Combine(saveFilePath, "rabbitBushes.json");
-
-            if (!File.Exists(filePath))
-            {
-                Debug.LogError("File rabbitBushes.json không tồn tại trong thư mục " + saveFilePath);
-                return;
-            }
-
-            try
-            {
-                string json = File.ReadAllText(filePath);
-                List<RabbitBush.SaveRabbitBush> savedRabbitBushes = JsonConvert.DeserializeObject<List<RabbitBush.SaveRabbitBush>>(json);
-
-                foreach (RabbitBush.SaveRabbitBush saveRabbitBush in savedRabbitBushes)
-                {
-                    GameObject rabbitBushPrefab = PrefabData.Instance.rabbitBush;
-                    Vector3 position = new Vector3(saveRabbitBush.positionX, saveRabbitBush.positionY, 0);
-                    GameObject rabbitBushObject = Instantiate(rabbitBushPrefab, position, Quaternion.identity, natureContainer.transform);
-
-                    RabbitBush rabbitBushComponent = rabbitBushObject.GetComponent<RabbitBush>();
-                    if (rabbitBushComponent != null)
-                    {
-                        foreach (RabbitBush.SaveRabbit saveRabbit in saveRabbitBush.rabbits)
-                        {
-                            Vector3 rabbitPosition = new Vector3(saveRabbit.positionX, saveRabbit.positionY, 0);
-                            GameObject rabbitObject = Instantiate(PrefabData.Instance.rabbit, rabbitPosition, Quaternion.identity);
-                        
-                            Rabbit rabbitComponent = rabbitObject.GetComponent<Rabbit>();
-                            if (rabbitComponent != null)
-                            {
-                                rabbitComponent.hp = saveRabbit.hp;
-                                rabbitComponent.rabbitBush = rabbitBushObject;
-                            }
-                            rabbitBushComponent.rabbitList.Add(rabbitObject);
-                        }
-                    }
-                }
-                Debug.Log("Loaded rabbit bush data from " + filePath);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError("Lỗi khi load dữ liệu RabbitBush từ rabbitBushes.json: " + ex.Message);
-            }
-        }
-        
-        #endregion
-
-        #region Structure
-        public void SaveStructures()
-        {
-        }
-        public void LoadStructures()
-        {
-        }
-        #endregion
-        public void LoadOtherContainer()
-        {
-            string path = Path.Combine(LoadFromSave.Instance.saveFilePath, "other_container.json");
-            if (!File.Exists(path)) return;
-
-            string json = File.ReadAllText(path);
-            List<SavedObject> loadedData = JsonConvert.DeserializeObject<List<SavedObject>>(json);
-
-            foreach (var item in loadedData)
-            {
-                GameObject prefab = PrefabData.Instance.GetPrefabByID(item.prefabID);
-                if (prefab == null)
-                {
-                    Debug.LogWarning($"Không tìm thấy prefab với ID: {item.prefabID}");
-                    continue;
-                }
-
-                GameObject instance = Instantiate(prefab, otherContainer.transform);
-                ISaveable saveable = instance.GetComponent<ISaveable>();
-        
-                if (saveable != null)
-                {
-                    saveable.RestoreData(item.data);
-                }
-                else
-                {
-                    Debug.LogWarning($"Prefab {item.prefabID} không triển khai ISaveable");
-                }
-            }
-        }
-
         [System.Serializable]
         public class SavedObject
         {

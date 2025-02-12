@@ -91,7 +91,7 @@ public class ChunkManager : MonoBehaviour
         rng = new System.Random(Seed);
         seed = Seed;
         CreateInitialChunks(currentCreatChunk);
-        SetUpContainer.Instance.SaveTrees();
+        SetUpContainer.Instance.SaveAllContainer();
     }
 
     private void CreateInitialChunks(int count)
@@ -158,7 +158,7 @@ public class ChunkManager : MonoBehaviour
             chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
         }
 
-        SetUpContainer.Instance.SaveTrees();
+        SetUpContainer.Instance.SaveAllContainer();
     }
 
     private void ClearCurrentMap()
