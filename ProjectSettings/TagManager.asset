@@ -27,6 +27,7 @@ TagManager:
   - WanderersContainer
   - VillagersContainer
   - StatuesContainer
+  - OtherContainer
   layers:
   - Default
   - TransparentFX
