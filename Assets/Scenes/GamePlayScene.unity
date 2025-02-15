@@ -657,6 +657,46 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: raycastYOffset
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[0]
+      value: Default
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[1]
+      value: Nature
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[2]
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[3]
+      value: Wall
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[0]
+      value: Wall
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[1]
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[2]
+      value: Tree
+      objectReference: {fileID: 0}
     - target: {fileID: 6439472928953053899, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: seed
       value: 0

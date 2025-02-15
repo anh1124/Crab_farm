@@ -1,0 +1,338 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using Script;
+using Script.Data_Model.Interfaces;
+using Script.Game.Item.Coin;
+
+public class BuildingPlacementManager : MonoBehaviour
+{
+    public static BuildingPlacementManager Instance { get; private set; }
+    
+    [Header("Visual Feedback")] 
+    private readonly Color validPlacementColor = new Color(0, 1, 0, 0.3f);    // Green
+    private readonly Color invalidPlacementColor = new Color(1, 0, 0, 0.3f);   // Red
+    private readonly float lineWidth = 0.1f;
+    private readonly int previewSortingOrder = 10;
+
+    [Header("Placement Settings")]
+    [SerializeField] private List<string> placementLayers = new List<string> { "Structure" };
+    [SerializeField] private List<string> invalidPlacementTags = new List<string>(); // VD: thêm "Tree", "Wall",...
+    // raycastYOffset chỉ dùng để thay đổi vị trí của 2 đường kẻ (vì chúng đang quá sát mặt đất)
+    [SerializeField] private float raycastYOffset = 0.8f;
+    
+    private LayerMask placementLayerMask;
+    private GameObject structureToPlace;
+    private GameObject previewInstance;
+    private LineRenderer leftDistanceLine;
+    private LineRenderer rightDistanceLine;
+    private float? minimumDistance;  // Nếu prefab không có IMinimumDistance, giá trị này sẽ là null (hoặc ≤ 0)
+    private bool isPlacing = false;
+    private Collider2D previewCollider;
+
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
+
+        placementLayerMask = LayerMask.GetMask(placementLayers.ToArray());
+        InitializeVisualComponents();
+    }
+
+    private void InitializeVisualComponents()
+    {
+        var leftLineObj = new GameObject("LeftDistanceLine");
+        var rightLineObj = new GameObject("RightDistanceLine");
+        
+        leftDistanceLine = leftLineObj.AddComponent<LineRenderer>();
+        rightDistanceLine = rightLineObj.AddComponent<LineRenderer>();
+
+        SetupLineRenderer(leftDistanceLine);
+        SetupLineRenderer(rightDistanceLine);
+
+        leftLineObj.transform.parent = transform;
+        rightLineObj.transform.parent = transform;
+
+        leftLineObj.SetActive(false);
+        rightLineObj.SetActive(false);
+    }
+
+    private void SetupLineRenderer(LineRenderer line)
+    {
+        line.startWidth = lineWidth;
+        line.endWidth = lineWidth;
+        line.positionCount = 2;
+        line.material = new Material(Shader.Find("Sprites/Default"));
+        line.sortingOrder = previewSortingOrder;
+    }
+
+    public void StartPlacement(GameObject structurePrefab)
+    {
+        CleanupPreview();
+
+        structureToPlace = structurePrefab;
+        
+        // Nếu prefab có IMinimumDistance, lấy giá trị; nếu không, minimumDistance sẽ là null
+        var distanceComponent = structurePrefab.GetComponent<IMinimumDistance>();
+        minimumDistance = distanceComponent?.MinimumDistance;
+
+        previewInstance = Instantiate(structurePrefab);
+        previewInstance.SetActive(true);
+        SetupPreview(previewInstance);
+        
+        isPlacing = true;
+    }
+
+    private void SetupPreview(GameObject preview)
+    {
+        previewCollider = preview.GetComponent<Collider2D>();
+        if (previewCollider != null)
+            previewCollider.isTrigger = true;
+
+        var coinUser = preview.GetComponent<CoinUser>();
+        if (coinUser != null)
+            Destroy(coinUser);
+
+        var renderers = preview.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var renderer in renderers)
+        {
+            renderer.sortingOrder = previewSortingOrder;
+            Color color = renderer.color;
+            color.a = 0.5f;
+            renderer.color = color;
+        }
+    }
+
+    private void Update()
+    {
+        if (!isPlacing || previewInstance == null) return;
+
+        // Lấy vị trí của player (preview được đặt chính xác theo vị trí player)
+        Vector2 previewPos = PlayerController.Instance.player.transform.position;
+        previewInstance.transform.position = previewPos;
+        
+        // Kiểm tra các va chạm (overlap và khoảng cách từ container)
+        bool overlapValid = CheckOverlapValidity(previewPos);
+
+        // Nếu có IMinimumDistance (minimumDistance > 0) thì kiểm tra riêng từng bên
+        bool leftValid = true, rightValid = true;
+        if (minimumDistance.HasValue && minimumDistance.Value > 0)
+        {
+            // Chỉ dùng raycastYOffset cho 2 đường kẻ, không ảnh hưởng đến previewPos
+            Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
+            leftValid = CheckSideValidity(lineOrigin, Vector2.left, minimumDistance.Value);
+            rightValid = CheckSideValidity(lineOrigin, Vector2.right, minimumDistance.Value);
+        }
+        bool overallValid = overlapValid && leftValid && rightValid;
+
+        UpdateVisualFeedback(previewPos, overallValid);
+
+        // Vẽ đường kẻ chỉ khi có minimumDistance
+        if (minimumDistance.HasValue && minimumDistance.Value > 0)
+        {
+            Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
+            UpdateDistanceLines(lineOrigin, minimumDistance.Value, leftValid, rightValid);
+        }
+        else
+        {
+            HideDistanceLines();
+        }
+    }
+
+    /// <summary>
+    /// Cập nhật màu của preview dựa trên overallValid.
+    /// </summary>
+    private void UpdateVisualFeedback(Vector2 previewPos, bool overallValid)
+    {
+        Color feedbackColor = overallValid ? validPlacementColor : invalidPlacementColor;
+        Debug.Log($"[UpdateVisualFeedback] PreviewPos: {previewPos}, OverallValid: {overallValid}, Color: {feedbackColor}");
+
+        var renderers = previewInstance.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var renderer in renderers)
+        {
+            Color color = feedbackColor;
+            color.a = 0.5f;
+            renderer.color = color;
+        }
+    }
+
+    /// <summary>
+    /// Vẽ 2 đường kẻ khoảng cách: mỗi đường có màu dựa trên tính hợp lệ riêng (màu xanh nếu hợp lệ, đỏ nếu không).
+    /// Ngoài ra, in ra debug raycast cho từng hướng.
+    /// </summary>
+    private void UpdateDistanceLines(Vector2 lineOrigin, float distance, bool leftValid, bool rightValid)
+    {
+        // Xác định màu của mỗi đường
+        Color leftColor = leftValid ? validPlacementColor : invalidPlacementColor;
+        Color rightColor = rightValid ? validPlacementColor : invalidPlacementColor;
+        leftColor.a = 1f;
+        rightColor.a = 1f;
+
+        Debug.Log($"[UpdateDistanceLines] LineOrigin: {lineOrigin}, Distance: {distance}, LeftValid: {leftValid}, RightValid: {rightValid}");
+
+        // Vẽ đường bên trái
+        leftDistanceLine.gameObject.SetActive(true);
+        leftDistanceLine.SetPosition(0, lineOrigin);
+        Vector2 leftEndPos = new Vector2(lineOrigin.x - distance, lineOrigin.y);
+        leftDistanceLine.SetPosition(1, leftEndPos);
+        leftDistanceLine.startColor = leftDistanceLine.endColor = leftColor;
+
+        // Vẽ đường bên phải
+        rightDistanceLine.gameObject.SetActive(true);
+        rightDistanceLine.SetPosition(0, lineOrigin);
+        Vector2 rightEndPos = new Vector2(lineOrigin.x + distance, lineOrigin.y);
+        rightDistanceLine.SetPosition(1, rightEndPos);
+        rightDistanceLine.startColor = rightDistanceLine.endColor = rightColor;
+
+        Debug.Log($"[UpdateDistanceLines] LeftLine EndPos: {leftEndPos}, RightLine EndPos: {rightEndPos}");
+
+        // In ra debug raycast cho từng hướng
+        PerformDebugRaycast(lineOrigin, Vector2.left, distance);
+        PerformDebugRaycast(lineOrigin, Vector2.right, distance);
+    }
+
+    /// <summary>
+    /// Thực hiện raycast và in ra thông tin các đối tượng bị trúng (trên layer placementLayerMask).
+    /// </summary>
+    private void PerformDebugRaycast(Vector2 start, Vector2 direction, float distance)
+    {
+        RaycastHit2D[] hits = Physics2D.RaycastAll(start, direction, distance, placementLayerMask);
+        string debugMessage = $"[PerformDebugRaycast] Raycast from {start} in direction {direction} for distance {distance}. Hits:";
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider != null)
+            {
+                debugMessage += $"\n - Object: {hit.collider.gameObject.name} (Tag: {hit.collider.gameObject.tag})";
+            }
+        }
+        Debug.Log(debugMessage);
+    }
+
+    /// <summary>
+    /// Kiểm tra các va chạm (OverlapCollider và container) dựa trên vị trí preview (không thay đổi).
+    /// </summary>
+    private bool CheckOverlapValidity(Vector2 previewPos)
+    {
+        if (previewCollider == null) return true;
+
+        var overlaps = new List<Collider2D>();
+        ContactFilter2D filter = new ContactFilter2D()
+        {
+            useTriggers = false,
+            useLayerMask = true,
+            layerMask = placementLayerMask
+        };
+        Physics2D.OverlapCollider(previewCollider, filter, overlaps);
+        
+        foreach (Collider2D col in overlaps)
+        {
+            Debug.Log($"[CheckOverlapValidity] Overlapped with: {col.gameObject.name} (Tag: {col.gameObject.tag})");
+            if (invalidPlacementTags.Contains(col.gameObject.tag))
+            {
+                Debug.LogWarning($"[CheckOverlapValidity] Invalid overlap detected: {col.gameObject.name} with tag: {col.gameObject.tag}");
+                return false;
+            }
+        }
+
+        // Kiểm tra khoảng cách tối thiểu dựa trên container
+        if (minimumDistance.HasValue && minimumDistance.Value > 0)
+        {
+            var structures = SetUpContainer.Instance.GetObjectsFromContainerList(SetUpContainer.Instance.structureContainer);
+            foreach (var structure in structures)
+            {
+                if (structure.CompareTag(previewInstance.tag))
+                {
+                    float dist = Vector2.Distance(previewPos, structure.transform.position);
+                    if (dist < minimumDistance.Value)
+                    {
+                        Debug.LogWarning($"[CheckOverlapValidity] Minimum distance violated with: {structure.name} (Distance: {dist}, Minimum: {minimumDistance.Value})");
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Kiểm tra tính hợp lệ của một phía (raycast) từ vị trí gốc cho trước.
+    /// Trả về false nếu bất kỳ đối tượng nào bị trúng có tag nằm trong invalidPlacementTags (ngoại trừ preview).
+    /// </summary>
+    private bool CheckSideValidity(Vector2 origin, Vector2 direction, float distance)
+    {
+        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, distance, placementLayerMask);
+        foreach (var hit in hits)
+        {
+            if (hit.collider != null && hit.collider.gameObject != previewInstance)
+            {
+                if (invalidPlacementTags.Contains(hit.collider.gameObject.tag))
+                {
+                    Debug.LogWarning($"[CheckSideValidity] Hit invalid object: {hit.collider.gameObject.name} (Tag: {hit.collider.gameObject.tag}) in direction {direction}");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Cho phép xây chỉ khi vị trí preview (không đổi) hợp lệ theo cả overlap và 2 phía đều hợp lệ (nếu có IMinimumDistance).
+    /// </summary>
+    public bool TryPlaceBuilding()
+    {
+        if (!isPlacing || previewInstance == null || structureToPlace == null)
+            return false;
+
+        Vector2 previewPos = previewInstance.transform.position;
+        bool overlapValid = CheckOverlapValidity(previewPos);
+        bool leftValid = true, rightValid = true;
+        if (minimumDistance.HasValue && minimumDistance.Value > 0)
+        {
+            Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
+            leftValid = CheckSideValidity(lineOrigin, Vector2.left, minimumDistance.Value);
+            rightValid = CheckSideValidity(lineOrigin, Vector2.right, minimumDistance.Value);
+        }
+        bool overallValid = overlapValid && leftValid && rightValid;
+
+        if (overallValid)
+        {
+            GameObject newStructure = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
+            if (newStructure != null)
+            {
+                CleanupPreview();
+                BuildMenu.Instance.ResetShowBuildMenuState();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void CancelPlacement()
+    {
+        CleanupPreview();
+    }
+
+    private void CleanupPreview()
+    {
+        if (previewInstance != null)
+        {
+            Destroy(previewInstance);
+            previewInstance = null;
+        }
+        previewCollider = null;
+        HideDistanceLines();
+        structureToPlace = null;
+        minimumDistance = null;
+        isPlacing = false;
+    }
+
+    private void HideDistanceLines()
+    {
+        if (leftDistanceLine != null)
+            leftDistanceLine.gameObject.SetActive(false);
+        if (rightDistanceLine != null)
+            rightDistanceLine.gameObject.SetActive(false);
+    }
+}

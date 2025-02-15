@@ -21,13 +21,15 @@ namespace Script.Data_Model
         
         [Header("Player Character")]
         [Space(5)]
-        public List<GameObject> PlayerCharactorList = new List<GameObject>(); 
+        public List<GameObject> PlayerCharactorList = new List<GameObject>();
 
-        [Header("Wall and Stump ")]
-        [Space(5)]
+        [Header("Wall and Stump ")] [Space(5)]
+
         #region Wall and stump
-        //this not a wall
-        public GameObject wallDirtMound0;
+
+        public float WallMinDistance = 10f;
+        
+        public GameObject wallDirtMound0;//this not a wall
         
         public GameObject wallSpike1;
         public GameObject wallPalisade2;
@@ -288,6 +290,20 @@ namespace Script.Data_Model
         {
             WallDataList.Instance.InitializeWallData();
             TownCenterDataList.Instance.InitializeWallData();
+        }
+        [System.Serializable]
+        public class BuildingData
+        {
+            public GameObject prefab;
+            public float requiredDistance;
+        }
+
+        //list này chứ thông số về khoảng cách các gameobejtc với nhau
+        public List<BuildingData> buildingDataList = new List<BuildingData>();
+
+        public BuildingData GetBuildingData(GameObject prefab)
+        {
+            return buildingDataList.Find(data => data.prefab == prefab);
         }
     }
 }

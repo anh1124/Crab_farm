@@ -58,7 +58,7 @@ public class LoadFromSave : MonoBehaviour
         
         //instance OtherCharactor on container
         SetUpContainer.Instance.LoadAllContainer();
-        SetUpContainer.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
+        //SetUpContainer.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
         return true;
     }
 

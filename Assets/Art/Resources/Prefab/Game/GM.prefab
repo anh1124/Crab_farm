@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 4628210728400573778}
   - component: {fileID: 1557313042388775290}
   - component: {fileID: 814197313591573416}
+  - component: {fileID: 4896579773367113099}
   m_Layer: 0
   m_Name: GM
   m_TagString: Untagged
@@ -103,8 +104,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
+  playerSpeed: 7
   mainCamera: {fileID: 0}
   PlayerCharactorList: []
+  WallMinDistance: 10
   wallDirtMound0: {fileID: 0}
   wallSpike1: {fileID: 0}
   wallPalisade2: {fileID: 0}
@@ -152,7 +155,7 @@ MonoBehaviour:
   tree: {fileID: 0}
   treePrefabs: []
   treeChopCost: 1
-  treeHp: 10
+  TreeMaxWorkProgress: 5
   maxDistanceFromBush: 5
   rabbitBush: {fileID: 0}
   maxRabbitLimit: 0
@@ -164,6 +167,7 @@ MonoBehaviour:
   gameObjectHaveCanvas: {fileID: 0}
   confirmationPanel: {fileID: 1899307974243404924, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
   playerCoinUserInteractable: []
+  buildingDataList: []
 --- !u!114 &425193365867354460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -257,11 +261,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timeDisplay: {fileID: 0}
-  gameHour: 0
-  gameMinute: 0
-  gameDay: 1
-  gameMonth: 1
-  gameYear: 1
   realSecondsPerGameDay: 240
 --- !u!114 &7097226026259167694
 MonoBehaviour:
@@ -330,7 +329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8dedbdf52520ab41a8ead08d59c2c07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  treeObjects: []
+  allContainers: []
   playerContainer: {fileID: 0}
   chunkContainer: {fileID: 0}
   coinContainer: {fileID: 0}
@@ -341,6 +340,7 @@ MonoBehaviour:
   wanderersContainer: {fileID: 0}
   villagersContainer: {fileID: 0}
   statuesContainer: {fileID: 0}
+  otherContainer: {fileID: 0}
 --- !u!114 &1557313042388775290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -367,3 +367,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   saveFilePath: 
+--- !u!114 &4896579773367113099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abfb00970c6b2404bb5808ad84aaeef3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  validPlacementColor: {r: 0, g: 1, b: 0, a: 0.3}
+  invalidPlacementColor: {r: 1, g: 0, b: 0, a: 0.3}
+  lineWidth: 0.1
+  previewSortingOrder: 10

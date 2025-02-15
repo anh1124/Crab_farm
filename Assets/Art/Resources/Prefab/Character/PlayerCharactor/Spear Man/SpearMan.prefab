@@ -178,8 +178,8 @@ CapsuleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.02679348, y: 1.59}
-  m_Size: {x: 1.21558, y: 3.3572469}
+  m_Offset: {x: 0.02679348, y: 1.634603}
+  m_Size: {x: 1.21558, y: 3.2680407}
   m_Direction: 0
 --- !u!212 &7235647182857197577
 SpriteRenderer:
@@ -322,15 +322,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 0
-  currentHp: 0
   moveSpeed: 0
   position: {x: 0, y: 0}
-  coin: 0
   isGround: 0
-  shield: 0
-  atk: 0
-  attackSpeed: 0
+  maxHp: 0
+  currentHp: 0
+  coin: 0
 --- !u!1 &6752379391725988446
 GameObject:
   m_ObjectHideFlags: 0

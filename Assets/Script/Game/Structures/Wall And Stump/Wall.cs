@@ -1,5 +1,6 @@
 using System;
 using Script.Data_Model;
+using Script.Data_Model.Interfaces;
 using Script.Game.Enemy.Interfaces;
 using Script.Game.Item.Coin;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine.Serialization;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
-    public class Wall : MonoBehaviour,IDamageable
+    public class Wall : MonoBehaviour,IDamageable,IMinimumDistance
     { 
         /*
          * chú ý, stump ở layer defautl
@@ -35,7 +36,9 @@ namespace Script.Game.Structures.Wall_And_Stump
         [SerializeField] private bool maxLevel;
   
         [SerializeField] private CoinUser coinUser;
-        
+        [SerializeField] private float minimumDistance = 20f;
+    
+        public float MinimumDistance => minimumDistance;
         private void Start()
         {
             coinUser = GetComponent<CoinUser>();
@@ -113,7 +116,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             if (nextUpgradePrefab != null)
             {
-                Instantiate(nextUpgradePrefab, transform.position, Quaternion.identity);
+                // Get the current parent of this object
+                Transform parentTransform = transform.parent;
+        
+                // Instantiate the new upgrade prefab as a child of the same parent
+                GameObject newUpgrade = Instantiate(nextUpgradePrefab, transform.position, Quaternion.identity, parentTransform);
+        
+                // Destroy the current object
                 Destroy(gameObject);
             }
             else
@@ -121,6 +130,5 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Debug.LogWarning(nextUpgradePrefab + "is null in" + curentPrefab.name);
             }
         }
-
     }
 }
