@@ -27,7 +27,10 @@ namespace Script.Game.Other
             InstancePlayerAndSetCamera();
             
             //gán player cho các script cần thiết player khác
-            BuildMenu.Instance.InitializePlayer();
+            BuildMenu.instance.InitializePlayer();
+            //tìm kiếm Towncenter
+            BuildingManager.instance.CheckForExistingTownCenter();
+            
             
             //thêm setup lại mấy cái gui ở dưới
             pauseMenuPanel.SetActive(true);

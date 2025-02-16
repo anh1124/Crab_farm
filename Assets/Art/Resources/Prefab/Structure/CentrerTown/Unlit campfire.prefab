@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 4723927770362981857}
   m_Layer: 12
   m_Name: Unlit campfire
-  m_TagString: Structure
+  m_TagString: TownCenter
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -198,19 +198,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f8f114f010e6604bb1047da44a0d394, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tier: 0
+  level: 0
   upgradeCost: 0
-  curentPrefab: {fileID: 0}
+  currentPrefab: {fileID: 0}
   nextUpgradePrefab: {fileID: 0}
-  bowVendor: 0
-  hammerVendor: 0
-  hoeVendor: 0
-  coinStock: 0
-  pykeVendor: 0
-  shieldVendor: 0
-  siegeWorkshop: 0
-  centralWallLowerTier: 0
-  centralTowerLowerTier: 0
   readyToUpgrade: 0
   maxLevel: 0
   plazaDistance: 0

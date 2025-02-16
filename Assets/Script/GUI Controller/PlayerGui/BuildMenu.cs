@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using Script.Game.Other;
 
 public class BuildMenu : MonoBehaviour
 {
@@ -15,6 +16,8 @@ public class BuildMenu : MonoBehaviour
     [Tooltip("Danh sách các prefab có thể xây dựng")]
     public List<GameObject> buildableStructures;
 
+    
+    
     [Tooltip("Prefab của nút build")]
     public Button buildButtonPrefab;
      
@@ -29,12 +32,12 @@ public class BuildMenu : MonoBehaviour
     private Button currentConfirmButton;
     private Button currentCancelButton;
 
-    public static BuildMenu Instance { get; private set; }
+    public static BuildMenu instance;
 
     private void Awake()
     {
-        if (Instance == null)
-            Instance = this;
+        if (instance == null)
+            instance = this;
         else
             Destroy(gameObject);
     }
@@ -65,11 +68,14 @@ public class BuildMenu : MonoBehaviour
     
     public void OpenBuildMenu()
     {
+        BuildingManager.instance.CheckForExistingTownCenter();
+        BuildingManager.instance.UpdateAvailableBuildings();
         if (showBuildMenu)
         {
             ClearBuildButtonContainer();
             buildButtonContainer.gameObject.SetActive(false);
             showBuildMenu = false;
+           
         }
         else
         {
@@ -159,6 +165,10 @@ public class BuildMenu : MonoBehaviour
     {
         if (BuildingPlacementManager.Instance.TryPlaceBuilding())
         {
+            if (BuildingManager.instance.currentTownCenter != null)
+            {
+                BuildingManager.instance.CheckForExistingTownCenter();
+            }
             ResetBuildState();
         }
         else

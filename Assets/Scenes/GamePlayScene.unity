@@ -842,6 +842,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: townCenterList.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: treePrefabs.Array.data[0]
       value: 
       objectReference: {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
@@ -877,6 +881,26 @@ PrefabInstance:
       propertyPath: treePrefabs.Array.data[8]
       value: 
       objectReference: {fileID: 9095888047805289594, guid: 89beb37cd8903ee428f6380d6bbebeea, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: townCenterList.Array.data[0]
+      value: 
+      objectReference: {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: townCenterList.Array.data[1]
+      value: 
+      objectReference: {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: townCenterList.Array.data[2]
+      value: 
+      objectReference: {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: townCenterList.Array.data[3]
+      value: 
+      objectReference: {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: townCenterList.Array.data[4]
+      value: 
+      objectReference: {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: PlayerCharactorList.Array.size
       value: 1
@@ -1130,6 +1154,34 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: wallPrefabLv1
+      value: 
+      objectReference: {fileID: 7160081409078651775, guid: 048d8448d033006498c864dc649a10a9, type: 3}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: townCenterPrefabs.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: townCenterPrefabs.Array.data[0]
+      value: 
+      objectReference: {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: townCenterPrefabs.Array.data[1]
+      value: 
+      objectReference: {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: townCenterPrefabs.Array.data[2]
+      value: 
+      objectReference: {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: townCenterPrefabs.Array.data[3]
+      value: 
+      objectReference: {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
+    - target: {fileID: 2476075088388439571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: townCenterPrefabs.Array.data[4]
+      value: 
+      objectReference: {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
     - target: {fileID: 2644342881993040475, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_Type
       value: 0

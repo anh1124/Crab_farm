@@ -1316,6 +1316,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5894371527820798687}
   - component: {fileID: 3978673942675159998}
+  - component: {fileID: 2476075088388439571}
   m_Layer: 5
   m_Name: BuildMenu
   m_TagString: Untagged
@@ -1362,9 +1363,26 @@ MonoBehaviour:
   buildableStructures: []
   buildButtonPrefab: {fileID: 0}
   buildButtonContainer: {fileID: 0}
-  previewSortingOrder: 10
   player: {fileID: 0}
   showBuildMenu: 0
+--- !u!114 &2476075088388439571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3687424800901749601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b321a4322334657959f70c67d207eda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  townCenterPrefabs: []
+  wallPrefabLv1: {fileID: 0}
+  bowVendor: {fileID: 0}
+  hammerVendor: {fileID: 0}
+  townCenterLevelConfigs: []
+  currentTownCenter: {fileID: 0}
 --- !u!1 &3747629336772732808
 GameObject:
   m_ObjectHideFlags: 0

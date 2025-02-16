@@ -28,6 +28,7 @@ TagManager:
   - VillagersContainer
   - StatuesContainer
   - OtherContainer
+  - TownCenter
   layers:
   - Default
   - TransparentFX

@@ -4,7 +4,7 @@ using UnityEngine;
 using System.IO;
 using System.Reflection; // Import thư viện I/O để ghi file
 using System.Text;
-using Script.Game.Structures.TownCentrer;
+using Script.Game.Structures.TownCenter;
 using Script.Game.Structures.Wall_And_Stump;
 using UnityEngine.Serialization;
 
@@ -59,22 +59,13 @@ namespace Script.Data_Model
         #endregion
         
         
+        [FormerlySerializedAs("townCenter")]
         [Space(15)] 
         [Header("TownCenter ")]
         [Space(5)]  
         #region TownCenter
-
-        public GameObject townCenterUnlitCampfire0;
-        public GameObject townCenterCampfire1;
-        public GameObject townCenterVillageTents2;
-        public GameObject townCenterTownHall3;
-        public GameObject townCenterBigTownHall4;
-        // public GameObject townCenterCastleKeep5; // Example of adding new variables
-        // public GameObject townCenterIronCastle6;
-
+        public List<GameObject> townCenterList = new List<GameObject>();
         public float plazaDistance = 10f;//khoảng cách quảng trường
-        //cuối cái này sẽ thêm 2 bức tường,bên trái là bow,bên phải là hammer
-        
         #endregion
 
         [Space(15)] 
@@ -220,7 +211,7 @@ namespace Script.Data_Model
                 _prefabDict.Add($"tree_{i}", treePrefabs[i]);
             }
             
-            playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree"}; 
+            playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter"}; 
             CallOtherListToGetData();
             
             // Loại bỏ tất cả các phần tử null khỏi danh sách charactor 
@@ -305,5 +296,16 @@ namespace Script.Data_Model
         {
             return buildingDataList.Find(data => data.prefab == prefab);
         }
+
+        private void Start()
+        {
+            if (townCenterList.Count <= 0)
+            {
+                Debug.LogError("thiếu dữ liệu về towncenter,hãy thêm nó vào prefabdata.towncenterlist ");
+            }
+        }
+   
+
+
     }
 }

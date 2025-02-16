@@ -146,8 +146,9 @@ namespace Script
                 case "Player":
                     obj.transform.SetParent(playerContainer.transform, true);
                     break;
-                
+                case "Wall":
                 case "Structure":
+                case "TownCenter":
                     obj.transform.SetParent(structureContainer.transform, true);
                     break;
                 
