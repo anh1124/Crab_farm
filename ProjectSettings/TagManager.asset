@@ -29,6 +29,13 @@ TagManager:
   - StatuesContainer
   - OtherContainer
   - TownCenter
+  - Bow
+  - Hammer
+  - BowVendor
+  - HammerVendor
+  - SpikeVendor
+  - SwordVendor
+  - ScytheVendor
   layers:
   - Default
   - TransparentFX
@@ -46,7 +53,7 @@ TagManager:
   - Player
   - TriggerLayer
   - Wall
-  - 
+  - Item
   - 
   - 
   - 

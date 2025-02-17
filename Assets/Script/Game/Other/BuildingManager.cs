@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Script.Data_Model;
 using UnityEngine;
-using Script.Game.Structures.TownCenter; // Để dùng TownCenterDataList
+using Script.Game.Structures.TownCenter;
+using UnityEngine.Serialization; // Để dùng TownCenterDataList
 
 namespace Script.Game.Other
 {
@@ -13,8 +14,8 @@ namespace Script.Game.Other
     {
         TownCenter,
         Wall,
-        HammerSeller,
-        BowSeller,
+        HammerVendor,
+        BowVendor,
         // ...
     }
 
@@ -46,8 +47,8 @@ namespace Script.Game.Other
         [Header("Other Structures Prefabs")]
         [Tooltip("Prefab tường cơ bản (phiên bản lvl1)")]
         public GameObject wallPrefabLv1;
-        public GameObject hammerSellerPrefab;
-        public GameObject bowSellerPrefab;
+        [FormerlySerializedAs("hammerSellerPrefab")] public GameObject hammerVendorPrefab;
+        [FormerlySerializedAs("bowSellerPrefab")] public GameObject bowVendorPrefab;
         
         [Header("Building Unlock Configurations")]
         public List<BuildingUnlockConfig> buildingUnlockConfigs = new List<BuildingUnlockConfig>();
@@ -76,6 +77,8 @@ namespace Script.Game.Other
         {
             // Giả sử PrefabData.Instance.townCenterList là List<GameObject> đã được thiết lập
             townCenterPrefabs = PrefabData.Instance.townCenterList.ToArray();
+            hammerVendorPrefab = PrefabData.Instance.hammerVendor;
+            bowVendorPrefab = PrefabData.Instance.bowVendor;
         }
         
         /// <summary>
@@ -94,8 +97,8 @@ namespace Script.Game.Other
                 config1.unlockRules = new List<BuildingUnlockRule>
                 {
                     new BuildingUnlockRule { buildingType = BuildingType.Wall, maxQuantity = 2, maxUpgradeLevel = 1 },
-                    new BuildingUnlockRule { buildingType = BuildingType.HammerSeller, maxQuantity = 1, maxUpgradeLevel = 1 },
-                    new BuildingUnlockRule { buildingType = BuildingType.BowSeller, maxQuantity = 1, maxUpgradeLevel = 1 }
+                    new BuildingUnlockRule { buildingType = BuildingType.HammerVendor, maxQuantity = 1, maxUpgradeLevel = 1 },
+                    new BuildingUnlockRule { buildingType = BuildingType.BowVendor, maxQuantity = 1, maxUpgradeLevel = 1 }
                 };
                 buildingUnlockConfigs.Add(config1);
                 
@@ -105,8 +108,8 @@ namespace Script.Game.Other
                 config2.unlockRules = new List<BuildingUnlockRule>
                 {
                     new BuildingUnlockRule { buildingType = BuildingType.Wall, maxQuantity = 4, maxUpgradeLevel = 1 },
-                    new BuildingUnlockRule { buildingType = BuildingType.HammerSeller, maxQuantity = 1, maxUpgradeLevel = 1 },
-                    new BuildingUnlockRule { buildingType = BuildingType.BowSeller, maxQuantity = 1, maxUpgradeLevel = 1 }
+                    new BuildingUnlockRule { buildingType = BuildingType.HammerVendor, maxQuantity = 1, maxUpgradeLevel = 1 },
+                    new BuildingUnlockRule { buildingType = BuildingType.BowVendor, maxQuantity = 1, maxUpgradeLevel = 1 }
                 };
                 buildingUnlockConfigs.Add(config2);
                 
@@ -116,8 +119,8 @@ namespace Script.Game.Other
                 config3.unlockRules = new List<BuildingUnlockRule>
                 {
                     new BuildingUnlockRule { buildingType = BuildingType.Wall, maxQuantity = 4, maxUpgradeLevel = 2 },
-                    new BuildingUnlockRule { buildingType = BuildingType.HammerSeller, maxQuantity = 1, maxUpgradeLevel = 1 },
-                    new BuildingUnlockRule { buildingType = BuildingType.BowSeller, maxQuantity = 1, maxUpgradeLevel = 1 }
+                    new BuildingUnlockRule { buildingType = BuildingType.HammerVendor, maxQuantity = 1, maxUpgradeLevel = 1 },
+                    new BuildingUnlockRule { buildingType = BuildingType.BowVendor, maxQuantity = 1, maxUpgradeLevel = 1 }
                 };
                 buildingUnlockConfigs.Add(config3);
                 
@@ -127,8 +130,8 @@ namespace Script.Game.Other
                 config4.unlockRules = new List<BuildingUnlockRule>
                 {
                     new BuildingUnlockRule { buildingType = BuildingType.Wall, maxQuantity = 4, maxUpgradeLevel = 2 },
-                    new BuildingUnlockRule { buildingType = BuildingType.HammerSeller, maxQuantity = 1, maxUpgradeLevel = 1 },
-                    new BuildingUnlockRule { buildingType = BuildingType.BowSeller, maxQuantity = 1, maxUpgradeLevel = 1 }
+                    new BuildingUnlockRule { buildingType = BuildingType.HammerVendor, maxQuantity = 1, maxUpgradeLevel = 1 },
+                    new BuildingUnlockRule { buildingType = BuildingType.BowVendor, maxQuantity = 1, maxUpgradeLevel = 1 }
                 };
                 buildingUnlockConfigs.Add(config4);
             }
@@ -269,10 +272,10 @@ namespace Script.Game.Other
                     return (townCenterPrefabs != null && townCenterPrefabs.Length > 0) ? townCenterPrefabs[0] : null;
                 case BuildingType.Wall:
                     return wallPrefabLv1;
-                case BuildingType.HammerSeller:
-                    return hammerSellerPrefab;
-                case BuildingType.BowSeller:
-                    return bowSellerPrefab;
+                case BuildingType.HammerVendor:
+                    return hammerVendorPrefab;
+                case BuildingType.BowVendor:
+                    return bowVendorPrefab;
                 default:
                     return null;
             }
@@ -292,11 +295,11 @@ namespace Script.Game.Other
                 case BuildingType.Wall:
                     tag = "Wall";
                     break;
-                case BuildingType.HammerSeller:
-                    tag = "HammerSeller";
+                case BuildingType.HammerVendor:
+                    tag = "HammerVendor";
                     break;
-                case BuildingType.BowSeller:
-                    tag = "ArcherSeller";
+                case BuildingType.BowVendor:
+                    tag = "BowVendor";
                     break;
             }
             return string.IsNullOrEmpty(tag) ? 0 : GameObject.FindGameObjectsWithTag(tag).Length;

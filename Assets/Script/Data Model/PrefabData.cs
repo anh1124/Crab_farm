@@ -195,6 +195,16 @@ namespace Script.Data_Model
         //danh sách những thứ có coinUser và tag để hiện coin slot
         public List<string> playerCoinUserInteractable ; 
       
+        public Dictionary<string, int> productPrices = new Dictionary<string, int>
+        {
+            { "BowVendor", 2 },
+            { "HammerVendor", 3 },
+            { "ScytheVendor", 3 },
+            { "SwordVendor", 3 },
+            { "SpikeVendor", 3 },
+        };
+
+        
         private void Awake()
         {
             if (Instance == null)
@@ -211,7 +221,9 @@ namespace Script.Data_Model
                 _prefabDict.Add($"tree_{i}", treePrefabs[i]);
             }
             
-            playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter"}; 
+            //danh sách chứa tag mà player có thể tương tác bằng trigger helper
+            playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
+                "BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 
             CallOtherListToGetData();
             
             // Loại bỏ tất cả các phần tử null khỏi danh sách charactor 

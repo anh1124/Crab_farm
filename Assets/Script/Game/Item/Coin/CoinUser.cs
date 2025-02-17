@@ -13,6 +13,10 @@ namespace Script.Game.Item.Coin
         /// -có đang va chạm với player không?
         /// -script CoinUser.isReadyToUpgrade có false không thì mới hiện các coin slot
         /// </summary>
+        
+        [Header("Coins Acceptance")]
+        public bool canAcceptCoins = true; // kiểm soát việc nhận xu
+        
         [Header("Upgrade Settings")]
         public int requiredCoins; // tổng số coin cần để thực hiện hành động upgrade
         public Action onUpgradeComplete; // cái này sẽ được gọi khi nhét đủ coin
@@ -58,10 +62,13 @@ namespace Script.Game.Item.Coin
 
         public void PlayerTriggerOn()
         {
-            SetupCoinSlots();
-            playerTrigger = true;
+            // Chỉ kích hoạt nếu có thể nhận xu và chưa nâng cấp
+            if (canAcceptCoins && !isReadyToUpgrade)
+            {
+                SetupCoinSlots();
+                playerTrigger = true;
+            }
         }
-
         public void PlayerTriggerOff()
         {
             ClearCoinSlots();
@@ -108,18 +115,19 @@ namespace Script.Game.Item.Coin
 
         public void InsertCoin(int availableCoins, GameObject player)
         {
-            if (availableCoins <= 0 || isReadyToUpgrade)
+            // Kiểm tra điều kiện nhận xu
+            if (!canAcceptCoins || availableCoins <= 0 || isReadyToUpgrade)
             {
                 return;
             }
             StartCoinTransfer(player);
             isCollectingCoins = true;
-            coinCollectionTimer = coinCollectionTimeout; 
+            coinCollectionTimer = coinCollectionTimeout;
         }
         private void Update()
         {
             // Kiểm tra và giảm dần giá trị đếm ngược
-            if (isCollectingCoins && !isReadyToUpgrade)
+            if (isCollectingCoins && canAcceptCoins && !isReadyToUpgrade)
             {
                 coinCollectionTimer -= Time.deltaTime;
                 if (coinCollectionTimer <= 0)
@@ -231,7 +239,17 @@ namespace Script.Game.Item.Coin
             coinsInTransit.Clear();
             collectedCoins = 0;
         }
-
+        public void ResetUpgradeState()
+        {
+            isReadyToUpgrade = false;
+            collectedCoins = 0;
+        
+            // Only show coin slots if player is still in trigger area
+            if (playerTrigger && canAcceptCoins)
+            {
+                SetupCoinSlots();
+            }
+        }
         private void PerformUpgrade()
         {
             if (collectedCoins >= requiredCoins)

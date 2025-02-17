@@ -750,6 +750,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: bowVendor
+      value: 
+      objectReference: {fileID: 8435948595016383760, guid: 2924dde1c8b980840bdb397795e30461, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: wallIron5
       value: 
       objectReference: {fileID: 8305966225529757044, guid: e50073ae5b8de8b4cb6f19e12a360812, type: 3}
@@ -781,6 +785,10 @@ PrefabInstance:
       propertyPath: stumpStone3
       value: 
       objectReference: {fileID: 1913700099761040674, guid: ba587d698125f3a4a9309e0fa3c17dd6, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: hammerVendor
+      value: 
+      objectReference: {fileID: 3757704238293593943, guid: b6693e7d830a7ce41a55bd13977bc0ba, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: coinMoveSpeed
       value: 0.5
