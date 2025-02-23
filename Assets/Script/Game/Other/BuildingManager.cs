@@ -163,11 +163,6 @@ namespace Script.Game.Other
             Debug.LogWarning("Không tìm thấy TownCenter trong container!");
         }
 
-        
-      
-        
-        
-        
         /// <summary>
         /// Cập nhật danh sách prefab có thể xây dựa trên cấp của TownCenter và cấu hình mở khóa trong BuildingUnlockConfigs.
         /// Nếu chưa có TownCenter, chỉ cho phép xây dựng TownCenter (lấy prefab từ townCenterPrefabs[0]).

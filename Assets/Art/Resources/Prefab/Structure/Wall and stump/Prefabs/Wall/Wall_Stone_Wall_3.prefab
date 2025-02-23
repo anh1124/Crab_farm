@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4968392390527625138}
   - component: {fileID: 2138100152277995112}
   - component: {fileID: 5411035842738316472}
-  m_Layer: 12
+  m_Layer: 15
   m_Name: Wall_Stone_Wall_3
   m_TagString: Wall
   m_Icon: {fileID: 0}
@@ -100,6 +100,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canAcceptCoins: 1
   requiredCoins: 0
   collectedCoins: 0
   coinCollectionTimeout: 0
@@ -134,6 +135,7 @@ MonoBehaviour:
   readyToUpgrade: 0
   maxLevel: 0
   coinUser: {fileID: 0}
+  minimumDistance: 20
 --- !u!61 &5411035842738316472
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -188,7 +190,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1214764291543465726}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: CoinSlotLocation
   m_TagString: Untagged
   m_Icon: {fileID: 0}

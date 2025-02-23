@@ -683,7 +683,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: invalidPlacementTags.Array.size
-      value: 3
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: invalidPlacementTags.Array.data[0]
@@ -696,6 +696,30 @@ PrefabInstance:
     - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: invalidPlacementTags.Array.data[2]
       value: Tree
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[3]
+      value: BowVendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[4]
+      value: HammerVendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[5]
+      value: SpikeVendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[6]
+      value: SwordVendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[7]
+      value: ScytheVendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 4896579773367113099, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[8]
+      value: TownCenter
       objectReference: {fileID: 0}
     - target: {fileID: 6439472928953053899, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: seed

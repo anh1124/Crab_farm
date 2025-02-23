@@ -16,12 +16,19 @@ namespace Script.Game.Other
         private readonly int previewSortingOrder = 10;
 
         [Header("Placement Settings")]
+        [Tooltip("Danh sách các layer hợp lệ để đặt công trình")]
         [SerializeField] private List<string> placementLayers = new List<string> { "Structure" };
+        [Tooltip("Danh sách các tag không được phép đặt công trình đè lên nhau")]
         [SerializeField] private List<string> invalidPlacementTags = new List<string>(); // VD: thêm "Tree", "Wall",...
         // raycastYOffset chỉ dùng để thay đổi vị trí của 2 đường kẻ (vì chúng đang quá sát mặt đất)
         [SerializeField] private float raycastYOffset = 0.8f;
 
         [SerializeField] private bool showDebugLog = false;
+        
+        [Header("Wall Settings")]
+        [SerializeField] private string townCenterTag = "TownCenter"; // Tag for town center
+        [SerializeField] private string wallTag = "Wall"; // Tag for wall structures
+        private GameObject townCenter;
         
         private LayerMask placementLayerMask;
         private GameObject structureToPlace;
@@ -69,9 +76,10 @@ namespace Script.Game.Other
             line.material = new Material(Shader.Find("Sprites/Default"));
             line.sortingOrder = previewSortingOrder;
         }
-
+        
         public void StartPlacement(GameObject structurePrefab)
         {
+            
             CleanupPreview();
 
             structureToPlace = structurePrefab;
@@ -82,6 +90,8 @@ namespace Script.Game.Other
 
             previewInstance = Instantiate(structurePrefab);
             previewInstance.SetActive(true);
+            //tìm kiếm và chuyển collider trigger thành true để kiểm tra object đè lên nhau
+            
             SetupPreview(previewInstance);
         
             isPlacing = true;
@@ -89,6 +99,7 @@ namespace Script.Game.Other
 
         private void SetupPreview(GameObject preview)
         {
+            //kiểm tra xem các wall gameobject có trigger trong preview không
             previewCollider = preview.GetComponent<Collider2D>();
             if (previewCollider != null)
                 previewCollider.isTrigger = true;
