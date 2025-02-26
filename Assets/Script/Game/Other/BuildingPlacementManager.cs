@@ -244,7 +244,7 @@ namespace Script.Game.Other
             var overlaps = new List<Collider2D>();
             ContactFilter2D filter = new ContactFilter2D()
             {
-                useTriggers = false,
+                useTriggers = true,
                 useLayerMask = true,
                 layerMask = placementLayerMask
             };
