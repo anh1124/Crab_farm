@@ -1,6 +1,7 @@
 using Script.Data_Model;
 using Script.Game.Item.Coin;
 using Script.Game.Other;
+using Script.Game.Other.Nature;
 using Script.Game.Structures.TownCenter;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -80,7 +81,8 @@ namespace Script.Game.Structures.TownCenter
             GetPlazaDistance();
             InitializeData();
             UpdateCoinUserData();
-            BuildingManager.instance.CheckForExistingTownCenter();
+            BuildingManager.instance.currentTownCenter = gameObject;
+            RuleAddWall();
         }
         
         private void InitializeData()
@@ -104,6 +106,41 @@ namespace Script.Game.Structures.TownCenter
                 Debug.LogWarning($"No townCentrerData found for tier: {Level}");
             }
         }
+
+        public void RuleAddWall()
+        {
+            if (level == 1)
+            {
+                int extraDistance = 5;
+                // Vẽ hình tròn kiểm tra cây trong vùng plazaDistance
+                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, plazaDistance + extraDistance);
+                foreach (Collider2D collider in colliders)
+                {
+                    NatureTree tree = collider.GetComponent<NatureTree>();
+                    if (tree != null)
+                    {
+                        tree.TakeDame(int.MaxValue); // Chặt cây ngay lập tức
+                    }
+                }
+
+                // Tạo tường ở hai bên TownCenter
+                Vector2 leftPos = new Vector2(transform.position.x - plazaDistance, transform.position.y);
+                Vector2 rightPos = new Vector2(transform.position.x + plazaDistance, transform.position.y);
+
+                GameObject leftWall = Instantiate(PrefabData.Instance.wallDirtMound0, leftPos, Quaternion.identity);
+                GameObject rightWall = Instantiate(PrefabData.Instance.wallDirtMound0, rightPos, Quaternion.identity);
+
+                // Xoay tường về phía TownCenter
+                BuildingManager.instance.RotateTowardsTownCenter(leftWall);
+                BuildingManager.instance.RotateTowardsTownCenter(rightWall);
+
+                // Đưa tường vào container để quản lý
+                SetUpContainer.Instance.MoveObjToContainer(leftWall, SetUpContainer.Instance.structureContainer);
+                SetUpContainer.Instance.MoveObjToContainer(rightWall, SetUpContainer.Instance.structureContainer);
+            }
+        }
+
+
         private void UpdateCoinUserData()
         {
             coinUser.requiredCoins = UpgradeCost;

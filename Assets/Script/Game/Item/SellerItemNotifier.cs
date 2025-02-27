@@ -5,6 +5,9 @@ namespace Script.Game.Item
 {
     public class SellerItemNotifier : MonoBehaviour
     {
+        
+        //script này được gán lên các item còn trên trệ hàng,
+        //tức là nếu nó bị phá thì sẽ gọi notice đến script của cửa hàng bán nó
         public ItemSeller seller; //script đã bán item này
 
         private bool isRemoved = false; // Để đảm bảo chỉ thông báo một lần

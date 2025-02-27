@@ -21,13 +21,11 @@ namespace Script.Game.Other
         [Tooltip("Danh sách các tag không được phép đặt công trình đè lên nhau")]
         [SerializeField] private List<string> invalidPlacementTags = new List<string>(); // VD: thêm "Tree", "Wall",...
         // raycastYOffset chỉ dùng để thay đổi vị trí của 2 đường kẻ (vì chúng đang quá sát mặt đất)
+        
+        [SerializeField] private List<string> tagsToOrient = new List<string> { "Wall", "ArcherTower" };
         [SerializeField] private float raycastYOffset = 0.8f;
 
         [SerializeField] private bool showDebugLog = false;
-        
-        [Header("Wall Settings")]
-        [SerializeField] private string townCenterTag = "TownCenter"; // Tag for town center
-        [SerializeField] private string wallTag = "Wall"; // Tag for wall structures
         private GameObject townCenter;
         
         private LayerMask placementLayerMask;
@@ -79,18 +77,15 @@ namespace Script.Game.Other
         
         public void StartPlacement(GameObject structurePrefab)
         {
-            
             CleanupPreview();
 
             structureToPlace = structurePrefab;
         
-            // Nếu prefab có IMinimumDistance, lấy giá trị; nếu không, minimumDistance sẽ là null
             var distanceComponent = structurePrefab.GetComponent<IMinimumDistance>();
             minimumDistance = distanceComponent?.MinimumDistance;
 
             previewInstance = Instantiate(structurePrefab);
             previewInstance.SetActive(true);
-            //tìm kiếm và chuyển collider trigger thành true để kiểm tra object đè lên nhau
             
             SetupPreview(previewInstance);
         
@@ -99,7 +94,6 @@ namespace Script.Game.Other
 
         private void SetupPreview(GameObject preview)
         {
-            //kiểm tra xem các wall gameobject có trigger trong preview không
             previewCollider = preview.GetComponent<Collider2D>();
             if (previewCollider != null)
                 previewCollider.isTrigger = true;
@@ -122,18 +116,16 @@ namespace Script.Game.Other
         {
             if (!isPlacing || previewInstance == null) return;
 
-            // Lấy vị trí của player (preview được đặt chính xác theo vị trí player)
             Vector2 previewPos = PlayerController.Instance.player.transform.position;
             previewInstance.transform.position = previewPos;
+            
+            // Xoay preview để quay lưng về phía TownCenter nếu cần
+            OrientBuilding(previewInstance, previewPos);
         
-            // Kiểm tra các va chạm (overlap và khoảng cách từ container)
             bool overlapValid = CheckOverlapValidity(previewPos);
-
-            // Nếu có IMinimumDistance (minimumDistance > 0) thì kiểm tra riêng từng bên
             bool leftValid = true, rightValid = true;
             if (minimumDistance.HasValue && minimumDistance.Value > 0)
             {
-                // Chỉ dùng raycastYOffset cho 2 đường kẻ, không ảnh hưởng đến previewPos
                 Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
                 leftValid = CheckSideValidity(lineOrigin, Vector2.left, minimumDistance.Value);
                 rightValid = CheckSideValidity(lineOrigin, Vector2.right, minimumDistance.Value);
@@ -142,7 +134,6 @@ namespace Script.Game.Other
 
             UpdateVisualFeedback(previewPos, overallValid);
 
-            // Vẽ đường kẻ chỉ khi có minimumDistance
             if (minimumDistance.HasValue && minimumDistance.Value > 0)
             {
                 Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
@@ -153,7 +144,7 @@ namespace Script.Game.Other
                 HideDistanceLines();
             }
         }
-
+        
         /// <summary>
         /// Cập nhật màu của preview dựa trên overallValid.
         /// </summary>
@@ -312,7 +303,27 @@ namespace Script.Game.Other
             }
             return true;
         }
+        /// <summary>
+        /// Xoay công trình sao cho lưng hướng về phía TownCenter.
+        /// </summary>
+        private void OrientBuilding(GameObject building, Vector2 buildingPos)
+        {
+            // Nếu chưa có TownCenter, không xoay
+            if (BuildingManager.instance.currentTownCenter == null)
+                return;
 
+            // Chỉ xoay các công trình có tag trong tagsToOrient
+            if (!tagsToOrient.Contains(building.tag))
+                return;
+
+            Vector2 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+            Vector2 toTownCenter = townCenterPos - buildingPos;
+
+            // Nếu TownCenter ở bên trái (toTownCenter.x < 0), mặt hướng sang phải (scale X = 1)
+            // Nếu TownCenter ở bên phải (toTownCenter.x > 0), mặt hướng sang trái (scale X = -1)
+            float scaleX = toTownCenter.x < 0 ? 1f : -1f;
+            building.transform.localScale = new Vector3(scaleX, 1f, 1f);
+        }
         /// <summary>
         /// Cho phép xây chỉ khi vị trí preview (không đổi) hợp lệ theo cả overlap và 2 phía đều hợp lệ (nếu có IMinimumDistance).
         /// </summary>
@@ -337,6 +348,8 @@ namespace Script.Game.Other
                 GameObject newStructure = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
+                    // Xoay công trình thực tế để quay lưng về phía TownCenter
+                    OrientBuilding(newStructure, previewPos);
                     CleanupPreview();
                     BuildMenu.instance.ResetShowBuildMenuState();
                     BuildingManager.instance.UpdateAvailableBuildings();

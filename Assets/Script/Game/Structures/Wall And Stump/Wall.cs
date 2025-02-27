@@ -3,6 +3,7 @@ using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Game.Enemy.Interfaces;
 using Script.Game.Item.Coin;
+using Script.Game.Other;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -50,6 +51,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             InitializeWallData();
             UpdateCoinUserData();
+            BuildingManager.instance.RotateTowardsTownCenter(gameObject);
         }
         private void InitializeWallData()
         {

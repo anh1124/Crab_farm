@@ -418,7 +418,11 @@ namespace Script
             public string prefabID;
             public object data;
         }
-        
-        
+
+
+        public void MoveObjToContainer(GameObject leftWall, GameObject instanceStructureContainer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

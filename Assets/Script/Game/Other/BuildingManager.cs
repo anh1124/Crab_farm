@@ -304,5 +304,24 @@ namespace Script.Game.Other
         {
             Debug.LogError($"{gameObject.name} was disabled.\nCall Stack:\n{Environment.StackTrace}");
         }
+        public void RotateTowardsTownCenter(GameObject obj)
+        {
+            if (currentTownCenter == null || obj == null) return;
+
+            Vector3 direction = currentTownCenter.transform.position - obj.transform.position;
+
+            // Xác định xem đối tượng nên quay về hướng nào
+            if (direction.x > 0)
+            {
+                // TownCenter ở bên phải => Quay đối tượng sang trái (180 độ quanh trục Y)
+                obj.transform.rotation = Quaternion.Euler(0, 180, 0);
+            }
+            else
+            {
+                // TownCenter ở bên trái => Giữ nguyên (mặt phải)
+                obj.transform.rotation = Quaternion.identity;
+            }
+        }
+
     }
 }
