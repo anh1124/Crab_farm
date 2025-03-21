@@ -144,20 +144,20 @@ namespace Script.Data_Model
         public GameObject tree;//đây là tree nguyên bản,nhưng khi lấy tree thì phải dùng hàm get random tree
         
         // Thêm danh sách prefab Tree
-        [Header("Tree Prefabs")]
-        public List<GameObject> treePrefabs = new();
+        [FormerlySerializedAs("treePrefabs")] [Header("Tree Prefabs")]
+        public List<GameObject> treePrefabsList = new();
         
         private Dictionary<string, GameObject> _prefabDict = new();
         public GameObject GetRandomTree()
         {
-            if (treePrefabs.Count == 0)
+            if (treePrefabsList.Count == 0)
             {
-                Debug.LogWarning("Danh sách treePrefabs đang rỗng.");
+                Debug.LogWarning("Danh sách treePrefabsList đang rỗng.");
                 return null;
             }
             
-            int randomIndex = UnityEngine.Random.Range(0, treePrefabs.Count);
-            return treePrefabs[randomIndex];
+            int randomIndex = UnityEngine.Random.Range(0, treePrefabsList.Count);
+            return treePrefabsList[randomIndex];
         }
         public int treeChopCost =1;//số xu cần dể chặt cây
         public int TreeMaxWorkProgress = 5;//số lần cần để chặt cây
@@ -215,12 +215,17 @@ namespace Script.Data_Model
             {
                 Destroy(gameObject);
             }
-            // Đăng ký các prefab tree
-            for(int i = 0; i < treePrefabs.Count; i++)
+            // Đăng ký các prefab TownCenter
+            for (int i = 0; i < townCenterList.Count; i++)
             {
-                _prefabDict.Add($"tree_{i}", treePrefabs[i]);
+                _prefabDict.Add($"town_center_{i}", townCenterList[i]);
             }
-            
+            // Đăng ký các prefab tree
+            for(int i = 0; i < treePrefabsList.Count; i++)
+            {
+                _prefabDict.Add($"tree_{i}", treePrefabsList[i]);
+            }
+           
             //danh sách chứa tag mà player có thể tương tác bằng trigger helper
             playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
                 "BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 

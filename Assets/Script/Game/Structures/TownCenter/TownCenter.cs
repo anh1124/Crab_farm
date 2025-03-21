@@ -1,14 +1,13 @@
 using Script.Data_Model;
+using Script.Data_Model.Interfaces;
 using Script.Game.Item.Coin;
 using Script.Game.Other;
 using Script.Game.Other.Nature;
-using Script.Game.Structures.TownCenter;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Script.Game.Structures.TownCenter
 {
-    public class TownCenter : MonoBehaviour,IUpgradeable
+    public class TownCenter : MonoBehaviour,IUpgradeable, ISaveable
     { /*
        * tag Structure
        * layer Defautl
@@ -21,6 +20,8 @@ namespace Script.Game.Structures.TownCenter
         [SerializeField] public GameObject nextUpgradePrefab;
         [SerializeField] public bool readyToUpgrade;
         [SerializeField] public bool maxLevel;
+
+        private readonly int extraDistance = 5;
         
         // Các biến không thuộc interface
         public float plazaDistance;
@@ -82,18 +83,17 @@ namespace Script.Game.Structures.TownCenter
             InitializeData();
             UpdateCoinUserData();
             BuildingManager.instance.currentTownCenter = gameObject;
-            RuleAddWall();
         }
         
         private void InitializeData()
         {
             // Lấy dữ liệu từ TownCenterDataList theo level hiện tại
-            TownCenterDataList.TownCentrerData townCenterData = TownCenterDataList.Instance.GetWallDataByTier(Level);
+            TownCenterDataList.TownCenterData townCenterData = TownCenterDataList.Instance.GetWallDataByTier(Level);
             
             if (townCenterData != null)
             {
                 UpgradeCost = townCenterData.upgradeCost;
-                CurrentPrefab = townCenterData.curentPrefab; // Lưu ý: đảm bảo tên biến trong data trùng với đây
+                CurrentPrefab = townCenterData.curentPrefab;
                 NextUpgradePrefab = townCenterData.nextUpgradePrefab;
                 MaxLevel = townCenterData.maxLevel;
 
@@ -109,9 +109,9 @@ namespace Script.Game.Structures.TownCenter
 
         public void RuleAddWall()
         {
-            if (level == 1)
+            if (level == 0)
             {
-                int extraDistance = 5;
+                
                 // Vẽ hình tròn kiểm tra cây trong vùng plazaDistance
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, plazaDistance + extraDistance);
                 foreach (Collider2D collider in colliders)
@@ -152,18 +152,18 @@ namespace Script.Game.Structures.TownCenter
             if (NextUpgradePrefab != null)
             {
                 // Instantiate đối tượng mới với parent là transform cha của đối tượng hiện tại
-                GameObject upgraded = Instantiate(NextUpgradePrefab, transform.position, Quaternion.identity, transform.parent);
+                GameObject upgraded = Instantiate(NextUpgradePrefab, transform.position, Quaternion.identity,
+                    transform.parent);
                 Destroy(gameObject);
+                
+                // Add wall when upgraded to level 1
+                RuleAddWall();
             }
             else
             {
                 Debug.LogWarning(NextUpgradePrefab + " is null in " + CurrentPrefab.name);
             }
-
-            
-         
         }
-
 
         // Triển khai phương thức GetUpgradeCost theo interface
         public int GetUpgradeCost()
@@ -176,5 +176,40 @@ namespace Script.Game.Structures.TownCenter
         {
             plazaDistance = PrefabData.Instance.plazaDistance;
         }
+
+        #region Save System Implementation
+        [System.Serializable]
+        public class TownCenterData
+        {
+            public float positionX;
+            public float positionY;
+            public bool readyToUpgrade;
+        }
+        public string GetPrefabID()
+        {
+            int index = level;
+            return $"town_center_{index}";
+        }
+        public object CaptureData()
+        {
+            return new TownCenterData
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                readyToUpgrade = this.readyToUpgrade
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            TownCenterData townData = (TownCenterData)data;
+            transform.position = new Vector3(townData.positionX, townData.positionY, 0);
+            readyToUpgrade = townData.readyToUpgrade;
+    
+            // Cập nhật dữ liệu từ DataList và UI
+            InitializeData();
+            UpdateCoinUserData();
+        }
+        #endregion
     }
 }

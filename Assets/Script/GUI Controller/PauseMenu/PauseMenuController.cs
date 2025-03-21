@@ -45,7 +45,8 @@ namespace Script.GUI_Controller.PauseMenu
         {
             Time.timeScale = 1f;
             pauseMenuPanel.SetActive(false);
-            guiCanvasManager.SetMainGameplayUI();
+            guiCanvasManager.ResumeGame();
+            
         }
         public void OpenMenu()
         {

@@ -11,7 +11,7 @@ namespace Script.Game.Structures.TownCenter
         public static TownCenterDataList Instance { get; private set; }
         
         [Serializable] 
-        public class TownCentrerData 
+        public class TownCenterData 
         {
             public int tier;
             public int upgradeCost;
@@ -20,7 +20,7 @@ namespace Script.Game.Structures.TownCenter
             public bool maxLevel;
         }
         
-        [SerializeField] private List<TownCentrerData> townCentrerList;
+        [SerializeField] private List<TownCenterData> townCentrerList;
         
         private void Awake()
         {
@@ -33,39 +33,39 @@ namespace Script.Game.Structures.TownCenter
         public void InitializeWallData()
         {
             if(townCentrerList == null)
-                townCentrerList = new List<TownCentrerData>();
+                townCentrerList = new List<TownCenterData>();
             else
                 townCentrerList.Clear();
             
-            townCentrerList.Add(new TownCentrerData
+            townCentrerList.Add(new TownCenterData
             {
                 tier = 0,
                 upgradeCost = 3,
                 curentPrefab = PrefabData.Instance.townCenterList[0],
                 nextUpgradePrefab = PrefabData.Instance.townCenterList[1],
             });
-            townCentrerList.Add(new TownCentrerData
+            townCentrerList.Add(new TownCenterData
             {
                 tier = 1,
                 upgradeCost = 7,
                 curentPrefab = PrefabData.Instance.townCenterList[1],
                 nextUpgradePrefab = PrefabData.Instance.townCenterList[2],
             });
-            townCentrerList.Add(new TownCentrerData
+            townCentrerList.Add(new TownCenterData
             {
                 tier = 2,
                 upgradeCost = 10,
                 curentPrefab = PrefabData.Instance.townCenterList[2],
                 nextUpgradePrefab = PrefabData.Instance.townCenterList[3],
             });
-            townCentrerList.Add(new TownCentrerData
+            townCentrerList.Add(new TownCenterData
             {
                 tier = 3,
                 upgradeCost = 15,
                 curentPrefab = PrefabData.Instance.townCenterList[3],
                 nextUpgradePrefab = PrefabData.Instance.townCenterList[4],
             });
-            townCentrerList.Add(new TownCentrerData
+            townCentrerList.Add(new TownCenterData
             {
                 tier = 4,
                 curentPrefab = PrefabData.Instance.townCenterList[4], 
@@ -75,9 +75,9 @@ namespace Script.Game.Structures.TownCenter
             Debug.Log("TownCentrerList data initialized. Count: " + townCentrerList.Count);
         }
         
-        public TownCentrerData GetWallDataByTier(int tier)
+        public TownCenterData GetWallDataByTier(int tier)
         {
-            foreach (TownCentrerData data in townCentrerList)
+            foreach (TownCenterData data in townCentrerList)
             {
                 if (data.tier == tier)
                     return data;

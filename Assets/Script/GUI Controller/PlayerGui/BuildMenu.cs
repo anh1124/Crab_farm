@@ -192,10 +192,10 @@ public class BuildMenu : MonoBehaviour
 
     private void OnDisable()
     {
-        // Cleanup khi script bị disable
+        // Chỉ cleanup khi đang trong chế độ build
         if (isBuilding)
         {
-            BuildingPlacementManager.Instance.CancelPlacement();
+            BuildingPlacementManager.Instance?.CancelPlacement();
             ResetBuildState();
         }
     }

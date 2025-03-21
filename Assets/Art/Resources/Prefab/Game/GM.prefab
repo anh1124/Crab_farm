@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 1557313042388775290}
   - component: {fileID: 814197313591573416}
   - component: {fileID: 4896579773367113099}
+  - component: {fileID: 7170061680519524738}
   m_Layer: 0
   m_Name: GM
   m_TagString: Untagged
@@ -123,11 +124,7 @@ MonoBehaviour:
   coinMoveSpeed: 0.5
   fallSpeed: 15
   timeMaxFloatCoin: 3
-  townCenterUnlitCampfire0: {fileID: 0}
-  townCenterCampfire1: {fileID: 0}
-  townCenterVillageTents2: {fileID: 0}
-  townCenterTownHall3: {fileID: 0}
-  townCenterBigTownHall4: {fileID: 0}
+  townCenterList: []
   plazaDistance: 10
   farmWaterStream0: {fileID: 0}
   farmWell1: {fileID: 0}
@@ -153,7 +150,7 @@ MonoBehaviour:
   oilBarrelVendor: {fileID: 0}
   catapult: {fileID: 0}
   tree: {fileID: 0}
-  treePrefabs: []
+  treePrefabsList: []
   treeChopCost: 1
   TreeMaxWorkProgress: 5
   maxDistanceFromBush: 5
@@ -379,7 +376,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abfb00970c6b2404bb5808ad84aaeef3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  validPlacementColor: {r: 0, g: 1, b: 0, a: 0.3}
-  invalidPlacementColor: {r: 1, g: 0, b: 0, a: 0.3}
-  lineWidth: 0.1
-  previewSortingOrder: 10
+  placementLayers:
+  - Structure
+  invalidPlacementTags: []
+  tagsToOrient:
+  - Wall
+  - ArcherTower
+  raycastYOffset: 0.8
+  showDebugLog: 0
+--- !u!114 &7170061680519524738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b321a4322334657959f70c67d207eda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  townCenterPrefabs:
+  - {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
+  - {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
+  - {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
+  - {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
+  - {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
+  wallPrefabLv1: {fileID: 7160081409078651775, guid: 048d8448d033006498c864dc649a10a9, type: 3}
+  hammerVendorPrefab: {fileID: 0}
+  bowVendorPrefab: {fileID: 0}
+  buildingUnlockConfigs: []
+  currentTownCenter: {fileID: 0}

@@ -41,8 +41,7 @@ namespace Script.Data_Model.Status
         [System.Serializable]
         public class TreeStatusData
         {
-            public float positionX;
-            public float positionY;
+            public float positionX, positionY;
             public int type;
             public int currentWorkProgress;
             public int maxWorkProgress;

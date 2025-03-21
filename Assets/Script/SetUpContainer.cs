@@ -72,9 +72,9 @@ namespace Script
             allContainers = new List<GameObject>
             {
                 playerContainer,
+                natureContainer,
                 structureContainer,
                 coinContainer,
-                natureContainer,
                 enemyContainer,
                 animalsContainer,
                 wanderersContainer,
@@ -337,8 +337,29 @@ namespace Script
             if (container == null) return;
 
             var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
-            if (!File.Exists(path)) return;
+            if (!File.Exists(path))
+            {
+                Debug.LogWarning($"File {path} không tồn tại!");
+                return;
+            }
+            // Đọc và log nội dung JSON
+            var json = File.ReadAllText(path);
+            Debug.Log($"JSON của {container.name}: {json}");
 
+            var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
+                new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+
+            if (savedObjects == null)
+            {
+                Debug.LogError($"Không thể deserialize JSON của {container.name}!");
+                return;
+            }
+
+            Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
+
+            
+            
+            
             // Xóa toàn bộ object cũ trong container
             foreach (Transform child in container.transform)
             {
@@ -346,8 +367,8 @@ namespace Script
             }
 
             // Load và tạo object mới
-            var json = File.ReadAllText(path);
-            var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
+            json = File.ReadAllText(path);
+            savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
                 new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
 
             foreach (Transform child in container.transform)
