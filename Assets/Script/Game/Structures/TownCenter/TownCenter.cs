@@ -135,8 +135,8 @@ namespace Script.Game.Structures.TownCenter
                 BuildingManager.instance.RotateTowardsTownCenter(rightWall);
 
                 // Đưa tường vào container để quản lý
-                SetUpContainer.Instance.MoveObjToContainer(leftWall, SetUpContainer.Instance.structureContainer);
-                SetUpContainer.Instance.MoveObjToContainer(rightWall, SetUpContainer.Instance.structureContainer);
+                SetUpContainer.Instance.MoveObjectToContainer(leftWall);
+                SetUpContainer.Instance.MoveObjectToContainer(rightWall);
             }
         }
 
@@ -200,16 +200,23 @@ namespace Script.Game.Structures.TownCenter
             };
         }
 
-        public void RestoreData(object data)
+    public void RestoreData(object data)
+    {
+        TownCenterData townData = (TownCenterData)data;
+        transform.position = new Vector3(townData.positionX, townData.positionY, 0);
+        readyToUpgrade = townData.readyToUpgrade;
+        
+        // Đảm bảo CoinUser đã được khởi tạo
+        if (coinUser == null)
         {
-            TownCenterData townData = (TownCenterData)data;
-            transform.position = new Vector3(townData.positionX, townData.positionY, 0);
-            readyToUpgrade = townData.readyToUpgrade;
-    
-            // Cập nhật dữ liệu từ DataList và UI
-            InitializeData();
-            UpdateCoinUserData();
+            coinUser = GetComponent<CoinUser>();
         }
+        
+        // Cập nhật dữ liệu từ DataList và UI
+        InitializeData();
+        UpdateCoinUserData();
+        
+    }
         #endregion
     }
 }

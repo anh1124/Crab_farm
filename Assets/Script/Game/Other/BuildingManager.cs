@@ -6,6 +6,7 @@ using Script.Data_Model;
 using UnityEngine;
 using Script.Game.Structures.TownCenter;
 using UnityEngine.Serialization; // Để dùng TownCenterDataList
+using Script; // Import Utility
 
 namespace Script.Game.Other
 {
@@ -66,7 +67,6 @@ namespace Script.Game.Other
         
         private void Start()
         {
-            
             InitStructure();
             InitializeBuildingUnlockConfigs();
             CheckForExistingTownCenter();
@@ -86,7 +86,7 @@ namespace Script.Game.Other
         /// </summary>
         private void InitializeBuildingUnlockConfigs()
         {
-            //lưu ý ,phải khai báo lại toàn bộ những công trình ở tier trước
+            // Lưu ý, phải khai báo lại toàn bộ những công trình ở tier trước
             if (buildingUnlockConfigs == null || buildingUnlockConfigs.Count == 0)
             {
                 buildingUnlockConfigs = new List<BuildingUnlockConfig>();
@@ -165,7 +165,7 @@ namespace Script.Game.Other
 
         /// <summary>
         /// Cập nhật danh sách prefab có thể xây dựa trên cấp của TownCenter và cấu hình mở khóa trong BuildingUnlockConfigs.
-        /// Nếu chưa có TownCenter, chỉ cho phép xây dựng TownCenter (lấy prefab từ townCenterPrefabs[0]).
+        /// Nếu chưa có TownCenter, chỉ cho phép xây dựng TownCenter (prefab tier 1).
         /// Nếu đã có, dựa theo cấp hiện tại của TownCenter, duyệt qua cấu hình mở khóa của cấp đó và thêm các prefab tương ứng nếu số lượng đã xây chưa đạt giới hạn.
         /// </summary>
         public void UpdateAvailableBuildings()
@@ -254,7 +254,6 @@ namespace Script.Game.Other
             }
         }
 
-        
         /// <summary>
         /// Ánh xạ từ BuildingType sang prefab tương ứng.
         /// Mở rộng thêm khi có loại công trình mới.
@@ -304,24 +303,22 @@ namespace Script.Game.Other
         {
             Debug.LogError($"{gameObject.name} was disabled.\nCall Stack:\n{Environment.StackTrace}");
         }
+        
+        // Sửa hàm RotateTowardsTownCenter để sử dụng chung hàm xoay từ Utility
         public void RotateTowardsTownCenter(GameObject obj)
         {
-            if (currentTownCenter == null || obj == null) return;
-
-            Vector3 direction = currentTownCenter.transform.position - obj.transform.position;
-
-            // Xác định xem đối tượng nên quay về hướng nào
-            if (direction.x > 0)
+            if (currentTownCenter == null || obj == null)
             {
-                // TownCenter ở bên phải => Quay đối tượng sang trái (180 độ quanh trục Y)
-                obj.transform.rotation = Quaternion.Euler(0, 180, 0);
+                return;
             }
-            else
-            {
-                // TownCenter ở bên trái => Giữ nguyên (mặt phải)
-                obj.transform.rotation = Quaternion.identity;
-            }
+    
+            // Dùng vị trí của chính đối tượng (wall) làm điểm tham chiếu
+            Vector3 objPos = obj.transform.position;
+            Vector3 townCenterPos = currentTownCenter.transform.position;
+            Utility.RotateObjectTowardsTownCenter(obj, objPos, townCenterPos);
         }
+
+
 
     }
 }

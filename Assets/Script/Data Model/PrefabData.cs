@@ -225,6 +225,14 @@ namespace Script.Data_Model
             {
                 _prefabDict.Add($"tree_{i}", treePrefabsList[i]);
             }
+
+            // Đăng ký các prefab wall với định dạng "wall_{tier}"
+            _prefabDict.Add("wall_0", wallDirtMound0);
+            _prefabDict.Add("wall_1", wallSpike1);
+            _prefabDict.Add("wall_2", wallPalisade2);
+            _prefabDict.Add("wall_3", wallStone3);
+            _prefabDict.Add("wall_4", wallTallStone4);
+            _prefabDict.Add("wall_5", wallIron5);
            
             //danh sách chứa tag mà player có thể tương tác bằng trigger helper
             playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",

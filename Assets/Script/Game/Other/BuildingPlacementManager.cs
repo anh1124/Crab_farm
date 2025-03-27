@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Script.Data_Model.Interfaces;
 using Script.Game.Item.Coin;
 using UnityEngine;
+using Script; // Import Utility
 
 namespace Script.Game.Other
 {
@@ -21,7 +22,6 @@ namespace Script.Game.Other
         [Tooltip("Danh sách các tag không được phép đặt công trình đè lên nhau")]
         [SerializeField] private List<string> invalidPlacementTags = new List<string>(); // VD: thêm "Tree", "Wall",...
         // raycastYOffset chỉ dùng để thay đổi vị trí của 2 đường kẻ (vì chúng đang quá sát mặt đất)
-        
         [SerializeField] private List<string> tagsToOrient = new List<string> { "Wall", "ArcherTower" };
         [SerializeField] private float raycastYOffset = 0.8f;
 
@@ -80,17 +80,23 @@ namespace Script.Game.Other
             CleanupPreview();
 
             structureToPlace = structurePrefab;
-        
             var distanceComponent = structurePrefab.GetComponent<IMinimumDistance>();
             minimumDistance = distanceComponent?.MinimumDistance;
 
             previewInstance = Instantiate(structurePrefab);
             previewInstance.SetActive(true);
-            
+
             SetupPreview(previewInstance);
-        
+
+            if (BuildingManager.instance.currentTownCenter != null)
+            {
+                Vector3 playerPos = PlayerController.Instance.player.transform.position;
+                Vector3 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+                Utility.RotateObjectTowardsTownCenter(previewInstance, playerPos, townCenterPos);
+            }
             isPlacing = true;
         }
+
 
         private void SetupPreview(GameObject preview)
         {
@@ -119,8 +125,13 @@ namespace Script.Game.Other
             Vector2 previewPos = PlayerController.Instance.player.transform.position;
             previewInstance.transform.position = previewPos;
             
-            // Xoay preview để quay lưng về phía TownCenter nếu cần
-            OrientBuilding(previewInstance, previewPos);
+            // Nếu tag của preview nằm trong danh sách cần định hướng, gọi hàm xoay chung
+            if (BuildingManager.instance.currentTownCenter != null)
+            {
+                Vector3 playerPos = PlayerController.Instance.player.transform.position;
+                Vector3 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+                Utility.RotateObjectTowardsTownCenter(previewInstance, playerPos, townCenterPos);
+            }
         
             bool overlapValid = CheckOverlapValidity(previewPos);
             bool leftValid = true, rightValid = true;
@@ -145,9 +156,8 @@ namespace Script.Game.Other
             }
         }
         
-        /// <summary>
-        /// Cập nhật màu của preview dựa trên overallValid.
-        /// </summary>
+      
+
         private void UpdateVisualFeedback(Vector2 previewPos, bool overallValid)
         {
             Color feedbackColor = overallValid ? validPlacementColor : invalidPlacementColor;
@@ -165,35 +175,25 @@ namespace Script.Game.Other
             }
         }
 
-        /// <summary>
-        /// Vẽ 2 đường kẻ khoảng cách: mỗi đường có màu dựa trên tính hợp lệ riêng (màu xanh nếu hợp lệ, đỏ nếu không).
-        /// Ngoài ra, in ra debug raycast cho từng hướng.
-        /// </summary>
         private void UpdateDistanceLines(Vector2 lineOrigin, float distance, bool leftValid, bool rightValid)
         {
-            // Xác định màu của mỗi đường
             Color leftColor = leftValid ? validPlacementColor : invalidPlacementColor;
             Color rightColor = rightValid ? validPlacementColor : invalidPlacementColor;
             leftColor.a = 1f;
             rightColor.a = 1f;
            
-            
-            // Vẽ đường bên trái
             leftDistanceLine.gameObject.SetActive(true);
             leftDistanceLine.SetPosition(0, lineOrigin);
             Vector2 leftEndPos = new Vector2(lineOrigin.x - distance, lineOrigin.y);
             leftDistanceLine.SetPosition(1, leftEndPos);
             leftDistanceLine.startColor = leftDistanceLine.endColor = leftColor;
 
-            // Vẽ đường bên phải
             rightDistanceLine.gameObject.SetActive(true);
             rightDistanceLine.SetPosition(0, lineOrigin);
             Vector2 rightEndPos = new Vector2(lineOrigin.x + distance, lineOrigin.y);
             rightDistanceLine.SetPosition(1, rightEndPos);
             rightDistanceLine.startColor = rightDistanceLine.endColor = rightColor;
-
             
-            // In ra debug raycast cho từng hướng
             PerformDebugRaycast(lineOrigin, Vector2.left, distance);
             PerformDebugRaycast(lineOrigin, Vector2.right, distance);
             
@@ -204,9 +204,6 @@ namespace Script.Game.Other
             }
         }
 
-        /// <summary>
-        /// Thực hiện raycast và in ra thông tin các đối tượng bị trúng (trên layer placementLayerMask).
-        /// </summary>
         private void PerformDebugRaycast(Vector2 start, Vector2 direction, float distance)
         {
             RaycastHit2D[] hits = Physics2D.RaycastAll(start, direction, distance, placementLayerMask);
@@ -225,9 +222,6 @@ namespace Script.Game.Other
             }
         }
 
-        /// <summary>
-        /// Kiểm tra các va chạm (OverlapCollider và container) dựa trên vị trí preview (không thay đổi).
-        /// </summary>
         private bool CheckOverlapValidity(Vector2 previewPos)
         {
             if (previewCollider == null) return true;
@@ -257,7 +251,6 @@ namespace Script.Game.Other
                 }
             }
 
-            // Kiểm tra khoảng cách tối thiểu dựa trên container
             if (minimumDistance.HasValue && minimumDistance.Value > 0)
             {
                 var structures = SetUpContainer.Instance.GetObjectsFromContainerList(SetUpContainer.Instance.structureContainer);
@@ -280,10 +273,6 @@ namespace Script.Game.Other
             return true;
         }
 
-        /// <summary>
-        /// Kiểm tra tính hợp lệ của một phía (raycast) từ vị trí gốc cho trước.
-        /// Trả về false nếu bất kỳ đối tượng nào bị trúng có tag nằm trong invalidPlacementTags (ngoại trừ preview).
-        /// </summary>
         private bool CheckSideValidity(Vector2 origin, Vector2 direction, float distance)
         {
             RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, distance, placementLayerMask);
@@ -303,30 +292,7 @@ namespace Script.Game.Other
             }
             return true;
         }
-        /// <summary>
-        /// Xoay công trình sao cho lưng hướng về phía TownCenter.
-        /// </summary>
-        private void OrientBuilding(GameObject building, Vector2 buildingPos)
-        {
-            // Nếu chưa có TownCenter, không xoay
-            if (BuildingManager.instance.currentTownCenter == null)
-                return;
-
-            // Chỉ xoay các công trình có tag trong tagsToOrient
-            if (!tagsToOrient.Contains(building.tag))
-                return;
-
-            Vector2 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
-            Vector2 toTownCenter = townCenterPos - buildingPos;
-
-            // Nếu TownCenter ở bên trái (toTownCenter.x < 0), mặt hướng sang phải (scale X = 1)
-            // Nếu TownCenter ở bên phải (toTownCenter.x > 0), mặt hướng sang trái (scale X = -1)
-            float scaleX = toTownCenter.x < 0 ? 1f : -1f;
-            building.transform.localScale = new Vector3(scaleX, 1f, 1f);
-        }
-        /// <summary>
-        /// Cho phép xây chỉ khi vị trí preview (không đổi) hợp lệ theo cả overlap và 2 phía đều hợp lệ (nếu có IMinimumDistance).
-        /// </summary>
+        
         public bool TryPlaceBuilding()
         {
             if (!isPlacing || previewInstance == null || structureToPlace == null)
@@ -345,11 +311,17 @@ namespace Script.Game.Other
 
             if (overallValid)
             {
+                // Lưu lại thông tin xoay và scale của preview
+                Quaternion previewRotation = previewInstance.transform.rotation;
+                Vector3 previewScale = previewInstance.transform.localScale;
+
                 GameObject newStructure = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
-                    // Xoay công trình thực tế để quay lưng về phía TownCenter
-                    OrientBuilding(newStructure, previewPos);
+                    // Áp dụng xoay và scale của preview cho công trình mới
+                    newStructure.transform.rotation = previewRotation;
+                    newStructure.transform.localScale = previewScale;
+            
                     CleanupPreview();
                     BuildMenu.instance.ResetShowBuildMenuState();
                     BuildingManager.instance.UpdateAvailableBuildings();

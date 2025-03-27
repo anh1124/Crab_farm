@@ -47,7 +47,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 tier = 0,
                 upgradeCost = 1,
-                curentPrefab = null,
+                curentPrefab =  PrefabData.Instance.wallDirtMound0,
                 stumpPrefab=null,
                 nextUpgradePrefab=PrefabData.Instance.wallSpike1
                     

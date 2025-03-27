@@ -441,9 +441,6 @@ namespace Script
         }
 
 
-        public void MoveObjToContainer(GameObject leftWall, GameObject instanceStructureContainer)
-        {
-            throw new NotImplementedException();
-        }
+      
     }
 }

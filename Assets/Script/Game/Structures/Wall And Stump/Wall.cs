@@ -9,7 +9,7 @@ using UnityEngine.Serialization;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
-    public class Wall : MonoBehaviour,IDamageable,IMinimumDistance
+    public class Wall : MonoBehaviour, IDamageable, IMinimumDistance, ISaveable
     { 
         /*
          * chú ý, stump ở layer defautl
@@ -48,11 +48,16 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Debug.LogError($"CoinUser component missing on {gameObject.name}");
                 return;
             }
-            
+    
             InitializeWallData();
             UpdateCoinUserData();
-            BuildingManager.instance.RotateTowardsTownCenter(gameObject);
+    
+            // Thay vì gọi BuildingManager.instance.RotateTowardsTownCenter(gameObject),
+            // ta gọi trực tiếp hàm tiện ích của bạn:
+            BuildingManager.instance.RotateTowardsTownCenter(this.gameObject);
         }
+
+
         private void InitializeWallData()
         {
             //Debug.LogWarning("InitializeWallData called for tier: " + tier);
@@ -60,7 +65,6 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             if (wallData != null)
             {
-                
                 upgradeCost = wallData.upgradeCost;
                 rebuildCost = wallData.rebuildCost;
                 normalMaxHp = wallData.normalMaxHp;
@@ -72,14 +76,13 @@ namespace Script.Game.Structures.Wall_And_Stump
                 maxLevel = wallData.maxLevel;
                 UpdateMaxHp();
                 CurrentHp = MaxHp;
-
-                //UpdateCoinUserData();
             }
             else
             {
                 Debug.LogWarning($"No WallData found for tier: {tier}");
             }
         }
+
         private void UpdateMaxHp()
         {
             MaxHp = PrefabData.Instance.techAdhesive ? blessedMaxHp : normalMaxHp;
@@ -108,7 +111,7 @@ namespace Script.Game.Structures.Wall_And_Stump
 
         public void Die(GameObject WhoDoDame)
         {
-            GameObject stump =Instantiate(stumpPrefab, transform.position, Quaternion.identity);
+            GameObject stump = Instantiate(stumpPrefab, transform.position, Quaternion.identity);
             Stump stumpScriptInstance = stump.GetComponent<Stump>();
             stumpScriptInstance.InitializeStumpData(tier);
             Destroy(gameObject);
@@ -132,5 +135,58 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Debug.LogWarning(nextUpgradePrefab + "is null in" + curentPrefab.name);
             }
         }
+
+        #region Save System Implementation
+        [System.Serializable]
+        public class WallData
+        {
+            public float positionX;
+            public float positionY;
+            public int tier;
+            public int currentHp;
+            public int maxHp;
+        }
+        
+        public string GetPrefabID()
+        {
+            return $"wall_{tier}";
+        }
+        
+        public object CaptureData()
+        {
+            return new WallData
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                tier = this.tier,
+                currentHp = this.CurrentHp,
+                maxHp = this.MaxHp
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            WallData wallData = (WallData)data;
+            transform.position = new Vector3(wallData.positionX, wallData.positionY, 0);
+            tier = wallData.tier;
+            CurrentHp = wallData.currentHp;
+            // Lưu lại giá trị HP từ dữ liệu đã load
+            int savedCurrentHp = CurrentHp;
+            int savedMaxHp = MaxHp;
+            
+            // Khởi tạo lại dữ liệu từ DataList
+            InitializeWallData();
+            
+            // Khôi phục giá trị HP từ save data
+            CurrentHp = savedCurrentHp;
+            MaxHp = savedMaxHp;
+            
+            // Đảm bảo HP không âm
+            if (CurrentHp <= 0) 
+            {
+                CurrentHp = MaxHp;
+            }
+        }
+        #endregion
     }
 }
