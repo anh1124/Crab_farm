@@ -4,6 +4,7 @@ using System.IO; // Import thêm thư viện để đọc file JSON
 using Newtonsoft.Json; // Import Newtonsoft.Json để parse JSON
 using Script.Data_Model;
 using Script.Game.Structures.TownCenter;
+using Script.Game.Structures.Wall_And_Stump;
 using UnityEngine;
 using System.Linq;
 using UnityEngine.Serialization;
@@ -48,12 +49,21 @@ namespace Script.Game.Other
     {
         public static BuildingManager instance;
         
-        public static bool isDebug = false;
+        [Header("Debug Settings")]
+        [Tooltip("Enable to show debug logs for building and upgrading")]
+        public bool enableDebugLogs = false;
+        
+        // Static property for checking debug state globally
+        public static bool isDebug => instance != null && instance.enableDebugLogs;
 
         [Header("Town Center Settings")]
         [Tooltip("Danh sách prefab TownCenter theo cấp (index tương ứng với cấp)")]
         public GameObject[] townCenterPrefabs;
 
+        [Header("Config File Settings")]
+        [Tooltip("Tên file config trong thư mục Resources/DataConfig")]
+        public string configFileName = "BuildingLimits";
+        
         [Header("Town Center Build Configs")]
         [SerializeField] 
         private List<TownCenterConfig> townCenterConfigs = new List<TownCenterConfig>();
@@ -119,8 +129,10 @@ namespace Script.Game.Other
         {
             try 
             {
-                // Load from the new path: Resources/DataConfig/TownCenterConfig
-                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/TownCenterConfig");
+                // Load from the new path: Resources/DataConfig/[configFileName]
+                string fullPath = $"DataConfig/{configFileName}";
+                TextAsset jsonTextAsset = Resources.Load<TextAsset>(fullPath);
+                
                 if (jsonTextAsset != null)
                 {
                     // Parse the JSON directly to handle property name mismatches
@@ -133,7 +145,7 @@ namespace Script.Game.Other
                         foreach (var configObj in configsArray)
                         {
                             var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(configObj.ToString());
-                            int level = Convert.ToInt32(configDict["level"]);
+                            int level = Convert.ToInt32(configDict["townCenterLevel"]);
                             
                             var config = new TownCenterConfig
                             {
@@ -141,9 +153,12 @@ namespace Script.Game.Other
                                 availableStructures = new List<StructureInfo>()
                             };
                             
-                            if (configDict.ContainsKey("structures"))
+                            string structureKey = configDict.ContainsKey("structures") ? "structures" : 
+                                                  configDict.ContainsKey("availableStructures") ? "availableStructures" : null;
+                            
+                            if (structureKey != null && configDict.ContainsKey(structureKey))
                             {
-                                var structures = JsonConvert.DeserializeObject<List<object>>(configDict["structures"].ToString());
+                                var structures = JsonConvert.DeserializeObject<List<object>>(configDict[structureKey].ToString());
                                 foreach (var structObj in structures)
                                 {
                                     var structDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(structObj.ToString());
@@ -165,18 +180,18 @@ namespace Script.Game.Other
                             townCenterConfigs.Add(config);
                         }
                         
-                        if (isDebug) Debug.Log($"Đã load {townCenterConfigs.Count} cấp cấu hình từ Resources/DataConfig/TownCenterConfig.");
+                        if (isDebug) Debug.Log($"Đã load {townCenterConfigs.Count} cấp cấu hình từ {fullPath}");
                     }
                     else
                     {
-                        Debug.LogError("JSON format is invalid - missing 'townCenterConfigs' property");
+                        Debug.LogError($"JSON format is invalid in {fullPath} - missing 'townCenterConfigs' property");
                         TownCenterConfigFallback();
                     }
                 }
                 else
                 {
                     // Fallback to direct file path if not found in Resources
-                    Debug.LogError("TownCenterConfig.json không tìm thấy trong Resources/DataConfig");
+                    Debug.LogError($"Configuration file {configFileName} not found in Resources/DataConfig. Using fallback configuration.");
                     TownCenterConfigFallback();
                 }
             }
@@ -386,6 +401,67 @@ namespace Script.Game.Other
             if (isDebug) Debug.Log($"BuildingManager.RotateTowardsTownCenter: Object {obj.name} at position {obj.transform.position}, town center at {currentTownCenter.transform.position}, direction {directionToTownCenter}, scale {scale}");
         }
         
+        // Check if a specific building type can be upgraded to the next tier based on current town center level
+        public bool CanBuildingBeUpgraded(BuildingType buildingType, int currentTier)
+        {
+            // Check if we have configurations
+            if (townCenterConfigs == null || availableStructures == null)
+            {
+                Debug.LogWarning("No town center configurations available for upgrade check");
+                return false;
+            }
+
+            // Find the structure info for this building type
+            StructureInfo structureInfo = availableStructures.Find(s => s.buildingType == buildingType);
+            if (structureInfo == null)
+            {
+                if (isDebug) Debug.Log($"Building type {buildingType} is not available at town center level {currentTownCenterLevel}");
+                return false;
+            }
+
+            // Check if we have data for the max level allowed
+            if (structureInfo.maxLevel <= 0)
+            {
+                if (isDebug) Debug.Log($"Building type {buildingType} doesn't have a valid maxLevel ({structureInfo.maxLevel})");
+                return false;
+            }
+
+            // Remove the special case for tier 4 wall to allow for upgrades beyond tier 4
+            // This will rely on configuration and the existence of a next upgrade prefab
+
+            // Check if the next tier would exceed the max level allowed
+            int nextTier = currentTier + 1;
+            if (nextTier > structureInfo.maxLevel)
+            {
+                if (isDebug) Debug.Log($"Building type {buildingType} at tier {currentTier} cannot be upgraded. Max level is {structureInfo.maxLevel}, town center level is {currentTownCenterLevel}");
+                return false;
+            }
+
+            if (isDebug) Debug.Log($"Building type {buildingType} at tier {currentTier} can be upgraded to tier {nextTier}, max allowed level is {structureInfo.maxLevel}");
+            return true;
+        }
+        
+        // Gets the maximum tier allowed for a specific building type at current town center level
+        public int GetMaxAllowedTier(BuildingType buildingType)
+        {
+            if (townCenterConfigs == null || availableStructures == null)
+            {
+                return 0;
+            }
+            
+            StructureInfo structureInfo = availableStructures.Find(s => s.buildingType == buildingType);
+            if (structureInfo == null)
+            {
+                Debug.LogWarning($"Building type {buildingType} not found in available structures for town center level {currentTownCenterLevel}");
+                return 0;
+            }
+            
+            // Debug log to help trace issues
+            if (isDebug) Debug.Log($"Town center level {currentTownCenterLevel} allows {buildingType} up to tier {structureInfo.maxLevel}");
+            
+            return structureInfo.maxLevel;
+        }
+        
         public void SetTownCenterAndUpdateBuildRule(GameObject townCenterObj)
         {
             if (townCenterObj == null)
@@ -402,12 +478,19 @@ namespace Script.Game.Other
             if (townCenterComponent != null)
             {
                 // Update the current TownCenter level
+                int previousLevel = currentTownCenterLevel;
                 currentTownCenterLevel = townCenterComponent.Level;
                 
                 // Update available buildings based on the new level
                 UpdateAvailableBuildings();
                 
-                if (isDebug) Debug.Log($"TownCenter set to {townCenterObj.name} at level {currentTownCenterLevel}");
+                if (isDebug) Debug.Log($"TownCenter updated from level {previousLevel} to {currentTownCenterLevel}");
+                
+                // Force update of all wall upgrade limits in the scene when town center upgrades
+                if (previousLevel != currentTownCenterLevel)
+                {
+                    UpdateAllStructureLimits();
+                }
             }
             else
             {
@@ -415,9 +498,29 @@ namespace Script.Game.Other
                 // Set a default level to avoid issues
                 currentTownCenterLevel = 0;
             }
+        }
+        
+        // Update all structures in the scene with new upgrade limits
+        private void UpdateAllStructureLimits()
+        {
+            // Update walls
+            GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
+            if (walls != null)
+            {
+                foreach (GameObject wall in walls)
+                {
+                    Wall wallComponent = wall.GetComponent<Wall>();
+                    if (wallComponent != null)
+                    {
+                        // Force update of coin user data
+                        wallComponent.RefreshUpgradeStatus();
+                    }
+                }
+                Debug.Log($"Updated upgrade limits for {walls.Length} walls based on new town center level {currentTownCenterLevel}");
+            }
             
-            // Notify other systems that town center has changed if needed
-            // Add any required system notifications here
+            // Update other structures that need to check upgrade limits
+            // (add more as needed)
         }
     }
 }

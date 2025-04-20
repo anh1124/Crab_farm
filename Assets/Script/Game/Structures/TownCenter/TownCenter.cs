@@ -141,6 +141,9 @@ namespace Script.Game.Structures.TownCenter
         {
             coinUser.requiredCoins = UpgradeCost;
             coinUser.onUpgradeComplete = Upgrade;
+            
+            // Set building type and tier information for the CoinUser component
+            coinUser.SetBuildingInfo(BuildingType.TownCenter, Level);
         }
         // Triển khai phương thức Upgrade theo interface
         public void Upgrade()

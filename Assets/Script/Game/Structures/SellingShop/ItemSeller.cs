@@ -5,6 +5,7 @@ using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Game.Item;
 using Script.Game.Item.Coin;
+using Script.Game.Other;
 using UnityEngine;
 using System.Linq;
 namespace Script.Game.Structures.SellingShop
@@ -57,6 +58,27 @@ namespace Script.Game.Structures.SellingShop
         {
             coinUser = gameObject.GetComponent<CoinUser>();
             coinUser.onUpgradeComplete += OnUpgradeComplete;
+            
+            // Set building type information for the CoinUser
+            BuildingType buildingType;
+            switch (itemType)
+            {
+                case ItemType.BowVendor:
+                    buildingType = BuildingType.BowVendor;
+                    break;
+                case ItemType.HammerVendor:
+                    buildingType = BuildingType.HammerVendor;
+                    break;
+                // Add other cases as needed
+                default:
+                    // Default to a generic type
+                    Debug.LogWarning($"No matching BuildingType for {itemType}, using default");
+                    buildingType = BuildingType.HammerVendor;
+                    break;
+            }
+            
+            // Set building type with tier 1 (vendors typically don't have tiers)
+            coinUser.SetBuildingInfo(buildingType, 1);
         }
 
         private void InitializeData()

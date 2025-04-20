@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Script.Data_Model;
+using Script.Data_Model.Interfaces;
+using Script.Game.Other;
 using UnityEngine;
 
 namespace Script.Game.Item.Coin
@@ -29,6 +31,10 @@ namespace Script.Game.Item.Coin
 
         [Header("Upgrade Status")]
         public bool isReadyToUpgrade; // Indicates if enough coins have been collected for upgrade
+        
+        [Header("Building Info")]
+        [SerializeField] private BuildingType buildingType; // Type of building this CoinUser is attached to
+        [SerializeField] private int currentTier; // Current tier/level of the building
 
         [Header("Coin Prefabs")]
         [SerializeField] private GameObject coinPrefab;
@@ -41,6 +47,8 @@ namespace Script.Game.Item.Coin
         private int currentSlotIndex ;
         private bool isCollectingCoins ;
 
+        private IUpgradeable upgradeableComponent;
+        
         public bool playerTrigger;
         private void Start()
         {
@@ -58,15 +66,46 @@ namespace Script.Game.Item.Coin
                 coinSlotParent = transform.GetChild(0).gameObject;
             }
             coinSlotParent.SetActive(false);
+            
+            // Check if this building has an IUpgradeable component
+            upgradeableComponent = GetComponent<IUpgradeable>();
+        }
+        
+        // For backwards compatibility, keep this method
+        public void SetBuildingInfo(BuildingType type, int tier)
+        {
+            buildingType = type;
+            currentTier = tier;
         }
 
         public void PlayerTriggerOn()
         {
-            // Chỉ kích hoạt nếu có thể nhận xu và chưa nâng cấp
-            if (canAcceptCoins && !isReadyToUpgrade)
+            // If component implements IUpgradeable, check if it's upgradeable based on owner's canAcceptCoins value
+            if (upgradeableComponent != null)
             {
-                SetupCoinSlots();
-                playerTrigger = true;
+                // Ready to upgrade will be determined by parent component (Wall, TownCenter, etc.)
+                if (canAcceptCoins && !isReadyToUpgrade)
+                {
+                    SetupCoinSlots();
+                    playerTrigger = true;
+                }
+                else if (!canAcceptCoins)
+                {
+                    // Show feedback to the player about why they can't upgrade - only when debugging
+                    if (BuildingManager.isDebug)
+                    {
+                        Debug.Log($"Building cannot be upgraded: canAcceptCoins={canAcceptCoins}, type={buildingType}, tier={currentTier}, maxLevel={upgradeableComponent.MaxLevel}");
+                    }
+                }
+            }
+            else
+            {
+                // Fallback for non-IUpgradeable components
+                if (canAcceptCoins && !isReadyToUpgrade)
+                {
+                    SetupCoinSlots();
+                    playerTrigger = true;
+                }
             }
         }
         public void PlayerTriggerOff()
@@ -140,11 +179,14 @@ namespace Script.Game.Item.Coin
         {
             if (coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count)
             {
-                Debug.LogWarning("No available coin slots.");
+                if (BuildingManager.isDebug)
+                {
+                    Debug.LogWarning("No available coin slots.");
+                }
                 return;
             }
 
-            Vector3 playerPosition = player.transform.position;//chỗ này cho y cao hơn 1 tí 
+            Vector3 playerPosition = player.transform.position;
             Vector3 targetPosition = coinSlots[currentSlotIndex].transform.position;
 
             GameObject coin = Instantiate(coinPrefab, playerPosition, Quaternion.identity);
@@ -196,12 +238,15 @@ namespace Script.Game.Item.Coin
      
         private void ReleaseCoins()
         {   
-            Debug.LogWarning("đã gọi hàm ReleaseCoins");
+            if (BuildingManager.isDebug)
+            {
+                Debug.LogWarning("đã gọi hàm ReleaseCoins");
+            }
+            
             foreach (GameObject coin in coinsInTransit)
             {
                 if (coin != null)
                 {
-                    
                     ReleaseCoin(coin);
                 }
             }

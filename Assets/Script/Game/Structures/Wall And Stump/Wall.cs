@@ -9,7 +9,7 @@ using UnityEngine.Serialization;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
-    public class Wall : MonoBehaviour, IDamageable, IMinimumDistance, ISaveable
+    public class Wall : MonoBehaviour, IDamageable, IMinimumDistance, ISaveable, IUpgradeable
     { 
         /*
          * chú ý, stump ở layer defautl
@@ -20,7 +20,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         public int MaxHp { get; set; }
         public int CurrentHp { get; set; }
         
-        public bool getData;
+        
         [SerializeField] private int tier;
         
         [SerializeField] private int normalMaxHp;
@@ -40,6 +40,45 @@ namespace Script.Game.Structures.Wall_And_Stump
         [SerializeField] private float minimumDistance = 20f;
     
         public float MinimumDistance => minimumDistance;
+        
+        #region IUpgradeable Properties
+        public int Level
+        {
+            get => tier;
+            set => tier = value;
+        }
+
+        public int UpgradeCost
+        {
+            get => upgradeCost;
+            set => upgradeCost = value;
+        }
+
+        public GameObject CurrentPrefab
+        {
+            get => curentPrefab;
+            set => curentPrefab = value;
+        }
+
+        public GameObject NextUpgradePrefab
+        {
+            get => nextUpgradePrefab;
+            set => nextUpgradePrefab = value;
+        }
+
+        public bool ReadyToUpgrade
+        {
+            get => readyToUpgrade;
+            set => readyToUpgrade = value;
+        }
+
+        public bool MaxLevel
+        {
+            get => maxLevel;
+            set => maxLevel = value;
+        }
+        #endregion
+        
         private void Start()
         {
             coinUser = GetComponent<CoinUser>();
@@ -73,7 +112,11 @@ namespace Script.Game.Structures.Wall_And_Stump
                 curentPrefab = wallData.curentPrefab;
                 stumpPrefab = wallData.stumpPrefab;
                 nextUpgradePrefab = wallData.nextUpgradePrefab;
-                maxLevel = wallData.maxLevel;
+                
+                // Only max level if no next upgrade prefab available
+                // Don't hardcode tier 4 as max level - use config file instead
+                maxLevel = (nextUpgradePrefab == null);
+                
                 UpdateMaxHp();
                 CurrentHp = MaxHp;
             }
@@ -91,7 +134,45 @@ namespace Script.Game.Structures.Wall_And_Stump
         private void UpdateCoinUserData()
         {
             coinUser.requiredCoins = upgradeCost;
-            coinUser.onUpgradeComplete = DoUpgrade;
+            coinUser.onUpgradeComplete = Upgrade;
+            
+            // Check if the wall can be upgraded based on town center level
+            bool canBeUpgraded = CanUpgradeByTownCenterLevel();
+            
+            // Only allow accepting coins if the wall can be upgraded and is not at max level
+            // Check if this is the final level available in the game or by town center level
+            bool isMaxLevelForTownCenter = !canBeUpgraded;
+            bool isMaxLevelForWall = maxLevel;
+
+            coinUser.canAcceptCoins = !isMaxLevelForTownCenter && !isMaxLevelForWall;
+            
+            // Set building info for CoinUser
+            coinUser.SetBuildingInfo(BuildingType.Wall, tier);
+            
+            // Debug information - only if debug is enabled
+            if (BuildingManager.isDebug)
+            {
+                Debug.Log($"Wall tier={tier}, canBeUpgraded={canBeUpgraded}, isMaxLevelForTownCenter={isMaxLevelForTownCenter}, " +
+                         $"isMaxLevelForWall={isMaxLevelForWall}, canAcceptCoins={coinUser.canAcceptCoins}");
+            }
+        }
+        
+        // Check if this wall can be upgraded based on town center level
+        private bool CanUpgradeByTownCenterLevel()
+        {
+            if (BuildingManager.instance == null) return false;
+            
+            // Debug to see the current town center level and max wall tier allowed
+            int townCenterLevel = BuildingManager.instance.currentTownCenterLevel;
+            int maxAllowedTier = BuildingManager.instance.GetMaxAllowedTier(BuildingType.Wall);
+            
+            // Only log if debug is enabled
+            if (BuildingManager.isDebug)
+            {
+                Debug.Log($"Town Center Level: {townCenterLevel}, Max Wall Tier Allowed: {maxAllowedTier}, Current Wall Tier: {tier}");
+            }
+            
+            return BuildingManager.instance.CanBuildingBeUpgraded(BuildingType.Wall, tier);
         }
 
         public void TakeDamage(int damageAmount, GameObject whoDoDame)
@@ -117,10 +198,26 @@ namespace Script.Game.Structures.Wall_And_Stump
             Destroy(gameObject);
         }
 
-        private void DoUpgrade()
+        // Implementing IUpgradeable.Upgrade() method
+        public void Upgrade()
         {
+            // Check if upgrade is allowed by town center level
+            if (!CanUpgradeByTownCenterLevel())
+            {
+                if (BuildingManager.isDebug)
+                {
+                    Debug.LogWarning($"Wall at tier {tier} cannot be upgraded: Town Center level is too low.");
+                }
+                return;
+            }
+            
             if (nextUpgradePrefab != null)
             {
+                if (BuildingManager.isDebug)
+                {
+                    Debug.Log($"Upgrading wall from tier {tier} to tier {tier + 1}");
+                }
+                
                 // Get the current parent of this object
                 Transform parentTransform = transform.parent;
         
@@ -132,8 +229,17 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
             else
             {
-                Debug.LogWarning(nextUpgradePrefab + "is null in" + curentPrefab.name);
+                if (BuildingManager.isDebug)
+                {
+                    Debug.LogWarning($"Cannot upgrade wall at tier {tier}: No next upgrade prefab is available");
+                }
             }
+        }
+        
+        // Implementing IUpgradeable.GetUpgradeCost() method
+        public int GetUpgradeCost()
+        {
+            return upgradeCost;
         }
 
         #region Save System Implementation
@@ -188,5 +294,36 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
         #endregion
+
+        // Adding a public method to refresh upgrade status when town center level changes
+        public void RefreshUpgradeStatus()
+        {
+            // Re-evaluate the maxLevel based on current BuildingManager configuration
+            // and on whether there's a next upgrade prefab
+            if (nextUpgradePrefab != null)
+            {
+                maxLevel = false; // There is a next upgrade prefab
+                
+                if (BuildingManager.isDebug)
+                {
+                    Debug.Log($"Wall tier {tier} can be upgraded (has upgrade prefab)");
+                }
+            }
+            else
+            {
+                maxLevel = true; // No next upgrade prefab
+                
+                if (BuildingManager.isDebug)
+                {
+                    Debug.Log($"Wall tier {tier} is at max level (no upgrade prefab)");
+                }
+            }
+            
+            // Update CoinUser configuration
+            if (coinUser != null)
+            {
+                UpdateCoinUserData();
+            }
+        }
     }
 }
