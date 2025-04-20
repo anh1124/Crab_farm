@@ -88,10 +88,10 @@ namespace Script.Game.Other
 
             SetupPreview(previewInstance);
 
-            if (BuildingManager.instance.currentTownCenter != null)
+            if (BuildingManager.instance.CurrentTownCenter != null)
             {
                 Vector3 playerPos = PlayerController.Instance.player.transform.position;
-                Vector3 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+                Vector3 townCenterPos = BuildingManager.instance.CurrentTownCenter.transform.position;
                 Utility.RotateObjectTowardsTownCenter(previewInstance, playerPos, townCenterPos);
             }
             isPlacing = true;
@@ -126,10 +126,10 @@ namespace Script.Game.Other
             previewInstance.transform.position = previewPos;
             
             // Nếu tag của preview nằm trong danh sách cần định hướng, gọi hàm xoay chung
-            if (BuildingManager.instance.currentTownCenter != null)
+            if (BuildingManager.instance.CurrentTownCenter != null)
             {
                 Vector3 playerPos = PlayerController.Instance.player.transform.position;
-                Vector3 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+                Vector3 townCenterPos = BuildingManager.instance.CurrentTownCenter.transform.position;
                 Utility.RotateObjectTowardsTownCenter(previewInstance, playerPos, townCenterPos);
             }
         

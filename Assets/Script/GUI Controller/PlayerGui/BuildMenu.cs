@@ -107,15 +107,27 @@ public class BuildMenu : MonoBehaviour
         // Get the current town center level and configs
         int townCenterLevel = BuildingManager.instance.currentTownCenterLevel;
         if (townCenterLevel < 0 || 
-            BuildingManager.instance.townCenterConfigs == null || 
-            townCenterLevel >= BuildingManager.instance.townCenterConfigs.Count)
+            BuildingManager.instance.TownCenterConfigs == null || 
+            townCenterLevel >= BuildingManager.instance.TownCenterConfigs.Count)
         {
             Debug.LogWarning("Invalid town center level or configs not loaded");
             return;
         }
         
         // Get available structures for the current level
-        List<StructureInfo> availableStructures = BuildingManager.instance.townCenterConfigs[townCenterLevel].structures;
+        var config = BuildingManager.instance.TownCenterConfigs[townCenterLevel];
+        if (config == null)
+        {
+            Debug.LogWarning($"Config for town center level {townCenterLevel} is null");
+            return;
+        }
+        
+        List<StructureInfo> availableStructures = config.availableStructures;
+        if (availableStructures == null)
+        {
+            Debug.LogWarning($"No available structures for town center level {townCenterLevel}");
+            return;
+        }
         
         foreach (var structureInfo in availableStructures)
         {

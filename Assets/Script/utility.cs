@@ -4,6 +4,8 @@ namespace Script
 {
     public static class Utility 
     {
+        public static bool isDebug = false;
+        
         public static void RotateObjectTowardsTownCenter(GameObject obj, Vector3 referencePos, Vector3 townCenterPos)
         {
             Vector3 scale = obj.transform.localScale;
@@ -25,7 +27,11 @@ namespace Script
                 scale.x =  Mathf.Abs(scale.x); // Ensure negative scale (face left)
             }
             
-            Debug.Log($"Utility.RotateObjectTowardsTownCenter: Object {obj.name} at pos {referencePos}, town center at {townCenterPos}, direction {directionFromTownCenter}, scale.x={scale.x}");
+            if (isDebug)
+            {
+                Debug.Log($"Utility.RotateObjectTowardsTownCenter: Object {obj.name} at pos {referencePos}, town center at {townCenterPos}, direction {directionFromTownCenter}, scale.x={scale.x}");
+            }
+            
             obj.transform.localScale = scale;
             
             // Ensure Z rotation is always 0

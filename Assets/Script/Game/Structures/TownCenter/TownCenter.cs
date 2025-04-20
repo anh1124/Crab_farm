@@ -150,6 +150,20 @@ namespace Script.Game.Structures.TownCenter
                 // Instantiate đối tượng mới với parent là transform cha của đối tượng hiện tại
                 GameObject upgraded = Instantiate(NextUpgradePrefab, transform.position, Quaternion.identity,
                     transform.parent);
+                
+                // Update BuildingManager with the new TownCenter
+                if (BuildingManager.instance != null)
+                {
+                    BuildingManager.instance.SetTownCenterAndUpdateBuildRule(upgraded);
+                    
+                    // Update the buildable structures list in BuildMenu
+                    if (BuildMenu.instance != null)
+                    {
+                        BuildMenu.instance.UpdateBuildableStructuresList();
+                        Debug.Log("Updated buildable structures list after TownCenter upgrade");
+                    }
+                }
+                
                 Destroy(gameObject);
                 
                 // Add wall when upgraded to level 1

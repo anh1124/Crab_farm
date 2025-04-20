@@ -1,8 +1,8 @@
 {
   "townCenterConfigs": [
     {
-      "level": 0,
-      "structures": [
+      "townCenterLevel": 0,
+      "availableStructures": [
         {
           "buildingType": "TownCenter",
           "maxQuantity": 1
@@ -10,8 +10,8 @@
       ]
     },
     {
-      "level": 1,
-      "structures": [
+      "townCenterLevel": 1,
+      "availableStructures": [
         {
           "buildingType": "Wall",
           "maxQuantity": 2,
@@ -28,8 +28,8 @@
       ]
     },
     {
-      "level": 2,
-      "structures": [
+      "townCenterLevel": 2,
+      "availableStructures": [
         {
           "buildingType": "Wall",
           "maxQuantity": 4,
@@ -46,8 +46,8 @@
       ]
     },
     {
-      "level": 3,
-      "structures": [
+      "townCenterLevel": 3,
+      "availableStructures": [
         {
           "buildingType": "Wall",
           "maxQuantity": 6,
@@ -64,8 +64,8 @@
       ]
     },
     {
-      "level": 4,
-      "structures": [
+      "townCenterLevel": 4,
+      "availableStructures": [
         {
           "buildingType": "Wall",
           "maxQuantity": 8,

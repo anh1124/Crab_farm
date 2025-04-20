@@ -17,6 +17,8 @@ namespace Script
        */
         public static SetUpContainer Instance { get; private set; } 
         
+        public static bool isDebug = false;
+        
         public List<GameObject> allContainers; 
         
         public GameObject playerContainer;
@@ -116,7 +118,7 @@ namespace Script
             
             // Đảm bảo rotation luôn là identity (không xoay)
             instance.transform.rotation = Quaternion.identity;
-            Debug.Log($"Instance created with rotation: {instance.transform.rotation.eulerAngles}");
+            if (isDebug) Debug.Log($"Instance created with rotation: {instance.transform.rotation.eulerAngles}");
 
             // Chuyển instance vào container
             MoveObjectToContainer(instance);
@@ -192,7 +194,7 @@ namespace Script
                 
                 default:
                     obj.transform.SetParent(otherContainer.transform, true);
-                    Debug.Log($"Đã chuyển {obj.name} vào OtherContainer");
+                    if (isDebug) Debug.Log($"Đã chuyển {obj.name} vào OtherContainer");
                     break;
             }
         }
@@ -217,11 +219,14 @@ namespace Script
         public void SaveAllContainer()
         {
             MoveTreesFromChunks(); // Di chuyển cây vào container trước khi save
-            Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
+            if (isDebug) Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
             
-            foreach (var container in allContainers)
+            if (isDebug)
             {
-                Debug.Log($"Saving container: {container.name}, child count: {container.transform.childCount}");
+                foreach (var container in allContainers)
+                {
+                    Debug.Log($"Saving container: {container.name}, child count: {container.transform.childCount}");
+                }
             }
 
             foreach (var container in allContainers)
@@ -231,7 +236,7 @@ namespace Script
         }
         public void LoadAllContainer()
         {
-            Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
+            if (isDebug) Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
             foreach (var container in allContainers)
             {
                 if (container == playerContainer)
@@ -250,7 +255,7 @@ namespace Script
             string playerPath = Path.Combine(LoadFromSave.Instance.saveFilePath, "PlayerContainer.json");
             if (!File.Exists(playerPath))
             {
-                Debug.LogWarning("Không tìm thấy file save của player, tạo player mới");
+                if (isDebug) Debug.LogWarning("Không tìm thấy file save của player, tạo player mới");
                 CreateNewPlayer();
                 return;
             }
@@ -285,7 +290,7 @@ namespace Script
                 CameraFollowPlayer.Instance.setCameraTarget();
                 CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
 
-                Debug.Log("Đã load và setup player thành công");
+                if (isDebug) Debug.Log("Đã load và setup player thành công");
             }
             catch (Exception e)
             {
@@ -301,7 +306,7 @@ namespace Script
             PlayerController.Instance.SetUpControllerPlayer();
             CameraFollowPlayer.Instance.setCameraTarget();
             CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
-            Debug.Log("Đã tạo player mới");
+            if (isDebug) Debug.Log("Đã tạo player mới");
         }
         
         private void SaveContainer(GameObject container)
@@ -326,18 +331,18 @@ namespace Script
                 }
             }
 
-            Debug.Log($"Saving {container.name} with {savedObjects.Count} objects");
+            if (isDebug) Debug.Log($"Saving {container.name} with {savedObjects.Count} objects");
 
             if (savedObjects.Count == 0)
             {
-                Debug.LogWarning($"No saveable objects found in {container.name}");
+                if (isDebug) Debug.LogWarning($"No saveable objects found in {container.name}");
             }
 
             var json = JsonConvert.SerializeObject(savedObjects, Formatting.Indented,
                 new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
             
             var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
-            Debug.Log($"Saving to path: {path}");
+            if (isDebug) Debug.Log($"Saving to path: {path}");
             File.WriteAllText(path, json);
         }
 
@@ -348,12 +353,12 @@ namespace Script
             var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
             if (!File.Exists(path))
             {
-                Debug.LogWarning($"File {path} không tồn tại!");
+                if (isDebug) Debug.LogWarning($"File {path} không tồn tại!");
                 return;
             }
             // Đọc và log nội dung JSON
             var json = File.ReadAllText(path);
-            Debug.Log($"JSON của {container.name}: {json}");
+            if (isDebug) Debug.Log($"JSON của {container.name}: {json}");
 
             var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
                 new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
@@ -364,7 +369,7 @@ namespace Script
                 return;
             }
 
-            Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
+            if (isDebug) Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
 
             // Xóa toàn bộ object cũ trong container
             foreach (Transform child in container.transform)
@@ -384,35 +389,38 @@ namespace Script
 
             foreach (var savedObject in savedObjects)
             {
-                Debug.Log($"Attempting to load prefab with ID: {savedObject.prefabID}");
+                if (isDebug) Debug.Log($"Attempting to load prefab with ID: {savedObject.prefabID}");
                 var prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
                 if (prefab == null)
                 {
                     Debug.LogError($"Prefab not found: {savedObject.prefabID}");
                     // Log all keys in the prefab dictionary for debugging
-                    var prefabDictType = PrefabData.Instance.GetType().GetField("_prefabDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (prefabDictType != null)
+                    if (isDebug)
                     {
-                        var prefabDict = prefabDictType.GetValue(PrefabData.Instance) as Dictionary<string, GameObject>;
-                        if (prefabDict != null)
+                        var prefabDictType = PrefabData.Instance.GetType().GetField("_prefabDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (prefabDictType != null)
                         {
-                            Debug.Log("Available prefab IDs:");
-                            foreach (var key in prefabDict.Keys)
+                            var prefabDict = prefabDictType.GetValue(PrefabData.Instance) as Dictionary<string, GameObject>;
+                            if (prefabDict != null)
                             {
-                                Debug.Log($"- {key}");
+                                Debug.Log("Available prefab IDs:");
+                                foreach (var key in prefabDict.Keys)
+                                {
+                                    Debug.Log($"- {key}");
+                                }
                             }
                         }
                     }
                     continue;
                 }
 
-                Debug.Log($"Creating instance of prefab: {prefab.name}");
+                if (isDebug) Debug.Log($"Creating instance of prefab: {prefab.name}");
                 var instance = Instantiate(prefab, container.transform);
                 var saveable = instance.GetComponent<ISaveable>();
                 if (saveable != null)
                 {
                     saveable.RestoreData(savedObject.data);
-                    Debug.Log($"Restored data for {instance.name}");
+                    if (isDebug) Debug.Log($"Restored data for {instance.name}");
                 }
                 else
                 {
@@ -439,7 +447,7 @@ namespace Script
         {
             if (chunkContainer == null)
             {
-                Debug.LogWarning("ChunkContainer is null!");
+                if (isDebug) Debug.LogWarning("ChunkContainer is null!");
                 return;
             }
 

@@ -10,6 +10,8 @@ namespace Script.Game.Structures.Wall_And_Stump
     {
         public static WallDataList Instance { get; private set; }
         
+        public static bool isDebug = false;
+        
         [System.Serializable]
         public class WallData
         {
@@ -122,7 +124,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                             wallList.Add(wallData);
                         }
                         
-                        Debug.Log($"Loaded {wallList.Count} wall configurations from JSON");
+                        if (isDebug) Debug.Log($"Loaded {wallList.Count} wall configurations from JSON");
                     }
                 }
                 else
@@ -141,7 +143,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         // This is just a fallback in case the JSON loading fails
         private void FallbackToHardcodedData()
         {
-            Debug.LogWarning("Falling back to hardcoded wall data");
+            if (isDebug) Debug.LogWarning("Falling back to hardcoded wall data");
             wallList.Clear();
             
             wallList.Add(new WallData
@@ -234,7 +236,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 }
             }
     
-            Debug.LogWarning("WallData with tier " + tier + " not found.");
+            if (isDebug) Debug.LogWarning("WallData with tier " + tier + " not found.");
             return null;
         }
     }
