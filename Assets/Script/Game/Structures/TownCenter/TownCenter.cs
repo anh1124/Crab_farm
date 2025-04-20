@@ -8,10 +8,7 @@ using UnityEngine;
 namespace Script.Game.Structures.TownCenter
 {
     public class TownCenter : MonoBehaviour,IUpgradeable, ISaveable
-    { /*
-       * tag Structure
-       * layer Defautl
-       */
+    { 
         #region SerializeFields & Private Variables
         // Sử dụng [SerializeField] để có thể chỉnh sửa trên Inspector
         [SerializeField] public int level;
@@ -27,9 +24,6 @@ namespace Script.Game.Structures.TownCenter
         public float plazaDistance;
         public CoinUser coinUser;
         
-        //2 biến đặc biệt của công trình 
-        /*public int centralWallLowerTier;
-        public int centralTowerLowerTier;*/
         #endregion
         
         #region Interface Properties Implementation
@@ -82,7 +76,9 @@ namespace Script.Game.Structures.TownCenter
             GetPlazaDistance();
             InitializeData();
             UpdateCoinUserData();
-            BuildingManager.instance.currentTownCenter = gameObject;
+            
+            //assign it self to become unique towncenter object in game
+            BuildingManager.instance.SetTownCenterAndUpdateBuildRule(gameObject);
         }
         
         private void InitializeData()

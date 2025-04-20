@@ -311,16 +311,18 @@ namespace Script.Game.Other
 
             if (overallValid)
             {
-                // Lưu lại thông tin xoay và scale của preview
-                Quaternion previewRotation = previewInstance.transform.rotation;
+                // Just store the scale, we'll set rotation to identity
                 Vector3 previewScale = previewInstance.transform.localScale;
 
                 GameObject newStructure = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
-                    // Áp dụng xoay và scale của preview cho công trình mới
-                    newStructure.transform.rotation = previewRotation;
+                    // Force rotation to identity (no rotation) and apply only the scale from preview
+                    newStructure.transform.rotation = Quaternion.identity;
                     newStructure.transform.localScale = previewScale;
+                    
+                    // Add debug logging
+                    Debug.Log($"New structure created with rotation: {newStructure.transform.rotation.eulerAngles}, scale: {newStructure.transform.localScale}");
             
                     CleanupPreview();
                     BuildMenu.instance.ResetShowBuildMenuState();

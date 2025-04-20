@@ -1,0 +1,85 @@
+{
+  "townCenterConfigs": [
+    {
+      "level": 0,
+      "structures": [
+        {
+          "buildingType": "TownCenter",
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "structures": [
+        {
+          "buildingType": "Wall",
+          "maxQuantity": 2,
+          "maxLevel":1
+        },
+        {
+          "buildingType": "HammerVendor",
+          "maxQuantity": 1
+        },
+        {
+          "buildingType": "BowVendor",
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "structures": [
+        {
+          "buildingType": "Wall",
+          "maxQuantity": 4,
+          "maxLevel":2
+        },
+        {
+          "buildingType": "HammerVendor",
+          "maxQuantity": 1
+        },
+        {
+          "buildingType": "BowVendor",
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "structures": [
+        {
+          "buildingType": "Wall",
+          "maxQuantity": 6,
+          "maxLevel":3
+        },
+        {
+          "buildingType": "HammerVendor",
+          "maxQuantity": 1
+        },
+        {
+          "buildingType": "BowVendor",
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "structures": [
+        {
+          "buildingType": "Wall",
+          "maxQuantity": 8,
+          "maxLevel":4
+        },
+        {
+          "buildingType": "HammerVendor",
+          "maxQuantity": 1
+        },
+        {
+          "buildingType": "BowVendor",
+          "maxQuantity": 1
+        }
+      ]
+    }
+  ]
+}

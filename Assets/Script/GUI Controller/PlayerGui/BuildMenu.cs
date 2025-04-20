@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using Script.Game.Other;
+using Script.Data_Model;
 
 public class BuildMenu : MonoBehaviour
 {
@@ -68,8 +69,9 @@ public class BuildMenu : MonoBehaviour
     
     public void OpenBuildMenu()
     {
-        BuildingManager.instance.CheckForExistingTownCenter();
-        BuildingManager.instance.UpdateAvailableBuildings();
+        // First update the available buildings list
+        UpdateBuildableStructuresList();
+        
         if (showBuildMenu)
         {
             ClearBuildButtonContainer();
@@ -83,6 +85,81 @@ public class BuildMenu : MonoBehaviour
             PopulateBuildButtons();
             buildButtonContainer.gameObject.SetActive(true);
             showBuildMenu = true;
+        }
+    }
+    
+    // Method to update buildable structures based on current town center level and available building slots
+    public void UpdateBuildableStructuresList()
+    {
+        // Clear the existing list
+        buildableStructures.Clear();
+        
+        // Make sure BuildingManager exists
+        if (BuildingManager.instance == null)
+        {
+            Debug.LogError("BuildingManager.instance is null when trying to update buildable structures");
+            return;
+        }
+        
+        // First force BuildingManager to update its available buildings
+        BuildingManager.instance.UpdateAvailableBuildings();
+        
+        // Get the current town center level and configs
+        int townCenterLevel = BuildingManager.instance.currentTownCenterLevel;
+        if (townCenterLevel < 0 || 
+            BuildingManager.instance.townCenterConfigs == null || 
+            townCenterLevel >= BuildingManager.instance.townCenterConfigs.Count)
+        {
+            Debug.LogWarning("Invalid town center level or configs not loaded");
+            return;
+        }
+        
+        // Get available structures for the current level
+        List<StructureInfo> availableStructures = BuildingManager.instance.townCenterConfigs[townCenterLevel].structures;
+        
+        foreach (var structureInfo in availableStructures)
+        {
+            // Count how many of this building type have already been built
+            int builtCount = BuildingManager.instance.CountBuiltBuildings(structureInfo.buildingType);
+            
+            // Check if we can build more of this type
+            if (builtCount < structureInfo.maxQuantity)
+            {
+                // Get the prefab for this building type and add it to buildable structures
+                GameObject buildingPrefab = GetBuildingPrefab(structureInfo.buildingType, structureInfo.maxLevel);
+                if (buildingPrefab != null)
+                {
+                    buildableStructures.Add(buildingPrefab);
+                    Debug.Log($"Added {structureInfo.buildingType} to buildable structures (Built: {builtCount}/{structureInfo.maxQuantity})");
+                }
+            }
+        }
+        
+        Debug.Log($"Updated buildable structures list. Total available buildings: {buildableStructures.Count}");
+    }
+    
+    // Helper method to get the prefab for a given building type
+    private GameObject GetBuildingPrefab(BuildingType buildingType, int maxLevel = 0)
+    {
+        switch (buildingType)
+        {
+            case BuildingType.TownCenter:
+                return PrefabData.Instance.townCenterList?.Count > 0 ? PrefabData.Instance.townCenterList[0] : null;
+                
+            case BuildingType.Wall:
+                // Wall always starts at level 1 (wallSpike1) when built from menu
+                // maxLevel from JSON is only used to determine how far it can be upgraded, not its initial level
+                return PrefabData.Instance.wallSpike1;
+                
+            case BuildingType.HammerVendor:
+                return PrefabData.Instance.hammerVendor;
+                
+            case BuildingType.BowVendor:
+                return PrefabData.Instance.bowVendor;
+                
+            default:
+                Debug.LogWarning($"Unknown building type: {buildingType}");
+                return null;
         }
     }
     
@@ -165,10 +242,7 @@ public class BuildMenu : MonoBehaviour
     {
         if (BuildingPlacementManager.Instance.TryPlaceBuilding())
         {
-            if (BuildingManager.instance.currentTownCenter != null)
-            {
-                BuildingManager.instance.CheckForExistingTownCenter();
-            }
+            
             ResetBuildState();
         }
         else

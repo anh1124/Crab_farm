@@ -105,7 +105,7 @@ namespace Script
                 return null;
             }
 
-            // Tạo instance mới từ prefab
+            // Tạo instance mới từ prefab với rotation = identity để đảm bảo không có xoay
             GameObject instance = Instantiate(prefab, position, Quaternion.identity);
 
             // Kiểm tra xem instance có khác prefab không
@@ -113,6 +113,10 @@ namespace Script
             {
                 Debug.LogError("Đối tượng được sinh ra là chính prefab gốc, điều này không nên xảy ra.");
             }
+            
+            // Đảm bảo rotation luôn là identity (không xoay)
+            instance.transform.rotation = Quaternion.identity;
+            Debug.Log($"Instance created with rotation: {instance.transform.rotation.eulerAngles}");
 
             // Chuyển instance vào container
             MoveObjectToContainer(instance);

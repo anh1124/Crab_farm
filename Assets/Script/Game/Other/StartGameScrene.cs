@@ -10,26 +10,24 @@ namespace Script.Game.Other
         public GameObject pauseMenuPanel;
         public void Start()
         {
-            //thay filepath thành bên dưới để test nhanh
-            //LoadFromSave.Instance.saveFilePath = @"C:/Users/Acer/AppData/LocalLow/DefaultCompany/Crab_farm\saves\holyCrab";
-      
-            //nếu không muốn test nữa thì hủy comment dòng bên dưới đi
-            //ở đoạn mã dưới ,nếu file lỗi hoặc thiếu thì sẽ trở về màn hình chính và debug ra
-       
+            //thêm hàm thực hiện load prefab vào prefabdata
             
-            //thực hiện kiểm tra thế giới,tạo map,load container,etc...
+            //thêm hàm load build rule bằng json
+            
+            
+            //thực hiện load thế giới,tạo map,load container,etc...
             if (!LoadFromSave.Instance.DoLoadFromSaveFilePath(PlayerPrefs.GetString("SaveFilePath", "")))
             {
                 SceneManager.LoadScene("MainMenuScene");//về màn hình chính nếu hàm trên false
             }
+            
             
             //instancePlayer
             InstancePlayerAndSetCamera();
             
             //gán player cho các script cần thiết player khác
             BuildMenu.instance.InitializePlayer();
-            //tìm kiếm Towncenter
-            BuildingManager.instance.CheckForExistingTownCenter();
+            
             
             
             //thêm setup lại mấy cái gui ở dưới

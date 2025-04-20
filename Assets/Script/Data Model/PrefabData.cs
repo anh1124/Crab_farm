@@ -23,13 +23,10 @@ namespace Script.Data_Model
         [Space(5)]
         public List<GameObject> PlayerCharactorList = new List<GameObject>();
 
-        [Header("Wall and Stump ")] [Space(5)]
+        [FormerlySerializedAs("WallMinDistance")] [Header("Wall and Stump ")] [Space(5)]
 
         #region Wall and stump
-
-        public float WallMinDistance = 10f;
-        
-        public GameObject wallDirtMound0;//this not a wall
+        public GameObject wallDirtMound0;//this not a wall,just a stumb  
         
         public GameObject wallSpike1;
         public GameObject wallPalisade2;
