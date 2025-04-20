@@ -4,6 +4,7 @@ using UnityEngine;
 using System.IO;
 using System.Reflection; // Import thư viện I/O để ghi file
 using System.Text;
+using Newtonsoft.Json;
 using Script.Game.Structures.TownCenter;
 using Script.Game.Structures.Wall_And_Stump;
 using UnityEngine.Serialization;
@@ -19,12 +20,17 @@ namespace Script.Data_Model
         public float playerSpeed = 7;
         public Camera mainCamera;
         
-        [Header("Player Character")]
-        [Space(5)]
-        public List<GameObject> PlayerCharactorList = new List<GameObject>();
+        [Header("Player Character")] [Space(5)]
+        public List<GameObject> playerCharacterList = new List<GameObject>();
 
+        // New class for simplified player prefab paths
+        [System.Serializable]
+        private class PlayerPrefabConfig
+        {
+            public List<string> playerPrefabPaths;
+        }
+        
         [FormerlySerializedAs("WallMinDistance")] [Header("Wall and Stump ")] [Space(5)]
-
         #region Wall and stump
         public GameObject wallDirtMound0;//this not a wall,just a stumb  
         
@@ -56,18 +62,13 @@ namespace Script.Data_Model
         #endregion
         
         
-        [FormerlySerializedAs("townCenter")]
-        [Space(15)] 
-        [Header("TownCenter ")]
-        [Space(5)]  
+        [Space(15)] [Header("TownCenter ")] [Space(5)]  
         #region TownCenter
         public List<GameObject> townCenterList = new List<GameObject>();
         public float plazaDistance = 10f;//khoảng cách quảng trường
         #endregion
 
-        [Space(15)] 
-        [Header("Farm ")]
-        [Space(5)]  
+        [Space(15)] [Header("Farm ")] [Space(5)]  
         #region Farm
 
         public GameObject farmWaterStream0;
@@ -77,9 +78,7 @@ namespace Script.Data_Model
 
         #endregion
 
-        [Space(15)] 
-        [Header("Tower ")]
-        [Space(5)]  
+        [Space(15)] [Header("Tower ")] [Space(5)]  
         #region Tower
 
         public bool towerFireBless;
@@ -97,9 +96,7 @@ namespace Script.Data_Model
         
         #endregion
 
-        [Space(15)] 
-        [Header("Upgrade Tech ")]
-        [Space(5)]  
+        [Space(15)] [Header("Upgrade Tech ")] [Space(5)]  
         #region UpgradeTech
 
         public bool techFireArrow;//arrow do fire dame
@@ -113,9 +110,7 @@ namespace Script.Data_Model
 
         #endregion
 
-        [Space(15)] 
-        [Header("OtherStruction ")]
-        [Space(5)]  
+        [Space(15)] [Header("OtherStruction ")] [Space(5)]  
         #region OtherKingdomStruction
 
         public GameObject siegeWorkshop;
@@ -125,18 +120,14 @@ namespace Script.Data_Model
 
         #endregion
 
-        [Space(15)] 
-        [Header("Subjects ")]
-        [Space(5)]  
+        [Space(15)] [Header("Subjects ")] [Space(5)]  
         #region Subjects
         
         public GameObject catapult;
         
         #endregion
         
-        [Space(15)] 
-        [Header("Subjects ")]
-        [Space(5)]  
+        [Space(15)] [Header("Subjects ")] [Space(5)]  
         #region Nature
         public GameObject tree;//đây là tree nguyên bản,nhưng khi lấy tree thì phải dùng hàm get random tree
         
@@ -158,10 +149,6 @@ namespace Script.Data_Model
         }
         public int treeChopCost =1;//số xu cần dể chặt cây
         public int TreeMaxWorkProgress = 5;//số lần cần để chặt cây
-        
-
-
-
 
         [Space(15)] 
         public int maxDistanceFromBush = 5;
@@ -192,7 +179,7 @@ namespace Script.Data_Model
         //danh sách những thứ có coinUser và tag để hiện coin slot
         public List<string> playerCoinUserInteractable ; 
       
-        public Dictionary<string, int> productPrices = new Dictionary<string, int>
+        public readonly Dictionary<string, int> productPrices = new Dictionary<string, int>
         {
             { "BowVendor", 2 },
             { "HammerVendor", 3 },
@@ -237,7 +224,7 @@ namespace Script.Data_Model
             CallOtherListToGetData();
             
             // Loại bỏ tất cả các phần tử null khỏi danh sách charactor 
-            PlayerCharactorList.RemoveAll(item => item == null);
+            playerCharacterList.RemoveAll(item => item == null);
             RequirePrefabCheck();
         }
         public GameObject GetPrefabByID(string id)
@@ -289,9 +276,9 @@ namespace Script.Data_Model
             {
                 
                 // Kiểm tra nếu danh sách rỗng
-                if (PlayerCharactorList != null && PlayerCharactorList.Count > 0)
+                if (playerCharacterList != null && playerCharacterList.Count > 0)
                 {
-                    player = PlayerCharactorList[0]; // Lấy phần tử đầu tiên trong danh sách
+                    player = playerCharacterList[0]; // Lấy phần tử đầu tiên trong danh sách
                 }
                 else
                 {
@@ -326,8 +313,88 @@ namespace Script.Data_Model
                 Debug.LogError("thiếu dữ liệu về towncenter,hãy thêm nó vào prefabdata.towncenterlist ");
             }
         }
-   
-
-
+        
+        // New method to load player character data from JSON
+        public void LoadPlayerCharactersFromJson()
+        {
+            Debug.Log("Starting to load player characters from JSON...");
+            try
+            {
+                // Clear existing player character list
+                playerCharacterList.Clear();
+                
+                // Try to load the JSON file from Resources
+                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/PlayerCharacterConfig");
+                if (jsonTextAsset != null)
+                {
+                    Debug.Log($"Successfully loaded PlayerCharacterConfig.json: {jsonTextAsset.text}");
+                    
+                    // Deserialize the JSON
+                    var config = JsonConvert.DeserializeObject<PlayerPrefabConfig>(jsonTextAsset.text);
+                    if (config?.playerPrefabPaths != null && config.playerPrefabPaths.Count > 0)
+                    {
+                        Debug.Log($"Found {config.playerPrefabPaths.Count} prefab paths in the JSON file.");
+                        
+                        foreach (var prefabPath in config.playerPrefabPaths)
+                        {
+                            Debug.Log($"Attempting to load prefab from path: {prefabPath}");
+                            
+                            // Try to load the prefab directly
+                            GameObject prefab = Resources.Load<GameObject>(prefabPath);
+                            
+                            if (prefab != null)
+                            {
+                                playerCharacterList.Add(prefab);
+                                Debug.Log($"SUCCESS: Added player prefab from path: {prefabPath}");
+                            }
+                            else
+                            {
+                                Debug.LogError($"FAILED: Could not load player prefab from path: {prefabPath}");
+                                // Try to list available resources in the directory
+                                string directory = System.IO.Path.GetDirectoryName(prefabPath).Replace("\\", "/");
+                                Debug.Log($"Checking directory: {directory}");
+                                UnityEngine.Object[] resources = Resources.LoadAll(directory);
+                                Debug.Log($"Found {resources.Length} resources in directory {directory}:");
+                                foreach (var resource in resources)
+                                {
+                                    Debug.Log($"- {resource.name} (Type: {resource.GetType()})");
+                                }
+                            }
+                        }
+                        
+                        // Set the default player if we loaded any prefabs
+                        if (playerCharacterList.Count > 0)
+                        {
+                            player = playerCharacterList[0];
+                            Debug.Log($"Set default player to: {player.name}");
+                        }
+                        else
+                        {
+                            Debug.LogError("No prefabs were successfully loaded into playerCharacterList!");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("No player prefab paths found in PlayerCharacterConfig.json");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("PlayerCharacterConfig.json not found in Resources/DataConfig");
+                    
+                    // List available files in the DataConfig directory to help debugging
+                    UnityEngine.Object[] dataConfigFiles = Resources.LoadAll("DataConfig");
+                    Debug.Log($"Found {dataConfigFiles.Length} files in Resources/DataConfig:");
+                    foreach (var file in dataConfigFiles)
+                    {
+                        Debug.Log($"- {file.name} (Type: {file.GetType()})");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error loading player prefabs: {e.Message}\nStackTrace: {e.StackTrace}");
+            }
+        }
     }
 }

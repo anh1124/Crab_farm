@@ -1,0 +1,70 @@
+{
+  "wallStructureConfigs": [
+    {
+      "tier": 0,
+      "upgradeCost": 1,
+      "rebuildCost": 0,
+      "normalMaxHp": 0,
+      "blessedMaxHp": 0,
+      "prefabId": "wall_0",
+      "stumpPrefabId": "",
+      "nextUpgradePrefabId": "wall_1",
+      "maxLevel": false
+    },
+    {
+      "tier": 1,
+      "upgradeCost": 3,
+      "rebuildCost": 1,
+      "normalMaxHp": 25,
+      "blessedMaxHp": 50,
+      "prefabId": "wall_1",
+      "stumpPrefabId": "stump_1",
+      "nextUpgradePrefabId": "wall_2",
+      "maxLevel": false
+    },
+    {
+      "tier": 2,
+      "upgradeCost": 5,
+      "rebuildCost": 1,
+      "normalMaxHp": 50,
+      "blessedMaxHp": 90,
+      "prefabId": "wall_2",
+      "stumpPrefabId": "stump_2",
+      "nextUpgradePrefabId": "wall_3", 
+      "maxLevel": false
+    },
+    {
+      "tier": 3,
+      "upgradeCost": 8,
+      "rebuildCost": 3,
+      "normalMaxHp": 200,
+      "blessedMaxHp": 360,
+      "prefabId": "wall_3",
+      "stumpPrefabId": "stump_3",
+      "nextUpgradePrefabId": "wall_4",
+      "maxLevel": false
+    },
+    {
+      "tier": 4,
+      "upgradeCost": 12,
+      "rebuildCost": 5,
+      "normalMaxHp": 300,
+      "blessedMaxHp": 500,
+      "prefabId": "wall_4",
+      "stumpPrefabId": "stump_4",
+      "nextUpgradePrefabId": "wall_5",
+      "maxLevel": false
+    },
+    {
+      "tier": 5,
+      "upgradeCost": 0,
+      "rebuildCost": 6,
+      "normalMaxHp": 400,
+      "blessedMaxHp": 800,
+      "prefabId": "wall_5",
+      "stumpPrefabId": "stump_5",
+      "nextUpgradePrefabId": "",
+      "maxLevel": true
+    }
+  ]
+} 

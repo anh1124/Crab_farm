@@ -11,6 +11,8 @@ namespace Script.Game.Other
         public void Start()
         {
             //thêm hàm thực hiện load prefab vào prefabdata
+            // Load player characters from JSON
+            PrefabData.Instance.LoadPlayerCharactersFromJson();
             
             //thêm hàm load build rule bằng json
             
@@ -57,7 +59,7 @@ namespace Script.Game.Other
             GameObject player = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
             if (player == null)
             {
-                Debug.LogError("Failed to instantiate Player from prefab.");
+                Debug.LogError("Failed to instantiate Player from prefab. Make sure player characters are loaded correctly.");
                 return;
             }
             PlayerController.Instance.player = player;
