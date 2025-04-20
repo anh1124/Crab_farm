@@ -218,6 +218,13 @@ namespace Script.Data_Model
             _prefabDict.Add("wall_4", wallTallStone4);
             _prefabDict.Add("wall_5", wallIron5);
            
+            // Register vendor prefabs
+            _prefabDict.Add("bow_vendor", bowVendor);
+            _prefabDict.Add("hammer_vendor", hammerVendor);
+            _prefabDict.Add("scythe_vendor", oilBarrelVendor);
+            _prefabDict.Add("sword_vendor", siegeWorkshop);
+            _prefabDict.Add("spike_vendor", upgradeHouse);
+            
             //danh sách chứa tag mà player có thể tương tác bằng trigger helper
             playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
                 "BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 
@@ -312,6 +319,32 @@ namespace Script.Data_Model
             {
                 Debug.LogError("thiếu dữ liệu về towncenter,hãy thêm nó vào prefabdata.towncenterlist ");
             }
+            
+            // Validate vendor prefabs
+            ValidateVendorPrefabs();
+        }
+        
+        private void ValidateVendorPrefabs()
+        {
+            // Check if vendor prefabs are assigned
+            if (bowVendor == null) Debug.LogError("bowVendor prefab is missing!");
+            if (hammerVendor == null) Debug.LogError("hammerVendor prefab is missing!");
+            if (oilBarrelVendor == null) Debug.LogError("oilBarrelVendor prefab is missing!");
+            if (siegeWorkshop == null) Debug.LogError("siegeWorkshop prefab is missing!");
+            if (upgradeHouse == null) Debug.LogError("upgradeHouse prefab is missing!");
+            
+            // Check if prefabs are properly registered in dictionary
+            Debug.Log("Checking vendor prefab registrations...");
+            if (!_prefabDict.ContainsKey("bow_vendor")) 
+                Debug.LogError("bow_vendor not registered in prefab dictionary!");
+            if (!_prefabDict.ContainsKey("hammer_vendor")) 
+                Debug.LogError("hammer_vendor not registered in prefab dictionary!");
+            if (!_prefabDict.ContainsKey("scythe_vendor")) 
+                Debug.LogError("scythe_vendor not registered in prefab dictionary!");
+            if (!_prefabDict.ContainsKey("sword_vendor")) 
+                Debug.LogError("sword_vendor not registered in prefab dictionary!");
+            if (!_prefabDict.ContainsKey("spike_vendor")) 
+                Debug.LogError("spike_vendor not registered in prefab dictionary!");
         }
         
         // New method to load player character data from JSON

@@ -1,0 +1,44 @@
+{
+  "itemSellers": [
+    {
+      "id": "bow_vendor",
+      "itemType": "BowVendor",
+      "prefabId": "bow_vendor_prefab",
+      "defaultPrice": 2,
+      "maxItems": 5,
+      "itemPrefabId": "bow_item"
+    },
+    {
+      "id": "hammer_vendor",
+      "itemType": "HammerVendor",
+      "prefabId": "hammer_vendor_prefab",
+      "defaultPrice": 3,
+      "maxItems": 5,
+      "itemPrefabId": "hammer_item"
+    },
+    {
+      "id": "scythe_vendor",
+      "itemType": "ScytheVendor",
+      "prefabId": "scythe_vendor_prefab",
+      "defaultPrice": 3,
+      "maxItems": 5,
+      "itemPrefabId": "scythe_item"
+    },
+    {
+      "id": "sword_vendor",
+      "itemType": "SwordVendor",
+      "prefabId": "sword_vendor_prefab",
+      "defaultPrice": 3,
+      "maxItems": 5,
+      "itemPrefabId": "sword_item"
+    },
+    {
+      "id": "spike_vendor",
+      "itemType": "SpikeVendor",
+      "prefabId": "spike_vendor_prefab",
+      "defaultPrice": 3,
+      "maxItems": 5,
+      "itemPrefabId": "spike_item"
+    }
+  ]
+} 

@@ -1,20 +1,20 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Script.Data_Model;
+using Script.Data_Model.Interfaces;
 using Script.Game.Item;
 using Script.Game.Item.Coin;
 using UnityEngine;
 using System.Linq;
 namespace Script.Game.Structures.SellingShop
 {
-    public class ItemSeller : MonoBehaviour
+    public class ItemSeller : MonoBehaviour, ISaveable
     {
         public enum ItemType
         {
             BowVendor, HammerVendor, ScytheVendor, SwordVendor, SpikeVendor
         }
-        
-
         
         public GameObject itemPrefab; // Prefab của vật phẩm định bán
         public List<Transform> itemSlot; // Danh sách vị trí trên kệ
@@ -24,13 +24,35 @@ namespace Script.Game.Structures.SellingShop
         public bool isFull = false; // Kệ hàng có đầy không
         private CoinUser coinUser;
         public bool canAcceptCoins = true; // Kiểm soát việc nhận xu
+        
+        // New fields for JSON configuration
+        [JsonIgnore]
+        private static List<ItemSellerConfig> itemSellerConfigs;
+        
+        // Classes for JSON deserialization
+        [Serializable]
+        private class ItemSellerConfig
+        {
+            public string id;
+            public string itemType;
+            public string prefabId;
+            public int defaultPrice;
+            public int maxItems;
+            public string itemPrefabId;
+        }
+        
+        [Serializable]
+        private class ItemSellerConfigWrapper
+        {
+            public List<ItemSellerConfig> itemSellers;
+        }
 
         void Start()
         {
             InitializeComponents();
             InitializeData();
         }
-
+        
         private void InitializeComponents()
         {
             coinUser = gameObject.GetComponent<CoinUser>();
@@ -39,9 +61,42 @@ namespace Script.Game.Structures.SellingShop
 
         private void InitializeData()
         {
+            LoadItemSellerConfigs();
             GetItemValueFromPrefabDataUseItemTypeName();
             CheckInventory();
             maxSellableItems = itemSlot.Count();
+        }
+        
+        private static void LoadItemSellerConfigs()
+        {
+            // Only load configs once
+            if (itemSellerConfigs != null && itemSellerConfigs.Count > 0)
+                return;
+                
+            try
+            {
+                // Load from Resources/DataConfig/ItemSellerConfig.json
+                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/ItemSellerConfig");
+                if (jsonTextAsset != null)
+                {
+                    var configWrapper = JsonConvert.DeserializeObject<ItemSellerConfigWrapper>(jsonTextAsset.text);
+                    if (configWrapper?.itemSellers != null)
+                    {
+                        itemSellerConfigs = configWrapper.itemSellers;
+                        Debug.Log($"Loaded {itemSellerConfigs.Count} item seller configurations from JSON");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("ItemSellerConfig.json not found in Resources/DataConfig");
+                    itemSellerConfigs = new List<ItemSellerConfig>();
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error loading item seller configs: {e.Message}");
+                itemSellerConfigs = new List<ItemSellerConfig>();
+            }
         }
 
         private void GetItemValueFromPrefabDataUseItemTypeName()
@@ -55,12 +110,14 @@ namespace Script.Game.Structures.SellingShop
                 Debug.LogError($"Giá của {itemType} không tồn tại trong productPrices!");
             }
         }
+        
         private void OnUpgradeComplete()
         {
             AddItem();
             // Reset CoinUser state after adding item
             coinUser.ResetUpgradeState();
         }
+        
         public void AddItem()
         {
             if (isFull)
@@ -126,5 +183,60 @@ namespace Script.Game.Structures.SellingShop
                 CheckInventory();
             }
         }
+        
+        #region ISaveable Interface Implementation
+        [Serializable]
+        public class ItemSellerData
+        {
+            public float positionX;
+            public float positionY;
+            public string itemType;
+            public int currentItemCount;
+        }
+        
+        public string GetPrefabID()
+        {
+            // Change format to match the JSON config structure with underscores
+            string id = itemType.ToString().ToLower().Replace("vendor", "_vendor");
+            Debug.Log($"Generated prefab ID for {itemType}: {id}");
+            return id;
+        }
+        
+        public object CaptureData()
+        {
+            // Clean up the current items list before saving
+            currentItems.RemoveAll(item => item == null);
+            
+            return new ItemSellerData
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                itemType = itemType.ToString(),
+                currentItemCount = currentItems.Count
+            };
+        }
+        
+        public void RestoreData(object data)
+        {
+            ItemSellerData sellerData = (ItemSellerData)data;
+            transform.position = new Vector3(sellerData.positionX, sellerData.positionY, 0);
+            
+            // Parse the itemType from string
+            if (Enum.TryParse(sellerData.itemType, out ItemType loadedItemType))
+            {
+                itemType = loadedItemType;
+            }
+            
+            // Initialize components and data
+            InitializeComponents();
+            InitializeData();
+            
+            // Restore the items
+            for (int i = 0; i < sellerData.currentItemCount; i++)
+            {
+                AddItem();
+            }
+        }
+        #endregion
     }
 }

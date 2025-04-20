@@ -153,6 +153,11 @@ namespace Script
                 case "Wall":
                 case "Structure":
                 case "TownCenter":
+                case "BowVendor":
+                case "HammerVendor":
+                case "ScytheVendor":
+                case "SwordVendor":
+                case "SpikeVendor":
                     obj.transform.SetParent(structureContainer.transform, true);
                     break;
                 
@@ -361,9 +366,6 @@ namespace Script
 
             Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
 
-            
-            
-            
             // Xóa toàn bộ object cũ trong container
             foreach (Transform child in container.transform)
             {
@@ -382,18 +384,35 @@ namespace Script
 
             foreach (var savedObject in savedObjects)
             {
+                Debug.Log($"Attempting to load prefab with ID: {savedObject.prefabID}");
                 var prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
                 if (prefab == null)
                 {
                     Debug.LogError($"Prefab not found: {savedObject.prefabID}");
+                    // Log all keys in the prefab dictionary for debugging
+                    var prefabDictType = PrefabData.Instance.GetType().GetField("_prefabDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (prefabDictType != null)
+                    {
+                        var prefabDict = prefabDictType.GetValue(PrefabData.Instance) as Dictionary<string, GameObject>;
+                        if (prefabDict != null)
+                        {
+                            Debug.Log("Available prefab IDs:");
+                            foreach (var key in prefabDict.Keys)
+                            {
+                                Debug.Log($"- {key}");
+                            }
+                        }
+                    }
                     continue;
                 }
 
+                Debug.Log($"Creating instance of prefab: {prefab.name}");
                 var instance = Instantiate(prefab, container.transform);
                 var saveable = instance.GetComponent<ISaveable>();
                 if (saveable != null)
                 {
                     saveable.RestoreData(savedObject.data);
+                    Debug.Log($"Restored data for {instance.name}");
                 }
                 else
                 {
