@@ -1,13 +1,10 @@
-using System;
-using Script.Data_Model;
 using Script.Data_Model.Status;
 using Script.Game.Item.Coin;
-using Script.GUI_Controller.PlayerGui;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-
-public class PlayerController : MonoBehaviour
+namespace Script.PlayerController
+{
+    public class PlayerController : MonoBehaviour
     {
         public static PlayerController Instance { get; private set; }
 
@@ -214,7 +211,7 @@ public class PlayerController : MonoBehaviour
 
                         if (currentStructureShowCoinSlot != null)
                         {
-                             coinUser = currentStructureShowCoinSlot.GetComponent<CoinUser>();
+                            coinUser = currentStructureShowCoinSlot.GetComponent<CoinUser>();
                             if (!coinUser.isReadyToUpgrade)
                             {
                                 if (coinUser.collectedCoins <= coinUser.requiredCoins )//nếu số xu hiện tại ít hơn tổng xu có trong công trình hoặc player có xu 
@@ -243,3 +240,4 @@ public class PlayerController : MonoBehaviour
        
        
     }
+}

@@ -43,7 +43,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1238521666009274884}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7567741772578441490
@@ -107,19 +108,11 @@ MonoBehaviour:
   player: {fileID: 0}
   playerSpeed: 7
   mainCamera: {fileID: 0}
-  PlayerCharactorList: []
-  WallMinDistance: 10
+  playerCharacterList: []
+  currentCreatChunk: 3
   wallDirtMound0: {fileID: 0}
-  wallSpike1: {fileID: 0}
-  wallPalisade2: {fileID: 0}
-  wallStone3: {fileID: 0}
-  wallTallStone4: {fileID: 0}
-  wallIron5: {fileID: 0}
-  stumpSpike1: {fileID: 0}
-  stumpPalisade2: {fileID: 0}
-  stumpStone3: {fileID: 0}
-  stumpTallStone4: {fileID: 0}
-  stumpIron5: {fileID: 0}
+  wallList: []
+  stumpList: []
   coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
   coinMoveSpeed: 0.5
   fallSpeed: 15
@@ -131,14 +124,7 @@ MonoBehaviour:
   farmHouse2: {fileID: 0}
   farmPlot: {fileID: 0}
   towerFireBless: 0
-  towerBoulderPile0: {fileID: 0}
-  towerRockPlatForm1: {fileID: 0}
-  towerWooden2: {fileID: 0}
-  towerStone3: {fileID: 0}
-  towerTriplet4: {fileID: 0}
-  towerRoofedTriplet5: {fileID: 0}
-  towerQuadruplet6: {fileID: 0}
-  towerBallista7: {fileID: 0}
+  towerList: []
   techFireArrow: 0
   techPenetrating: 0
   techForge: 0
@@ -149,6 +135,7 @@ MonoBehaviour:
   hammerVendor: {fileID: 0}
   oilBarrelVendor: {fileID: 0}
   catapult: {fileID: 0}
+  vagrant: {fileID: 0}
   tree: {fileID: 0}
   treePrefabsList: []
   treeChopCost: 1
@@ -183,6 +170,9 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    prefabId: 
+    stumpPrefabId: 
+    nextUpgradePrefabId: 
     curentPrefab: {fileID: 0}
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
@@ -192,6 +182,9 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    prefabId: 
+    stumpPrefabId: 
+    nextUpgradePrefabId: 
     curentPrefab: {fileID: 0}
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
@@ -201,6 +194,9 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    prefabId: 
+    stumpPrefabId: 
+    nextUpgradePrefabId: 
     curentPrefab: {fileID: 0}
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
@@ -210,6 +206,9 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    prefabId: 
+    stumpPrefabId: 
+    nextUpgradePrefabId: 
     curentPrefab: {fileID: 0}
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
@@ -219,6 +218,9 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    prefabId: 
+    stumpPrefabId: 
+    nextUpgradePrefabId: 
     curentPrefab: {fileID: 0}
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
@@ -228,6 +230,9 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    prefabId: 
+    stumpPrefabId: 
+    nextUpgradePrefabId: 
     curentPrefab: {fileID: 0}
     stumpPrefab: {fileID: 0}
     nextUpgradePrefab: {fileID: 0}
@@ -309,11 +314,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   seed: 0
-  folderPath: Prefab/GroundChunk
-  currentCreatChunk: 15
+  groundChunkPath: Prefab/Chunk/ChunkGround
+  impassableRockPath: Prefab/Chunk/ImpassableRock
   chunkPrefabsList: []
+  impassableRockPrefabs: []
   emptyChunk: {fileID: 0}
   chunkList: []
+  impassableRockLeft: {fileID: 0}
+  impassableRockRight: {fileID: 0}
 --- !u!114 &4628210728400573778
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -396,14 +404,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b321a4322334657959f70c67d207eda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enableDebugLogs: 0
   townCenterPrefabs:
   - {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
   - {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
   - {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
   - {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
   - {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
-  wallPrefabLv1: {fileID: 7160081409078651775, guid: 048d8448d033006498c864dc649a10a9, type: 3}
-  hammerVendorPrefab: {fileID: 0}
-  bowVendorPrefab: {fileID: 0}
-  buildingUnlockConfigs: []
+  configFileName: BuildingLimits
+  townCenterConfigs: []
+  availableStructures: []
+  currentTownCenterLevel: 0
   currentTownCenter: {fileID: 0}
+--- !u!1 &7288934515519619791
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1238521666009274884}
+  m_Layer: 0
+  m_Name: OtherGamePlayController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1238521666009274884
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7288934515519619791}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8862165295465698764}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

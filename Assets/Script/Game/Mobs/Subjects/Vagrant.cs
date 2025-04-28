@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Script.Data_Model.Interfaces;
 using Script.Game.Item.Coin;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -8,7 +9,7 @@ using Random = UnityEngine.Random;
 
 namespace Script.Game.Mobs.Subjects
 {
-    public class Vagrant : MonoBehaviour
+    public class Vagrant : MonoBehaviour, ISaveable
     {
         // Enum Declaration
         public enum VagrantState
@@ -39,6 +40,13 @@ namespace Script.Game.Mobs.Subjects
         private Coroutine checkRoutine;
         private Coroutine flipRoutine; 
         private RayCastHelper rayCastHelper;
+
+        private void Awake()
+        {
+            // Set tag to "Vagrant" in Awake instead of Start
+            gameObject.tag = "Vagrant";
+            Debug.Log("Vagrant tag set to: " + gameObject.tag);
+        }
     
         private void Start()
         {
@@ -278,6 +286,53 @@ namespace Script.Game.Mobs.Subjects
         }
 
         #endregion
-     
+        
+        #region Save System Implementation
+        [System.Serializable]
+        public class VagrantData
+        {
+            public float positionX;
+            public float positionY;
+            public float scaleX;
+            public int stateValue;
+        }
+        
+        public string GetPrefabID()
+        {
+            return "vagrant";
+        }
+        
+        public object CaptureData()
+        {
+            return new VagrantData
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                scaleX = transform.localScale.x,
+                stateValue = (int)currentState
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            VagrantData vagrantData = (VagrantData)data;
+            transform.position = new Vector3(vagrantData.positionX, vagrantData.positionY, 0);
+            transform.localScale = new Vector3(vagrantData.scaleX, 1, 1);
+            currentState = (VagrantState)vagrantData.stateValue;
+            
+            // Ensure we initialize components if we're not already initialized
+            if (animator == null)
+            {
+                InitComponent();
+                animator = GetComponent<Animator>();
+            }
+            
+            // Start check routine if we're not in fear state
+            if (currentState != VagrantState.Fear)
+            {
+                StartCheckRoutine();
+            }
+        }
+        #endregion
     }
 }

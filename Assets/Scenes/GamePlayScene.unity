@@ -770,6 +770,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1797552028611793394, guid: f9ccfd666c9086141b84c1e379daebf9, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: vagrant
+      value: 
+      objectReference: {fileID: 6666266359872341608, guid: 83039224ec1923345b722033f7cd42f7, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: rabbitHp
       value: 1
       objectReference: {fileID: 0}

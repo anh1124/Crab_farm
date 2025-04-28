@@ -17,7 +17,7 @@ namespace Script
        */
         public static SetUpContainer Instance { get; private set; } 
         
-        public static bool isDebug = false;
+        public static bool isDebug = true;
         
         public List<GameObject> allContainers; 
         
@@ -41,6 +41,9 @@ namespace Script
         {
             AddSingleton();
             SetUp();
+            
+            // Đảm bảo tất cả container nằm đúng vị trí
+            ResetupAllContainers();
         }
         private void AddSingleton()
         {
@@ -87,6 +90,14 @@ namespace Script
         }
         private GameObject SetupContainerHelper(string containerName, ref GameObject container)
         {
+            // Tìm hoặc tạo GameObject cha tên "Container" 
+            GameObject containerParent = GameObject.Find("Container");
+            if (containerParent == null)
+            {
+                containerParent = new GameObject("Container");
+                if (isDebug) Debug.Log("Created parent Container GameObject");
+            }
+            
             if (container == null)
             {
                 container = GameObject.FindGameObjectWithTag(containerName);
@@ -94,37 +105,62 @@ namespace Script
                 {
                     container = new GameObject(containerName);
                     container.tag = containerName;
+                    if (isDebug) Debug.Log($"Created new container: {containerName}");
                 }
+                
+                // Đảm bảo container là con của containerParent
+                container.transform.SetParent(containerParent.transform);
+                if (isDebug) Debug.Log($"Set {containerName} as child of Container");
             }
+            else if (container.transform.parent != containerParent.transform)
+            {
+                // Nếu container đã tồn tại nhưng không phải con của containerParent
+                container.transform.SetParent(containerParent.transform);
+                if (isDebug) Debug.Log($"Moved existing {containerName} under Container parent");
+            }
+            
             return container;
         }
         public GameObject InstanceAndMoveObjectToContainer(GameObject prefab, Vector2 position)
         {
-            // Kiểm tra prefab không null
-            if (prefab == null)
+            try
             {
-                Debug.LogError("Prefab được truyền vào là null.");
+                // Kiểm tra prefab không null
+                if (prefab == null)
+                {
+                    Debug.LogError("Prefab được truyền vào là null.");
+                    return null;
+                }
+    
+                if (isDebug) Debug.Log($"Instantiating prefab: {prefab.name} with tag: {prefab.tag} at position: {position}");
+    
+                // Tạo instance mới từ prefab với rotation = identity để đảm bảo không có xoay
+                GameObject instance = Instantiate(prefab, position, Quaternion.identity);
+    
+                // Kiểm tra xem instance có khác prefab không
+                if (instance == prefab)
+                {
+                    Debug.LogError("Đối tượng được sinh ra là chính prefab gốc, điều này không nên xảy ra.");
+                }
+                
+                // Đảm bảo rotation luôn là identity (không xoay)
+                instance.transform.rotation = Quaternion.identity;
+                if (isDebug) Debug.Log($"Instance created with rotation: {instance.transform.rotation.eulerAngles}");
+                
+                // Log thông tin của instance trước khi chuyển vào container
+                if (isDebug) Debug.Log($"Instance before moving to container - Name: {instance.name}, Tag: {instance.tag}");
+    
+                // Chuyển instance vào container
+                MoveObjectToContainer(instance);
+    
+                // Trả về instance để có thể sử dụng sau này nếu cần
+                return instance;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error in InstanceAndMoveObjectToContainer: {e.Message}\nStackTrace: {e.StackTrace}");
                 return null;
             }
-
-            // Tạo instance mới từ prefab với rotation = identity để đảm bảo không có xoay
-            GameObject instance = Instantiate(prefab, position, Quaternion.identity);
-
-            // Kiểm tra xem instance có khác prefab không
-            if (instance == prefab)
-            {
-                Debug.LogError("Đối tượng được sinh ra là chính prefab gốc, điều này không nên xảy ra.");
-            }
-            
-            // Đảm bảo rotation luôn là identity (không xoay)
-            instance.transform.rotation = Quaternion.identity;
-            if (isDebug) Debug.Log($"Instance created with rotation: {instance.transform.rotation.eulerAngles}");
-
-            // Chuyển instance vào container
-            MoveObjectToContainer(instance);
-
-            // Trả về instance để có thể sử dụng sau này nếu cần
-            return instance;
         }
         public List<GameObject> GetObjectsFromContainerList(GameObject container)
         {
@@ -147,10 +183,16 @@ namespace Script
         //chuyển 1 gameobject vào container theo tag của nó
         public void MoveObjectToContainer(GameObject obj)
         {
+            if (isDebug)
+            {
+                Debug.Log($"Moving object '{obj.name}' with tag '{obj.tag}' to container");
+            }
+            
             switch (obj.tag)
             {
                 case "Player":
                     obj.transform.SetParent(playerContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to PlayerContainer");
                     break;
                 case "Wall":
                 case "Structure":
@@ -161,41 +203,56 @@ namespace Script
                 case "SwordVendor":
                 case "SpikeVendor":
                     obj.transform.SetParent(structureContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to StructureContainer");
                     break;
                 
                 case "Coin":
                     obj.transform.SetParent(coinContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to CoinContainer");
                     break;
                 
                 case "Tree":
                 case "RabbitBush":
                     obj.transform.SetParent(natureContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to NatureContainer");
                     break;
                 
                 case "Rabbit":
                     obj.transform.SetParent(animalsContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to AnimalsContainer");
                     break;
                 
                 case "Enemy":
                     obj.transform.SetParent(enemyContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to EnemyContainer");
                     break;
                 
                 case "Wanderer":
+                case "Vagrant":
                     obj.transform.SetParent(wanderersContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to WanderersContainer");
                     break;
                 
                 case "Villager":
                     obj.transform.SetParent(villagersContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to VillagersContainer");
                     break;
                 
                 case "Statues":
                     obj.transform.SetParent(statuesContainer.transform, true);
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to StatuesContainer");
                     break;
                 
                 default:
                     obj.transform.SetParent(otherContainer.transform, true);
                     if (isDebug) Debug.Log($"Đã chuyển {obj.name} vào OtherContainer");
                     break;
+            }
+            
+            // Log sau khi đã chuyển
+            if (isDebug && obj != null && obj.transform != null && obj.transform.parent != null)
+            {
+                Debug.Log($"After move: {obj.name} has parent {obj.transform.parent.name}");
             }
         }
         //chuyển toàn bộ gameobject con của nó vào container theo tag
@@ -216,39 +273,131 @@ namespace Script
                 }
             }
         }
+        // Phương thức để làm mới danh sách container, loại bỏ những container đã bị hủy
+        private void RefreshContainersList()
+        {
+            if (allContainers == null)
+            {
+                allContainers = new List<GameObject>();
+                PopulateAllContainersList();
+                return;
+            }
+            
+            // Kiểm tra và thiết lập lại các container nếu cần
+            playerContainer = EnsureContainerExists("PlayerContainer", ref playerContainer);
+            structureContainer = EnsureContainerExists("StructureContainer", ref structureContainer);
+            coinContainer = EnsureContainerExists("CoinContainer", ref coinContainer);
+            natureContainer = EnsureContainerExists("NatureContainer", ref natureContainer);
+            chunkContainer = EnsureContainerExists("ChunkContainer", ref chunkContainer);
+            enemyContainer = EnsureContainerExists("EnemyContainer", ref enemyContainer);
+            animalsContainer = EnsureContainerExists("AnimalsContainer", ref animalsContainer);
+            wanderersContainer = EnsureContainerExists("WanderersContainer", ref wanderersContainer);
+            villagersContainer = EnsureContainerExists("VillagersContainer", ref villagersContainer);
+            statuesContainer = EnsureContainerExists("StatuesContainer", ref statuesContainer);
+            otherContainer = EnsureContainerExists("OtherContainer", ref otherContainer);
+            
+            // Cập nhật lại danh sách
+            PopulateAllContainersList();
+            
+            if (isDebug) Debug.Log("Container list refreshed successfully.");
+        }
+        
+        private GameObject EnsureContainerExists(string containerName, ref GameObject container)
+        {
+            if (container == null)
+            {
+                if (isDebug) Debug.LogWarning($"Container {containerName} is null, attempting to find or recreate it.");
+                return SetupContainerHelper(containerName, ref container);
+            }
+            return container;
+        }
+        
         public void SaveAllContainer()
         {
+            // Refresh danh sách container trước khi lưu
+            RefreshContainersList();
+            
             MoveTreesFromChunks(); // Di chuyển cây vào container trước khi save
             if (isDebug) Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
             
             if (isDebug)
             {
+                // Kiểm tra và log thông tin container an toàn
                 foreach (var container in allContainers)
                 {
-                    Debug.Log($"Saving container: {container.name}, child count: {container.transform.childCount}");
+                    if (container != null)
+                    {
+                        Debug.Log($"Saving container: {container.name}, child count: {container.transform.childCount}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Found null container in allContainers list!");
+                    }
                 }
             }
 
+            // Lọc bỏ các container null trước khi lưu
+            List<GameObject> validContainers = new List<GameObject>();
             foreach (var container in allContainers)
+            {
+                if (container != null)
+                {
+                    validContainers.Add(container);
+                }
+                else
+                {
+                    Debug.LogWarning("Skipping null container during save process");
+                }
+            }
+
+            // Lưu các container hợp lệ
+            foreach (var container in validContainers)
             {
                 SaveContainer(container);
             }
         }
+        
         public void LoadAllContainer()
         {
+            // Refresh danh sách container trước khi load
+            RefreshContainersList();
+            
             if (isDebug) Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
+            
+            // Lọc bỏ các container null trước khi load
+            List<GameObject> validContainers = new List<GameObject>();
             foreach (var container in allContainers)
             {
-                if (container == playerContainer)
+                if (container != null)
                 {
-                    LoadAndSetupPlayer(); // Hàm mới để xử lý riêng player
+                    validContainers.Add(container);
                 }
                 else
                 {
-                    LoadContainer(container);
+                    Debug.LogWarning("Skipping null container during load process");
                 }
             }
-            Time.timeScale = 1;//dòng này fix lỗi time scale 0 khi load map
+            
+            // Load các container hợp lệ
+            foreach (var container in validContainers)
+            {
+                try
+                {
+                    if (container == playerContainer)
+                    {
+                        LoadAndSetupPlayer(); // Hàm mới để xử lý riêng player
+                    }
+                    else
+                    {
+                        LoadContainer(container);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error loading container {container.name}: {e.Message}");
+                }
+            }
+            Time.timeScale = 1; //dòng này fix lỗi time scale 0 khi load map
         }
         private void LoadAndSetupPlayer()
         {
@@ -271,7 +420,7 @@ namespace Script
                 }
 
                 // Gán player vào PlayerController
-                PlayerController.Instance.player = player;
+                PlayerController.PlayerController.Instance.player = player;
 
                 // Load data từ file save
                 var json = File.ReadAllText(playerPath);
@@ -286,7 +435,7 @@ namespace Script
                 }
 
                 // Setup các thành phần liên quan
-                PlayerController.Instance.SetUpControllerPlayer();
+                PlayerController.PlayerController.Instance.SetUpControllerPlayer();
                 CameraFollowPlayer.Instance.setCameraTarget();
                 CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
 
@@ -302,8 +451,8 @@ namespace Script
         private void CreateNewPlayer()
         {
             GameObject player = InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
-            PlayerController.Instance.player = player;
-            PlayerController.Instance.SetUpControllerPlayer();
+            PlayerController.PlayerController.Instance.player = player;
+            PlayerController.PlayerController.Instance.SetUpControllerPlayer();
             CameraFollowPlayer.Instance.setCameraTarget();
             CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
             if (isDebug) Debug.Log("Đã tạo player mới");
@@ -318,16 +467,39 @@ namespace Script
             }
 
             var savedObjects = new List<SavedObject>();
+            // Lấy danh sách con an toàn để tránh lỗi khi iterable thay đổi trong quá trình lặp
+            List<Transform> childrenToSave = new List<Transform>();
             foreach (Transform child in container.transform)
             {
+                if (child != null)
+                {
+                    childrenToSave.Add(child);
+                }
+            }
+            
+            foreach (Transform child in childrenToSave)
+            {
+                // Kiểm tra null để tránh lỗi với objects đã bị destroy
+                if (child == null || child.gameObject == null)
+                {
+                    continue;
+                }
+                
                 var saveable = child.GetComponent<ISaveable>();
                 if (saveable != null)
                 {
-                    savedObjects.Add(new SavedObject
+                    try
                     {
-                        prefabID = saveable.GetPrefabID(),
-                        data = saveable.CaptureData()
-                    });
+                        savedObjects.Add(new SavedObject
+                        {
+                            prefabID = saveable.GetPrefabID(),
+                            data = saveable.CaptureData()
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Error saving object {child.name}: {e.Message}");
+                    }
                 }
             }
 
@@ -471,7 +643,55 @@ namespace Script
             public object data;
         }
 
-
-      
+        // Phương thức để buộc cài đặt lại tất cả các container, đảm bảo chúng ở đúng vị trí
+        public void ResetupAllContainers()
+        {
+            if (isDebug) Debug.Log("Forcing container re-setup...");
+            
+            // Tìm hoặc tạo GameObject cha
+            GameObject containerParent = GameObject.Find("Container");
+            if (containerParent == null)
+            {
+                containerParent = new GameObject("Container");
+                if (isDebug) Debug.Log("Created parent Container GameObject");
+            }
+            
+            // Xóa các container hiện tại nếu chúng không nằm ở đúng vị trí
+            if (otherContainer != null && otherContainer.transform.parent != containerParent.transform)
+            {
+                if (isDebug) Debug.Log($"OtherContainer in wrong position, deleting it");
+                GameObject tempContainer = otherContainer;
+                otherContainer = null;
+                Destroy(tempContainer);
+            }
+            
+            // Đảm bảo tất cả các container được tạo lại
+            playerContainer = SetupContainerHelper("PlayerContainer", ref playerContainer);
+            structureContainer = SetupContainerHelper("StructureContainer", ref structureContainer);
+            coinContainer = SetupContainerHelper("CoinContainer", ref coinContainer);
+            natureContainer = SetupContainerHelper("NatureContainer", ref natureContainer);
+            chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
+            enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
+            animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
+            wanderersContainer = SetupContainerHelper("WanderersContainer", ref wanderersContainer);
+            villagersContainer = SetupContainerHelper("VillagersContainer", ref villagersContainer);
+            statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
+            otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
+            
+            // Cập nhật lại danh sách container
+            PopulateAllContainersList();
+            
+            if (isDebug)
+            {
+                Debug.Log("All containers have been reset and placed under the Container parent");
+                foreach (var container in allContainers)
+                {
+                    if (container != null)
+                    {
+                        Debug.Log($"Container: {container.name}, Parent: {container.transform.parent.name}");
+                    }
+                }
+            }
+        }
     }
 }

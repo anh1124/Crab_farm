@@ -1,4 +1,5 @@
 using System;
+using Script.PlayerController;
 using UnityEngine;
 
 namespace Art.Resources.Character.PlayerCharactor.Spear_Man

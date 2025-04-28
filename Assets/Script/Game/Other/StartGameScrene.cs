@@ -47,11 +47,11 @@ namespace Script.Game.Other
 
         public void InstancePlayerAndSetCamera()
         {
-            if (PlayerController.Instance.player != null)
+            if (PlayerController.PlayerController.Instance.player != null)
             {
                 // Nếu player đã được load, chỉ cần set lại camera
                 CameraFollowPlayer.Instance.setCameraTarget();
-                CameraFollowPlayer.Instance.TeleportCameraTo(PlayerController.Instance.player.transform.position);
+                CameraFollowPlayer.Instance.TeleportCameraTo(PlayerController.PlayerController.Instance.player.transform.position);
                 return;
             }
 
@@ -62,8 +62,8 @@ namespace Script.Game.Other
                 Debug.LogError("Failed to instantiate Player from prefab. Make sure player characters are loaded correctly.");
                 return;
             }
-            PlayerController.Instance.player = player;
-            PlayerController.Instance.SetUpControllerPlayer();
+            PlayerController.PlayerController.Instance.player = player;
+            PlayerController.PlayerController.Instance.SetUpControllerPlayer();
             CameraFollowPlayer.Instance.setCameraTarget();
             CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
         }
@@ -72,7 +72,7 @@ namespace Script.Game.Other
         {
             //add some coin for player test
 
-            PlayerStatus playerStatus = PlayerController.Instance.player.GetComponent<PlayerStatus>();
+            PlayerStatus playerStatus = PlayerController.PlayerController.Instance.player.GetComponent<PlayerStatus>();
             playerStatus.Coin += 100;
             
             Debug.LogWarning("DevelopTest đang bật ở StartGameScrene");

@@ -109,6 +109,7 @@ namespace Script.Data_Model
         #region Subjects
         
         public GameObject catapult;
+        public GameObject vagrant;
         
         #endregion
         
@@ -220,6 +221,12 @@ namespace Script.Data_Model
             _prefabDict.Add("scythe_vendor", oilBarrelVendor);
             _prefabDict.Add("sword_vendor", siegeWorkshop);
             _prefabDict.Add("spike_vendor", upgradeHouse);
+            
+            // Register vagrant prefab
+            if (vagrant != null)
+            {
+                _prefabDict.Add("vagrant", vagrant);
+            }
             
             //danh sách chứa tag mà player có thể tương tác bằng trigger helper
             playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
