@@ -4,6 +4,7 @@ using System.IO;
 using Script.GUI_Controller.PlayerGui;
 using Newtonsoft.Json;
 using Script;
+using Script.Data_Model;
 using UnityEngine;
 
 public class ChunkManager : MonoBehaviour
@@ -32,7 +33,6 @@ public class ChunkManager : MonoBehaviour
     public int seed;
     [SerializeField] private string folderPath = "Prefab/GroundChunk";
    
-    public int currentCreatChunk = 15;
     public List<GameObject> chunkPrefabsList;
     public GameObject emptyChunk;//đây là chunk trống,được dùng trong save 
     //bởi vì khi các chunk khác được instance ra thì các container của các chunk đó đã được chuyển đi rồi 
@@ -90,7 +90,7 @@ public class ChunkManager : MonoBehaviour
     {
         rng = new System.Random(Seed);
         seed = Seed;
-        CreateInitialChunks(currentCreatChunk);
+        CreateInitialChunks(PrefabData.Instance.currentCreatChunk);
         SetUpContainer.Instance.SaveAllContainer();
     }
 

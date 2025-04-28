@@ -850,6 +850,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2072569183713251011, guid: 4cadee12ab6ebbd4a8a307b1752391ad, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: currentCreatChunk
+      value: 21
+      objectReference: {fileID: 0}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: townCenterCampfire1
       value: 
       objectReference: {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
@@ -858,9 +862,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: wallList.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: gameObjectHaveCanvas
       value: 
       objectReference: {fileID: 79677590}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: stumpList.Array.size
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: townCenterBigTownHall4
       value: 
@@ -869,6 +881,46 @@ PrefabInstance:
       propertyPath: treePrefabs.Array.size
       value: 9
       objectReference: {fileID: 0}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: wallList.Array.data[0]
+      value: 
+      objectReference: {fileID: 7160081409078651775, guid: 048d8448d033006498c864dc649a10a9, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: wallList.Array.data[1]
+      value: 
+      objectReference: {fileID: 88156099613334518, guid: c6712989be10b674ebb235d2ae0b5590, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: wallList.Array.data[2]
+      value: 
+      objectReference: {fileID: 1135329394323526417, guid: 36fdd08005536274ab9f4b149a596c63, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: wallList.Array.data[3]
+      value: 
+      objectReference: {fileID: 6594779622634727778, guid: 9b29a6d48b4bba94295ba200af44b708, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: wallList.Array.data[4]
+      value: 
+      objectReference: {fileID: 8305966225529757044, guid: e50073ae5b8de8b4cb6f19e12a360812, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: stumpList.Array.data[0]
+      value: 
+      objectReference: {fileID: 3773173724092894653, guid: 2f6b046b4255805468ceae099f5f4aab, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: stumpList.Array.data[1]
+      value: 
+      objectReference: {fileID: 8713603468694003591, guid: 0706dd60eba604f4ea8d30dcac4c30fc, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: stumpList.Array.data[2]
+      value: 
+      objectReference: {fileID: 1913700099761040674, guid: ba587d698125f3a4a9309e0fa3c17dd6, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: stumpList.Array.data[3]
+      value: 
+      objectReference: {fileID: 2072569183713251011, guid: 4cadee12ab6ebbd4a8a307b1752391ad, type: 3}
+    - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: stumpList.Array.data[4]
+      value: 
+      objectReference: {fileID: 2351668989559776620, guid: 4943fba53d229574d9b3585eb236b85b, type: 3}
     - target: {fileID: 7479803545423749147, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: townCenterVillageTents2
       value: 

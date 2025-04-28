@@ -51,29 +51,30 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             private GameObject GetWallPrefabById(string id)
             {
-                switch (id)
+                if (id == "wall_0") return PrefabData.Instance.wallDirtMound0;
+                
+                if (id.StartsWith("wall_"))
                 {
-                    case "wall_0": return PrefabData.Instance.wallDirtMound0;
-                    case "wall_1": return PrefabData.Instance.wallSpike1;
-                    case "wall_2": return PrefabData.Instance.wallPalisade2;
-                    case "wall_3": return PrefabData.Instance.wallStone3;
-                    case "wall_4": return PrefabData.Instance.wallTallStone4;
-                    case "wall_5": return PrefabData.Instance.wallIron5;
-                    default: return null;
+                    int index = int.Parse(id.Substring(5)) - 1;
+                    if (index >= 0 && index < PrefabData.Instance.wallList.Count)
+                    {
+                        return PrefabData.Instance.wallList[index];
+                    }
                 }
+                return null;
             }
             
             private GameObject GetStumpPrefabById(string id)
             {
-                switch (id)
+                if (id.StartsWith("stump_"))
                 {
-                    case "stump_1": return PrefabData.Instance.stumpSpike1;
-                    case "stump_2": return PrefabData.Instance.stumpPalisade2;
-                    case "stump_3": return PrefabData.Instance.stumpStone3;
-                    case "stump_4": return PrefabData.Instance.stumpTallStone4;
-                    case "stump_5": return PrefabData.Instance.stumpIron5;
-                    default: return null;
+                    int index = int.Parse(id.Substring(6)) - 1;
+                    if (index >= 0 && index < PrefabData.Instance.stumpList.Count)
+                    {
+                        return PrefabData.Instance.stumpList[index];
+                    }
                 }
+                return null;
             }
         }
         
@@ -130,18 +131,17 @@ namespace Script.Game.Structures.Wall_And_Stump
                 else
                 {
                     Debug.LogError("WallStructureConfig.json không tìm thấy trong Resources/DataConfig");
-                    FallbackToHardcodedData();
+                    LoadHardcodedWallData();
                 }
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"Error loading wall configs: {e.Message}");
-                FallbackToHardcodedData();
+                LoadHardcodedWallData();
             }
         }
         
-        // This is just a fallback in case the JSON loading fails
-        private void FallbackToHardcodedData()
+        private void LoadHardcodedWallData()
         {
             if (isDebug) Debug.LogWarning("Falling back to hardcoded wall data");
             wallList.Clear();
@@ -153,7 +153,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 prefabId = "wall_0",
                 nextUpgradePrefabId = "wall_1",
                 curentPrefab = PrefabData.Instance.wallDirtMound0,
-                nextUpgradePrefab = PrefabData.Instance.wallSpike1
+                nextUpgradePrefab = PrefabData.Instance.wallList[0]
             });
             wallList.Add(new WallData
             {
@@ -165,9 +165,9 @@ namespace Script.Game.Structures.Wall_And_Stump
                 prefabId = "wall_1",
                 stumpPrefabId = "stump_1",
                 nextUpgradePrefabId = "wall_2",
-                curentPrefab = PrefabData.Instance.wallSpike1,
-                stumpPrefab = PrefabData.Instance.stumpSpike1,
-                nextUpgradePrefab = PrefabData.Instance.wallPalisade2
+                curentPrefab = PrefabData.Instance.wallList[0],
+                stumpPrefab = PrefabData.Instance.stumpList[0],
+                nextUpgradePrefab = PrefabData.Instance.wallList[1]
             });
             wallList.Add(new WallData
             {
@@ -179,49 +179,49 @@ namespace Script.Game.Structures.Wall_And_Stump
                 prefabId = "wall_2",
                 stumpPrefabId = "stump_2",
                 nextUpgradePrefabId = "wall_3",
-                curentPrefab = PrefabData.Instance.wallPalisade2,
-                stumpPrefab = PrefabData.Instance.stumpPalisade2,
-                nextUpgradePrefab = PrefabData.Instance.wallStone3
+                curentPrefab = PrefabData.Instance.wallList[1],
+                stumpPrefab = PrefabData.Instance.stumpList[1],
+                nextUpgradePrefab = PrefabData.Instance.wallList[2]
             });
             wallList.Add(new WallData
             {
                 tier = 3,
-                upgradeCost = 8,
-                rebuildCost = 3,
-                normalMaxHp = 200,
-                blessedMaxHp = 360,
+                upgradeCost = 7,
+                rebuildCost = 2,
+                normalMaxHp = 75,
+                blessedMaxHp = 130,
                 prefabId = "wall_3",
                 stumpPrefabId = "stump_3",
                 nextUpgradePrefabId = "wall_4",
-                curentPrefab = PrefabData.Instance.wallStone3,
-                stumpPrefab = PrefabData.Instance.stumpStone3,
-                nextUpgradePrefab = PrefabData.Instance.wallTallStone4
+                curentPrefab = PrefabData.Instance.wallList[2],
+                stumpPrefab = PrefabData.Instance.stumpList[2],
+                nextUpgradePrefab = PrefabData.Instance.wallList[3]
             });
             wallList.Add(new WallData
             {
                 tier = 4,
-                upgradeCost = 12,
-                rebuildCost = 5,
-                normalMaxHp = 300,
-                blessedMaxHp = 500,
+                upgradeCost = 9,
+                rebuildCost = 2,
+                normalMaxHp = 100,
+                blessedMaxHp = 170,
                 prefabId = "wall_4",
                 stumpPrefabId = "stump_4",
                 nextUpgradePrefabId = "wall_5",
-                curentPrefab = PrefabData.Instance.wallTallStone4,
-                stumpPrefab = PrefabData.Instance.stumpTallStone4,
-                nextUpgradePrefab = PrefabData.Instance.wallIron5
+                curentPrefab = PrefabData.Instance.wallList[3],
+                stumpPrefab = PrefabData.Instance.stumpList[3],
+                nextUpgradePrefab = PrefabData.Instance.wallList[4]
             });
             wallList.Add(new WallData
             {
                 tier = 5,
-                upgradeCost = 0,
-                rebuildCost = 6,
-                normalMaxHp = 400,
-                blessedMaxHp = 800,
+                upgradeCost = 11,
+                rebuildCost = 3,
+                normalMaxHp = 125,
+                blessedMaxHp = 210,
                 prefabId = "wall_5",
                 stumpPrefabId = "stump_5",
-                curentPrefab = PrefabData.Instance.wallIron5,
-                stumpPrefab = PrefabData.Instance.stumpIron5,
+                curentPrefab = PrefabData.Instance.wallList[4],
+                stumpPrefab = PrefabData.Instance.stumpList[4],
                 maxLevel = true
             });
         }

@@ -48,7 +48,7 @@ namespace Script.Game.Item.Coin
         private bool isCollectingCoins ;
 
         private IUpgradeable upgradeableComponent;
-        
+
         public bool playerTrigger;
         private void Start()
         {
@@ -84,10 +84,10 @@ namespace Script.Game.Item.Coin
             if (upgradeableComponent != null)
             {
                 // Ready to upgrade will be determined by parent component (Wall, TownCenter, etc.)
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    SetupCoinSlots();
-                    playerTrigger = true;
+            if (canAcceptCoins && !isReadyToUpgrade)
+            {
+                SetupCoinSlots();
+                playerTrigger = true;
                 }
                 else if (!canAcceptCoins)
                 {
@@ -180,8 +180,8 @@ namespace Script.Game.Item.Coin
             if (coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count)
             {
                 if (BuildingManager.isDebug)
-                {
-                    Debug.LogWarning("No available coin slots.");
+            {
+                Debug.LogWarning("No available coin slots.");
                 }
                 return;
             }
@@ -239,8 +239,8 @@ namespace Script.Game.Item.Coin
         private void ReleaseCoins()
         {   
             if (BuildingManager.isDebug)
-            {
-                Debug.LogWarning("đã gọi hàm ReleaseCoins");
+        {   
+            Debug.LogWarning("đã gọi hàm ReleaseCoins");
             }
             
             foreach (GameObject coin in coinsInTransit)

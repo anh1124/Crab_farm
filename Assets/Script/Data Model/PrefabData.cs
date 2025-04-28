@@ -29,25 +29,19 @@ namespace Script.Data_Model
         {
             public List<string> playerPrefabPaths;
         }
+       
+        [Space(15)] [Header("Map Generation")] [Space(5)]
+        #region Map Generation
+        public int currentCreatChunk = 15;
+        #endregion
         
-        [FormerlySerializedAs("WallMinDistance")] [Header("Wall and Stump ")] [Space(5)]
+        [Header("Wall and Stump ")] [Space(5)]
         #region Wall and stump
         public GameObject wallDirtMound0;//this not a wall,just a stumb  
         
-        public GameObject wallSpike1;
-        public GameObject wallPalisade2;
-        public GameObject wallStone3;
-        public GameObject wallTallStone4;
-        public GameObject wallIron5;
+        public List<GameObject> wallList = new List<GameObject>();
+        public List<GameObject> stumpList = new List<GameObject>();
         
-        [Space(5)]
-        public GameObject stumpSpike1;
-        public GameObject stumpPalisade2;
-        public GameObject stumpStone3;
-        public GameObject stumpTallStone4;
-        public GameObject stumpIron5;
-        
-      
         #endregion
         
         [Space(15)] 
@@ -83,16 +77,7 @@ namespace Script.Data_Model
 
         public bool towerFireBless;
         
-        
-        public GameObject towerBoulderPile0;
-        public GameObject towerRockPlatForm1;
-        public GameObject towerWooden2;
-        public GameObject towerStone3;
-        public GameObject towerTriplet4;
-        public GameObject towerRoofedTriplet5;
-        public GameObject towerQuadruplet6;
-        
-        public GameObject towerBallista7;
+        public List<GameObject> towerList = new List<GameObject>();
         
         #endregion
 
@@ -212,11 +197,22 @@ namespace Script.Data_Model
 
             // Đăng ký các prefab wall với định dạng "wall_{tier}"
             _prefabDict.Add("wall_0", wallDirtMound0);
-            _prefabDict.Add("wall_1", wallSpike1);
-            _prefabDict.Add("wall_2", wallPalisade2);
-            _prefabDict.Add("wall_3", wallStone3);
-            _prefabDict.Add("wall_4", wallTallStone4);
-            _prefabDict.Add("wall_5", wallIron5);
+            for (int i = 0; i < wallList.Count; i++)
+            {
+                _prefabDict.Add($"wall_{i + 1}", wallList[i]);
+            }
+
+            // Đăng ký các prefab stump
+            for (int i = 0; i < stumpList.Count; i++)
+            {
+                _prefabDict.Add($"stump_{i + 1}", stumpList[i]);
+            }
+
+            // Đăng ký các prefab tower
+            for (int i = 0; i < towerList.Count; i++)
+            {
+                _prefabDict.Add($"tower_{i}", towerList[i]);
+            }
            
             // Register vendor prefabs
             _prefabDict.Add("bow_vendor", bowVendor);

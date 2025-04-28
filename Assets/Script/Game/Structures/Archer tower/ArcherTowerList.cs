@@ -63,73 +63,63 @@ namespace Script.Game.Structures.Archer_tower
                   tier = 0,
                   upgradeCost = 3,
                   covered = false,
-                  carryOn =0,
-                  archerTower = PrefabData.Instance.towerBoulderPile0,
-                  nextUpgrade = PrefabData.Instance.towerRockPlatForm1
+                  carryOn = 0,
+                  archerTower = PrefabData.Instance.towerList[0],
+                  nextUpgrade = PrefabData.Instance.towerList[1]
                 },
                 new ArcherTowerData
                 {
                     tier = 1,//rock platform
                     upgradeCost = 3,
                     covered = false,
-                    carryOn =1,
-                    archerTower = PrefabData.Instance.towerRockPlatForm1,
-                    nextUpgrade = PrefabData.Instance.towerWooden2
+                    carryOn = 1,
+                    archerTower = PrefabData.Instance.towerList[1],
+                    nextUpgrade = PrefabData.Instance.towerList[2]
                 },
                 new ArcherTowerData
                 {
                     tier = 2, // Wooden watchtower	,taller than ,shot skill better
                     upgradeCost = 6,
                     covered = false,
-                    carryOn =1,
-                    archerTower = PrefabData.Instance.towerWooden2,
-                    nextUpgrade = PrefabData.Instance.towerStone3
+                    carryOn = 1,
+                    archerTower = PrefabData.Instance.towerList[2],
+                    nextUpgrade = PrefabData.Instance.towerList[3]
                 },
                 new ArcherTowerData
                 {
                     tier = 3, //Stone tower
                     upgradeCost = 9,
                     covered = false,
-                    carryOn =2,
-                    archerTower = PrefabData.Instance.towerStone3,
-                    nextUpgrade = PrefabData.Instance.towerTriplet4
+                    carryOn = 2,
+                    archerTower = PrefabData.Instance.towerList[3],
+                    nextUpgrade = PrefabData.Instance.towerList[4]
                 },
                 new ArcherTowerData
                 {
                     tier = 4, //Triplet tower
                     upgradeCost = 12,
                     covered = false,
-                    carryOn =3,
-                    archerTower = PrefabData.Instance.towerTriplet4,
-                    nextUpgrade = PrefabData.Instance.towerRoofedTriplet5
+                    carryOn = 3,
+                    archerTower = PrefabData.Instance.towerList[4],
+                    nextUpgrade = PrefabData.Instance.towerList[5]
                 },
                 new ArcherTowerData
                 {
-                    tier = 5, //Roofed triplet tower	
+                    tier = 5, //Roofed Triplet tower
                     upgradeCost = 15,
                     covered = true,
-                    carryOn =3,
-                    archerTower = PrefabData.Instance.towerRoofedTriplet5,
-                    nextUpgrade = PrefabData.Instance.towerQuadruplet6,
-                 
+                    carryOn = 3,
+                    archerTower = PrefabData.Instance.towerList[5],
+                    nextUpgrade = PrefabData.Instance.towerList[6]
                 },
                 new ArcherTowerData
                 {
                     tier = 6, //Quadruplet tower
                     upgradeCost = 18,
-                    covered = true,
-                    carryOn =4,
-                    archerTower = PrefabData.Instance.towerQuadruplet6,
-                    nextUpgrade = PrefabData.Instance.towerBallista7,
-         
-                },
-                new ArcherTowerData//this is a diff type of archer tower
-                {
-                    tier = -1, //tower Ballista
-                    upgradeCost = 20,
                     covered = false,
-                    carryOn =1,
-                    archerTower = PrefabData.Instance.towerBallista7
+                    carryOn = 4,
+                    archerTower = PrefabData.Instance.towerList[6],
+                    nextUpgrade = null
                 }
             };
         

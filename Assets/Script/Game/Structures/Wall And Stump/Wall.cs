@@ -232,7 +232,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 if (BuildingManager.isDebug)
                 {
                     Debug.LogWarning($"Cannot upgrade wall at tier {tier}: No next upgrade prefab is available");
-                }
+            }
             }
         }
         

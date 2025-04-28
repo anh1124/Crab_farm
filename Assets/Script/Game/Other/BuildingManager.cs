@@ -63,7 +63,7 @@ namespace Script.Game.Other
         [Header("Config File Settings")]
         [Tooltip("Tên file config trong thư mục Resources/DataConfig")]
         public string configFileName = "BuildingLimits";
-        
+
         [Header("Town Center Build Configs")]
         [SerializeField] 
         private List<TownCenterConfig> townCenterConfigs = new List<TownCenterConfig>();

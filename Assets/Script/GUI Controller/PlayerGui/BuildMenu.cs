@@ -66,7 +66,13 @@ public class BuildMenu : MonoBehaviour
     {
         openBuildMenuBtn.onClick.AddListener(OpenBuildMenu);
     }
-    
+
+    public void ReloadBuildMenu()
+    {
+        ClearBuildButtonContainer();
+        buildButtonContainer.gameObject.SetActive(false);
+        showBuildMenu = false;
+    }
     public void OpenBuildMenu()
     {
         // First update the available buildings list
@@ -159,9 +165,7 @@ public class BuildMenu : MonoBehaviour
                 return PrefabData.Instance.townCenterList?.Count > 0 ? PrefabData.Instance.townCenterList[0] : null;
                 
             case BuildingType.Wall:
-                // Wall always starts at level 1 (wallSpike1) when built from menu
-                // maxLevel from JSON is only used to determine how far it can be upgraded, not its initial level
-                return PrefabData.Instance.wallSpike1;
+                return GetWallPrefab();
                 
             case BuildingType.HammerVendor:
                 return PrefabData.Instance.hammerVendor;
@@ -173,6 +177,13 @@ public class BuildMenu : MonoBehaviour
                 Debug.LogWarning($"Unknown building type: {buildingType}");
                 return null;
         }
+    }
+    
+    private GameObject GetWallPrefab()
+    {
+        // Wall always starts at level 1 (wallSpike1) when built from menu
+        // Now using the first wall from the list (index 0)
+        return PrefabData.Instance.wallList[0];
     }
     
     private void PopulateBuildButtons()

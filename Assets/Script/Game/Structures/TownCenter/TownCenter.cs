@@ -148,33 +148,67 @@ namespace Script.Game.Structures.TownCenter
         // Triển khai phương thức Upgrade theo interface
         public void Upgrade()
         {
+            Debug.Log($"[TownCenter] Starting upgrade process from level {Level} to level {Level + 1}");
+            
             if (NextUpgradePrefab != null)
             {
+                Debug.Log($"[TownCenter] Found valid NextUpgradePrefab: {NextUpgradePrefab.name}");
+                
                 // Instantiate đối tượng mới với parent là transform cha của đối tượng hiện tại
                 GameObject upgraded = Instantiate(NextUpgradePrefab, transform.position, Quaternion.identity,
                     transform.parent);
                 
+                Debug.Log($"[TownCenter] Instantiated new TownCenter: {upgraded.name}");
+                
                 // Update BuildingManager with the new TownCenter
                 if (BuildingManager.instance != null)
                 {
+                    Debug.Log($"[TownCenter] Updating BuildingManager with new TownCenter object");
                     BuildingManager.instance.SetTownCenterAndUpdateBuildRule(upgraded);
+                    Debug.Log($"[TownCenter] BuildingManager updated with new TownCenter. Current level: {BuildingManager.instance.currentTownCenterLevel}");
                     
                     // Update the buildable structures list in BuildMenu
                     if (BuildMenu.instance != null)
                     {
+                        Debug.Log($"[TownCenter] Updating BuildMenu's buildable structures list");
                         BuildMenu.instance.UpdateBuildableStructuresList();
-                        Debug.Log("Updated buildable structures list after TownCenter upgrade");
+                        Debug.Log($"[TownCenter] BuildMenu updated. Total available structures: {BuildMenu.instance.buildableStructures.Count}");
+                        
+                        // Log each available structure
+                        foreach (var structure in BuildMenu.instance.buildableStructures)
+                        {
+                            Debug.Log($"[TownCenter] Available structure: {structure.name}");
+                        }
+                        
+                        // Check if build menu is currently open and reload it if needed
+                        if (BuildMenu.instance.showBuildMenu)
+                        {
+                            Debug.Log("[TownCenter] Build menu is currently open, reloading build menu UI");
+                            BuildMenu.instance.OpenBuildMenu();
+                            BuildMenu.instance.OpenBuildMenu();
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[TownCenter] BuildMenu.instance is null, cannot update buildable structures list");
                     }
                 }
+                else
+                {
+                    Debug.LogWarning("[TownCenter] BuildingManager.instance is null, cannot update build rules");
+                }
                 
+                Debug.Log($"[TownCenter] Destroying old TownCenter: {gameObject.name}");
                 Destroy(gameObject);
                 
                 // Add wall when upgraded to level 1
+                Debug.Log($"[TownCenter] Checking if walls need to be added (level {Level})");
                 RuleAddWall();
+                Debug.Log($"[TownCenter] Upgrade process completed successfully");
             }
             else
             {
-                Debug.LogWarning(NextUpgradePrefab + " is null in " + CurrentPrefab.name);
+                Debug.LogWarning($"[TownCenter] NextUpgradePrefab is null in {CurrentPrefab.name}, cannot upgrade");
             }
         }
 
