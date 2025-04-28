@@ -32,7 +32,7 @@ namespace Script.Data_Model
        
         [Space(15)] [Header("Map Generation")] [Space(5)]
         #region Map Generation
-        public int currentCreatChunk = 15;
+        public int currentCreatChunk = 3;
         #endregion
         
         [Header("Wall and Stump ")] [Space(5)]

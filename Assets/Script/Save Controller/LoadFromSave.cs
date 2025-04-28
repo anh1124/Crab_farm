@@ -64,20 +64,64 @@ public class LoadFromSave : MonoBehaviour
 
     private void LoadMapJson()
     {
-        //kiểm tra file map.json
-        string mapFilePath = Path.Combine(saveFilePath, "map.json");
-        if (File.Exists(mapFilePath))// File map đã tồn tại, load map từ file
+        try
         {
-            ChunkManager.Instance.LoadMapFromJson(mapFilePath);
-            Debug.Log("Đã load map từ file save.");
+            //kiểm tra file map.json
+            string mapFilePath = Path.Combine(saveFilePath, "map.json");
+            
+            // Ensure ChunkManager instance exists
+            if (ChunkManager.Instance == null)
+            {
+                Debug.LogError("ChunkManager.Instance is null! Cannot load or generate map.");
+                return;
+            }
+            
+            if (File.Exists(mapFilePath))// File map đã tồn tại, load map từ file
+            {
+                Debug.Log("Tìm thấy file map.json, đang load map...");
+                try
+                {
+                    ChunkManager.Instance.LoadMapFromJson(mapFilePath);
+                    Debug.Log("Đã load map từ file save.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Lỗi khi load map từ file: {ex.Message}");
+                    Debug.LogWarning("Thử tạo map mới do lỗi khi load...");
+                    GenerateNewMap();
+                }
+            }
+            else  // File map chưa tồn tại, tạo map mới từ seed
+            {
+                Debug.Log($"File map.json không tồn tại, tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
+                GenerateNewMap();
+            }
         }
-        else  // File map chưa tồn tại, tạo map mới từ seed
+        catch (Exception ex)
         {
-            Debug.Log($"File map.json không tồn tại, tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
+            Debug.LogError($"Lỗi không xác định trong LoadMapJson: {ex.Message}");
+        }
+    }
+    
+    private void GenerateNewMap()
+    {
+        try
+        {
+            // Verify worldInfo and seed are valid
+            if (worldInfo == null)
+            {
+                Debug.LogError("worldInfo is null! Cannot generate map.");
+                return;
+            }
+            
             ChunkManager.Instance.GenerateFirstMap(worldInfo.Seed);
             
             // Sau khi tạo map mới, lưu lại ngay
             ChunkManager.Instance.SaveMapToJson(saveFilePath);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Lỗi khi tạo map mới: {ex.Message}");
         }
     }
   
