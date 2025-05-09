@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Data_Model.Status;
+using Script.Game.Other;
 using UnityEngine;
 
 namespace Script
@@ -692,6 +693,45 @@ namespace Script
                     }
                 }
             }
+        }
+
+        // New method to find the wall farthest from town center
+        public GameObject FindFarthestWall(bool isRight)
+        {
+            if (BuildingManager.instance == null || BuildingManager.instance.CurrentTownCenter == null)
+            {
+                Debug.LogWarning("No town center found to determine wall position");
+                return null;
+            }
+            
+            Vector3 townCenterPos = BuildingManager.instance.CurrentTownCenter.transform.position;
+            List<GameObject> walls = GetObjectsFromContainerList(structureContainer);
+            
+            GameObject farthestWall = null;
+            float maxDistance = 0f;
+            
+            foreach (GameObject obj in walls)
+            {
+                if (obj.CompareTag("Wall"))
+                {
+                    Vector3 wallPos = obj.transform.position;
+                    
+                    // Only check walls on the right side if isRight is true, or left side if isRight is false
+                    bool isWallOnRightSide = wallPos.x > townCenterPos.x;
+                    
+                    if (isWallOnRightSide == isRight)
+                    {
+                        float distance = Mathf.Abs(wallPos.x - townCenterPos.x);
+                        if (distance > maxDistance)
+                        {
+                            maxDistance = distance;
+                            farthestWall = obj;
+                        }
+                    }
+                }
+            }
+            
+            return farthestWall;
         }
     }
 }

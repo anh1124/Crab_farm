@@ -97,8 +97,8 @@ namespace Script.Game.Structures.SellingShop
                 
             try
             {
-                // Load from Resources/DataConfig/ItemSellerConfig.json
-                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/ItemSellerConfig");
+                // Load from Resources/DataConfig/Item/ItemSellerConfig.json
+                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/Item/ItemSellerConfig");
                 if (jsonTextAsset != null)
                 {
                     var configWrapper = JsonConvert.DeserializeObject<ItemSellerConfigWrapper>(jsonTextAsset.text);

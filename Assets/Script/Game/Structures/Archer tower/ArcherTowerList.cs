@@ -37,7 +37,6 @@ namespace Script.Game.Structures.Archer_tower
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject); // Keep this object across scenes
             }
             else
             {

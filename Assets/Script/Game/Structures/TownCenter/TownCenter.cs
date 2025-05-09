@@ -1,6 +1,8 @@
 using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Game.Item.Coin;
+using Script.Game.Mobs;
+using Script.Game.Mobs.MobsManager;
 using Script.Game.Other;
 using Script.Game.Other.Nature;
 using UnityEngine;
@@ -204,11 +206,37 @@ namespace Script.Game.Structures.TownCenter
                 // Add wall when upgraded to level 1
                 Debug.Log($"[TownCenter] Checking if walls need to be added (level {Level})");
                 RuleAddWall();
+                
+                // Spawn vagrants outside the walls
+                SpawnInitialVagrants(upgraded);
+                
                 Debug.Log($"[TownCenter] Upgrade process completed successfully");
             }
             else
             {
                 Debug.LogWarning($"[TownCenter] NextUpgradePrefab is null in {CurrentPrefab.name}, cannot upgrade");
+            }
+        }
+        
+        /// <summary>
+        /// Spawns initial vagrants outside the walls after town center is upgraded
+        /// </summary>
+        private void SpawnInitialVagrants(GameObject townCenter)
+        {
+            // First try to find VagrantManager
+            var vagrantManager = GameObject.FindObjectOfType<VagrantManager>();
+            
+            if (vagrantManager != null)
+            {
+                Debug.Log("[TownCenter] Spawning initial vagrants after wall creation");
+                
+                // Spawn 3 vagrants - some on left, some on right
+                vagrantManager.SpawnVagrants(2, true);  // 2 on right side
+                vagrantManager.SpawnVagrants(1, false); // 1 on left side
+            }
+            else
+            {
+                Debug.LogWarning("[TownCenter] VagrantManager instance not found, cannot spawn initial vagrants");
             }
         }
 

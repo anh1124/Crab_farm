@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 2454466822937412082}
   m_Layer: 0
   m_Name: Vagrant
-  m_TagString: Untagged
+  m_TagString: Vagrant
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -196,6 +196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   idleSpeed: 1
   runSpeed: 3.5
+  maxIdleWalkDistance: 3
   roadToTarget: 0
   targetPosition: {x: 0, y: 0}
   coin: {fileID: 0}

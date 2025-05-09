@@ -44,7 +44,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1238521666009274884}
+  - {fileID: 8680344821423139051}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7567741772578441490
@@ -263,7 +263,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timeDisplay: {fileID: 0}
+  inspectorHour: 0
+  inspectorMinute: 0
+  inspectorDay: 1
+  inspectorMonth: 1
+  inspectorYear: 1
   realSecondsPerGameDay: 240
+  hourlyEventDebug: []
 --- !u!114 &7097226026259167694
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -416,7 +422,7 @@ MonoBehaviour:
   availableStructures: []
   currentTownCenterLevel: 0
   currentTownCenter: {fileID: 0}
---- !u!1 &7288934515519619791
+--- !u!1 &5848034847329386121
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -424,21 +430,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1238521666009274884}
+  - component: {fileID: 8680344821423139051}
+  - component: {fileID: 8848505126678873454}
   m_Layer: 0
-  m_Name: OtherGamePlayController
+  m_Name: MobsManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1238521666009274884
+--- !u!4 &8680344821423139051
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7288934515519619791}
+  m_GameObject: {fileID: 5848034847329386121}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -447,3 +454,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8862165295465698764}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8848505126678873454
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5848034847329386121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30c4f79e16bd1e94f9fc2f9a9445742a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config:
+    spawnDistanceFromWall: 3
+    maxVagrants: 5
+    dailySpawnChance: 0.7
+    minDailySpawnCount: 0
+    maxDailySpawnCount: 11

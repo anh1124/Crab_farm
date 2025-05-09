@@ -110,8 +110,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 // Clear existing data
                 wallList.Clear();
                 
-                // Load from Resources/DataConfig/WallStructureConfig.json
-                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/WallStructureConfig");
+                // Load from Resources/DataConfig/Structure/WallStructureConfig.json
+                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/Structure/WallStructureConfig");
                 if (jsonTextAsset != null)
                 {
                     var configWrapper = JsonConvert.DeserializeObject<WallStructureConfigWrapper>(jsonTextAsset.text);

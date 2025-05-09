@@ -360,7 +360,7 @@ namespace Script.Data_Model
                 playerCharacterList.Clear();
                 
                 // Try to load the JSON file from Resources
-                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/PlayerCharacterConfig");
+                TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/Player/PlayerCharacterConfig");
                 if (jsonTextAsset != null)
                 {
                     Debug.Log($"Successfully loaded PlayerCharacterConfig.json: {jsonTextAsset.text}");

@@ -12,6 +12,14 @@ public class GameTimeManager : MonoBehaviour
 
     // Time properties with auto-correction
     private int _totalMinutes;
+
+    [Header("Chỉnh thời gian để test (Inspector)")]
+    [SerializeField] private int inspectorHour;
+    [SerializeField] private int inspectorMinute;
+    [SerializeField] private int inspectorDay = 1;
+    [SerializeField] private int inspectorMonth = 1;
+    [SerializeField] private int inspectorYear = 1;
+
     public int GameHour => _totalMinutes / 60 % 24;
     public int GameMinute => _totalMinutes % 60;
     public int GameDay => (_totalMinutes / 1440 % 30) + 1;
@@ -24,6 +32,11 @@ public class GameTimeManager : MonoBehaviour
     // Event system
     private readonly Dictionary<int, Action> _hourlyEvents = new();
     private int _lastProcessedHour = -1;
+
+    #if UNITY_EDITOR
+    [Header("Debug: Các event đã đăng ký theo giờ (chỉ đọc)")]
+    [SerializeField] private List<string> hourlyEventDebug = new List<string>();
+    #endif
 
     private void Awake() => InitializeSingleton();
     private void Start() => InitializeTimeSystem();
@@ -62,34 +75,58 @@ public class GameTimeManager : MonoBehaviour
         }
         _lastProcessedHour = GameHour;
     }
+
+    private void UpdateHourlyEventDebug()
+    {
+    #if UNITY_EDITOR
+        hourlyEventDebug.Clear();
+        foreach (var kvp in _hourlyEvents)
+        {
+            if (kvp.Value != null)
+            {
+                var delegates = kvp.Value.GetInvocationList();
+                foreach (var del in delegates)
+                {
+                    string methodName = del.Method.Name;
+                    string className = del.Target != null ? del.Target.GetType().Name : "(static)";
+                    hourlyEventDebug.Add($"Giờ: {kvp.Key} - {className}.{methodName}");
+                }
+            }
+            else
+            {
+                hourlyEventDebug.Add($"Giờ: {kvp.Key} - Không có event");
+            }
+        }
+    #endif
+    }
+
     public void SubscribeToHourlyEvent(int hour, Action callback)
     {
         if (_hourlyEvents.ContainsKey(hour))
-        {
             _hourlyEvents[hour] += callback;
-        }
         else
-        {
             _hourlyEvents[hour] = callback;
-        }
+        UpdateHourlyEventDebug();
     }
     public void UnsubscribeFromHourlyEvent(int hour, Action callback)
     {
         if (_hourlyEvents.ContainsKey(hour))
         {
             _hourlyEvents[hour] -= callback;
-            
-            // If no subscribers left, remove the key
             if (_hourlyEvents[hour] == null)
-            {
                 _hourlyEvents.Remove(hour);
-            }
         }
+        UpdateHourlyEventDebug();
     }
     #endregion
 
     #region Time Calculation
-    public void AddMinutes(int minutes) => _totalMinutes += minutes;
+    public void AddMinutes(int minutes)
+    {
+        _totalMinutes += minutes;
+        UpdateInspectorFieldsFromTotalMinutes();
+        UpdateTimeDisplay();
+    }
 
     public bool IsDaytime => GameHour >= 6 && GameHour < 18;
 
@@ -99,6 +136,7 @@ public class GameTimeManager : MonoBehaviour
         {
             yield return new WaitForSeconds(_secondsPerMinute);
             _totalMinutes++;
+            UpdateInspectorFieldsFromTotalMinutes();
             UpdateTimeDisplay();
             CheckForHourlyEvent();
         }
@@ -145,9 +183,26 @@ public class GameTimeManager : MonoBehaviour
     public void SetGameTime(int totalMinutes)
     {
         _totalMinutes = Mathf.Max(totalMinutes, 0);
+        UpdateInspectorFieldsFromTotalMinutes();
         UpdateTimeDisplay();
     }
     
     public int GetTotalMinutes => _totalMinutes;
     #endregion
+
+    private void OnValidate()
+    {
+        // Khi chỉnh Inspector, cập nhật _totalMinutes
+        _totalMinutes = (inspectorYear - 1) * 172800 + (inspectorMonth - 1) * 43200 + (inspectorDay - 1) * 1440 + inspectorHour * 60 + inspectorMinute;
+        UpdateTimeDisplay();
+    }
+
+    private void UpdateInspectorFieldsFromTotalMinutes()
+    {
+        inspectorHour = GameHour;
+        inspectorMinute = GameMinute;
+        inspectorDay = GameDay;
+        inspectorMonth = GameMonth;
+        inspectorYear = GameYear;
+    }
 }

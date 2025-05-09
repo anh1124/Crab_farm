@@ -129,8 +129,8 @@ namespace Script.Game.Other
         {
             try 
             {
-                // Load from the new path: Resources/DataConfig/[configFileName]
-                string fullPath = $"DataConfig/{configFileName}";
+                // Load from the new path: Resources/DataConfig/Structure/[configFileName]
+                string fullPath = $"DataConfig/Structure/{configFileName}";
                 TextAsset jsonTextAsset = Resources.Load<TextAsset>(fullPath);
                 
                 if (jsonTextAsset != null)
