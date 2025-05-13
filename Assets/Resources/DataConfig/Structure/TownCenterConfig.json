@@ -5,7 +5,8 @@
       "availableStructures": [
         {
           "buildingType": "TownCenter",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 0
         }
       ]
     },
@@ -15,15 +16,18 @@
         {
           "buildingType": "Wall",
           "maxQuantity": 2,
-          "maxLevel":1
+          "maxLevel":1,
+          "buildProgress": 10
         },
         {
           "buildingType": "HammerVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 10
         },
         {
           "buildingType": "BowVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 10
         }
       ]
     },
@@ -33,15 +37,18 @@
         {
           "buildingType": "Wall",
           "maxQuantity": 4,
-          "maxLevel":2
+          "maxLevel":2,
+          "buildProgress": 15
         },
         {
           "buildingType": "HammerVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 15
         },
         {
           "buildingType": "BowVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 15
         }
       ]
     },
@@ -51,15 +58,18 @@
         {
           "buildingType": "Wall",
           "maxQuantity": 6,
-          "maxLevel":3
+          "maxLevel":3,
+          "buildProgress": 20
         },
         {
           "buildingType": "HammerVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 20
         },
         {
           "buildingType": "BowVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 20
         }
       ]
     },
@@ -69,15 +79,18 @@
         {
           "buildingType": "Wall",
           "maxQuantity": 8,
-          "maxLevel":4
+          "maxLevel":4,
+          "buildProgress": 25
         },
         {
           "buildingType": "HammerVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 25
         },
         {
           "buildingType": "BowVendor",
-          "maxQuantity": 1
+          "maxQuantity": 1,
+          "buildProgress": 25
         }
       ]
     }

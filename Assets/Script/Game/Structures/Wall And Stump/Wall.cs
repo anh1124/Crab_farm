@@ -39,6 +39,9 @@ namespace Script.Game.Structures.Wall_And_Stump
         [SerializeField] private CoinUser coinUser;
         [SerializeField] private float minimumDistance = 20f;
     
+        [SerializeField] public int buildProgress;
+        [SerializeField] public int buildProgressMax;
+    
         public float MinimumDistance => minimumDistance;
         
         #region IUpgradeable Properties
@@ -323,6 +326,30 @@ namespace Script.Game.Structures.Wall_And_Stump
             if (coinUser != null)
             {
                 UpdateCoinUserData();
+            }
+        }
+
+        public void SetMaxWorkingProcessSet(int max)
+        {
+            buildProgress = max;
+            buildProgressMax = max;
+            Debug.Log($"[Wall] SetMaxWorkingProcessSet called, set buildProgress = {max}");
+            if (max == 0)
+            {
+                Debug.Log("[Wall] buildProgress = 0, upgrading immediately!");
+                Upgrade();
+            }
+        }
+
+        public void AddWorkingProcess(int amount)
+        {
+            buildProgress += amount;
+            if (buildProgress > buildProgressMax) buildProgress = buildProgressMax;
+            Debug.LogWarning($"[Wall] AddWorkingProcess: buildProgress = {buildProgress}/{buildProgressMax}");
+            if (buildProgress >= buildProgressMax)
+            {
+                Debug.LogWarning("[Wall] buildProgress reached max, upgrading!");
+                Upgrade();
             }
         }
     }

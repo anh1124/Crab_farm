@@ -13,6 +13,8 @@ namespace Script.Game.Mobs.MobsManager
         public float dailySpawnChance = 0.7f;
         public int minDailySpawnCount = 0;
         public int maxDailySpawnCount = 11;
+        [Tooltip("Khoảng random vị trí x khi sinh vagrant quanh tường (theo đơn vị world)")]
+        public float randomXRange = 2f;
     }
 
     public class VagrantManager : MonoBehaviour
@@ -178,6 +180,7 @@ namespace Script.Game.Mobs.MobsManager
                     // Nếu không tìm thấy vị trí hợp lệ, bỏ qua lần sinh này
                     if (spawnPosition == Vector3.zero)
                     {
+                        Debug.LogError("vị trí sinh vagrant không hợp lệ hoặc lỗi- bỏ qua");
                         continue;
                     }
                 }
@@ -218,9 +221,12 @@ namespace Script.Game.Mobs.MobsManager
             // Xác định hướng (X dương hoặc âm) dựa trên vị trí tương đối với town center
             float directionMultiplier = spawnOnRight ? 1 : -1;
         
-            // Tính toán vị trí sinh bên ngoài tường
+            // Random vị trí x quanh tường trong khoảng randomXRange
+            float randomOffset = Random.Range(-config.randomXRange, config.randomXRange);
+        
+            // Tính toán vị trí sinh bên ngoài tường, có random x
             Vector3 spawnPosition = new Vector3(
-                wallPosition.x + (directionMultiplier * config.spawnDistanceFromWall),
+                wallPosition.x + (directionMultiplier * config.spawnDistanceFromWall) + randomOffset,
                 0, // Giữ trên mặt đất
                 wallPosition.z
             );

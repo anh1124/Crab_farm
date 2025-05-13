@@ -19,6 +19,8 @@ namespace Script.Game.Structures.TownCenter
         [SerializeField] public GameObject nextUpgradePrefab;
         [SerializeField] public bool readyToUpgrade;
         [SerializeField] public bool maxLevel;
+        [SerializeField] public int buildProgress;
+        [SerializeField] public int buildProgressMax;
 
         private readonly int extraDistance = 5;
         
@@ -27,7 +29,6 @@ namespace Script.Game.Structures.TownCenter
         public CoinUser coinUser;
         
         #endregion
-        
         #region Interface Properties Implementation
         public int Level
         {
@@ -104,12 +105,12 @@ namespace Script.Game.Structures.TownCenter
                 Debug.LogWarning($"No townCentrerData found for tier: {Level}");
             }
         }
-
-        public void RuleAddWall()
+        
+        //hàm này được gọi ngay sau khi nâng từ unlitcampfire lên campfire,nó sẽ gọi thêm hàm add vagrant
+        public void RuleAddWall(GameObject towncenter)
         {
             if (level == 0)
             {
-                
                 // Vẽ hình tròn kiểm tra cây trong vùng plazaDistance
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, plazaDistance + extraDistance);
                 foreach (Collider2D collider in colliders)
@@ -135,6 +136,8 @@ namespace Script.Game.Structures.TownCenter
                 // Đưa tường vào container để quản lý
                 SetUpContainer.Instance.MoveObjectToContainer(leftWall);
                 SetUpContainer.Instance.MoveObjectToContainer(rightWall);
+                // Spawn vagrants outside the walls
+                SpawnInitialVagrants(towncenter);
             }
         }
 
@@ -150,29 +153,24 @@ namespace Script.Game.Structures.TownCenter
         // Triển khai phương thức Upgrade theo interface
         public void Upgrade()
         {
-            Debug.Log($"[TownCenter] Starting upgrade process from level {Level} to level {Level + 1}");
             
             if (NextUpgradePrefab != null)
             {
-                Debug.Log($"[TownCenter] Found valid NextUpgradePrefab: {NextUpgradePrefab.name}");
                 
                 // Instantiate đối tượng mới với parent là transform cha của đối tượng hiện tại
                 GameObject upgraded = Instantiate(NextUpgradePrefab, transform.position, Quaternion.identity,
                     transform.parent);
                 
-                Debug.Log($"[TownCenter] Instantiated new TownCenter: {upgraded.name}");
-                
+               
                 // Update BuildingManager with the new TownCenter
                 if (BuildingManager.instance != null)
                 {
-                    Debug.Log($"[TownCenter] Updating BuildingManager with new TownCenter object");
                     BuildingManager.instance.SetTownCenterAndUpdateBuildRule(upgraded);
                     Debug.Log($"[TownCenter] BuildingManager updated with new TownCenter. Current level: {BuildingManager.instance.currentTownCenterLevel}");
                     
                     // Update the buildable structures list in BuildMenu
                     if (BuildMenu.instance != null)
                     {
-                        Debug.Log($"[TownCenter] Updating BuildMenu's buildable structures list");
                         BuildMenu.instance.UpdateBuildableStructuresList();
                         Debug.Log($"[TownCenter] BuildMenu updated. Total available structures: {BuildMenu.instance.buildableStructures.Count}");
                         
@@ -199,16 +197,10 @@ namespace Script.Game.Structures.TownCenter
                 {
                     Debug.LogWarning("[TownCenter] BuildingManager.instance is null, cannot update build rules");
                 }
-                
-                Debug.Log($"[TownCenter] Destroying old TownCenter: {gameObject.name}");
                 Destroy(gameObject);
-                
                 // Add wall when upgraded to level 1
                 Debug.Log($"[TownCenter] Checking if walls need to be added (level {Level})");
-                RuleAddWall();
-                
-                // Spawn vagrants outside the walls
-                SpawnInitialVagrants(upgraded);
+                RuleAddWall(upgraded);
                 
                 Debug.Log($"[TownCenter] Upgrade process completed successfully");
             }
@@ -250,6 +242,30 @@ namespace Script.Game.Structures.TownCenter
         public void GetPlazaDistance()
         {
             plazaDistance = PrefabData.Instance.plazaDistance;
+        }
+
+        public void SetMaxWorkingProcessSet(int max)
+        {
+            buildProgress = max;
+            buildProgressMax = max;
+            Debug.LogWarning($"[TownCenter] SetMaxWorkingProcessSet called, set buildProgress = {max}");
+            if (max == 0)
+            {
+                //Debug.Log("[TownCenter] buildProgress = 0, upgrading immediately!");
+                Upgrade();
+            }
+        }
+
+        public void AddWorkingProcess(int amount)
+        {
+            buildProgress += amount;
+            if (buildProgress > buildProgressMax) buildProgress = buildProgressMax;
+            Debug.LogWarning($"[TownCenter] AddWorkingProcess: buildProgress = {buildProgress}/{buildProgressMax}");
+            if (buildProgress >= buildProgressMax)
+            {
+                Debug.LogWarning("[TownCenter] buildProgress reached max, upgrading!");
+                Upgrade();
+            }
         }
 
         #region Save System Implementation
