@@ -132,7 +132,7 @@ namespace Script.GUI_Controller.StartMenu
             if (checkFilePath != null)
             {
                 PlayerPrefs.SetString("SaveFilePath",  WorldFileManager.Instance.GetWorldFolderPath(name)); 
-                SceneManager.LoadScene("GamePlayScene"); Debug.LogError("StartMenuController11111: "+name);
+                SceneManager.LoadScene("GamePlayScene"); //Debug.LogError("StartMenuController11111: "+name);
             }
            else Debug.LogError("StartMenuController: save file path is not found");
         }

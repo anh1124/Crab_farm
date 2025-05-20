@@ -129,11 +129,45 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
 
         //tự sửa lại sau,tạo save riêng trong woerl
-        private void UpdateMaxHp()
+        public void UpdateMaxHp()
         {
-            MaxHp = PrefabData.Instance.techAdhesive ? blessedMaxHp : normalMaxHp;
+            // Sử dụng worldInfo.TechAdhesive thay vì prefabData.techAdhesive
+            bool techAdhesive = false;
+            
+            // Kiểm tra WorldFileManager tồn tại và có worldInfo không null trước khi truy cập
+            if (Script.Save_Controller.WorldFileManager.Instance != null && 
+                Script.Save_Controller.WorldFileManager.Instance.worldInfo != null)
+            {
+                techAdhesive = Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive;
+            }
+            
+            MaxHp = techAdhesive ? blessedMaxHp : normalMaxHp;
         }
 
+        private void OnEnable() 
+        {
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.OnWorldInfoChanged += OnWorldInfoChanged;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.OnWorldInfoChanged -= OnWorldInfoChanged;
+            }
+        }
+
+        private void OnWorldInfoChanged(Script.Save_Controller.WorldInfo worldInfo)
+        {
+            UpdateMaxHp();
+            if (BuildingManager.isDebug)
+            {
+                Debug.Log($"Wall {gameObject.name} updated HP due to WorldInfo change. TechAdhesive: {worldInfo.TechAdhesive}, MaxHP: {MaxHp}");
+            }
+        }
 
         private void UpdateCoinUserData()
         {

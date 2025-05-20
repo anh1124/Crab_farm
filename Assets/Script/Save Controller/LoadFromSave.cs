@@ -56,6 +56,9 @@ public class LoadFromSave : MonoBehaviour
         
         GameTimeManager.Instance.SetGameTimeFromSave();
         
+        // Load tech status from WorldInfo to PrefabData
+        LoadTechStatus();
+        
         //instance OtherCharactor on container
         EntitySaveManager.Instance.LoadAllContainer();
         //EntitySaveManager.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
@@ -184,5 +187,38 @@ public class LoadFromSave : MonoBehaviour
         string mapData = File.ReadAllText(mapFilePath);
         Debug.Log("Map data loaded: " + mapData);
         // Thêm logic xử lý dữ liệu map tại đây
+    }
+
+    // Method to load tech status from WorldInfo to PrefabData
+    private void LoadTechStatus()
+    {
+        if (worldInfo != null)
+        {
+            // Không cần gán trực tiếp vào PrefabData nữa vì tech đã được di chuyển vào WorldInfo
+            // Thay vào đó, sẽ gán thông tin tech từ worldInfo sang WorldFileManager.Instance.worldInfo
+            // và thông báo thay đổi để các component cập nhật
+            
+            if (WorldFileManager.Instance != null && WorldFileManager.Instance.worldInfo != null)
+            {
+                // Cập nhật dữ liệu tech vào WorldFileManager
+                WorldFileManager.Instance.worldInfo.TechFireArrow = worldInfo.TechFireArrow;
+                WorldFileManager.Instance.worldInfo.TechPenetrating = worldInfo.TechPenetrating;
+                WorldFileManager.Instance.worldInfo.TechForge = worldInfo.TechForge;
+                WorldFileManager.Instance.worldInfo.TechAdhesive = worldInfo.TechAdhesive;
+                
+                // Sử dụng phương thức công khai để thông báo thay đổi
+                WorldFileManager.Instance.NotifyWorldInfoChanged();
+                
+                Debug.Log("Đã tải trạng thái tech từ file save vào WorldFileManager");
+            }
+            else
+            {
+                Debug.LogWarning("WorldFileManager.Instance hoặc worldInfo của nó là null, không thể cập nhật tech");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Không thể tải trạng thái tech: worldInfo của LoadFromSave là null");
+        }
     }
 }

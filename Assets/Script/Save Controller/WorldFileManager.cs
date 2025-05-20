@@ -12,7 +12,13 @@ namespace Script.Save_Controller
     {
         public static WorldFileManager Instance { get; private set; }
         public string saveRootPath;
+
+        [Tooltip("thông tin thế giới hiện tạitại")]
+        [SerializeField] public WorldInfo worldInfo;
         
+        // Event delegate khi worldInfo thay đổi
+        public delegate void WorldInfoChangedHandler(WorldInfo info);
+        public event WorldInfoChangedHandler OnWorldInfoChanged;
         
         //singeleton-get save path
         private void Awake()     
@@ -87,7 +93,10 @@ namespace Script.Save_Controller
             // Tạo thư mục world
             Directory.CreateDirectory(worldPath);
             // Ghi thông tin WorldInfo vào file JSON
-            SaveWorldInfoToJson(worldName, seed, worldPath);
+            this.worldInfo = SaveWorldInfoToJson(worldName, seed, worldPath);
+            
+            // Thông báo rằng worldInfo đã thay đổi
+            OnWorldInfoChanged?.Invoke(worldInfo);
     
             Debug.Log($"Created new world save directories for: {worldName}");
             
@@ -101,14 +110,10 @@ namespace Script.Save_Controller
         
         #endregion
 
-        
-        
-
-        
         // Hàm tạo file JSON từ đối tượng WorldInfo
-        private void SaveWorldInfoToJson(string worldName, int seed, string worldPath)
+        private WorldInfo SaveWorldInfoToJson(string worldName, int seed, string worldPath)
         {
-            WorldInfo worldInfo = new WorldInfo(
+            WorldInfo newWorldInfo = new WorldInfo(
                 name: worldName,
                 creationDate: System.DateTime.Now,
                 seed: seed,
@@ -116,17 +121,85 @@ namespace Script.Save_Controller
                 gameMinute: 0,
                 gameDay: 0,
                 gameMonth: 0,
-                gameYear: 0
+                gameYear: 0,
+                techFireArrow: false,
+                techPenetrating: false,
+                techForge: false,
+                techAdhesive: false
             );
 
             string worldInfoPath = Path.Combine(worldPath, "worldInfo.json");
 
-            string worldInfoJson = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
+            string worldInfoJson = JsonConvert.SerializeObject(newWorldInfo, Formatting.Indented);
 
             File.WriteAllText(worldInfoPath, worldInfoJson);
             Debug.Log("World info saved to: " + worldInfoPath);
+            
+            return newWorldInfo;
         }
-        
+
+        /// <summary>
+        /// Lưu đối tượng WorldInfo hiện tại vào file worldInfo.json
+        /// </summary>
+        /// <param name="worldName">Tên thế giới cần lưu</param>
+        /// <returns>True nếu lưu thành công, False nếu thất bại</returns>
+        public bool SaveCurrentWorldInfo(string worldName = null)
+        {
+            try
+            {
+                // Kiểm tra worldInfo tồn tại
+                if (worldInfo == null)
+                {
+                    Debug.LogError("Không có WorldInfo để lưu");
+                    return false;
+                }
+
+                // Sử dụng tên từ tham số nếu có, ngược lại sử dụng tên từ worldInfo
+                string nameToSave = string.IsNullOrEmpty(worldName) ? worldInfo.Name : worldName;
+                
+                // Nếu vẫn không có tên hợp lệ
+                if (string.IsNullOrEmpty(nameToSave))
+                {
+                    Debug.LogError("Tên thế giới không hợp lệ");
+                    return false;
+                }
+
+                // Lấy đường dẫn thư mục
+                string worldFolder = GetWorldFolderPath(nameToSave);
+                
+                // Nếu thư mục không tồn tại, tạo thư mục mới
+                if (worldFolder == null)
+                {
+                    worldFolder = Path.Combine(saveRootPath, nameToSave);
+                    Directory.CreateDirectory(worldFolder);
+                    Debug.Log($"Đã tạo thư mục mới cho thế giới: {nameToSave}");
+                    
+                    // Tạo thư mục map
+                    Directory.CreateDirectory(Path.Combine(worldFolder, "map"));
+                }
+
+                // Cập nhật lại tên trong worldInfo nếu cần
+                worldInfo.Name = nameToSave;
+
+                // Lưu vào file
+                string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
+                string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
+                File.WriteAllText(worldInfoPath, json);
+                
+                Debug.Log($"Đã lưu WorldInfo vào: {worldInfoPath}");
+                
+                // Thông báo thay đổi
+                OnWorldInfoChanged?.Invoke(worldInfo);
+                
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Lỗi khi lưu WorldInfo: {ex.Message}");
+                return false;
+            }
+        }
+
         //hàm này là hàm save chính 
         public void SaveCurrentMap()
         {
@@ -141,25 +214,39 @@ namespace Script.Save_Controller
             EntitySaveManager.Instance.SaveAllContainer();
             ChunkManager.Instance.SaveMapToJson(PlayerPrefs.GetString("SaveFilePath", ""));
             SaveGameTime();
+            
+            // Sử dụng worldInfo trực tiếp thay vì PrefabData
+            if (worldInfo != null)
+            {
+                SaveTechStatus(
+                    worldInfo.TechFireArrow,
+                    worldInfo.TechPenetrating,
+                    worldInfo.TechForge,
+                    worldInfo.TechAdhesive
+                );
+            }
+            else
+            {
+                Debug.LogWarning("worldInfo là null, không thể lưu trạng thái tech.");
+            }
         }
         public void SaveGameTime()
         {
-            // Giả sử bạn đã có đối tượng WorldInfo hiện hành
-            WorldInfo worldInfo = LoadFromSave.Instance?.worldInfo;
+            // Kiểm tra xem worldInfo có tồn tại không
             if (worldInfo == null)
             {
                 Debug.LogWarning("Không có dữ liệu WorldInfo để lưu thời gian.");
                 return;
             }
 
-            // Lấy thời gian hiện tại từ GameTimeManager
+            // Cập nhật thời gian hiện tại từ GameTimeManager vào worldInfo
             worldInfo.GameHour = GameTimeManager.Instance.GameHour;
             worldInfo.GameMinute = GameTimeManager.Instance.GameMinute;
             worldInfo.GameDay = GameTimeManager.Instance.GameDay;
             worldInfo.GameMonth = GameTimeManager.Instance.GameMonth;
             worldInfo.GameYear = GameTimeManager.Instance.GameYear;
 
-            // Lấy đường dẫn tới file worldInfo.json (giả sử tên world được lưu trong worldInfo.Name)
+            // Lấy đường dẫn tới file worldInfo.json
             string worldFolder = GetWorldFolderPath(worldInfo.Name);
             if (worldFolder == null)
             {
@@ -172,8 +259,170 @@ namespace Script.Save_Controller
             string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
             File.WriteAllText(worldInfoPath, json);
             Debug.Log("Game time đã được lưu vào " + worldInfoPath);
+            
+            // Thông báo rằng worldInfo đã thay đổi
+            OnWorldInfoChanged?.Invoke(worldInfo);
         }
-    
+        public void SaveTechStatus(bool techFireArrow, bool techPenetrating, bool techForge, bool techAdhesive)
+        {
+            // Kiểm tra xem worldInfo có tồn tại không
+            if (worldInfo == null)
+            {
+                Debug.LogWarning("Không có dữ liệu WorldInfo để lưu trạng thái tech.");
+                return;
+            }
+
+            // Update tech status
+            worldInfo.TechFireArrow = techFireArrow;
+            worldInfo.TechPenetrating = techPenetrating;
+            worldInfo.TechForge = techForge;
+            worldInfo.TechAdhesive = techAdhesive;
+
+            // Get path to worldInfo.json
+            string worldFolder = GetWorldFolderPath(worldInfo.Name);
+            if (worldFolder == null)
+            {
+                Debug.LogError("Không tìm thấy folder của world để lưu trạng thái tech.");
+                return;
+            }
+            string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
+
+            // Serialize and write JSON file
+            string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
+            File.WriteAllText(worldInfoPath, json);
+            Debug.Log("Trạng thái tech đã được lưu vào " + worldInfoPath);
+            
+            // Thông báo rằng worldInfo đã thay đổi
+            OnWorldInfoChanged?.Invoke(worldInfo);
+        }
+        
+        /// <summary>
+        /// Hàm này đọc thông tin từ file worldInfo.json và gán vào biến worldInfo,
+        /// giúp truy cập dữ liệu thế giới trực tiếp thông qua biến này.
+        /// </summary>
+        /// <param name="worldName">Tên thế giới cần load</param>
+        /// <returns>Đối tượng WorldInfo đã load, hoặc null nếu không thể load</returns>
+        public WorldInfo LoadWorldInfo(string worldName)
+        {
+            string worldFolder = GetWorldFolderPath(worldName);
+            if (worldFolder == null)
+            {
+                Debug.LogError($"Không tìm thấy thư mục thế giới: {worldName}");
+                return null;
+            }
+
+            string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
+            if (!File.Exists(worldInfoPath))
+            {
+                Debug.LogError($"Không tìm thấy file worldInfo.json trong thư mục: {worldFolder}");
+                return null;
+            }
+
+            try
+            {
+                // Đọc nội dung từ file
+                string json = File.ReadAllText(worldInfoPath);
+                
+                // Deserialize JSON thành đối tượng WorldInfo
+                WorldInfo loadedInfo = JsonConvert.DeserializeObject<WorldInfo>(json);
+                
+                // Gán vào biến worldInfo
+                worldInfo = loadedInfo;
+                
+                Debug.Log($"Đã load thông tin thế giới: {worldName}");
+                
+                // Thông báo rằng worldInfo đã thay đổi
+                OnWorldInfoChanged?.Invoke(worldInfo);
+                
+                return worldInfo;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Lỗi khi load WorldInfo từ {worldInfoPath}: {ex.Message}");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// Hàm này giúp reload lại thông tin thế giới từ file, hữu ích khi cần
+        /// cập nhật lại worldInfo sau khi có thay đổi trên đĩa.
+        /// </summary>
+        /// <returns>True nếu reload thành công, False nếu thất bại</returns>
+        public bool ReloadWorldInfo()
+        {
+            if (worldInfo == null)
+            {
+                Debug.LogWarning("Không có WorldInfo nào để reload.");
+                return false;
+            }
+
+            return LoadWorldInfo(worldInfo.Name) != null;
+        }
+        
+        /// <summary>
+        /// Đồng bộ hóa dữ liệu tech từ worldInfo sang PrefabData để sử dụng trong gameplay.
+        /// Gọi hàm này sau khi load thế giới để cập nhật trạng thái tech cho game.
+        /// </summary>
+        public void SyncTechToPrefabData()
+        {
+            // Phương thức này không còn cần thiết vì PrefabData không còn chứa các biến tech
+            // Thay vào đó, các component khác sẽ đọc trực tiếp từ WorldInfo thông qua sự kiện OnWorldInfoChanged
+            
+            if (worldInfo == null)
+            {
+                Debug.LogWarning("Không thể đồng bộ tech: worldInfo là null");
+                return;
+            }
+            
+            // Thông báo cho tất cả các thành phần quan tâm rằng worldInfo đã được tải
+            OnWorldInfoChanged?.Invoke(worldInfo);
+            
+            Debug.Log("Đã thông báo cho các thành phần về dữ liệu tech hiện tại");
+        }
+        
+        /// <summary>
+        /// Đồng bộ hóa dữ liệu tech và lưu vào file.
+        /// Gọi hàm này khi có thay đổi tech trong gameplay để cập nhật và lưu lại.
+        /// </summary>
+        public void SyncAndSaveTech()
+        {
+            if (worldInfo == null)
+            {
+                Debug.LogWarning("Không thể đồng bộ tech: worldInfo là null");
+                return;
+            }
+            
+            // Thông báo rằng worldInfo đã thay đổi
+            OnWorldInfoChanged?.Invoke(worldInfo);
+            
+            // Lưu thay đổi vào file
+            SaveTechStatus(
+                worldInfo.TechFireArrow,
+                worldInfo.TechPenetrating,
+                worldInfo.TechForge, 
+                worldInfo.TechAdhesive
+            );
+            
+            Debug.Log("Đã lưu thông tin tech vào worldInfo");
+        }
+        
+        /// <summary>
+        /// Phương thức công khai để thông báo rằng worldInfo đã thay đổi,
+        /// có thể được gọi từ các lớp khác
+        /// </summary>
+        public void NotifyWorldInfoChanged()
+        {
+            if (worldInfo != null)
+            {
+                OnWorldInfoChanged?.Invoke(worldInfo);
+                Debug.Log("Đã thông báo worldInfo thay đổi");
+            }
+            else
+            {
+                Debug.LogWarning("Không thể thông báo thay đổi vì worldInfo là null");
+            }
+        }
+        
         #region StartMenuController use
 
         //hàm này trả về path của fodel có tên được truyền vào trong /saves/ 
@@ -266,14 +515,45 @@ namespace Script.Save_Controller
         {
             if (index >= 1 && index <= WorldInfos.Count)
             {
-                WorldInfo worldInfo = WorldInfos[index - 1]; // index = 1 tương đương vị trí mảng = 0
-                return worldInfo;
+                WorldInfo selectedWorldInfo = WorldInfos[index - 1]; // index = 1 tương đương vị trí mảng = 0
+                
+                // Có thể chọn gán trực tiếp vào worldInfo nếu muốn
+                // worldInfo = selectedWorldInfo;  // Uncomment nếu muốn gán trực tiếp
+                
+                return selectedWorldInfo;
             }
             else
             {
                 Debug.LogError("GetWorldInfoByIndex: Index out of range");
                 return null;
             }
+        }
+        
+        /// <summary>
+        /// Hàm này kết hợp việc chọn một thế giới từ danh sách và load thông tin đầy đủ từ file.
+        /// Sau khi load, nó sẽ đồng bộ tech vào PrefabData để sẵn sàng cho gameplay.
+        /// </summary>
+        /// <param name="index">Chỉ số của thế giới trong danh sách</param>
+        /// <returns>True nếu thành công, False nếu thất bại</returns>
+        public bool SelectAndLoadWorldInfo(int index)
+        {
+            WorldInfo selectedInfo = GetWorldInfoByIndex(index);
+            if (selectedInfo != null)
+            {
+                // Load the full world info from file
+                WorldInfo loadedInfo = LoadWorldInfo(selectedInfo.Name);
+                if (loadedInfo != null)
+                {
+                    // Đồng bộ các thông tin tech vào PrefabData
+                    SyncTechToPrefabData();
+                    
+                    Debug.Log($"Đã chọn và load thế giới: {loadedInfo.Name}");
+                    return true;
+                }
+            }
+            
+            Debug.LogError("Không thể chọn và load thế giới với index: " + index);
+            return false;
         }
         #endregion
     }

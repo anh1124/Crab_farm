@@ -66,7 +66,6 @@ namespace Script.Game.Structures.TownCenter
             set => maxLevel = value;
         }
         #endregion
-        
         private void Start()
         {
             coinUser = GetComponent<CoinUser>();
