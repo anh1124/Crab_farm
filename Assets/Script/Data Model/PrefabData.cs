@@ -20,6 +20,9 @@ namespace Script.Data_Model
         public float playerSpeed = 7;
         public Camera mainCamera;
         
+        // Biến kiểm soát quá trình xây dựng (bỏ qua quá trình xây dựng hoặc yêu cầu thợ xây)
+        public bool skipBuildingProcess = true; 
+        
         [Header("Player Character")] [Space(5)]
         public List<GameObject> playerCharacterList = new List<GameObject>();
 
@@ -32,7 +35,7 @@ namespace Script.Data_Model
        
         [Space(15)] [Header("Map Generation")] [Space(5)]
         #region Map Generation
-        public int currentCreatChunk = 3;
+        public int currentCreatChunk = 21;
         #endregion
         
         [Header("Wall and Stump ")] [Space(5)]
@@ -75,7 +78,7 @@ namespace Script.Data_Model
         [Space(15)] [Header("Tower ")] [Space(5)]  
         #region Tower
 
-        public bool towerFireBless;
+        
         
         public List<GameObject> towerList = new List<GameObject>();
         
@@ -83,11 +86,10 @@ namespace Script.Data_Model
 
         [Space(15)] [Header("Upgrade Tech ")] [Space(5)]  
         #region UpgradeTech
-
+    
         public bool techFireArrow;//arrow do fire dame
         public bool techPenetrating;//breaking armor
         public bool techForge;//new struction that give sword to upgrade Squire to Vanguard
-        
         public bool techAdhesive;//make wall better
         
         public GameObject upgradeHouse;

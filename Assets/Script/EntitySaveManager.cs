@@ -11,12 +11,12 @@ using UnityEngine;
 namespace Script
 {
    
-    public class SetUpContainer : MonoBehaviour
+    public class EntitySaveManager : MonoBehaviour
     { 
         /*
        * todo: làm tiếp những cái container khác
        */
-        public static SetUpContainer Instance { get; private set; } 
+        public static EntitySaveManager Instance { get; private set; } 
         
         public static bool isDebug = true;
         

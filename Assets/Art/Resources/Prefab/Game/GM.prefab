@@ -108,8 +108,9 @@ MonoBehaviour:
   player: {fileID: 0}
   playerSpeed: 7
   mainCamera: {fileID: 0}
+  skipBuildingProcess: 1
   playerCharacterList: []
-  currentCreatChunk: 3
+  currentCreatChunk: 21
   wallDirtMound0: {fileID: 0}
   wallList: []
   stumpList: []
@@ -123,7 +124,6 @@ MonoBehaviour:
   farmWell1: {fileID: 0}
   farmHouse2: {fileID: 0}
   farmPlot: {fileID: 0}
-  towerFireBless: 0
   towerList: []
   techFireArrow: 0
   techPenetrating: 0
@@ -170,6 +170,7 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    buildProgress: 0
     prefabId: 
     stumpPrefabId: 
     nextUpgradePrefabId: 
@@ -182,6 +183,7 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    buildProgress: 0
     prefabId: 
     stumpPrefabId: 
     nextUpgradePrefabId: 
@@ -194,6 +196,7 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    buildProgress: 0
     prefabId: 
     stumpPrefabId: 
     nextUpgradePrefabId: 
@@ -206,6 +209,7 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    buildProgress: 0
     prefabId: 
     stumpPrefabId: 
     nextUpgradePrefabId: 
@@ -218,6 +222,7 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    buildProgress: 0
     prefabId: 
     stumpPrefabId: 
     nextUpgradePrefabId: 
@@ -230,6 +235,7 @@ MonoBehaviour:
     rebuildCost: 0
     normalMaxHp: 0
     blessedMaxHp: 0
+    buildProgress: 0
     prefabId: 
     stumpPrefabId: 
     nextUpgradePrefabId: 
@@ -472,3 +478,4 @@ MonoBehaviour:
     dailySpawnChance: 0.7
     minDailySpawnCount: 0
     maxDailySpawnCount: 11
+    randomXRange: 2

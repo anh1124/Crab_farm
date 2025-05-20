@@ -253,7 +253,7 @@ namespace Script.Game.Other
 
             if (minimumDistance.HasValue && minimumDistance.Value > 0)
             {
-                var structures = SetUpContainer.Instance.GetObjectsFromContainerList(SetUpContainer.Instance.structureContainer);
+                var structures = EntitySaveManager.Instance.GetObjectsFromContainerList(EntitySaveManager.Instance.structureContainer);
                 foreach (var structure in structures)
                 {
                     if (structure.CompareTag(previewInstance.tag))
@@ -314,7 +314,7 @@ namespace Script.Game.Other
                 // Just store the scale, we'll set rotation to identity
                 Vector3 previewScale = previewInstance.transform.localScale;
 
-                GameObject newStructure = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
+                GameObject newStructure = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
                     // Force rotation to identity (no rotation) and apply only the scale from preview

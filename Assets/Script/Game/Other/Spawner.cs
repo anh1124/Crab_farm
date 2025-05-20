@@ -76,7 +76,7 @@ public class Spawner : MonoBehaviour
         {
             
             newPosition = new Vector2(position.x + direction.x * i, position.y + yOffset + (i * 0.1f));
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, SetUpContainer.Instance.coinContainer.transform);
+            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
             if (coinScriptInstance != null)
@@ -97,7 +97,7 @@ public class Spawner : MonoBehaviour
             
 
             Vector2 newPosition = new Vector2(position.x + direction.x * i, position.y + yOffset);
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, SetUpContainer.Instance.coinContainer.transform);
+            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
             if (coinScriptInstance != null)
@@ -119,7 +119,7 @@ public class Spawner : MonoBehaviour
            
 
             Vector2 newPosition = new Vector2(position.x + direction.x * i, position.y);
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, SetUpContainer.Instance.coinContainer.transform);
+            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
             if (coinScriptInstance != null)

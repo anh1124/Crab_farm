@@ -57,8 +57,8 @@ public class LoadFromSave : MonoBehaviour
         GameTimeManager.Instance.SetGameTimeFromSave();
         
         //instance OtherCharactor on container
-        SetUpContainer.Instance.LoadAllContainer();
-        //SetUpContainer.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
+        EntitySaveManager.Instance.LoadAllContainer();
+        //EntitySaveManager.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
         return true;
     }
 

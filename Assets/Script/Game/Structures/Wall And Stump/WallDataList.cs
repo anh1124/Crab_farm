@@ -20,6 +20,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             public int rebuildCost;
             public int normalMaxHp;
             public int blessedMaxHp;
+            public int buildProgress;
             
             // String IDs for JSON serialization
             public string prefabId;
@@ -153,7 +154,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 prefabId = "wall_0",
                 nextUpgradePrefabId = "wall_1",
                 curentPrefab = PrefabData.Instance.wallDirtMound0,
-                nextUpgradePrefab = PrefabData.Instance.wallList[0]
+                nextUpgradePrefab = PrefabData.Instance.wallList[0],
+                buildProgress = 5
             });
             wallList.Add(new WallData
             {
@@ -167,7 +169,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 nextUpgradePrefabId = "wall_2",
                 curentPrefab = PrefabData.Instance.wallList[0],
                 stumpPrefab = PrefabData.Instance.stumpList[0],
-                nextUpgradePrefab = PrefabData.Instance.wallList[1]
+                nextUpgradePrefab = PrefabData.Instance.wallList[1],
+                buildProgress = 10
             });
             wallList.Add(new WallData
             {
@@ -181,7 +184,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 nextUpgradePrefabId = "wall_3",
                 curentPrefab = PrefabData.Instance.wallList[1],
                 stumpPrefab = PrefabData.Instance.stumpList[1],
-                nextUpgradePrefab = PrefabData.Instance.wallList[2]
+                nextUpgradePrefab = PrefabData.Instance.wallList[2],
+                buildProgress = 15
             });
             wallList.Add(new WallData
             {
@@ -195,7 +199,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 nextUpgradePrefabId = "wall_4",
                 curentPrefab = PrefabData.Instance.wallList[2],
                 stumpPrefab = PrefabData.Instance.stumpList[2],
-                nextUpgradePrefab = PrefabData.Instance.wallList[3]
+                nextUpgradePrefab = PrefabData.Instance.wallList[3],
+                buildProgress = 20
             });
             wallList.Add(new WallData
             {
@@ -209,7 +214,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 nextUpgradePrefabId = "wall_5",
                 curentPrefab = PrefabData.Instance.wallList[3],
                 stumpPrefab = PrefabData.Instance.stumpList[3],
-                nextUpgradePrefab = PrefabData.Instance.wallList[4]
+                nextUpgradePrefab = PrefabData.Instance.wallList[4],
+                buildProgress = 25
             });
             wallList.Add(new WallData
             {
@@ -222,7 +228,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 stumpPrefabId = "stump_5",
                 curentPrefab = PrefabData.Instance.wallList[4],
                 stumpPrefab = PrefabData.Instance.stumpList[4],
-                maxLevel = true
+                maxLevel = true,
+                buildProgress = 30
             });
         }
         

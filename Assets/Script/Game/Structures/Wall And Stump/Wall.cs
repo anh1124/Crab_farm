@@ -17,30 +17,29 @@ namespace Script.Game.Structures.Wall_And_Stump
          *          layer wall
          */
         // Properties từ IDamageable
+        public CoinUser coinUser;
+
         public int MaxHp { get; set; }
         public int CurrentHp { get; set; }
-        
-        
-        [SerializeField] private int tier;
-        
-        [SerializeField] private int normalMaxHp;
-        [SerializeField] private int blessedMaxHp;
-        
-        [SerializeField] private GameObject curentPrefab;
-        [SerializeField] private GameObject stumpPrefab;
-        [SerializeField] private GameObject nextUpgradePrefab;
-        
-        [SerializeField] private int rebuildCost;
-        [SerializeField] private int upgradeCost;
-        
-        [SerializeField] private bool readyToUpgrade;
-        [SerializeField] private bool maxLevel;
-  
-        [SerializeField] private CoinUser coinUser;
-        [SerializeField] private float minimumDistance = 20f;
-    
-        [SerializeField] public int buildProgress;
-        [SerializeField] public int buildProgressMax;
+        public int tier;
+        public int normalMaxHp;
+        public int blessedMaxHp;
+
+        //prefab
+        public GameObject curentPrefab;
+        public GameObject stumpPrefab;
+        public GameObject nextUpgradePrefab;
+
+        //upgrade 
+        public int rebuildCost;
+        public int upgradeCost;
+        public bool readyToUpgrade;
+        public bool maxLevel;
+
+        //build menusystem
+        public float minimumDistance = 20f;
+        public int buildProgress;
+        public int buildProgressMax;
     
         public float MinimumDistance => minimumDistance;
         
@@ -90,12 +89,9 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Debug.LogError($"CoinUser component missing on {gameObject.name}");
                 return;
             }
-    
             InitializeWallData();
             UpdateCoinUserData();
-    
-            // Thay vì gọi BuildingManager.instance.RotateTowardsTownCenter(gameObject),
-            // ta gọi trực tiếp hàm tiện ích của bạn:
+            // ta gọi trực tiếp hàm tiện ích :
             BuildingManager.instance.RotateTowardsTownCenter(this.gameObject);
         }
 
@@ -120,6 +116,9 @@ namespace Script.Game.Structures.Wall_And_Stump
                 // Don't hardcode tier 4 as max level - use config file instead
                 maxLevel = (nextUpgradePrefab == null);
                 
+                // Set buildProgressMax from configuration
+                buildProgressMax = wallData.buildProgress;
+                
                 UpdateMaxHp();
                 CurrentHp = MaxHp;
             }
@@ -129,15 +128,17 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
 
+        //tự sửa lại sau,tạo save riêng trong woerl
         private void UpdateMaxHp()
         {
             MaxHp = PrefabData.Instance.techAdhesive ? blessedMaxHp : normalMaxHp;
         }
 
+
         private void UpdateCoinUserData()
         {
             coinUser.requiredCoins = upgradeCost;
-            coinUser.onUpgradeComplete = Upgrade;
+            coinUser.onUpgradeComplete = OnCoinCollectionComplete;
             
             // Check if the wall can be upgraded based on town center level
             bool canBeUpgraded = CanUpgradeByTownCenterLevel();
@@ -160,6 +161,26 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
         
+        // Phương thức mới được gọi khi thu thập đủ coin
+        private void OnCoinCollectionComplete()
+        {
+            // Đánh dấu đã sẵn sàng nâng cấp
+            readyToUpgrade = true;
+            
+            // Kiểm tra xem có bỏ qua quá trình xây dựng không
+            if (PrefabData.Instance.skipBuildingProcess)
+            {
+                // Nếu ở chế độ bỏ qua quá trình xây dựng, nâng cấp ngay lập tức
+                Upgrade();
+            }
+            else
+            {
+                // Ghi log yêu cầu thợ xây đến
+                Debug.LogWarning($"[Hệ thống xây dựng] Tường cấp {tier} tại vị trí {transform.position} đã sẵn sàng để nâng cấp! Cần thợ xây đến làm việc.");
+                //thêm script điều thiển thợ xây
+            }
+        }
+
         // Check if this wall can be upgraded based on town center level
         private bool CanUpgradeByTownCenterLevel()
         {
@@ -235,7 +256,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 if (BuildingManager.isDebug)
                 {
                     Debug.LogWarning($"Cannot upgrade wall at tier {tier}: No next upgrade prefab is available");
-            }
+                }
             }
         }
         
@@ -254,6 +275,9 @@ namespace Script.Game.Structures.Wall_And_Stump
             public int tier;
             public int currentHp;
             public int maxHp;
+            public bool readyToUpgrade;
+            public int buildProgress;
+            public int buildProgressMax;
         }
         
         public string GetPrefabID()
@@ -269,7 +293,10 @@ namespace Script.Game.Structures.Wall_And_Stump
                 positionY = transform.position.y,
                 tier = this.tier,
                 currentHp = this.CurrentHp,
-                maxHp = this.MaxHp
+                maxHp = this.MaxHp,
+                readyToUpgrade = this.readyToUpgrade,
+                buildProgress = this.buildProgress,
+                buildProgressMax = this.buildProgressMax
             };
         }
 
@@ -283,12 +310,22 @@ namespace Script.Game.Structures.Wall_And_Stump
             int savedCurrentHp = CurrentHp;
             int savedMaxHp = MaxHp;
             
+            // Lưu lại các giá trị khác từ dữ liệu đã load
+            bool savedReadyToUpgrade = wallData.readyToUpgrade;
+            int savedBuildProgress = wallData.buildProgress;
+            int savedBuildProgressMax = wallData.buildProgressMax;
+            
             // Khởi tạo lại dữ liệu từ DataList
             InitializeWallData();
             
             // Khôi phục giá trị HP từ save data
             CurrentHp = savedCurrentHp;
             MaxHp = savedMaxHp;
+            
+            // Khôi phục các giá trị khác từ save data
+            readyToUpgrade = savedReadyToUpgrade;
+            buildProgress = savedBuildProgress;
+            buildProgressMax = savedBuildProgressMax;
             
             // Đảm bảo HP không âm
             if (CurrentHp <= 0) 
@@ -328,18 +365,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 UpdateCoinUserData();
             }
         }
-
-        public void SetMaxWorkingProcessSet(int max)
-        {
-            buildProgress = max;
-            buildProgressMax = max;
-            Debug.Log($"[Wall] SetMaxWorkingProcessSet called, set buildProgress = {max}");
-            if (max == 0)
-            {
-                Debug.Log("[Wall] buildProgress = 0, upgrading immediately!");
-                Upgrade();
-            }
-        }
+        
 
         public void AddWorkingProcess(int amount)
         {

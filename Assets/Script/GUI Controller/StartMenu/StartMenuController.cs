@@ -80,7 +80,7 @@ namespace Script.GUI_Controller.StartMenu
             OpenHomeMenuPanel();
             AssignButtonActions();
             //chạy hàm kiểm tra và tạo thư mục lưu file saves
-            SaveManager.Instance.CreateSavesFolderIfNotExists();
+            WorldFileManager.Instance.CreateSavesFolderIfNotExists();
             
             inputWorldSeed.characterLimit = 10;
             inputWorldSeed.contentType = TMP_InputField.ContentType.IntegerNumber;
@@ -127,11 +127,11 @@ namespace Script.GUI_Controller.StartMenu
 
         public void SendDataAndOpenPlayScreend(string name)
         {
-            string checkFilePath = SaveManager.Instance.GetWorldFolderPath(name);
+            string checkFilePath = WorldFileManager.Instance.GetWorldFolderPath(name);
             
             if (checkFilePath != null)
             {
-                PlayerPrefs.SetString("SaveFilePath",  SaveManager.Instance.GetWorldFolderPath(name)); 
+                PlayerPrefs.SetString("SaveFilePath",  WorldFileManager.Instance.GetWorldFolderPath(name)); 
                 SceneManager.LoadScene("GamePlayScene"); Debug.LogError("StartMenuController11111: "+name);
             }
            else Debug.LogError("StartMenuController: save file path is not found");
@@ -144,7 +144,7 @@ namespace Script.GUI_Controller.StartMenu
             {
                 inputWorldSeed.text = GenerateRandomSeed();
             }
-            createWorldDone = SaveManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
+            createWorldDone = WorldFileManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
             //createWorldDone sẽ true nếu tạo thành công
             
             if (createWorldDone)
@@ -152,7 +152,7 @@ namespace Script.GUI_Controller.StartMenu
                 //mở thế giới vừa được tạo ra 
                 SendDataAndOpenPlayScreend(inputWorldName.text);
             }
-            //ở hàm SaveManager.Instance.CreateWorldSave đã có sẵn debug khi sai rồi nên không cần tạo nữa
+            //ở hàm WorldFileManager.Instance.CreateWorldSave đã có sẵn debug khi sai rồi nên không cần tạo nữa
         }
         // Hàm tạo số ngẫu nhiên gồm 8 chữ số
         private string GenerateRandomSeed()
@@ -195,7 +195,7 @@ namespace Script.GUI_Controller.StartMenu
         
         public void DisplayWorldInfo()
         {
-            worldInfo = SaveManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
+            worldInfo = WorldFileManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
 
             if (worldInfo != null)
             {
@@ -253,7 +253,7 @@ namespace Script.GUI_Controller.StartMenu
         public void LoadWorldInfoContent()
         {
             // Lấy thông tin thế giới hiện tại theo chỉ số
-            //worldInfo = SaveManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
+            //worldInfo = WorldFileManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
 
            
                 // Tạo nội dung hiển thị dựa trên dữ liệu của WorldInfo
@@ -294,8 +294,8 @@ namespace Script.GUI_Controller.StartMenu
             SetActiveFalseAllPanel();
             chooseSavePanel.SetActive(true);
             //cập nhật thế tổng số thế giới
-            SaveManager.Instance.LoadWorldInfosToChooseSavePanel();
-            UpdateTotalWorld(SaveManager.Instance.CountWorldArr());
+            WorldFileManager.Instance.LoadWorldInfosToChooseSavePanel();
+            UpdateTotalWorld(WorldFileManager.Instance.CountWorldArr());
             UpdateCurrentWorldIndex(currentWorldIndex);
             UpdateTotalWorldTmp();
             //hiện thị empty nếu không thấy file lưu thế giới
@@ -356,10 +356,10 @@ namespace Script.GUI_Controller.StartMenu
         private void PerformDelete(string nameOfChooseWorld)
         {
             // Thực hiện xóa thế giới ở đây
-            SaveManager.Instance.DeleteWorldSave(nameOfChooseWorld);
+            WorldFileManager.Instance.DeleteWorldSave(nameOfChooseWorld);
             // Cập nhật danh sách thế giới sau khi xóa
-            SaveManager.Instance.LoadWorldInfosToChooseSavePanel();
-            UpdateTotalWorld(SaveManager.Instance.CountWorldArr());
+            WorldFileManager.Instance.LoadWorldInfosToChooseSavePanel();
+            UpdateTotalWorld(WorldFileManager.Instance.CountWorldArr());
 
             if (totalWorld == 0)
             {

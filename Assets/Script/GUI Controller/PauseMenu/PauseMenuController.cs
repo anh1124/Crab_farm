@@ -62,7 +62,7 @@ namespace Script.GUI_Controller.PauseMenu
 
         public void SaveAndExit()
         {
-            SaveManager.Instance.SaveCurrentMap();
+            WorldFileManager.Instance.SaveCurrentMap();
             SceneManager.LoadScene("MainMenuScene");
         }
     }

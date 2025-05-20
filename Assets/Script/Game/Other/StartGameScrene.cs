@@ -36,9 +36,9 @@ namespace Script.Game.Other
             pauseMenuPanel.SetActive(true);
             
             DevelopTest();
-            if (SetUpContainer.Instance == null)
+            if (EntitySaveManager.Instance == null)
             {
-                Debug.LogError("SetUpContainer.Instance is null.");
+                Debug.LogError("EntitySaveManager.Instance is null.");
             }
 
             
@@ -56,7 +56,7 @@ namespace Script.Game.Other
             }
 
             // Nếu player chưa tồn tại thì tạo mới
-            GameObject player = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
+            GameObject player = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
             if (player == null)
             {
                 Debug.LogError("Failed to instantiate Player from prefab. Make sure player characters are loaded correctly.");

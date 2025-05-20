@@ -8,9 +8,9 @@ using Newtonsoft.Json;
 
 namespace Script.Save_Controller
 {
-    public class SaveManager : MonoBehaviour
+    public class WorldFileManager : MonoBehaviour
     {
-        public static SaveManager Instance { get; private set; }
+        public static WorldFileManager Instance { get; private set; }
         public string saveRootPath;
         
         
@@ -138,7 +138,7 @@ namespace Script.Save_Controller
             }
 
             // Các logic save game
-            SetUpContainer.Instance.SaveAllContainer();
+            EntitySaveManager.Instance.SaveAllContainer();
             ChunkManager.Instance.SaveMapToJson(PlayerPrefs.GetString("SaveFilePath", ""));
             SaveGameTime();
         }

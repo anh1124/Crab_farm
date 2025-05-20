@@ -81,8 +81,8 @@ namespace Script.GUI_Controller.PlayerGui
                 float direction = PlayerController.PlayerController.Instance.player.transform.localScale.x;
                 Vector2 spawnPosition = new Vector2(playerPosition.x + (direction * 2), playerPosition.y);
                 
-                // Use SetUpContainer to spawn and organize the vagrant
-                GameObject vagrant = SetUpContainer.Instance.InstanceAndMoveObjectToContainer(
+                // Use EntitySaveManager to spawn and organize the vagrant
+                GameObject vagrant = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(
                     PrefabData.Instance.vagrant, 
                     spawnPosition
                 );
@@ -95,7 +95,7 @@ namespace Script.GUI_Controller.PlayerGui
                         Debug.LogWarning("Vagrant đã tạo không có tag 'Vagrant', đang gán lại tag...");
                         vagrant.tag = "Vagrant";
                         // Set lại container
-                        SetUpContainer.Instance.MoveObjectToContainer(vagrant);
+                        EntitySaveManager.Instance.MoveObjectToContainer(vagrant);
                     }
                     
                     Debug.Log("Vagrant spawned successfully at position: " + spawnPosition);
@@ -132,7 +132,7 @@ namespace Script.GUI_Controller.PlayerGui
         private void FixContainers()
         {
             Debug.Log("Fixing containers structure...");
-            SetUpContainer.Instance.ResetupAllContainers();
+            EntitySaveManager.Instance.ResetupAllContainers();
             Debug.Log("Containers fixed!");
         }
         

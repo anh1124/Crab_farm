@@ -134,8 +134,8 @@ namespace Script.Game.Structures.TownCenter
                 BuildingManager.instance.RotateTowardsTownCenter(rightWall);
 
                 // Đưa tường vào container để quản lý
-                SetUpContainer.Instance.MoveObjectToContainer(leftWall);
-                SetUpContainer.Instance.MoveObjectToContainer(rightWall);
+                EntitySaveManager.Instance.MoveObjectToContainer(leftWall);
+                EntitySaveManager.Instance.MoveObjectToContainer(rightWall);
                 // Spawn vagrants outside the walls
                 SpawnInitialVagrants(towncenter);
             }
@@ -145,11 +145,31 @@ namespace Script.Game.Structures.TownCenter
         private void UpdateCoinUserData()
         {
             coinUser.requiredCoins = UpgradeCost;
-            coinUser.onUpgradeComplete = Upgrade;
+            coinUser.onUpgradeComplete = OnCoinCollectionComplete;
             
             // Set building type and tier information for the CoinUser component
             coinUser.SetBuildingInfo(BuildingType.TownCenter, Level);
         }
+        
+        // Phương thức mới được gọi khi thu thập đủ coin
+        private void OnCoinCollectionComplete()
+        {
+            // Đánh dấu đã sẵn sàng nâng cấp
+            readyToUpgrade = true;
+            
+            // Kiểm tra xem có bỏ qua quá trình xây dựng không
+            if (PrefabData.Instance.skipBuildingProcess)
+            {
+                // Nếu ở chế độ bỏ qua quá trình xây dựng, nâng cấp ngay lập tức
+                Upgrade();
+            }
+            else
+            {
+                // Ghi log yêu cầu thợ xây đến
+                Debug.LogWarning($"[Hệ thống xây dựng] Trung tâm làng cấp {Level} đã sẵn sàng để nâng cấp! Cần thợ xây đến làm việc.");
+            }
+        }
+
         // Triển khai phương thức Upgrade theo interface
         public void Upgrade()
         {
@@ -275,6 +295,8 @@ namespace Script.Game.Structures.TownCenter
             public float positionX;
             public float positionY;
             public bool readyToUpgrade;
+            public int buildProgress;
+            public int buildProgressMax;
         }
         public string GetPrefabID()
         {
@@ -287,7 +309,9 @@ namespace Script.Game.Structures.TownCenter
             {
                 positionX = transform.position.x,
                 positionY = transform.position.y,
-                readyToUpgrade = this.readyToUpgrade
+                readyToUpgrade = this.readyToUpgrade,
+                buildProgress = this.buildProgress,
+                buildProgressMax = this.buildProgressMax
             };
         }
 
@@ -296,6 +320,8 @@ namespace Script.Game.Structures.TownCenter
         TownCenterData townData = (TownCenterData)data;
         transform.position = new Vector3(townData.positionX, townData.positionY, 0);
         readyToUpgrade = townData.readyToUpgrade;
+        buildProgress = townData.buildProgress;
+        buildProgressMax = townData.buildProgressMax;
         
         // Đảm bảo CoinUser đã được khởi tạo
         if (coinUser == null)

@@ -261,7 +261,7 @@ public class ChunkManager : MonoBehaviour
         Debug.Log($"Đang tạo map với {groundChunkCount} ground chunks và 2 impassable rocks");
         
         CreateInitialChunks(groundChunkCount);
-        SetUpContainer.Instance.SaveAllContainer();
+        EntitySaveManager.Instance.SaveAllContainer();
     }
 
     private void CreateInitialChunks(int count)
@@ -324,13 +324,13 @@ public class ChunkManager : MonoBehaviour
                 }
 
                 GameObject emergencyChunk = Instantiate(fallbackPrefab, position, Quaternion.identity, 
-                    SetUpContainer.Instance.chunkContainer.transform);
+                    EntitySaveManager.Instance.chunkContainer.transform);
                 Chunk emergencyChunkData = new Chunk(id, 0, position.x, "ground");
                 chunkList.Add(emergencyChunkData);
                 
-                if (SetUpContainer.Instance != null)
+                if (EntitySaveManager.Instance != null)
                 {
-                    SetUpContainer.Instance.MoveChildrenToContainers(emergencyChunk);
+                    EntitySaveManager.Instance.MoveChildrenToContainers(emergencyChunk);
                 }
                 return emergencyChunkData;
             }
@@ -354,13 +354,13 @@ public class ChunkManager : MonoBehaviour
             }
         }
 
-        GameObject newChunkObject = Instantiate(selectedPrefab, position, Quaternion.identity, SetUpContainer.Instance.chunkContainer.transform);
+        GameObject newChunkObject = Instantiate(selectedPrefab, position, Quaternion.identity, EntitySaveManager.Instance.chunkContainer.transform);
         Chunk chunk = new Chunk(id, prefabIndex, position.x, "ground");
         chunkList.Add(chunk);
 
-        if (SetUpContainer.Instance != null)
+        if (EntitySaveManager.Instance != null)
         {
-            SetUpContainer.Instance.MoveChildrenToContainers(newChunkObject);
+            EntitySaveManager.Instance.MoveChildrenToContainers(newChunkObject);
         }
         return chunk;
     }
@@ -412,16 +412,16 @@ public class ChunkManager : MonoBehaviour
         
         // Create the rock object
         GameObject rockObject = Instantiate(rockPrefab, position, Quaternion.identity, 
-            SetUpContainer.Instance.chunkContainer.transform);
+            EntitySaveManager.Instance.chunkContainer.transform);
         
         // Add to chunk list with appropriate type
         string chunkType = isLeft ? "impassableLeft" : "impassableRight";
         Chunk rock = new Chunk(id, prefabIndex, position.x, chunkType);
         chunkList.Add(rock);
         
-        if (SetUpContainer.Instance != null)
+        if (EntitySaveManager.Instance != null)
         {
-            SetUpContainer.Instance.MoveChildrenToContainers(rockObject);
+            EntitySaveManager.Instance.MoveChildrenToContainers(rockObject);
         }
         
         Debug.Log($"Created ImpassableRock {(isLeft ? "Left" : "Right")} at position {position} with ID {id}");
@@ -477,7 +477,7 @@ public class ChunkManager : MonoBehaviour
         // Sort chunks by position
         chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
         
-        SetUpContainer.Instance.SaveAllContainer();
+        EntitySaveManager.Instance.SaveAllContainer();
     }
 
     private void RemoveImpassableRock(bool fromRight)
@@ -492,7 +492,7 @@ public class ChunkManager : MonoBehaviour
         if (rockToRemove != null)
         {
             // Find and destroy the GameObject
-            foreach (Transform child in SetUpContainer.Instance.chunkContainer.transform)
+            foreach (Transform child in EntitySaveManager.Instance.chunkContainer.transform)
             {
                 if (Mathf.Approximately((float)rockToRemove.positionX, child.position.x))
                 {
@@ -551,7 +551,7 @@ public class ChunkManager : MonoBehaviour
 
     private void ClearCurrentMap()
     {
-        foreach (Transform child in SetUpContainer.Instance.chunkContainer.transform)
+        foreach (Transform child in EntitySaveManager.Instance.chunkContainer.transform)
         {
             Destroy(child.gameObject);
         }
@@ -600,7 +600,7 @@ public class ChunkManager : MonoBehaviour
             currentChunkLeftId,
             currentChunkRightId,
             chunkList,
-            SetUpContainer.Instance.chunkContainer != null ? SetUpContainer.Instance.chunkContainer.name : "UnnamedChunkContainer"
+            EntitySaveManager.Instance.chunkContainer != null ? EntitySaveManager.Instance.chunkContainer.name : "UnnamedChunkContainer"
         );
 
         string jsonData = JsonConvert.SerializeObject(mapData, Formatting.Indented);
@@ -665,10 +665,10 @@ public class ChunkManager : MonoBehaviour
                 chunkList = new List<Chunk>();
             }
 
-            // Ensure SetUpContainer instance exists
-            if (SetUpContainer.Instance == null || SetUpContainer.Instance.chunkContainer == null)
+            // Ensure EntitySaveManager instance exists
+            if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.chunkContainer == null)
             {
-                Debug.LogError("SetUpContainer.Instance or chunkContainer is null. Cannot instantiate chunks.");
+                Debug.LogError("EntitySaveManager.Instance or chunkContainer is null. Cannot instantiate chunks.");
                 return;
             }
 
@@ -706,11 +706,11 @@ public class ChunkManager : MonoBehaviour
                 }
 
                 GameObject newChunkObject = Instantiate(prefabToUse, position, Quaternion.identity, 
-                    SetUpContainer.Instance.chunkContainer.transform);
+                    EntitySaveManager.Instance.chunkContainer.transform);
                 
                 if (newChunkObject != null)
                 {
-                    SetUpContainer.Instance.MoveChildrenToContainers(newChunkObject);
+                    EntitySaveManager.Instance.MoveChildrenToContainers(newChunkObject);
                 }
                 else
                 {
