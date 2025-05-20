@@ -56,6 +56,9 @@ public class LoadFromSave : MonoBehaviour
         
         GameTimeManager.Instance.SetGameTimeFromSave();
         
+        // Load tech status from WorldInfo to PrefabData
+        LoadTechStatus();
+        
         //instance OtherCharactor on container
         EntitySaveManager.Instance.LoadAllContainer();
         //EntitySaveManager.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
@@ -184,5 +187,23 @@ public class LoadFromSave : MonoBehaviour
         string mapData = File.ReadAllText(mapFilePath);
         Debug.Log("Map data loaded: " + mapData);
         // Thêm logic xử lý dữ liệu map tại đây
+    }
+
+    // Method to load tech status from WorldInfo to PrefabData
+    private void LoadTechStatus()
+    {
+        if (worldInfo != null && PrefabData.Instance != null)
+        {
+            PrefabData.Instance.techFireArrow = worldInfo.TechFireArrow;
+            PrefabData.Instance.techPenetrating = worldInfo.TechPenetrating;
+            PrefabData.Instance.techForge = worldInfo.TechForge;
+            PrefabData.Instance.techAdhesive = worldInfo.TechAdhesive;
+            
+           
+        }
+        else
+        {
+            Debug.LogWarning("Could not load tech status: WorldInfo or PrefabData.Instance is null");
+        }
     }
 }

@@ -299,7 +299,7 @@ public class ChunkManager : MonoBehaviour
         // Sort the chunks by X position
         chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
         
-        Debug.Log($"Created total of {chunkList.Count} chunks (including impassable rocks)");
+        //Debug.Log($"Created total of {chunkList.Count} chunks (including impassable rocks)");
     }
 
     private Chunk CreateGroundChunk(Vector3 position, int id)
@@ -424,7 +424,7 @@ public class ChunkManager : MonoBehaviour
             EntitySaveManager.Instance.MoveChildrenToContainers(rockObject);
         }
         
-        Debug.Log($"Created ImpassableRock {(isLeft ? "Left" : "Right")} at position {position} with ID {id}");
+        //Debug.Log($"Created ImpassableRock {(isLeft ? "Left" : "Right")} at position {position} with ID {id}");
     }
 
     public void AddChunk(bool toRight)

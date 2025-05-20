@@ -49,7 +49,7 @@ namespace Script.Game.Mobs.MobsManager
             if (configText != null)
             {
                 config = JsonUtility.FromJson<VagrantSpawnConfig>(configText.text);
-                Debug.Log("[VagrantManager] Đã load cấu hình sinh vagrant từ JSON");
+               // Debug.Log("[VagrantManager] Đã load cấu hình sinh vagrant từ JSON");
             }
             else
             {

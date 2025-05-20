@@ -22,6 +22,43 @@ namespace Script.Game.Other
         // Mở rộng thêm các công trình nếu cần
     }
 
+    // Lớp lưu dữ liệu TownCenter hiển thị trong Inspector
+    [Serializable]
+    public class TownCenterDisplay
+    {
+        [Tooltip("Cấp độ hiện tại của Town Center")]
+        public int level;
+        
+        [Tooltip("Chi phí nâng cấp Town Center")]
+        public int upgradeCost;
+        
+        [Tooltip("Sẵn sàng nâng cấp hay chưa")]
+        public bool readyToUpgrade;
+        
+        [Tooltip("Tiến trình xây dựng hiện tại")]
+        public int buildProgress;
+        
+        [Tooltip("Tiến trình xây dựng tối đa")]
+        public int buildProgressMax;
+        
+        [Tooltip("Đã đạt cấp tối đa chưa")]
+        public bool maxLevel;
+        
+        // Hàm cập nhật dữ liệu từ TownCenter
+        public void UpdateFromTownCenter(TownCenter townCenter)
+        {
+            if (townCenter != null)
+            {
+                level = townCenter.Level;
+                upgradeCost = townCenter.UpgradeCost;
+                readyToUpgrade = townCenter.ReadyToUpgrade;
+                buildProgress = townCenter.buildProgress;
+                buildProgressMax = townCenter.buildProgressMax;
+                maxLevel = townCenter.MaxLevel;
+            }
+        }
+    }
+
     // Lớp lưu thông tin số lượng công trình tối đa có thể xây ở một cấp
     [Serializable]
     public class StructureInfo
@@ -59,6 +96,11 @@ namespace Script.Game.Other
         [Header("Town Center Settings")]
         [Tooltip("Danh sách prefab TownCenter theo cấp (index tương ứng với cấp)")]
         public GameObject[] townCenterPrefabs;
+        
+        [Header("Town Center Data")]
+        [Tooltip("Thông tin Town Center hiện tại")]
+        [SerializeField] 
+        private TownCenterDisplay townCenterData = new TownCenterDisplay();
 
         [Header("Config File Settings")]
         [Tooltip("Tên file config trong thư mục Resources/DataConfig")]
@@ -77,12 +119,17 @@ namespace Script.Game.Other
 
         [HideInInspector]
         public int currentTownCenterLevel;
+        
         [Tooltip("Prefab TownCenter hiện tại (nếu có)")]
         [SerializeField] 
         private GameObject currentTownCenter;
-        
         // Public property to access currentTownCenter from other classes
         public GameObject CurrentTownCenter => currentTownCenter;
+
+        // Direct reference to the TownCenter component - use this to access TownCenter data from other scripts
+        [Tooltip("Tham chiếu trực tiếp đến TownCenter hiện tại - sử dụng để truy cập dữ liệu TownCenter từ các script khác")]
+        [SerializeField]
+        public TownCenter townCenter;
 
         private void Awake()
         {
@@ -109,6 +156,17 @@ namespace Script.Game.Other
             }
             
             UpdateAvailableBuildings();
+            
+            // Ensure Wall type is always available (fixes issues with loading saved games)
+            if (!availableStructures.Any(s => s.buildingType == BuildingType.Wall))
+            {
+                if (isDebug) Debug.Log("Adding Wall structure type as it was missing from configuration");
+                availableStructures.Add(new StructureInfo { 
+                    buildingType = BuildingType.Wall, 
+                    maxQuantity = 2, 
+                    maxLevel = 1 
+                });
+            }
 
             // Tìm TownCenter trong scene
             if (currentTownCenter == null)
@@ -122,6 +180,15 @@ namespace Script.Game.Other
                 {
                     Debug.LogWarning("No TownCenter found in scene. Building rules will use default level 0.");
                 }
+            }
+        }
+        
+        // Cập nhật dữ liệu hiển thị từ TownCenter vào Inspector
+        private void Update()
+        {
+            if (townCenter != null)
+            {
+                townCenterData.UpdateFromTownCenter(townCenter);
             }
         }
 
@@ -213,7 +280,8 @@ namespace Script.Game.Other
                 townCenterLevel = 0,
                 availableStructures = new List<StructureInfo>
                 {
-                    new StructureInfo { buildingType = BuildingType.TownCenter, maxQuantity = 1 }
+                    new StructureInfo { buildingType = BuildingType.TownCenter, maxQuantity = 1 },
+                    new StructureInfo { buildingType = BuildingType.Wall, maxQuantity = 2, maxLevel = 1 }
                 }
             };
             townCenterConfigs.Add(config0);
@@ -452,6 +520,13 @@ namespace Script.Game.Other
             StructureInfo structureInfo = availableStructures.Find(s => s.buildingType == buildingType);
             if (structureInfo == null)
             {
+                // Special case for Wall - always allow at least tier 0 even if not explicitly configured
+                if (buildingType == BuildingType.Wall)
+                {
+                    if (isDebug) Debug.LogWarning($"Wall not explicitly found in available structures for level {currentTownCenterLevel}, defaulting to max level 1");
+                    return 1; // Always allow basic walls
+                }
+                
                 Debug.LogWarning($"Building type {buildingType} not found in available structures for town center level {currentTownCenterLevel}");
                 return 0;
             }
@@ -473,16 +548,30 @@ namespace Script.Game.Other
             // Set the current TownCenter object
             currentTownCenter = townCenterObj;
             
-            // Get the TownCenter component to retrieve its level
-            TownCenter townCenterComponent = townCenterObj.GetComponent<TownCenter>();
-            if (townCenterComponent != null)
+            // Lấy và lưu tham chiếu đến component TownCenter
+            townCenter = townCenterObj.GetComponent<TownCenter>();
+            if (townCenter != null)
             {
                 // Update the current TownCenter level
                 int previousLevel = currentTownCenterLevel;
-                currentTownCenterLevel = townCenterComponent.Level;
+                currentTownCenterLevel = townCenter.Level;
+                
+                // Cập nhật thông tin hiển thị ngay lập tức
+                townCenterData.UpdateFromTownCenter(townCenter);
                 
                 // Update available buildings based on the new level
                 UpdateAvailableBuildings();
+                
+                // Ensure Wall type is always available (fixes issues with loading saved games)
+                if (!availableStructures.Any(s => s.buildingType == BuildingType.Wall))
+                {
+                    if (isDebug) Debug.Log($"Adding Wall structure type as it was missing from configuration for level {currentTownCenterLevel}");
+                    availableStructures.Add(new StructureInfo { 
+                        buildingType = BuildingType.Wall, 
+                        maxQuantity = 2, 
+                        maxLevel = Math.Max(1, currentTownCenterLevel) 
+                    });
+                }
                 
                 if (isDebug) Debug.Log($"TownCenter updated from level {previousLevel} to {currentTownCenterLevel}");
                 

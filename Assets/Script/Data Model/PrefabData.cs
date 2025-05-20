@@ -87,13 +87,74 @@ namespace Script.Data_Model
         [Space(15)] [Header("Upgrade Tech ")] [Space(5)]  
         #region UpgradeTech
     
-        public bool techFireArrow;//arrow do fire dame
-        public bool techPenetrating;//breaking armor
-        public bool techForge;//new struction that give sword to upgrade Squire to Vanguard
-        public bool techAdhesive;//make wall better
+        // Tech variables have been moved to WorldInfo
+        // Access them through WorldFileManager.Instance.worldInfo instead
         
         public GameObject upgradeHouse;
         
+        // Method to update tech status and save to worldInfo
+        public void UpdateTechStatus(bool fireArrow, bool penetrating, bool forge, bool adhesive)
+        {
+            // Use WorldFileManager.Instance to update and save tech status
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.SaveTechStatus(
+                    fireArrow, penetrating, forge, adhesive);
+            }
+        }
+
+        // Individual methods for updating each tech
+        public void SetFireArrowTech(bool value) 
+        {
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow = value;
+                Script.Save_Controller.WorldFileManager.Instance.SaveTechStatus(
+                    value, 
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechForge,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive);
+            }
+        }
+        
+        public void SetPenetratingTech(bool value) 
+        {
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating = value;
+                Script.Save_Controller.WorldFileManager.Instance.SaveTechStatus(
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow,
+                    value,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechForge,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive);
+            }
+        }
+        
+        public void SetForgeTech(bool value) 
+        {
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechForge = value;
+                Script.Save_Controller.WorldFileManager.Instance.SaveTechStatus(
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating,
+                    value,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive);
+            }
+        }
+        
+        public void SetAdhesiveTech(bool value) 
+        {
+            if (Script.Save_Controller.WorldFileManager.Instance != null)
+            {
+                Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive = value;
+                Script.Save_Controller.WorldFileManager.Instance.SaveTechStatus(
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating,
+                    Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechForge,
+                    value);
+            }
+        }
 
         #endregion
 
@@ -371,7 +432,7 @@ namespace Script.Data_Model
                     var config = JsonConvert.DeserializeObject<PlayerPrefabConfig>(jsonTextAsset.text);
                     if (config?.playerPrefabPaths != null && config.playerPrefabPaths.Count > 0)
                     {
-                        Debug.Log($"Found {config.playerPrefabPaths.Count} prefab paths in the JSON file.");
+                       // Debug.Log($"Found {config.playerPrefabPaths.Count} prefab paths in the JSON file.");
                         
                         foreach (var prefabPath in config.playerPrefabPaths)
                         {

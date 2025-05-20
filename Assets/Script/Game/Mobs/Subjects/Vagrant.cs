@@ -50,7 +50,7 @@ namespace Script.Game.Mobs.Subjects
         {
             // Set tag to "Vagrant" in Awake instead of Start
             gameObject.tag = "Vagrant";
-            Debug.Log("Vagrant tag set to: " + gameObject.tag);
+            //Debug.Log("Vagrant tag set to: " + gameObject.tag);
             startPosition = transform.position;
         }
     
