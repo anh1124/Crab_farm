@@ -18,7 +18,6 @@ namespace Script.Game.Structures.Wall_And_Stump
          */
         // Properties từ IDamageable
         public CoinUser coinUser;
-
         public int MaxHp { get; set; }
         public int CurrentHp { get; set; }
         public int tier;
@@ -31,13 +30,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         public GameObject nextUpgradePrefab;
 
         //upgrade 
-        public int rebuildCost;
+        public int rebuildCost;//không dùng vì ,khi hỏng sẽ thay luôn gameobejct;
         public int upgradeCost;
         public bool readyToUpgrade;
         public bool maxLevel;
 
         //build menusystem
-        public float minimumDistance = 20f;
+        public float minimumDistance = 20f;//khoảng cách tối thiều giữa các tường,tree
         public int buildProgress;
         public int buildProgressMax;
     
@@ -91,8 +90,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
             InitializeWallData();
             UpdateCoinUserData();
-            // ta gọi trực tiếp hàm tiện ích :
-            BuildingManager.instance.RotateTowardsTownCenter(this.gameObject);
+            BuildingManager.instance.RotateTowardsTownCenter(gameObject);
         }
 
 
@@ -128,22 +126,31 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
 
-        //tự sửa lại sau,tạo save riêng trong woerl
+        
+        /// <summary>
+        /// Cập nhật MaxHp của tường dựa trên công nghệ Adhesive
+        /// - Nếu techAdhesive = true: Sử dụng blessedMaxHp (HP tối đa đã được tăng cường)
+        /// - Nếu techAdhesive = false: Sử dụng normalMaxHp (HP tối đa bình thường)
+        /// Hàm này sẽ được gọi mỗi khi thông tin thế giới thay đổi hoặc khi khởi tạo
+        /// </summary>
         public void UpdateMaxHp()
         {
-            // Sử dụng worldInfo.TechAdhesive thay vì prefabData.techAdhesive
             bool techAdhesive = false;
-            
             // Kiểm tra WorldFileManager tồn tại và có worldInfo không null trước khi truy cập
             if (Script.Save_Controller.WorldFileManager.Instance != null && 
                 Script.Save_Controller.WorldFileManager.Instance.worldInfo != null)
             {
                 techAdhesive = Script.Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive;
             }
-            
             MaxHp = techAdhesive ? blessedMaxHp : normalMaxHp;
+            CurrentHp = CurrentHp > MaxHp ? MaxHp : CurrentHp;
         }
 
+        /// <summary>
+        /// Đăng ký lắng nghe sự kiện OnWorldInfoChanged khi đối tượng được kích hoạt
+        /// Sự kiện này sẽ được gọi mỗi khi dữ liệu worldInfo thay đổi, ví dụ như khi nghiên cứu techAdhesive
+        /// Giúp tường cập nhật HP tối đa một cách tự động khi công nghệ được mở khóa mà không cần khởi động lại
+        /// </summary>
         private void OnEnable() 
         {
             if (Script.Save_Controller.WorldFileManager.Instance != null)
@@ -152,6 +159,10 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
 
+        /// <summary>
+        /// Hủy đăng ký lắng nghe sự kiện OnWorldInfoChanged khi đối tượng bị vô hiệu hóa
+        /// Điều này để ngăn memory leak và lỗi null reference khi đối tượng không còn hoạt động
+        /// </summary>
         private void OnDisable()
         {
             if (Script.Save_Controller.WorldFileManager.Instance != null)
@@ -160,6 +171,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
 
+        /// <summary>
+        /// Được gọi mỗi khi worldInfo thay đổi thông qua sự kiện OnWorldInfoChanged
+        /// Cập nhật lại MaxHp dựa trên trạng thái hiện tại của techAdhesive
+        /// Điều này đảm bảo tất cả tường trong game sẽ được tăng HP ngay lập tức khi công nghệ được mở khóa
+        /// </summary>
+        /// <param name="worldInfo">Thông tin thế giới hiện tại chứa trạng thái của techAdhesive</param>
         private void OnWorldInfoChanged(Script.Save_Controller.WorldInfo worldInfo)
         {
             UpdateMaxHp();

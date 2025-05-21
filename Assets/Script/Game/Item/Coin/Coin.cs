@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using Script.Data_Model;
+using Script.Data_Model.Interfaces;
 using UnityEngine;
 
 namespace Script.Game.Item.Coin
 {
-    public class Coin : MonoBehaviour
+    public class Coin : MonoBehaviour, ISaveable
     {
         public bool floating;
         public float rayLength = 0.6f;  // Độ dài của raycast
@@ -29,6 +30,28 @@ namespace Script.Game.Item.Coin
             pickupAbleCooldown = PrefabData.Instance.timeMaxFloatCoin;
             // Gán animator cho component Animator của object này
             _animator = GetComponent<Animator>();
+            
+            // Khởi động lại coroutine sau khi load game
+            RestartCooldownsIfNeeded();
+        }
+
+        /// <summary>
+        /// Khởi động lại các coroutine cooldown nếu các trạng thái pickupAble là false sau khi load game
+        /// Được gọi từ Start() và có thể gọi sau khi restore data
+        /// </summary>
+        private void RestartCooldownsIfNeeded()
+        {
+            // Khởi động lại coroutine cho player nếu cần
+            if (!playerPickupAble)
+            {
+                StartCoroutine(Cooldown("Player"));
+            }
+            
+            // Khởi động lại coroutine cho denizens nếu cần
+            if (!denizensPickupAble)
+            {
+                StartCoroutine(Cooldown("Denizens"));
+            }
         }
 
         void Update()
@@ -128,5 +151,52 @@ namespace Script.Game.Item.Coin
                 denizensStatus.AddCoin(gameObject); // This method should handle coin destruction
             }
         }
+        
+        #region Save System Implementation
+        [System.Serializable]
+        public class CoinData
+        {
+            public float positionX;
+            public float positionY;
+            public bool floating;
+            public bool playerPickupAble;
+            public bool denizensPickupAble;
+        }
+        
+        public string GetPrefabID()
+        {
+            return "coin";
+        }
+        
+        public object CaptureData()
+        {
+            return new CoinData
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                floating = this.floating,
+                playerPickupAble = this.playerPickupAble,
+                denizensPickupAble = this.denizensPickupAble
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            CoinData coinData = (CoinData)data;
+            transform.position = new Vector3(coinData.positionX, coinData.positionY, 0);
+            floating = coinData.floating;
+            playerPickupAble = coinData.playerPickupAble;
+            denizensPickupAble = coinData.denizensPickupAble;
+            
+            // Khởi tạo animation dựa trên trạng thái floating
+            if (_animator == null)
+                _animator = GetComponent<Animator>();
+                
+            if (floating)
+                StartRotate();
+            else
+                StopRotate();
+        }
+        #endregion
     }
 }

@@ -248,6 +248,25 @@ namespace Script.Data_Model
             {
                 Destroy(gameObject);
             }
+            
+            // Đăng ký các prefab
+            RegisterPrefabs();
+            
+            //danh sách chứa tag mà player có thể tương tác bằng trigger helper
+            playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
+                "BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 
+            CallOtherListToGetData();
+            
+            // Loại bỏ tất cả các phần tử null khỏi danh sách charactor 
+            playerCharacterList.RemoveAll(item => item == null);
+            RequirePrefabCheck();
+        }
+        
+        /// <summary>
+        /// Đăng ký tất cả các prefab vào từ điển _prefabDict
+        /// </summary>
+        private void RegisterPrefabs()
+        {
             // Đăng ký các prefab TownCenter
             for (int i = 0; i < townCenterList.Count; i++)
             {
@@ -285,21 +304,23 @@ namespace Script.Data_Model
             _prefabDict.Add("sword_vendor", siegeWorkshop);
             _prefabDict.Add("spike_vendor", upgradeHouse);
             
+            // Register coin prefab
+            if (coinPrefab != null)
+            {
+                _prefabDict.Add("coin", coinPrefab);
+            }
+            else
+            {
+                Debug.LogError("Coin prefab is missing! Make sure to assign it in the inspector.");
+            }
+            
             // Register vagrant prefab
             if (vagrant != null)
             {
                 _prefabDict.Add("vagrant", vagrant);
             }
-            
-            //danh sách chứa tag mà player có thể tương tác bằng trigger helper
-            playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
-                "BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 
-            CallOtherListToGetData();
-            
-            // Loại bỏ tất cả các phần tử null khỏi danh sách charactor 
-            playerCharacterList.RemoveAll(item => item == null);
-            RequirePrefabCheck();
         }
+        
         public GameObject GetPrefabByID(string id)
         {
             return _prefabDict.TryGetValue(id, out GameObject prefab) ? prefab : null;
@@ -398,6 +419,7 @@ namespace Script.Data_Model
             if (oilBarrelVendor == null) Debug.LogError("oilBarrelVendor prefab is missing!");
             if (siegeWorkshop == null) Debug.LogError("siegeWorkshop prefab is missing!");
             if (upgradeHouse == null) Debug.LogError("upgradeHouse prefab is missing!");
+            if (coinPrefab == null) Debug.LogError("coinPrefab is missing!");
             
             // Check if prefabs are properly registered in dictionary
             Debug.Log("Checking vendor prefab registrations...");
@@ -411,6 +433,8 @@ namespace Script.Data_Model
                 Debug.LogError("sword_vendor not registered in prefab dictionary!");
             if (!_prefabDict.ContainsKey("spike_vendor")) 
                 Debug.LogError("spike_vendor not registered in prefab dictionary!");
+            if (!_prefabDict.ContainsKey("coin")) 
+                Debug.LogError("coin not registered in prefab dictionary!");
         }
         
         // New method to load player character data from JSON
