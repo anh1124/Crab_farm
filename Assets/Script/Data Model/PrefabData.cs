@@ -173,7 +173,7 @@ namespace Script.Data_Model
         
         public GameObject catapult;
         public GameObject vagrant;
-        
+        public GameObject village;
         #endregion
         
         [Space(15)] [Header("Subjects ")] [Space(5)]  

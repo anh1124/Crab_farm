@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 5794520636870624079}
   - component: {fileID: 1522014375296202896}
   - component: {fileID: 2247245023989000811}
-  - component: {fileID: 952812542423673977}
   - component: {fileID: 2454466822937412082}
+  - component: {fileID: 833635669083954895}
+  - component: {fileID: 5847135402606333830}
   m_Layer: 0
   m_Name: Vagrant
   m_TagString: Vagrant
@@ -182,25 +183,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &952812542423673977
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6666266359872341608}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b68f1c590b1bbfb4aa4817388b8583e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  idleSpeed: 1
-  runSpeed: 3.5
-  maxIdleWalkDistance: 3
-  roadToTarget: 0
-  targetPosition: {x: 0, y: 0}
-  coin: {fileID: 0}
-  currentState: 1
 --- !u!114 &2454466822937412082
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -221,3 +203,37 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 2176
   hitObjects: []
+--- !u!114 &833635669083954895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6666266359872341608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77dbde9aa523e3f4a82e6cfe8710b9fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5847135402606333830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6666266359872341608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6b1de5a4f227144a9bf3d8027fcf6a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleSpeed: 1
+  runSpeed: 3.5
+  maxIdleWalkDistance: 3
+  roadToTarget: 0
+  targetPosition: {x: 0, y: 0}
+  coin: {fileID: 0}
+  currentState: 0
+  startPosition: {x: 0, y: 0, z: 0}
+  currentIdleTarget: {x: 0, y: 0, z: 0}
+  isWalking: 0

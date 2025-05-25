@@ -37,6 +37,7 @@ TagManager:
   - SwordVendor
   - ScytheVendor
   - Vagrant
+  - Villager
   layers:
   - Default
   - TransparentFX
