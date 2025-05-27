@@ -29,7 +29,7 @@ namespace Script.Game.Structures.SellingShop
         // New fields for JSON configuration
         [JsonIgnore]
         private static List<ItemSellerConfig> itemSellerConfigs;
-        
+      
         // Classes for JSON deserialization
         [Serializable]
         private class ItemSellerConfig

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using Script.Data_Model.Interfaces;
 using Script.Data_Model.Status;
 using UnityEngine;
+using Script.Data_Model;
+using Script.Game.Other;
 
 namespace Script.Game.Mobs.Subjects
 {
@@ -116,7 +118,7 @@ namespace Script.Game.Mobs.Subjects
             if (idleWalkRoutine == null)
             {
                 idleWalkRoutine = StartCoroutine(IdleWalkRoutine());
-                Debug.Log("[VagrantController] Started IdleWalkRoutine");
+               
             }
             
             if (status.IsWalking)
@@ -171,8 +173,44 @@ namespace Script.Game.Mobs.Subjects
 
         private void PickUpCoin(GameObject coinObject)
         {
+            // Destroy the coin first
             Destroy(coinObject);
-            status.CurrentState = VagrantStatus.VagrantState.Idle;
+
+            // Transform into villager after picking up coin
+            TransformToVillager();
+        }
+
+        private void TransformToVillager()
+        {
+            if (PrefabData.Instance != null && PrefabData.Instance.village != null)
+            {
+                Vector3 position = transform.position;
+                Quaternion rotation = transform.rotation;
+                Vector3 scale = transform.localScale;
+                
+                // Use Spawner to create villager
+                if (Spawner.Instance != null)
+                {
+                    GameObject villager = Spawner.Instance.SpawnMob(position, PrefabData.Instance.village);
+                    if (villager != null)
+                    {
+                        // Maintain the same orientation and scale
+                        villager.transform.rotation = rotation;
+                        villager.transform.localScale = scale;
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[VagrantController] Spawner instance not found!");
+                }
+                
+                // Destroy the vagrant
+                Destroy(gameObject);
+            }
+            else
+            {
+                Debug.LogError("[VagrantController] Villager prefab not found in PrefabData!");
+            }
         }
 
         #endregion
@@ -198,7 +236,7 @@ namespace Script.Game.Mobs.Subjects
             float distanceToTarget = Vector3.Distance(transform.position, status.CurrentIdleTarget);
             if (distanceToTarget < 0.1f)
             {
-                Debug.Log($"[VagrantController] Stopping at target, distance: {distanceToTarget}");
+              
                 status.IsWalking = false;
                 return;
             }
@@ -303,7 +341,7 @@ namespace Script.Game.Mobs.Subjects
                     
                     status.CurrentIdleTarget = new Vector3(targetX, transform.position.y, transform.position.z);
                     
-                    Debug.Log($"[VagrantController] Starting walk to target: {targetX}");
+                   
                     status.IsWalking = true;
                     
                     float walkStartTime = Time.time;
@@ -314,7 +352,7 @@ namespace Script.Game.Mobs.Subjects
                         float distanceToTarget = Vector3.Distance(transform.position, status.CurrentIdleTarget);
                         if (distanceToTarget < 0.1f)
                         {
-                            Debug.Log($"[VagrantController] Reached target, distance: {distanceToTarget}");
+                           
                             status.IsWalking = false;
                             break;
                         }
@@ -323,7 +361,7 @@ namespace Script.Game.Mobs.Subjects
 
                     if (status.IsWalking)
                     {
-                        Debug.Log("[VagrantController] Walk timeout or state changed");
+                        
                         status.IsWalking = false;
                     }
                 }

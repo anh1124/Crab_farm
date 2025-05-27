@@ -16,7 +16,8 @@ public class Spawner : MonoBehaviour
     //thêm cho coin nảy 2 lần khi chạm đất
     
     public static Spawner Instance { get; private set; }
-    public float coinThrowForce = 10f;
+    public float coinThrowForce = 5f;
+    public float coinThrowDistance = 2f;
     public GameObject coinPrefab;
     
 
@@ -68,14 +69,24 @@ public class Spawner : MonoBehaviour
         StartCoroutine(DropByDenizenCoroutine(position, direction, amount));
     }
 
+    private void InitializeCoinThrow(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
+    {
+        Coin coinScript = coin.GetComponent<Coin>();
+        if (coinScript != null)
+        {
+            // Add some random variation to throw distance and force
+            float randomizedForce = coinThrowForce * (1f + Random.Range(-randomVariation, randomVariation));
+            float randomizedDistance = coinThrowDistance * (1f + Random.Range(-randomVariation, randomVariation));
+            
+            coinScript.InitializeThrow(direction, randomizedForce, randomizedDistance);
+        }
+    }
+
     private IEnumerator DropByNatureCoroutine(Vector2 position, Vector2 direction, int amount)
     {
-        Vector2 newPosition;
-
         for (int i = 0; i < amount; i++)
         {
-            
-            newPosition = new Vector2(position.x + direction.x * i, position.y + yOffset + (i * 0.1f));
+            Vector2 newPosition = new Vector2(position.x, position.y + yOffset + (i * 0.1f));
             GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
@@ -84,9 +95,10 @@ public class Spawner : MonoBehaviour
                 coinScriptInstance.playerPickupAble = true;
                 coinScriptInstance.denizensPickupAble = true;
                 coinScriptInstance.floating = false;
+                InitializeCoinThrow(coin, direction);
             }
 
-            yield return new WaitForSeconds(0.3f); // Wait for 0.3 seconds before spawning the next coin
+            yield return new WaitForSeconds(0.3f);
         }
     }
 
@@ -94,9 +106,7 @@ public class Spawner : MonoBehaviour
     {
         for (int i = 0; i < amount; i++)
         {
-            
-
-            Vector2 newPosition = new Vector2(position.x + direction.x * i, position.y + yOffset);
+            Vector2 newPosition = new Vector2(position.x, position.y + yOffset);
             GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
@@ -106,9 +116,10 @@ public class Spawner : MonoBehaviour
                 coinScriptInstance.denizensPickupAble = true;
                 coinScriptInstance.floating = false;
                 coinScriptInstance.CallFunctionCoolDown("Player");
+                InitializeCoinThrow(coin, direction);
             }
 
-            yield return new WaitForSeconds(0.3f); // Wait for 0.3 seconds to avoid concurrent execution issues
+            yield return new WaitForSeconds(0.3f);
         }
     }
 
@@ -116,9 +127,7 @@ public class Spawner : MonoBehaviour
     {
         for (int i = 0; i < amount; i++)
         {
-           
-
-            Vector2 newPosition = new Vector2(position.x + direction.x * i, position.y);
+            Vector2 newPosition = new Vector2(position.x, position.y);
             GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
             Coin coinScriptInstance = coin.GetComponent<Coin>();
@@ -128,13 +137,41 @@ public class Spawner : MonoBehaviour
                 coinScriptInstance.denizensPickupAble = false;
                 coinScriptInstance.floating = false;
                 coinScriptInstance.CallFunctionCoolDown("Denizen");
+                InitializeCoinThrow(coin, direction);
             }
 
-            yield return new WaitForSeconds(0.3f); // Wait for 0.3 seconds to avoid concurrent execution issues
+            yield return new WaitForSeconds(0.3f);
         }
     }
 
 
     #endregion
    
+    /// <summary>
+    /// Spawns a mob at the specified position
+    /// </summary>
+    /// <param name="position">Spawn position</param>
+    /// <param name="prefab">The prefab to spawn</param>
+    /// <returns>The spawned GameObject or null if spawn failed</returns>
+    public GameObject SpawnMob(Vector3 position, GameObject prefab)
+    {
+        if (prefab == null)
+        {
+            Debug.LogError("[Spawner] Cannot spawn mob - prefab is null!");
+            return null;
+        }
+
+        // Spawn mob and move it to the correct container
+        GameObject spawnedMob = Instantiate(prefab, position, Quaternion.identity);
+        if (spawnedMob != null && EntitySaveManager.Instance != null)
+        {
+            EntitySaveManager.Instance.MoveObjectToContainer(spawnedMob);
+        }
+        else
+        {
+            Debug.LogWarning("[Spawner] EntitySaveManager not found, mob will not be saved!");
+        }
+
+        return spawnedMob;
+    }
 }

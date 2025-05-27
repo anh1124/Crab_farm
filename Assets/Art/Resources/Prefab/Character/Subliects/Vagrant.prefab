@@ -199,9 +199,9 @@ MonoBehaviour:
   raycastDistance: 5
   raycastOffsetY: 0.81
   isDrawRay: 1
-  raycastLayerMask:
-    serializedVersion: 2
-    m_Bits: 2176
+  tagsToDetect:
+  - Coin
+  - Enemy
   hitObjects: []
 --- !u!114 &833635669083954895
 MonoBehaviour:

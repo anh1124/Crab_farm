@@ -143,6 +143,7 @@ namespace Script.Game.Other
             }
         }
 
+
         private void Start()
         {
             // Đọc dữ liệu từ JSON

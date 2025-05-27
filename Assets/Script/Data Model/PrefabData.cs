@@ -23,6 +23,8 @@ namespace Script.Data_Model
         // Biến kiểm soát quá trình xây dựng (bỏ qua quá trình xây dựng hoặc yêu cầu thợ xây)
         public bool skipBuildingProcess = true; 
         
+        public List<string> ToolTag = new List<string> { "Hammer", "Bow" };
+        
         [Header("Player Character")] [Space(5)]
         public List<GameObject> playerCharacterList = new List<GameObject>();
 
@@ -319,6 +321,16 @@ namespace Script.Data_Model
             {
                 _prefabDict.Add("vagrant", vagrant);
             }
+
+            // Register villager prefab
+            if (village != null)
+            {
+                _prefabDict.Add("villager", village);
+            }
+            else
+            {
+                Debug.LogError("Villager prefab is missing! Make sure to assign it in the inspector.");
+            }
         }
         
         public GameObject GetPrefabByID(string id)
@@ -518,6 +530,12 @@ namespace Script.Data_Model
             {
                 Debug.LogError($"Error loading player prefabs: {e.Message}\nStackTrace: {e.StackTrace}");
             }
+        }
+        
+        
+        public bool IsTool(GameObject item)
+        {
+            return ToolTag.Contains(item.tag);
         }
     }
 }

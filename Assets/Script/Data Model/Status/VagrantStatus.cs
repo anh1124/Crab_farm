@@ -92,7 +92,7 @@ namespace Script.Data_Model.Status
                 if (isWalking != value)
                 {
                     isWalking = value;
-                    Debug.Log($"[VagrantStatus] IsWalking changed to: {value}");
+                   
                 }
             }
         }
@@ -114,7 +114,7 @@ namespace Script.Data_Model.Status
             currentState = VagrantState.Idle;
             roadToTarget = 0f;
             isWalking = false;
-            Debug.Log("[VagrantStatus] Initialized in Awake");
+            //ebug.Log("[VagrantStatus] Initialized in Awake");
         }
 
         public VagrantData CaptureData(Transform transform)

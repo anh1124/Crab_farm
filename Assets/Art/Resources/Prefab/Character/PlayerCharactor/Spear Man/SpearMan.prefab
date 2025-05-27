@@ -95,7 +95,7 @@ GameObject:
   - component: {fileID: 4325251575502946318}
   - component: {fileID: -3560308634815069677}
   - component: {fileID: 8514044053820796137}
-  m_Layer: 8
+  m_Layer: 13
   m_Name: SpearMan
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -337,7 +337,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6645369135533791887}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: CameraTaget
   m_TagString: CameraTaget
   m_Icon: {fileID: 0}

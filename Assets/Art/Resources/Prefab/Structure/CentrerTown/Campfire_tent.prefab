@@ -145,8 +145,8 @@ Transform:
   m_GameObject: {fileID: 5576259235428986809}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.5862, y: 0, z: 0}
+  m_LocalScale: {x: 0.8779, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8558362019779440785}
@@ -283,12 +283,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canAcceptCoins: 1
   requiredCoins: 0
   collectedCoins: 0
   coinCollectionTimeout: 0
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 0}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []
@@ -311,5 +314,7 @@ MonoBehaviour:
   nextUpgradePrefab: {fileID: 0}
   readyToUpgrade: 0
   maxLevel: 0
+  buildProgress: 0
+  buildProgressMax: 0
   plazaDistance: 0
   coinUser: {fileID: 0}

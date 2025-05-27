@@ -123,10 +123,6 @@ MonoBehaviour:
   farmHouse2: {fileID: 0}
   farmPlot: {fileID: 0}
   towerList: []
-  techFireArrow: 0
-  techPenetrating: 0
-  techForge: 0
-  techAdhesive: 0
   upgradeHouse: {fileID: 0}
   siegeWorkshop: {fileID: 0}
   bowVendor: {fileID: 0}
@@ -134,6 +130,7 @@ MonoBehaviour:
   oilBarrelVendor: {fileID: 0}
   catapult: {fileID: 0}
   vagrant: {fileID: 0}
+  village: {fileID: 0}
   tree: {fileID: 0}
   treePrefabsList: []
   treeChopCost: 1
@@ -247,6 +244,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   saveRootPath: 
+  worldInfo:
+    Name: 
+    Seed: 0
+    GameHour: 0
+    GameMinute: 0
+    GameDay: 0
+    GameMonth: 0
+    GameYear: 0
+    TechFireArrow: 0
+    TechPenetrating: 0
+    TechForge: 0
+    TechAdhesive: 0
 --- !u!114 &814197313591573416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -260,6 +269,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   saveFilePath: 
+  worldInfo:
+    Name: 
+    Seed: 0
+    GameHour: 0
+    GameMinute: 0
+    GameDay: 0
+    GameMonth: 0
+    GameYear: 0
+    TechFireArrow: 0
+    TechPenetrating: 0
+    TechForge: 0
+    TechAdhesive: 0
 --- !u!114 &4896579773367113099
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -299,11 +320,19 @@ MonoBehaviour:
   - {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
   - {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
   - {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
+  townCenterData:
+    level: 0
+    upgradeCost: 0
+    readyToUpgrade: 0
+    buildProgress: 0
+    buildProgressMax: 0
+    maxLevel: 0
   configFileName: BuildingLimits
   townCenterConfigs: []
   availableStructures: []
   currentTownCenterLevel: 0
   currentTownCenter: {fileID: 0}
+  townCenter: {fileID: 0}
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -470,6 +499,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8680344821423139051}
   - component: {fileID: 8848505126678873454}
+  - component: {fileID: 8165894474658827718}
   m_Layer: 0
   m_Name: MobsManager
   m_TagString: Untagged
@@ -511,3 +541,17 @@ MonoBehaviour:
     minDailySpawnCount: 0
     maxDailySpawnCount: 11
     randomXRange: 2
+--- !u!114 &8165894474658827718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5848034847329386121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cf065eb1bb6b08408c464700bd19913, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availableTools: []
+  villagers: []

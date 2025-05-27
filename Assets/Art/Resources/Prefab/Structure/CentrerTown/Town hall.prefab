@@ -38,8 +38,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 27.15, y: 0}
-  m_SizeDelta: {x: 187, y: 72}
+  m_AnchoredPosition: {x: -60.648613, y: 0}
+  m_SizeDelta: {x: 11.4027, y: 6.3772}
   m_Pivot: {x: 0.5, y: -0}
 --- !u!212 &8849492511325176375
 SpriteRenderer:
@@ -158,12 +158,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canAcceptCoins: 1
   requiredCoins: 0
   collectedCoins: 0
   coinCollectionTimeout: 0
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 0}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []
@@ -186,6 +189,8 @@ MonoBehaviour:
   nextUpgradePrefab: {fileID: 0}
   readyToUpgrade: 0
   maxLevel: 0
+  buildProgress: 0
+  buildProgressMax: 0
   plazaDistance: 0
   coinUser: {fileID: 0}
 --- !u!1 &6307660453676820116

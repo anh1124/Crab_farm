@@ -12,6 +12,15 @@ namespace Script.Game.Item.Coin
         public float rayLength = 0.6f;  // Độ dài của raycast
         public int fallSpeed =10 ;  // Tốc độ rơi của coin
     
+        // Add new variables for throwing physics
+        private Vector2 initialVelocity;
+        private float throwTime;
+        private Vector2 startPosition;
+        private bool isThrown;
+        [Header("Throwing Physics")]
+        [Tooltip("Controls how fast the coin falls when thrown (default: 9.81). Lower values make the coin fall slower.")]
+        [Range(1f, 20f)]
+        public float throwGravity = 9.81f;
     
         private Animator _animator;
         //private float groundCheckRadius = 0.1f; // Bán kính kiểm tra mặt đất
@@ -58,7 +67,14 @@ namespace Script.Game.Item.Coin
         {
             if (!floating)
             {
-                Falling();
+                if (isThrown)
+                {
+                    ThrowMovement();
+                }
+                else
+                {
+                    Falling();
+                }
             }
             // Vẽ raycast trong Scene View
             Debug.DrawRay(transform.position, Vector2.down * rayLength, Color.red);
@@ -97,6 +113,40 @@ namespace Script.Game.Item.Coin
             }
         }
 
+        public void InitializeThrow(Vector2 direction, float throwForce, float throwDistance)
+        {
+            isThrown = true;
+            startPosition = transform.position;
+            
+            // Calculate initial velocity for desired distance
+            float timeToReachDistance = Mathf.Sqrt((2 * throwDistance) / throwForce);
+            float velocityX = throwDistance / timeToReachDistance;
+            float velocityY = throwForce * timeToReachDistance / 2;
+
+            initialVelocity = new Vector2(direction.x * velocityX, velocityY);
+            throwTime = 0;
+            floating = false;
+        }
+
+        private void ThrowMovement()
+        {
+            throwTime += Time.deltaTime;
+            
+            // Calculate new position using projectile motion equations
+            float x = startPosition.x + initialVelocity.x * throwTime;
+            float y = startPosition.y + (initialVelocity.y * throwTime) - (0.5f * throwGravity * throwTime * throwTime);
+            
+            transform.position = new Vector3(x, y, transform.position.z);
+
+            // Check for ground collision
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, LayerMask.GetMask("Ground"));
+            if (hit.collider != null)
+            {
+                isThrown = false;
+                floating = true;
+                StartRotate();
+            }
+        }
 
     
         //cái này phải sửa lại,nhỡ đâu player drop xong detizen nhặt rồi player lại drop 
