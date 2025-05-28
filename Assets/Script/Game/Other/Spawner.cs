@@ -69,7 +69,7 @@ public class Spawner : MonoBehaviour
         StartCoroutine(DropByDenizenCoroutine(position, direction, amount));
     }
 
-    private void InitializeCoinThrow(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
+    public void InitializeCoinThrow(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
     {
         Coin coinScript = coin.GetComponent<Coin>();
         if (coinScript != null)

@@ -7,28 +7,24 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using Script.Game.Other;
 using Script.Data_Model;
+using Script.Game.Item.Coin;
 using Script.Game.Mobs.MobsManager;
 
 namespace Script.Game.Mobs.Subjects
 {
     public class VillagerController : MonoBehaviour, ISaveable, ICoinTakeDamage
     {
+        #region Variables and Properties
         private VillageStatus status;
 
         [Header("State")]
         [Tooltip("Trạng thái hiện tại của villager")]
         [SerializeField] private VillageStatus.VillageState currentState;
         
-        [Header("Movement")]
-        [Tooltip("Vị trí đích đến")]
         public Vector3 targetPosition;
-        [Tooltip("Đang di chuyển hay không")]
+   
         public bool isMoving;
-        
-        [Header("Fear Status")]
-        [Tooltip("Villager đang trong tình trạng nguy hiểm")]
         public bool isInDanger;
-        [Tooltip("Thời gian sợ hãi còn lại")]
         public float fearTimer;
         public const float FEAR_DURATION = 3f; // Giảm xuống 3 giây
 
@@ -42,16 +38,17 @@ namespace Script.Game.Mobs.Subjects
         private Coroutine fearRoutine;
         private Coroutine checkRoutine;
 
-        // Coin Drop Settings
-        private const int MIN_COINS_DROP = 1;
-        private const int MAX_COINS_DROP = 2;
+        [Header("Coin Drop Settings")]
+        [Tooltip("Thời gian tối thiểu giữa các lần drop coin khi gặp player (giây)")]
+        public float COIN_DROP_COOLDOWN = 0.7f;
+        private float lastCoinDropTime = 0f;
 
-        // Property to get current number of coins the villager has
+        // Properties
         public int CurrentCoins => status.CurrentCoins;
-
-        // Property to get maximum number of coins the villager can carry
         public int MaxCoins => status.MaxCoins;
+        #endregion
 
+        #region Unity Lifecycle Methods
         private void Awake()
         {
             gameObject.tag = "Villager";
@@ -85,22 +82,6 @@ namespace Script.Game.Mobs.Subjects
             StopCheckRoutine();
         }
 
-        private void HandleNightTime()
-        {
-            if (currentState != VillageStatus.VillageState.RunToGetTool)
-            {
-                currentState = VillageStatus.VillageState.MoveBackToTownCenter;
-            }
-        }
-
-        private void HandleDayTime()
-        {
-            if (currentState == VillageStatus.VillageState.MoveBackToTownCenter)
-            {
-                currentState = VillageStatus.VillageState.Idle;
-            }
-        }
-
         private void Start()
         {
             InitComponent();
@@ -114,153 +95,6 @@ namespace Script.Game.Mobs.Subjects
             {
                 Debug.LogError("[VillagerController] VillagerManager instance not found!");
             }
-        }
-
-        private void UpdateStateHandler()
-        {
-            // Fear state has highest priority when enemy is detected
-            if (isInDanger)
-            {
-                if (currentState != VillageStatus.VillageState.Fear)
-                {
-                    currentState = VillageStatus.VillageState.Fear;
-                    return;
-                }
-            }
-
-            // Tool collection has second priority
-            if (currentTool != null && !isInDanger && currentState != VillageStatus.VillageState.RunToGetTool)
-            {
-                currentState = VillageStatus.VillageState.RunToGetTool;
-                return;
-            }
-
-            // Night time state check (19:00 - 6:00)
-            if (GameTimeManager.Instance != null)
-            {
-                int currentHour = GameTimeManager.Instance.GameHour;
-                if ((currentHour >= 19 || currentHour < 6) && 
-                    !isInDanger && 
-                    currentTool == null && 
-                    currentState != VillageStatus.VillageState.MoveBackToTownCenter)
-                {
-                    currentState = VillageStatus.VillageState.MoveBackToTownCenter;
-                    return;
-                }
-            }
-
-            // Default to Idle during day if no other conditions are met
-            if (!isInDanger && currentTool == null && currentState == VillageStatus.VillageState.MoveBackToTownCenter)
-            {
-                if (GameTimeManager.Instance != null)
-                {
-                    int currentHour = GameTimeManager.Instance.GameHour;
-                    if (currentHour >= 6 && currentHour < 19)
-                    {
-                        currentState = VillageStatus.VillageState.Idle;
-                    }
-                }
-            }
-
-            // Handle current state
-            switch (currentState)
-            {
-                case VillageStatus.VillageState.Idle:
-                    HandleIdleState();
-                    break;
-                case VillageStatus.VillageState.MoveBackToTownCenter:
-                    HandleMoveToTownCenterState(false);
-                    break;
-                case VillageStatus.VillageState.RunToGetTool:
-                    HandleRunToGetToolState();
-                    break;
-                case VillageStatus.VillageState.Fear:
-                    HandleFearState();
-                    break;
-            }
-        }
-
-        private IEnumerator CheckRoutine()
-        {
-            while (true)
-            {
-                foreach (var hitObject in rayCastHelper.DrawRayAndReturnListHitObjects())
-                {
-                    if (hitObject != null && hitObject.CompareTag("Enemy"))
-                    {
-                        isInDanger = true;
-                        fearTimer = FEAR_DURATION;
-                        // Chuyển sang trạng thái Fear ngay lập tức
-                        currentState = VillageStatus.VillageState.Fear;
-                        break;
-                    }
-                }
-
-                // Update fear timer
-                if (fearTimer > 0)
-                {
-                    fearTimer -= Time.deltaTime;
-                    if (fearTimer <= 0)
-                    {
-                        isInDanger = false;
-                        // Sau khi hết sợ, kiểm tra thời gian để quyết định trạng thái
-                        if (GameTimeManager.Instance != null)
-                        {
-                            int currentHour = GameTimeManager.Instance.GameHour;
-                            if (currentHour >= 19 || currentHour < 6)
-                            {
-                                currentState = VillageStatus.VillageState.MoveBackToTownCenter;
-                            }
-                            else
-                            {
-                                currentState = VillageStatus.VillageState.Idle;
-                            }
-                        }
-                    }
-                }
-
-                yield return new WaitForSeconds(0.5f);
-            }
-        }
-
-        private void InitComponent()
-        {
-            rayCastHelper = GetComponent<RayCastHelper>();
-            if (rayCastHelper == null)
-            {
-                rayCastHelper = gameObject.AddComponent<RayCastHelper>();
-                Debug.LogWarning($"{gameObject.name} missing RayCastHelper, adding one");
-            }
-            animator = GetComponent<Animator>();
-            if (animator == null)
-            {
-                Debug.LogError($"{gameObject.name} missing Animator component!");
-            }
-        }
-        private void InitializeVillager()
-        {
-            // Kiểm tra thời gian ngay khi khởi tạo
-            if (GameTimeManager.Instance != null)
-            {
-                int currentHour = GameTimeManager.Instance.GameHour;
-                // Nếu là ban đêm (19h-6h), set state về MoveBackToTownCenter
-                if (currentHour >= 19 || currentHour < 6)
-                {
-                    currentState = VillageStatus.VillageState.MoveBackToTownCenter;
-                }
-                else
-                {
-                    currentState = VillageStatus.VillageState.Idle;
-                }
-            }
-            else
-            {
-                currentState = VillageStatus.VillageState.Idle;
-            }
-            
-            isMoving = false;
-            fearTimer = 0f;
-            StartCheckRoutine();
         }
 
         private void Update()
@@ -294,9 +128,163 @@ namespace Script.Game.Mobs.Subjects
 
             UpdateStateHandler();
         }
+        #endregion
+
+        #region Initialization
+        private void InitComponent()
+        {
+            rayCastHelper = GetComponent<RayCastHelper>();
+            if (rayCastHelper == null)
+            {
+                rayCastHelper = gameObject.AddComponent<RayCastHelper>();
+                Debug.LogWarning($"{gameObject.name} missing RayCastHelper, adding one");
+            }
+            animator = GetComponent<Animator>();
+            if (animator == null)
+            {
+                Debug.LogError($"{gameObject.name} missing Animator component!");
+            }
+        }
+
+        private void InitializeVillager()
+        {
+            // Kiểm tra thời gian ngay khi khởi tạo
+            if (GameTimeManager.Instance != null)
+            {
+                int currentHour = GameTimeManager.Instance.GameHour;
+                // Nếu là ban đêm (19h-6h), set state về MoveBackToTownCenter
+                if (currentHour >= 19 || currentHour < 6)
+                {
+                    currentState = VillageStatus.VillageState.MoveBackToTownCenter;
+                }
+                else
+                {
+                    currentState = VillageStatus.VillageState.Idle;
+                }
+            }
+            else
+            {
+                currentState = VillageStatus.VillageState.Idle;
+            }
+            
+            isMoving = false;
+            fearTimer = 0f;
+            StartCheckRoutine();
+        }
+        #endregion
+
+        #region Time Management
+        private void HandleNightTime()
+        {
+            if (currentState != VillageStatus.VillageState.RunToGetTool)
+            {
+                currentState = VillageStatus.VillageState.MoveBackToTownCenter;
+            }
+        }
+
+        private void HandleDayTime()
+        {
+            if (currentState == VillageStatus.VillageState.MoveBackToTownCenter)
+            {
+                currentState = VillageStatus.VillageState.Idle;
+            }
+        }
+        #endregion
+
+        #region State Management
+        private void UpdateStateHandler()
+        {
+            // Fear state has highest priority when enemy is detected
+            if (isInDanger)
+            {
+                if (currentState != VillageStatus.VillageState.Fear)
+                {
+                    Debug.Log($"[VillagerController] {gameObject.name} chuyển sang FEAR do isInDanger = true (UpdateStateHandler)");
+                    currentState = VillageStatus.VillageState.Fear;
+                    return;
+                }
+            }
+
+            // Night time state check (19:00 - 6:00) has second priority
+            if (GameTimeManager.Instance != null)
+            {
+                int currentHour = GameTimeManager.Instance.GameHour;
+                if ((currentHour >= 19 || currentHour < 6) && 
+                    !isInDanger && 
+                    currentTool == null && 
+                    currentState != VillageStatus.VillageState.MoveBackToTownCenter &&
+                    currentState != VillageStatus.VillageState.DropCoinToPlayer) // Don't interrupt coin dropping
+                {
+                    currentState = VillageStatus.VillageState.MoveBackToTownCenter;
+                    return;
+                }
+            }
+
+            // Check for player and handle coin drop state (third priority)
+            if (currentState != VillageStatus.VillageState.DropCoinToPlayer) // Only check if not already dropping coins
+            {
+                // Chỉ xét vào trạng thái DropCoinToPlayer nếu có nhiều hơn 1 coin
+                if (status.CurrentCoins > 1)
+                {
+                    foreach (var hitObject in rayCastHelper.DrawRayAndReturnListHitObjects())
+                    {
+                        if (hitObject != null && hitObject.CompareTag("Player"))
+                        {
+                            float currentTime = Time.time;
+                            if (currentTime - lastCoinDropTime >= COIN_DROP_COOLDOWN && !isInDanger)
+                            {
+                                Debug.Log($"[VillagerController] {gameObject.name} chuyển sang DropCoinToPlayer với {status.CurrentCoins} coins");
+                                currentState = VillageStatus.VillageState.DropCoinToPlayer;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Tool collection has fourth priority
+            if (currentTool != null && !isInDanger && currentState != VillageStatus.VillageState.RunToGetTool)
+            {
+                currentState = VillageStatus.VillageState.RunToGetTool;
+                return;
+            }
+
+            // Default to Idle during day if no other conditions are met
+            if (!isInDanger && currentTool == null && currentState == VillageStatus.VillageState.MoveBackToTownCenter)
+            {
+                if (GameTimeManager.Instance != null)
+                {
+                    int currentHour = GameTimeManager.Instance.GameHour;
+                    if (currentHour >= 6 && currentHour < 19)
+                    {
+                        currentState = VillageStatus.VillageState.Idle;
+                    }
+                }
+            }
+
+            // Handle current state
+            switch (currentState)
+            {
+                case VillageStatus.VillageState.Idle:
+                    HandleIdleState();
+                    break;
+                case VillageStatus.VillageState.MoveBackToTownCenter:
+                    HandleMoveToTownCenterState(false);
+                    break;
+                case VillageStatus.VillageState.RunToGetTool:
+                    HandleRunToGetToolState();
+                    break;
+                case VillageStatus.VillageState.Fear:
+                    HandleFearState();
+                    break;
+                case VillageStatus.VillageState.DropCoinToPlayer:
+                    HandleDropCoinToPlayerState();
+                    break;
+            }
+        }
+        #endregion
 
         #region State Handlers
-
         private void HandleIdleState()
         {
             if (!isMoving)
@@ -355,63 +343,124 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleFearState()
         {
-            // Kiểm tra 2 điều kiện:
-            // 1. Villager chưa di chuyển (isMoving = false)
-            // 2. Hoặc villager đã đến gần điểm đích (khoảng cách < 0.1f)
             if (!isMoving || Vector2.Distance(transform.position, targetPosition) < 0.1f)
             {
-                // Lấy một vị trí ngẫu nhiên trong khu vực plaza để chạy đến
-                // Plaza là khu vực an toàn trong game
                 float randomX = Utility.GetRandomPlazaPos();
                 targetPosition = new Vector3(randomX, transform.position.y, transform.position.z);
-                isMoving = true; // Đánh dấu bắt đầu di chuyển
+                isMoving = true;
             }
 
-            // Nếu đang trong trạng thái di chuyển
-            // Di chuyển đến vị trí đã chọn với animation chạy
             if (isMoving)
             {
                 MoveTowardsTarget(targetPosition, "run");
             }
         }
 
+        private void HandleDropCoinToPlayerState()
+        {
+            // Kiểm tra số coin, nếu chỉ còn 1 thì chuyển sang trạng thái khác
+            if (status.CurrentCoins <= 1)
+            {
+                Debug.Log($"[VillagerController] {gameObject.name} rời khỏi DropCoinToPlayer vì chỉ còn {status.CurrentCoins} coin");
+                if (GameTimeManager.Instance != null)
+                {
+                    int currentHour = GameTimeManager.Instance.GameHour;
+                    if (currentHour >= 19 || currentHour < 6)
+                    {
+                        currentState = VillageStatus.VillageState.MoveBackToTownCenter;
+                    }
+                    else
+                    {
+                        currentState = VillageStatus.VillageState.Idle;
+                    }
+                }
+                else
+                {
+                    currentState = VillageStatus.VillageState.Idle;
+                }
+                return;
+            }
+
+            // Kiểm tra player còn trong vùng quét không
+            bool playerInRange = false;
+            foreach (var hitObject in rayCastHelper.DrawRayAndReturnListHitObjects())
+            {
+                if (hitObject != null && hitObject.CompareTag("Player"))
+                {
+                    playerInRange = true;
+                    break;
+                }
+            }
+
+            float currentTime = Time.time;
+            if (playerInRange)
+            {
+                // Nếu cooldown đã hết và còn coin thì drop coin
+                if (currentTime - lastCoinDropTime >= COIN_DROP_COOLDOWN && status.CurrentCoins > 1) // Đảm bảo luôn còn ít nhất 1 coin
+                {
+                    InternalDropCoins(1, false); // Rõ ràng là đang thả cho player
+                    lastCoinDropTime = currentTime;
+                }
+                // Chuyển animation sang idle khi đứng chờ player
+                if (animator != null)
+                {
+                    animator.Play("idle");
+                }
+                // Giữ nguyên state DropCoinToPlayer cho đến khi player rời khỏi vùng quét
+                return;
+            }
+            // Nếu player không còn trong vùng quét, chuyển về state phù hợp
+            if (GameTimeManager.Instance != null)
+            {
+                int currentHour = GameTimeManager.Instance.GameHour;
+                if (currentHour >= 19 || currentHour < 6)
+                {
+                    currentState = VillageStatus.VillageState.MoveBackToTownCenter;
+                }
+                else
+                {
+                    currentState = VillageStatus.VillageState.Idle;
+                }
+            }
+            else
+            {
+                currentState = VillageStatus.VillageState.Idle;
+            }
+        }
         #endregion
 
         #region Movement
-
         private void MoveTowardsTarget(Vector3 target, string animationName)
         {
             float speed = animationName == "run" ? status.RunSpeed : status.WalkSpeed;
             
-            // Sử dụng Utility.MoveTowardsTarget để di chuyển
             bool hasReachedTarget = Utility.MoveTowardsTarget(gameObject, target, speed);
             
-            // Cập nhật animation
             animator.Play(animationName);
 
-            // Kiểm tra nếu đã đến đích
             if (hasReachedTarget)
             {
                 isMoving = false;
                 animator.Play("idle");
             }
         }
-
         #endregion
 
-        #region ICoinTakeDamage Implementation
-
+        #region Coin System
         public void OnCoinDamage()
+        {
+            OnCoinDamage(true);
+        }
+
+        public void OnCoinDamage(bool isScared = true)
         {
             if (status.CurrentCoins > 0)
             {
-                // Random số coin sẽ rơi (1-2 coins)
-                int coinsToLose = UnityEngine.Random.Range(MIN_COINS_DROP, MAX_COINS_DROP);
-                DropCoins(coinsToLose);
-
-                // Enter fear state if not getting tool
-                if (currentState != VillageStatus.VillageState.RunToGetTool)
+                InternalDropCoins(1, true); // Rõ ràng là đang bị tấn công
+                
+                if (isScared && currentState != VillageStatus.VillageState.RunToGetTool)
                 {
+                    Debug.Log($"[VillagerController] {gameObject.name} bị mất coin, chuyển sang FEAR (OnCoinDamage)");
                     isInDanger = true;
                     fearTimer = FEAR_DURATION;
                     currentState = VillageStatus.VillageState.Fear;
@@ -419,46 +468,91 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
+        // Interface implementation - chỉ dùng khi bị tấn công
         public void DropCoins(int amount)
         {
-            // Đảm bảo số coins rơi không vượt quá số coins hiện có
-            // Ví dụ: nếu random ra 2 coins mà chỉ còn 1 coin, sẽ chỉ rơi 1 coin
-            amount = Mathf.Min(amount, status.CurrentCoins);
-            
-            if (amount > 0)
-            {
-                status.CurrentCoins -= amount;
-                
-                // Drop coins using Spawner
-                if (Spawner.Instance != null)
-                {
-                    Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
-                    Spawner.Instance.DropByDenizen(transform.position, amount, dropDirection);
-                }
+            InternalDropCoins(amount, true);
+        }
 
-                // Nếu hết coin thì biến thành vagrant
-                if (status.CurrentCoins <= 0)
-                {
-                    TransformToVagrant();
-                }
+        // Phương thức nội bộ để xử lý logic drop coin
+        private void InternalDropCoins(int amount, bool isAttacked)
+        {
+            // Kiểm tra điều kiện giữ lại coin
+            int minCoinsToKeep = isAttacked ? 0 : 1;
+            
+            // Nếu số coin hiện tại <= số coin cần giữ lại, không làm gì cả
+            if (status.CurrentCoins <= minCoinsToKeep) return;
+            
+            // Luôn chỉ drop 1 coin
+            amount = 1;
+            Debug.Log($"[VillagerController] {gameObject.name} chuẩn bị drop {amount} coin(s). CurrentCoins trước drop: {status.CurrentCoins}, isAttacked: {isAttacked}");
+            
+            status.CurrentCoins -= amount;
+            Debug.Log($"[VillagerController] {gameObject.name} đã drop {amount} coin(s). CurrentCoins sau drop: {status.CurrentCoins}");
+            
+            if (Spawner.Instance != null)
+            {
+                StartCoroutine(DropCoinsCoroutine(amount));
+            }
+
+            // Chỉ chuyển thành vagrant khi bị tấn công và hết xu
+            if (isAttacked && status.CurrentCoins <= 0)
+            {
+                StartCoroutine(ConvertToVagrantAfterCoins());
             }
         }
 
-        private void TransformToVagrant()
+        private IEnumerator DropCoinsCoroutine(int amount)
         {
+            for (int i = 0; i < amount; i++)
+            {
+                Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
+                Vector2 spawnPosition = new Vector2(transform.position.x, transform.position.y + 2f);
+                
+                GameObject coin = Instantiate(Spawner.Instance.coinPrefab, spawnPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
+                
+                Coin coinScript = coin.GetComponent<Coin>();
+                if (coinScript != null)
+                {
+                    coinScript.playerPickupAble = true;
+                    coinScript.denizensPickupAble = false;
+                    coinScript.floating = false;
+                    coinScript.CallFunctionCoolDown("Denizen");
+                    
+                    Spawner.Instance.InitializeCoinThrow(coin, dropDirection);
+                }
+
+                yield return new WaitForSeconds(0.3f);
+            }
+        }
+
+        private IEnumerator ConvertToVagrantAfterCoins()
+        {
+            // Wait for any ongoing coin drops to complete
+            yield return new WaitForSeconds(0.5f);
+            
+            // Double check to prevent duplicate conversion
+            if (this == null || !gameObject || !gameObject.activeInHierarchy) yield break;
+            if (status.CurrentCoins > 0) yield break;
+            
+            ConvertToVagrant();
+        }
+
+        private void ConvertToVagrant()
+        {
+            if (this == null || !gameObject || !gameObject.activeInHierarchy) return;
+            
             if (PrefabData.Instance != null && PrefabData.Instance.vagrant != null)
             {
                 Vector3 position = transform.position;
                 Quaternion rotation = transform.rotation;
                 Vector3 scale = transform.localScale;
                 
-                // Use Spawner to create vagrant
                 if (Spawner.Instance != null)
                 {
                     GameObject vagrant = Spawner.Instance.SpawnMob(position, PrefabData.Instance.vagrant);
                     if (vagrant != null)
                     {
-                        // Maintain the same orientation and scale
                         vagrant.transform.rotation = rotation;
                         vagrant.transform.localScale = scale;
                     }
@@ -466,9 +560,11 @@ namespace Script.Game.Mobs.Subjects
                 else
                 {
                     Debug.LogError("[VillagerController] Spawner instance not found!");
+                    return; // Don't destroy if spawn failed
                 }
                 
-                // Destroy the villager
+                // Stop all coroutines before destroying
+                StopAllCoroutines();
                 Destroy(gameObject);
             }
             else
@@ -476,11 +572,9 @@ namespace Script.Game.Mobs.Subjects
                 Debug.LogError("[VillagerController] Vagrant prefab not found in PrefabData!");
             }
         }
-
         #endregion
-        
-        #region Save System Implementation
 
+        #region Save System
         public string GetPrefabID()
         {
             return "villager";
@@ -501,42 +595,39 @@ namespace Script.Game.Mobs.Subjects
                 InitComponent();
             }
         }
-
         #endregion
 
         #region Trigger and Pickup
-
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.CompareTag("Coin"))
             {
-                PickUpCoin(other.gameObject);
+                // Kiểm tra thuộc tính denizensPickupAble nếu có
+                var coinScript = other.GetComponent<Coin>();
+                if (coinScript == null || coinScript.denizensPickupAble)
+                {
+                    PickUpCoin(other.gameObject);
+                }
             }
         }
 
         private void PickUpCoin(GameObject coinObject)
         {
-            // Kiểm tra xem villager có thể nhặt thêm xu không
             if (status.CurrentCoins < status.MaxCoins)
             {
-                // Tăng số xu của villager
                 status.CurrentCoins++;
-                
-                // Hủy đối tượng xu
                 Destroy(coinObject);
             }
         }
-
         #endregion
 
-        // Thêm hàm StartCheckRoutine
+        #region Coroutine Management
         private void StartCheckRoutine()
         {
-            StopCheckRoutine(); // Dừng routine cũ nếu có
+            StopCheckRoutine();
             checkRoutine = StartCoroutine(CheckRoutine());
         }
 
-        // Thêm hàm StopCheckRoutine
         private void StopCheckRoutine()
         {
             if (checkRoutine != null)
@@ -545,5 +636,51 @@ namespace Script.Game.Mobs.Subjects
                 checkRoutine = null;
             }
         }
+
+        private IEnumerator CheckRoutine()
+        {
+            while (true)
+            {
+                foreach (var hitObject in rayCastHelper.DrawRayAndReturnListHitObjects())
+                {
+                    if (hitObject != null)
+                    {
+                        // Kiểm tra Enemy
+                        if (hitObject.CompareTag("Enemy"))
+                        {
+                            Debug.Log($"[VillagerController] {gameObject.name} phát hiện Enemy, chuyển sang FEAR (CheckRoutine)");
+                            isInDanger = true;
+                            fearTimer = FEAR_DURATION;
+                            currentState = VillageStatus.VillageState.Fear;
+                            break;
+                        }
+                    }
+                }
+
+                if (fearTimer > 0)
+                {
+                    fearTimer -= Time.deltaTime;
+                    if (fearTimer <= 0)
+                    {
+                        isInDanger = false;
+                        if (GameTimeManager.Instance != null)
+                        {
+                            int currentHour = GameTimeManager.Instance.GameHour;
+                            if (currentHour >= 19 || currentHour < 6)
+                            {
+                                currentState = VillageStatus.VillageState.MoveBackToTownCenter;
+                            }
+                            else
+                            {
+                                currentState = VillageStatus.VillageState.Idle;
+                            }
+                        }
+                    }
+                }
+
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+        #endregion
     }
 } 

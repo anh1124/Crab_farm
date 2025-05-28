@@ -14,7 +14,8 @@ namespace Script.Data_Model.Status
             Idle,                   // Wandering around kingdom
             MoveBackToTownCenter,   // Walking back to town center at night
             RunToGetTool,           // Running to get tools (highest priority)
-            Fear                    // Running away from danger
+            Fear,                   // Running away from danger
+            DropCoinToPlayer        // Drop coin when seeing player
         }
 
         // Basic Settings
@@ -23,7 +24,7 @@ namespace Script.Data_Model.Status
         [SerializeField] private float currentSpeed;
         // Coin System
         [SerializeField] private int currentCoins = 0;
-        [SerializeField] private int maxCoins = 3;
+        [SerializeField] private int maxCoins = 6;
 
         // Properties
         public float WalkSpeed => walkSpeed;

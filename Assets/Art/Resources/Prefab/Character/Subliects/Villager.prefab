@@ -199,6 +199,7 @@ MonoBehaviour:
   raycastDistance: 5
   raycastOffsetY: 0.7
   isDrawRay: 1
+  showDebugLog: 0
   tagsToDetect:
   - Player
   - Coin
@@ -220,7 +221,7 @@ MonoBehaviour:
   runSpeed: 3.5
   currentSpeed: 0
   currentCoins: 0
-  maxCoins: 3
+  maxCoins: 6
 --- !u!114 &7656648220319274606
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -233,8 +234,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c76e42c5d94ef4408bed57ce66fa84c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentState: 0
   targetPosition: {x: 0, y: 0, z: 0}
   isMoving: 0
   isInDanger: 0
   fearTimer: 0
   currentTool: {fileID: 0}
+  COIN_DROP_COOLDOWN: 0.7
