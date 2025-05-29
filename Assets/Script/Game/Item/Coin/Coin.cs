@@ -18,7 +18,6 @@ namespace Script.Game.Item.Coin
         private Vector2 startPosition;
         private bool isThrown;
         [Header("Throwing Physics")]
-        [Tooltip("Controls how fast the coin falls when thrown (default: 9.81). Lower values make the coin fall slower.")]
         [Range(1f, 20f)]
         public float throwGravity = 9.81f;
     

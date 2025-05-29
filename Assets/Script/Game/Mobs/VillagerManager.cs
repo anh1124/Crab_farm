@@ -1,9 +1,21 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using Script.Game.Item;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Game.Mobs
 {
+    /// <summary>
+    /// Quản lý việc phân công tool cho villager một cách tối ưu.
+    /// 
+    /// Cách hoạt động:
+    /// 1. Khi có tool mới -> Tìm villager gần nhất chưa có tool để giao nhiệm vụ
+    /// 2. Khi có villager mới -> Tìm tool gần nhất chưa được gán để giao cho villager
+    /// 3. Sử dụng cache để lưu khoảng cách, tránh tính toán lại nhiều lần
+    /// 4. Tự động dọn dẹp cache định kỳ để tránh memory leak
+    /// </summary>
     public class VillagerManager : MonoBehaviour
     {
         public static VillagerManager Instance { get; private set; }
@@ -23,8 +35,15 @@ namespace Script.Game.Mobs
         }
 
         // Lists for tracking
-        [SerializeField] private List<ToolData> availableTools = new List<ToolData>();
-        [SerializeField] private List<GameObject> villagers = new List<GameObject>();
+        private List<GameObject> villagers = new List<GameObject>();
+        private List<ToolData> availableTools = new List<ToolData>();
+
+        // Cache khoảng cách để tránh tính toán lại
+        private Dictionary<(GameObject villager, GameObject tool), float> distanceCache = new Dictionary<(GameObject villager, GameObject tool), float>();
+        
+        // Thời gian để clear cache
+        private float cacheClearInterval = 2f;
+        private float lastCacheClearTime;
 
         private void Awake()
         {
@@ -38,52 +57,99 @@ namespace Script.Game.Mobs
             }
         }
 
+        private void Update()
+        {
+            // Clear cache định kỳ để tránh memory leak
+            if (Time.time - lastCacheClearTime > cacheClearInterval)
+            {
+                ClearDistanceCache();
+                lastCacheClearTime = Time.time;
+            }
+        }
+
         #region Tool Management
         public void RegisterTool(GameObject tool)
         {
             if (tool != null)
             {
                 Vector2 position = tool.transform.position;
-                availableTools.Add(new ToolData(position, tool));
-                Debug.Log($"[VillagerManager] Tool registered: {tool.name} at position {position}");
+                var toolData = new ToolData(position, tool);
+                availableTools.Add(toolData);
+                
+                // Khi có tool mới, tìm villager gần nhất để assign
+                AssignToolToNearestVillager(toolData);
             }
         }
 
         public void UnregisterTool(GameObject tool)
         {
             availableTools.RemoveAll(t => t.ToolObject == tool);
-            Debug.Log($"[VillagerManager] Tool unregistered: {tool.name}");
+            // Clear cache entries cho tool này
+            ClearCacheEntriesForTool(tool);
         }
 
-        public List<ToolData> GetAvailableTools()
+        private void AssignToolToNearestVillager(ToolData toolData)
         {
-            // Clean up any null references first
-            availableTools.RemoveAll(t => t.ToolObject == null);
-            return availableTools;
+            var availableVillager = FindNearestAvailableVillager(toolData.Position);
+            if (availableVillager != null)
+            {
+                var villagerController = availableVillager.GetComponent<VillagerController>();
+                if (villagerController != null && villagerController.currentTool == null)
+                {
+                    villagerController.currentTool = toolData.ToolObject;
+                }
+            }
         }
 
-        public ToolData GetNearestTool(Vector2 position)
+        private GameObject FindNearestAvailableVillager(Vector2 toolPosition)
         {
             float nearestDistance = float.MaxValue;
-            ToolData nearestTool = null;
+            GameObject nearestVillager = null;
 
-            foreach (var tool in availableTools.ToArray()) // Use ToArray to avoid modification during enumeration
+            foreach (var villager in villagers)
             {
-                if (tool.ToolObject == null)
-                {
-                    availableTools.Remove(tool);
-                    continue;
-                }
+                if (villager == null) continue;
 
-                float distance = Vector2.Distance(position, tool.Position);
-                if (distance < nearestDistance)
+                var villagerController = villager.GetComponent<VillagerController>();
+                if (villagerController != null && villagerController.currentTool == null)
                 {
-                    nearestDistance = distance;
-                    nearestTool = tool;
+                    float distance = GetCachedDistance(villager, toolPosition);
+                    if (distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearestVillager = villager;
+                    }
                 }
             }
 
-            return nearestTool;
+            return nearestVillager;
+        }
+
+        private float GetCachedDistance(GameObject villager, Vector2 position)
+        {
+            var key = (villager, null as GameObject);
+            if (distanceCache.TryGetValue(key, out float distance))
+            {
+                return distance;
+            }
+
+            distance = Vector2.Distance(villager.transform.position, position);
+            distanceCache[key] = distance;
+            return distance;
+        }
+
+        private void ClearDistanceCache()
+        {
+            distanceCache.Clear();
+        }
+
+        private void ClearCacheEntriesForTool(GameObject tool)
+        {
+            var keysToRemove = distanceCache.Keys.Where(k => k.Item2 == tool).ToList();
+            foreach (var key in keysToRemove)
+            {
+                distanceCache.Remove(key);
+            }
         }
         #endregion
 
@@ -93,38 +159,75 @@ namespace Script.Game.Mobs
             if (villager != null && !villagers.Contains(villager))
             {
                 villagers.Add(villager);
-                Debug.Log($"[VillagerManager] Villager registered: {villager.name}");
+                // Khi có villager mới, kiểm tra xem có tool nào cần assign không
+                CheckForUnassignedTools(villager);
             }
         }
 
         public void UnregisterVillager(GameObject villager)
         {
-            if (villagers.Contains(villager))
+            villagers.Remove(villager);
+            // Clear cache entries cho villager này
+            ClearCacheEntriesForVillager(villager);
+        }
+
+        private void CheckForUnassignedTools(GameObject villager)
+        {
+            var villagerController = villager.GetComponent<VillagerController>();
+            if (villagerController != null && villagerController.currentTool == null)
             {
-                villagers.Remove(villager);
-                Debug.Log($"[VillagerManager] Villager unregistered: {villager.name}");
+                // Tìm tool gần nhất chưa được assign
+                var nearestTool = FindNearestUnassignedTool(villager.transform.position);
+                if (nearestTool != null)
+                {
+                    villagerController.currentTool = nearestTool;
+                }
             }
         }
 
-        public List<GameObject> GetVillagers()
+        private GameObject FindNearestUnassignedTool(Vector2 villagerPosition)
         {
-            // Clean up any null references
-            villagers.RemoveAll(v => v == null);
-            return villagers;
-        }
+            float nearestDistance = float.MaxValue;
+            GameObject nearestTool = null;
 
-        public GameObject GetRandomVillager()
-        {
-            // Clean up null references first
-            villagers.RemoveAll(v => v == null);
-            
-            if (villagers.Count == 0)
+            foreach (var toolData in availableTools)
             {
-                return null;
+                if (toolData.ToolObject == null) continue;
+
+                // Kiểm tra xem tool đã được assign chưa
+                bool isAssigned = false;
+                foreach (var v in villagers)
+                {
+                    if (v == null) continue;
+                    var vController = v.GetComponent<VillagerController>();
+                    if (vController != null && vController.currentTool == toolData.ToolObject)
+                    {
+                        isAssigned = true;
+                        break;
+                    }
+                }
+
+                if (!isAssigned)
+                {
+                    float distance = Vector2.Distance(villagerPosition, toolData.Position);
+                    if (distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearestTool = toolData.ToolObject;
+                    }
+                }
             }
 
-            int randomIndex = UnityEngine.Random.Range(0, villagers.Count);
-            return villagers[randomIndex];
+            return nearestTool;
+        }
+
+        private void ClearCacheEntriesForVillager(GameObject villager)
+        {
+            var keysToRemove = distanceCache.Keys.Where(k => k.Item1 == villager).ToList();
+            foreach (var key in keysToRemove)
+            {
+                distanceCache.Remove(key);
+            }
         }
         #endregion
     }

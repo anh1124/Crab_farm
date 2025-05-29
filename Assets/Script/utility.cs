@@ -116,7 +116,7 @@ namespace Script
         }
 
         /// <summary>
-        /// Di chuyển một GameObject đến vị trí mục tiêu với tốc độ cho trước
+        /// Di chuyển một GameObject đến vị trí mục tiêu với tốc độ cho trước (chỉ di chuyển theo trục X)
         /// </summary>
         /// <param name="objectToMove">GameObject cần di chuyển</param>
         /// <param name="target">Vị trí đích</param>
@@ -127,16 +127,12 @@ namespace Script
             FlipDirection(objectToMove, target);
             
             Vector2 currentPosition = objectToMove.transform.position;
-            Vector2 newPosition = Vector2.MoveTowards(
-                new Vector2(currentPosition.x, currentPosition.y),
-                new Vector2(target.x, target.y),
-                speed * Time.deltaTime
-            );
-            
-            objectToMove.transform.position = new Vector3(newPosition.x, newPosition.y, objectToMove.transform.position.z);
+            // Chỉ di chuyển theo trục X, giữ nguyên Y và Z
+            float newX = Mathf.MoveTowards(currentPosition.x, target.x, speed * Time.deltaTime);
+            objectToMove.transform.position = new Vector3(newX, objectToMove.transform.position.y, objectToMove.transform.position.z);
 
-            // Kiểm tra xem đã đến đích chưa
-            return Vector2.Distance(objectToMove.transform.position, target) < 0.1f;
+            // Kiểm tra xem đã đến đích chưa (chỉ xét khoảng cách theo X)
+            return Mathf.Abs(objectToMove.transform.position.x - target.x) < 0.1f;
         }
 
         /// <summary>

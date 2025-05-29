@@ -9,7 +9,7 @@ using Script.Game.Other;
 using Script.Data_Model;
 using Script.Game.Item.Coin;
 using Script.Game.Mobs.MobsManager;
-
+using Script.Game.Item;
 namespace Script.Game.Mobs.Subjects
 {
     public class VillagerController : MonoBehaviour, ISaveable, ICoinTakeDamage
@@ -333,6 +333,16 @@ namespace Script.Game.Mobs.Subjects
                 return;
             }
 
+            // Kiểm tra xem tool có bị enemy lấy không
+            var toolStats = currentTool.GetComponent<ToolStats>();
+            if (toolStats != null && toolStats.isPickedByEnemy)
+            {
+                Debug.Log($"[VillagerController] {gameObject.name}: Tool đã bị enemy lấy mất, hủy nhiệm vụ");
+                currentTool = null;
+                currentState = VillageStatus.VillageState.Idle;
+                return;
+            }
+
             // Nếu đang trong trạng thái di chuyển
             // Di chuyển đến vị trí của tool với animation chạy
             if (isMoving)
@@ -600,7 +610,27 @@ namespace Script.Game.Mobs.Subjects
         #region Trigger and Pickup
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (other.CompareTag("Coin"))
+            if (currentState == VillageStatus.VillageState.RunToGetTool && 
+                currentTool != null && 
+                other.gameObject == currentTool)
+            {
+                var toolStats = currentTool.GetComponent<ToolStats>();
+                if (toolStats != null && !toolStats.isPickedByEnemy)
+                {
+                    // Đánh dấu tool đã được villager nhặt
+                    toolStats.SetPickedUp(gameObject);
+                    // Xóa tool
+                    Destroy(currentTool);
+                }
+                else
+                {
+                    Debug.Log($"[VillagerController] {gameObject.name} không thể nhặt tool (toolStats null hoặc tool đã bị enemy lấy)");
+                }
+                
+                currentTool = null;
+                currentState = VillageStatus.VillageState.Idle;
+            }
+            else if (other.CompareTag("Coin"))
             {
                 // Kiểm tra thuộc tính denizensPickupAble nếu có
                 var coinScript = other.GetComponent<Coin>();
@@ -610,7 +640,6 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
         }
-
         private void PickUpCoin(GameObject coinObject)
         {
             if (status.CurrentCoins < status.MaxCoins)
@@ -648,7 +677,6 @@ namespace Script.Game.Mobs.Subjects
                         // Kiểm tra Enemy
                         if (hitObject.CompareTag("Enemy"))
                         {
-                            Debug.Log($"[VillagerController] {gameObject.name} phát hiện Enemy, chuyển sang FEAR (CheckRoutine)");
                             isInDanger = true;
                             fearTimer = FEAR_DURATION;
                             currentState = VillageStatus.VillageState.Fear;
