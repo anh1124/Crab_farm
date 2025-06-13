@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 814197313591573416}
   - component: {fileID: 4896579773367113099}
   - component: {fileID: 7170061680519524738}
+  - component: {fileID: 2909569434897254568}
   m_Layer: 0
   m_Name: GM
   m_TagString: Untagged
@@ -71,6 +72,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coinThrowForce: 10
+  coinThrowDistance: 2
   coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
 --- !u!114 &9035146963247413293
 MonoBehaviour:
@@ -107,6 +109,9 @@ MonoBehaviour:
   playerSpeed: 7
   mainCamera: {fileID: 0}
   skipBuildingProcess: 1
+  ToolTag:
+  - Hammer
+  - Bow
   playerCharacterList: []
   currentCreatChunk: 21
   wallDirtMound0: {fileID: 0}
@@ -131,6 +136,8 @@ MonoBehaviour:
   catapult: {fileID: 0}
   vagrant: {fileID: 0}
   village: {fileID: 0}
+  Bow: {fileID: 0}
+  Hammer: {fileID: 0}
   tree: {fileID: 0}
   treePrefabsList: []
   treeChopCost: 1
@@ -333,6 +340,22 @@ MonoBehaviour:
   currentTownCenterLevel: 0
   currentTownCenter: {fileID: 0}
   townCenter: {fileID: 0}
+--- !u!114 &2909569434897254568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 013b498618cd5c44d8501f7304bafd1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  townCenter: {fileID: 0}
+  leftWalls: []
+  rightWalls: []
+  stumps: []
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,6 +368,7 @@ GameObject:
   - component: {fileID: 7765439820989704710}
   - component: {fileID: 6521232738708841770}
   - component: {fileID: 2954578663607396334}
+  - component: {fileID: 1230726632427416621}
   m_Layer: 0
   m_Name: Data
   m_TagString: Untagged
@@ -489,6 +513,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   townCentrerList: []
+--- !u!114 &1230726632427416621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3590571741115332272}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f977e21e9d3f9941951f8f25beaa29e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stumpDataList: []
 --- !u!1 &5848034847329386121
 GameObject:
   m_ObjectHideFlags: 0
@@ -500,6 +537,7 @@ GameObject:
   - component: {fileID: 8680344821423139051}
   - component: {fileID: 8848505126678873454}
   - component: {fileID: 8165894474658827718}
+  - component: {fileID: 3049763487298047513}
   m_Layer: 0
   m_Name: MobsManager
   m_TagString: Untagged
@@ -553,5 +591,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cf065eb1bb6b08408c464700bd19913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  availableTools: []
-  villagers: []
+--- !u!114 &3049763487298047513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5848034847329386121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f57c4ca86551b34dafa2cf9519883b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

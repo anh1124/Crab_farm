@@ -100,12 +100,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canAcceptCoins: 1
   requiredCoins: 0
   collectedCoins: 0
   coinCollectionTimeout: 0
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 0}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []
@@ -122,7 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6146f8b365e7cd746b4ac1471a3d0eb9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  getData: 0
+  coinUser: {fileID: 0}
   tier: 0
   normalMaxHp: 0
   blessedMaxHp: 0
@@ -133,7 +136,9 @@ MonoBehaviour:
   upgradeCost: 0
   readyToUpgrade: 0
   maxLevel: 0
-  coinUser: {fileID: 0}
+  minimumDistance: 20
+  buildProgress: 0
+  buildProgressMax: 0
 --- !u!61 &582344506732621289
 BoxCollider2D:
   m_ObjectHideFlags: 0

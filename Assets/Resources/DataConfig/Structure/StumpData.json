@@ -1,0 +1,14 @@
+{
+  "stumps": [
+    {
+      "tier": 1,
+      "rebuildCost": 100,
+      "currentPrefab": null
+    },
+    {
+      "tier": 2,
+      "rebuildCost": 200,
+      "currentPrefab": null
+    }
+  ]
+}

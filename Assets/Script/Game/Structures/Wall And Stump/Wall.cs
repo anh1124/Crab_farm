@@ -4,6 +4,7 @@ using Script.Data_Model.Interfaces;
 using Script.Game.Enemy.Interfaces;
 using Script.Game.Item.Coin;
 using Script.Game.Other;
+using Script.Game.Structures.Wall_And_Stump;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -41,6 +42,11 @@ namespace Script.Game.Structures.Wall_And_Stump
         public int buildProgressMax;
     
         public float MinimumDistance => minimumDistance;
+        
+        public bool HasCoinShield => coinUser != null && coinUser.collectedCoins > 0;
+        public bool HasHp => true;
+        public int CurrentCoin { get => coinUser != null ? coinUser.collectedCoins : 0; set { if (coinUser != null) coinUser.collectedCoins = value; } }
+        public int MaxCoin { get => coinUser != null ? coinUser.requiredCoins : 0; set { if (coinUser != null) coinUser.requiredCoins = value; } }
         
         #region IUpgradeable Properties
         public int Level
@@ -91,8 +97,36 @@ namespace Script.Game.Structures.Wall_And_Stump
             InitializeWallData();
             UpdateCoinUserData();
             BuildingManager.instance.RotateTowardsTownCenter(gameObject);
+
+            // Đăng ký GameObject vào WallAndStumpManager dựa trên tag
+            if (Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance != null)
+            {
+                if (gameObject.CompareTag("Wall"))
+                {
+                    Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance.RegisterWall(gameObject);
+                }
+                else
+                {
+                    Debug.LogWarning($"[Wall.cs] GameObject {gameObject.name} has unexpected tag: {gameObject.tag}. Not registering with WallAndStumpManager as a Wall.");
+                }
+            }
+            else
+            {
+                Debug.LogError("[Wall] WallAndStumpManager instance not found!");
+            }
         }
 
+        private void OnDestroy()
+        {
+            // Hủy đăng ký GameObject khỏi WallAndStumpManager khi bị hủy
+            if (Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance != null)
+            {
+                if (gameObject.CompareTag("Wall"))
+                {
+                    Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance.UnregisterWall(gameObject);
+                }
+            }
+        }
 
         private void InitializeWallData()
         {
@@ -250,13 +284,26 @@ namespace Script.Game.Structures.Wall_And_Stump
             return BuildingManager.instance.CanBuildingBeUpgraded(BuildingType.Wall, tier);
         }
 
-        public void TakeDamage(int damageAmount, GameObject whoDoDame)
+        public bool TakeDamage(int damage, GameObject whoDoDame)
         {
-            CurrentHp -= damageAmount;
-            if (CurrentHp <= 0)
+            if (HasCoinShield && CurrentCoin > 0)
             {
-                Die(whoDoDame);
+                CurrentCoin -= 1;
+                if (CurrentCoin < 0) CurrentCoin = 0;
+                // Có thể thêm hiệu ứng rơi xu ở đây
+                return true;
             }
+            if (HasHp)
+            {
+                CurrentHp -= damage;
+                if (CurrentHp <= 0)
+                {
+                    Die(whoDoDame);
+                    return false;
+                }
+                return true;
+            }
+            return true;
         }
 
         public void Repair()
@@ -265,8 +312,9 @@ namespace Script.Game.Structures.Wall_And_Stump
             CurrentHp = MaxHp;
         }
 
-        public void Die(GameObject WhoDoDame)
+        public void Die(GameObject whoDoDame)
         {
+            Debug.Log($"{gameObject.name} đã bị phá hủy bởi {whoDoDame?.name ?? "unknown"}");
             GameObject stump = Instantiate(stumpPrefab, transform.position, Quaternion.identity);
             Stump stumpScriptInstance = stump.GetComponent<Stump>();
             stumpScriptInstance.InitializeStumpData(tier);

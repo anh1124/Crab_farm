@@ -5,7 +5,7 @@ using Script.Game.Enemy.Interfaces;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class BaseStatus : MonoBehaviour, IDamageable,IHealable,ICoinable,IDropable
+public class BaseStatus : MonoBehaviour,IDamageable,ICoinable,IDropable
 {
     //đây là status 
     /*public int MaxHp { get; set; }        
@@ -22,7 +22,11 @@ public class BaseStatus : MonoBehaviour, IDamageable,IHealable,ICoinable,IDropab
     
     // Implement interface qua properties
     public int MaxHp { get => maxHp; set => maxHp = value; }
-    public int CurrentHp { get => currentHp; set => currentHp = value;}
+    public bool HasCoinShield => Coin > 0;
+    public bool HasHp => true;
+    public int CurrentCoin { get => Coin; set => Coin = value; }
+    public int MaxCoin { get; set; } // Nếu có logic max coin thì bổ sung, mặc định 0
+    public int CurrentHp { get => currentHp; set => currentHp = value; }
     public int Coin { get => coin; set => coin = value; }
     
     
@@ -33,28 +37,26 @@ public class BaseStatus : MonoBehaviour, IDamageable,IHealable,ICoinable,IDropab
     }
     
     
-    public virtual void TakeDamage(int damage, GameObject whoDoDame)
+    public virtual bool TakeDamage(int damage, GameObject whoDoDame)
     {
-        // Nếu không có coin để rớt, giảm HP
-        if (Coin <= 0)
+        if (HasCoinShield && CurrentCoin > 0)
+        {
+            CurrentCoin -= 1;
+            if (CurrentCoin < 0) CurrentCoin = 0;
+            DropCoin(whoDoDame);
+            return true;
+        }
+        if (HasHp)
         {
             CurrentHp -= damage;
-            if (CurrentHp < 0)
+            if (CurrentHp <= 0)
             {
-                CurrentHp = 0;
+                Die(whoDoDame);
+                return false;
             }
+            return true;
         }
-        else
-        {
-            // Nếu còn coin, làm rơi coin và không giảm HP
-            DropCoin(whoDoDame);
-        }
-
-        // Nếu HP bằng 0, đối tượng sẽ chết
-        if (CurrentHp == 0)
-        {
-            Die(whoDoDame);
-        }
+        return true;
     }
     public virtual void Die(GameObject whoDoDame)
     {

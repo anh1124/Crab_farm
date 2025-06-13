@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Script.Data_Model.Interfaces;
 using UnityEngine;
 
-public class GuardStatus : BaseStatus,IAttackable
+public class GuardStatus : BaseStatus
 {
     public int AttackDame { get; set; }              // Attack power
     public float AttackSpeed { get; set; }      // Attack speed

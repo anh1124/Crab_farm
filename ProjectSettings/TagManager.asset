@@ -38,6 +38,7 @@ TagManager:
   - ScytheVendor
   - Vagrant
   - Villager
+  - Stump
   layers:
   - Default
   - TransparentFX

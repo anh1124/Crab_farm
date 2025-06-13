@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: -1450873720333963335}
   m_Layer: 12
   m_Name: Stump_Palisade_2
-  m_TagString: Wall
+  m_TagString: Stump
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -176,12 +176,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canAcceptCoins: 1
   requiredCoins: 0
   collectedCoins: 0
   coinCollectionTimeout: 0
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 0}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []

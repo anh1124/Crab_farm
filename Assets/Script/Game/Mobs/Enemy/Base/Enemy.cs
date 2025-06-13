@@ -8,8 +8,12 @@ namespace Script.Game.Enemy.Base
     public class Enemy : MonoBehaviour, IDamageable, IMoveable
     {
         [field: SerializeField] public int maxHp { get; set; } = 100;
+        public bool HasCoinShield => false;
+        public bool HasHp => true;
+        public int CurrentCoin { get => 0; set { } }
+        public int MaxCoin { get => 0; set { } }
         public int CurrentHp { get; set; }
-        public int MaxHp{ get; set; }
+        public int MaxHp { get; set; }
         public Rigidbody2D Rb { get; set; }
         public bool IsFacingRight { get; set; } = true;
         
@@ -26,25 +30,25 @@ namespace Script.Game.Enemy.Base
         #region Health / Die Functions
 
        
-        public void TakeDamage(int damageAmount, GameObject whoDoDame)
+        public bool TakeDamage(int damageAmount, GameObject whoDoDame)
         {
-            //add script show dame on screen
-            Debug.Log(gameObject.name + "take dame " + damageAmount );
+            Debug.Log(gameObject.name + " take dame " + damageAmount );
             if (damageAmount >= CurrentHp)
             {
                 Die(whoDoDame);
+                return false;
             }
             else
             {
                 CurrentHp -= damageAmount;
+                return true;
             }
         }
 
   
 
-        public void Die(GameObject WhoDoDame)
+        public void Die(GameObject whoDoDame)
         {
-            //do animation die
             Destroy(gameObject);
         }
 

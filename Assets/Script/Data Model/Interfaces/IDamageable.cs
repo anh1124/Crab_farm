@@ -6,10 +6,22 @@ namespace Script.Game.Enemy.Interfaces
 {
     public interface IDamageable
     {
-        int MaxHp { get; set; }
+        // Loại thanh máu mà đối tượng sử dụng
+        bool HasCoinShield { get; }
+        bool HasHp { get; }
+
+        // Coin Shield
+        int CurrentCoin { get; set; }
+        int MaxCoin { get; set; }
+
+        // HP
         int CurrentHp { get; set; }
-       
-        void TakeDamage(int damageAmount, GameObject whoDoDame);
-        void Die(GameObject WhoDoDame);
+        int MaxHp { get; set; }
+
+        // Nhận dame, trả về true nếu còn sống sau khi nhận dame
+        bool TakeDamage(int damage, GameObject whoDoDame);
+
+        // Chết
+        void Die(GameObject whoDoDame);
     }
 }

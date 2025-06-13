@@ -177,7 +177,13 @@ namespace Script.Data_Model
         public GameObject vagrant;
         public GameObject village;
         #endregion
+        [Space(15)] [Header("ItemItem ")] [Space(5)]  
+        #region ItemItem
         
+        public GameObject Bow;
+        public GameObject Hammer;
+       
+        #endregion
         [Space(15)] [Header("Subjects ")] [Space(5)]  
         #region Nature
         public GameObject tree;//đây là tree nguyên bản,nhưng khi lấy tree thì phải dùng hàm get random tree

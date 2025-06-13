@@ -197,6 +197,12 @@ namespace Script.Game.Mobs.Subjects
                         // Maintain the same orientation and scale
                         villager.transform.rotation = rotation;
                         villager.transform.localScale = scale;
+                        // Đảm bảo villager có ít nhất 1 coin
+                        var villageStatus = villager.GetComponent<VillageStatus>();
+                        if (villageStatus != null)
+                        {
+                            villageStatus.CurrentCoins = 1;
+                        }
                     }
                 }
                 else

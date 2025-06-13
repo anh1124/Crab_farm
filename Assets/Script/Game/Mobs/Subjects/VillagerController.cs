@@ -7,12 +7,13 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using Script.Game.Other;
 using Script.Data_Model;
+using Script.Game.Enemy.Interfaces;
 using Script.Game.Item.Coin;
 using Script.Game.Mobs.MobsManager;
 using Script.Game.Item;
 namespace Script.Game.Mobs.Subjects
 {
-    public class VillagerController : MonoBehaviour, ISaveable, ICoinTakeDamage
+    public class VillagerController : MonoBehaviour, ISaveable,IDamageable
     {
         #region Variables and Properties
         private VillageStatus status;
@@ -46,6 +47,8 @@ namespace Script.Game.Mobs.Subjects
         // Properties
         public int CurrentCoins => status.CurrentCoins;
         public int MaxCoins => status.MaxCoins;
+        public int MaxCoin { get => status.MaxCoins; set { /* Không hỗ trợ set MaxCoins */ } }
+        public int CurrentHp { get => 0; set { /* Không có HP, không làm gì */ } }
         #endregion
 
         #region Unity Lifecycle Methods
@@ -708,6 +711,33 @@ namespace Script.Game.Mobs.Subjects
 
                 yield return new WaitForSeconds(0.5f);
             }
+        }
+        #endregion
+
+        #region IDamageable Implementation
+        public bool HasCoinShield => status.CurrentCoins > 0;
+        public bool HasHp => false;
+        public int CurrentCoin { get => status.CurrentCoins; set => status.CurrentCoins = value; }
+        public int MaxHp { get => 0; set { } } // Không có HP
+        public bool TakeDamage(int damage, GameObject whoDoDame)
+        {
+            if (HasCoinShield && CurrentCoin > 0)
+            {
+                InternalDropCoins(1, true);
+                if (CurrentCoin <= 0)
+                {
+                    StartCoroutine(ConvertToVagrantAfterCoins());
+                    return false;
+                }
+                return true;
+            }
+            // Không có HP nên luôn return true nếu không còn coin
+            return true;
+        }
+        public void Die(GameObject whoDoDame)
+        {
+            Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
+            Destroy(gameObject);
         }
         #endregion
     }

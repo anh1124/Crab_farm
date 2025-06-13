@@ -18,10 +18,32 @@ namespace Script.Data_Model.Status
         public void Attack()
         {
         }
+        public override bool TakeDamage(int damage, GameObject whoDoDame)
+        {
+            if (HasCoinShield && CurrentCoin > 0)
+            {
+                CurrentCoin -= 1;
+                if (CurrentCoin < 0) CurrentCoin = 0;
+                DropCoin(whoDoDame);
+                return true;
+            }
+            if (HasHp)
+            {
+                CurrentHp -= damage;
+                if (CurrentHp <= 0)
+                {
+                    Die(whoDoDame);
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }
         public override void Die(GameObject whoDoDame)
         {
-            //add other die logic hẻe
-            base.Die(whoDoDame); 
+            // Logic chết của player (ẩn player, gọi hiệu ứng, v.v.)
+            Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
+            gameObject.SetActive(false);
         }
         
         // ISaveable

@@ -1,6 +1,10 @@
 using UnityEngine;
 using Script.Game.Other;
-
+using Script.Data_Model;
+using Script.Game.Mobs.Subjects;
+using Script.Game.Mobs.MobsManager;
+using Script.Game.Mobs.Subjects;
+using Script.Data_Model.Status;
 namespace Script
 {
     public static class Utility 
@@ -116,6 +120,54 @@ namespace Script
         }
 
         /// <summary>
+        /// Trả về vị trí của bức tường trái hoặc phải gần nhất theo Vector2.
+        /// </summary>
+        /// <param name="getLeftWall">True để lấy vị trí tường trái, False để lấy vị trí tường phải.</param>
+        /// <returns>Vị trí Vector2 của bức tường (X của tường, Y của trung tâm thị trấn).</returns>
+        public static Vector2 GetWallPosition(bool getLeftWall)
+        {
+            if (BuildingManager.instance == null || BuildingManager.instance.CurrentTownCenter == null)
+            {
+                Debug.LogError("BuildingManager or TownCenter not found!");
+                return Vector2.zero; // Hoặc một giá trị mặc định phù hợp
+            }
+
+            float townCenterX = BuildingManager.instance.CurrentTownCenter.transform.position.x;
+            float townCenterY = BuildingManager.instance.CurrentTownCenter.transform.position.y;
+            
+            GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
+            float wallX = getLeftWall ? float.MinValue : float.MaxValue;
+            float defaultOffset = getLeftWall ? -15f : 15f; // Default offset if no walls are found
+
+            foreach (GameObject wall in walls)
+            {
+                float currentWallX = wall.transform.position.x;
+                if (getLeftWall)
+                {
+                    if (currentWallX < townCenterX && currentWallX > wallX)
+                    {
+                        wallX = currentWallX;
+                    }
+                }
+                else // getRightWall
+                {
+                    if (currentWallX > townCenterX && currentWallX < wallX)
+                    {
+                        wallX = currentWallX;
+                    }
+                }
+            }
+
+            // If no wall found, use a default position relative to the town center
+            if ((getLeftWall && wallX == float.MinValue) || (!getLeftWall && wallX == float.MaxValue))
+            {
+                wallX = townCenterX + defaultOffset;
+            }
+
+            return new Vector2(wallX, townCenterY);
+        }
+
+        /// <summary>
         /// Di chuyển một GameObject đến vị trí mục tiêu với tốc độ cho trước (chỉ di chuyển theo trục X)
         /// </summary>
         /// <param name="objectToMove">GameObject cần di chuyển</param>
@@ -148,6 +200,90 @@ namespace Script
                 currentScale.y,
                 currentScale.z
             );
+        }
+
+        public static void TransformToVillager(GameObject archerObject, int currentCoins)
+        {
+            if (archerObject == null || !archerObject.activeInHierarchy) return;
+
+            if (PrefabData.Instance != null && PrefabData.Instance.village != null)
+            {
+                // Rơi cung
+                if (PrefabData.Instance.Bow != null)
+                {
+                    GameObject.Instantiate(PrefabData.Instance.Bow, archerObject.transform.position, Quaternion.identity);
+                }
+                else
+                {
+                    Debug.LogWarning("Bow prefab is missing in PrefabData. Cannot drop bow.");
+                }
+
+                Vector3 position = archerObject.transform.position;
+                Quaternion rotation = archerObject.transform.rotation;
+                Vector3 scale = archerObject.transform.localScale;
+                
+                // Dừng tất cả coroutines trước khi hủy
+                // Lưu ý: Coroutine chỉ có thể dừng từ MonoBehaviour. Hàm static không thể StopAllCoroutines trực tiếp.
+                // Nếu có coroutines đang chạy trên ArcherController, chúng sẽ tự dừng khi GameObject bị Destroy.
+
+                if (Spawner.Instance != null)
+                {
+                    GameObject villager = Spawner.Instance.SpawnMob(position, PrefabData.Instance.village);
+                    if (villager != null)
+                    {
+                        villager.transform.rotation = rotation;
+                        villager.transform.localScale = scale;
+                        VillagerController villagerController = villager.GetComponent<VillagerController>();
+                        if (villagerController != null)
+                        {
+                            // Truyền số xu còn lại bằng cách truy cập VillageStatus
+                            VillageStatus villageStatus = villager.GetComponent<VillageStatus>();
+                            if (villageStatus != null)
+                            {
+                                villageStatus.CurrentCoins = currentCoins;
+                            }
+                            else
+                            {
+                                Debug.LogWarning("[Utility] Villager does not have VillageStatus component.");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[Utility] Spawner instance not found! Cannot spawn Villager.");
+                    // Fallback: Nếu Spawner không tìm thấy, tạo trực tiếp nhưng vẫn log lỗi
+                    GameObject villagerInstance = GameObject.Instantiate(PrefabData.Instance.village, archerObject.transform.position, Quaternion.identity);
+                    VillagerController villagerController = villagerInstance.GetComponent<VillagerController>();
+                    if (villagerController != null)
+                    {
+                        VillageStatus villageStatus = villagerInstance.GetComponent<VillageStatus>();
+                        if (villageStatus != null)
+                        {
+                            villageStatus.CurrentCoins = currentCoins;
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[Utility] Villager does not have VillageStatus component.");
+                        }
+                    }
+                }
+                
+                GameObject.Destroy(archerObject);
+            }
+            else
+            {
+                Debug.LogError("[Utility] Villager prefab not found in PrefabData! Cannot transform Archer to Villager.");
+            }
+        }
+        public static GameObject GetTownCenter()
+        {
+            if (BuildingManager.instance == null || BuildingManager.instance.CurrentTownCenter == null)
+            {
+                Debug.LogError("BuildingManager or TownCenter not found!");
+                return null;
+            }
+            return BuildingManager.instance.CurrentTownCenter.gameObject; 
         }
     }
 }

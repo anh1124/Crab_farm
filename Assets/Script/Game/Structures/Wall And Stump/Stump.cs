@@ -2,6 +2,8 @@ using Script.Data_Model;
 using UnityEngine;
 using Script.Game.Item.Coin;
 using Script.Game.Other;
+using Script.Data_Model.Interfaces;
+using Script.Game.Structures.Wall_And_Stump;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
@@ -9,7 +11,7 @@ namespace Script.Game.Structures.Wall_And_Stump
     /// stump hiện tại có 1 hành động
     /// -Rebuild
     /// </summary>
-    public class Stump : MonoBehaviour
+    public class Stump : MonoBehaviour, ISaveable
     {
         [SerializeField] private int tier;
         [SerializeField] private int rebuildCost;
@@ -27,6 +29,23 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
             InitializeStumpData(tier);
             UpdateCoinUserData();
+
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.RegisterStump(gameObject);
+            }
+            else
+            {
+                Debug.LogError("[Stump] WallAndStumpManager instance not found!");
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.UnregisterStump(gameObject);
+            }
         }
         
         public void InitializeStumpData(int tier)
@@ -95,5 +114,39 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Destroy(gameObject);
             }
         }
+
+        #region ISaveable Implementation
+        [System.Serializable]
+        public class StumpData
+        {
+            public float positionX;
+            public float positionY;
+            public int tier;
+        }
+
+        public string GetPrefabID()
+        {
+            return "stump";
+        }
+
+        public object CaptureData()
+        {
+            return new StumpData
+            {
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                tier = tier
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            StumpData stumpData = (StumpData)data;
+            transform.position = new Vector3(stumpData.positionX, stumpData.positionY, transform.position.z);
+            tier = stumpData.tier;
+            InitializeStumpData(tier);
+            UpdateCoinUserData();
+        }
+        #endregion
     }
 }
