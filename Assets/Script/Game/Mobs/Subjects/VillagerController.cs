@@ -727,7 +727,9 @@ namespace Script.Game.Mobs.Subjects
                 if (CurrentCoin <= 0)
                 {
                     StartCoroutine(ConvertToVagrantAfterCoins());
+                    Destroy(gameObject);
                     return false;
+                    
                 }
                 return true;
             }

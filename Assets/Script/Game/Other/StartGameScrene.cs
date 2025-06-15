@@ -10,6 +10,7 @@ namespace Script.Game.Other
     public class StartGameScrene : MonoBehaviour
     {
         public GameObject pauseMenuPanel;
+       
         public void Start()
         {
             PrefabData.Instance.LoadPlayerCharactersFromJson();
@@ -25,6 +26,7 @@ namespace Script.Game.Other
             LoadWorldInfoIfNeeded();
             //instancePlayer
             InstancePlayerAndSetCamera();
+            PlayerController.PlayerController.Instance.damageAlly = true; // Cho phép gây damage lên đồng minh khi test
             
             //gán player cho các script cần thiết player khác
             if (BuildMenu.instance != null)
@@ -49,6 +51,7 @@ namespace Script.Game.Other
             // Chỉ chạy DevelopTest trong môi trường phát triển
             #if UNITY_EDITOR
             DevelopTest();
+           
             #endif
             
             if (EntitySaveManager.Instance == null)
@@ -76,7 +79,7 @@ namespace Script.Game.Other
                 return;
             }
 
-            Debug.Log($"SaveFilePath: {savePath}");
+            //Debug.Log($"SaveFilePath: {savePath}");
 
             try
             {
@@ -92,17 +95,17 @@ namespace Script.Game.Other
                     return;
                 }
                 
-                Debug.Log($"Tên thế giới được xác định: {worldName}");
+                //Debug.Log($"Tên thế giới được xác định: {worldName}");
                 
                 // Load WorldInfo
                 WorldInfo loadedInfo = WorldFileManager.Instance.LoadWorldInfo(worldName);
                 if (loadedInfo != null)
                 {
-                    Debug.Log($"Đã load WorldInfo cho thế giới: {worldName}");
+                    Debug.Log($"Đã load WorldInfo - thế giới: {worldName}");
                     
                     // Đồng bộ tech từ WorldInfo sang PrefabData
                     WorldFileManager.Instance.SyncTechToPrefabData();
-                    Debug.Log("Đã đồng bộ tech từ WorldInfo sang PrefabData");
+                    //Debug.Log("Đã đồng bộ tech từ WorldInfo sang PrefabData");
                 }
                 else
                 {
@@ -126,7 +129,7 @@ namespace Script.Game.Other
 
             // Chuẩn hóa đường dẫn (thay thế cả dấu \ và / thành /)
             string normalizedPath = savePath.Replace('\\', '/');
-            Debug.Log($"Đường dẫn chuẩn hóa: {normalizedPath}");
+           // Debug.Log($"Đường dẫn chuẩn hóa: {normalizedPath}");
             
             // Tách đường dẫn
             string[] parts = normalizedPath.Split('/');
@@ -162,7 +165,7 @@ namespace Script.Game.Other
         /// </summary>
         private void CreateDefaultWorldInfo()
         {
-            Debug.Log("Tạo WorldInfo mặc định");
+            //Debug.Log("Tạo WorldInfo mặc định");
             
             // Tạo WorldInfo với thông tin cơ bản
             WorldInfo defaultInfo = new WorldInfo(
@@ -182,7 +185,7 @@ namespace Script.Game.Other
             // Đồng bộ tech từ WorldInfo sang PrefabData
             WorldFileManager.Instance.SyncTechToPrefabData();
             
-            Debug.Log("Đã tạo và thiết lập WorldInfo mặc định");
+            //Debug.Log("Đã tạo và thiết lập WorldInfo mặc định");
         }
 
         public void InstancePlayerAndSetCamera()

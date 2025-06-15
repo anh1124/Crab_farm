@@ -63,7 +63,7 @@ namespace Script.Game.Mobs.MobsManager
             if (GameTimeManager.Instance != null)
             {
                 GameTimeManager.Instance.SubscribeToHourlyEvent(6, HandleDailyVagrantSpawn);
-                Debug.LogWarning("Đã đăng ký sự kiện sinh vagrant hàng ngày vào lúc 6 giờ sáng");
+                //Debug.LogWarning("Đã đăng ký sự kiện sinh vagrant hàng ngày vào lúc 6 giờ sáng");
             }
             else
             {

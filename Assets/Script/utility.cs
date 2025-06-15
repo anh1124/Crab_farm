@@ -1,16 +1,137 @@
 using UnityEngine;
 using Script.Game.Other;
 using Script.Data_Model;
-using Script.Game.Mobs.Subjects;
 using Script.Game.Mobs.MobsManager;
-using Script.Game.Mobs.Subjects;
 using Script.Data_Model.Status;
+using Script.Game.Mobs.Subjects;
+using Script.Game.Enemy.Interfaces;
+using Script.Game.Structures.Wall_And_Stump;
+
 namespace Script
 {
     public static class Utility 
     {
-        public static bool isDebug = false;
+        public static bool isDebug = true;
         
+        public static bool IsAlly(GameObject obj)
+        {
+            if (PrefabData.Instance == null || PrefabData.Instance.allyTags == null)
+            {
+                Debug.LogWarning("PrefabData.Instance hoặc allyTags là null. Không thể kiểm tra đồng minh.");
+                return false; // Mặc định không phải đồng minh nếu dữ liệu thiếu
+            }
+            return PrefabData.Instance.allyTags.Contains(obj.tag);
+        }
+
+        /// <summary>
+        /// Xử lý việc gây sát thương cho các đối tượng bị va chạm trong một cuộc tấn công.
+        /// </summary>
+        /// <param name="instigator">Đối tượng gây ra sát thương (ví dụ: Player).</param>
+        /// <param name="hits">Mảng các Collider2D bị va chạm.</param>
+        /// <param name="count">Số lượng đối tượng va chạm hợp lệ trong mảng hits.</param>
+        /// <param name="damageAmount">Lượng sát thương gây ra.</param>
+        /// <param name="allowDamageAlly">True nếu cho phép gây sát thương lên đồng minh.</param>
+        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, int damageAmount, bool allowDamageAlly)
+        {
+            Debug.Log($"[Utility.ProcessAttackHits] {instigator.name} bắt đầu xử lý {count} đối tượng va chạm. Damage: {damageAmount}. Damage Ally: {allowDamageAlly}.");
+
+            for (int i = 0; i < count; i++)
+            {
+                if (hits[i] == null) // Kiểm tra nếu phần tử collider trong mảng là null
+                {
+                    Debug.LogWarning($"[Utility.ProcessAttackHits] Collider tại vị trí {i} trong mảng hits là null. Bỏ qua.");
+                    continue; // Bỏ qua phần tử này và tiếp tục vòng lặp
+                }
+
+                GameObject hitObject = hits[i].gameObject;
+                if (hitObject == null) // Kiểm tra nếu GameObject của collider là null
+                {
+                    Debug.LogWarning($"[Utility.ProcessAttackHits] GameObject của collider {hits[i].name} tại vị trí {i} là null. Bỏ qua.");
+                    continue; // Bỏ qua phần tử này
+                }
+
+                if (hitObject == instigator) // Mới: Bỏ qua nếu đối tượng va chạm chính là đối tượng gây tấn công
+                {
+                    Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đối tượng gây tấn công {hitObject.name} (Tag: {hitObject.tag}).");
+                    continue;
+                }
+
+                IDamageable target = hitObject.GetComponent<IDamageable>();
+
+                if (target != null) // Nếu đối tượng có thể nhận sát thương
+                {
+                    bool isTargetAlly = IsAlly(hitObject);
+
+                    if (!allowDamageAlly && isTargetAlly) // Nếu không cho phép tấn công đồng minh VÀ đối tượng là đồng minh
+                    {
+                        Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đồng minh {hitObject.name} (Tag: {hitObject.tag}).");
+                        continue; // Bỏ qua đối tượng này
+                    }
+
+                    // Kiểm tra tier của Wall
+                    if (hitObject.CompareTag("Wall"))
+                    {
+                        Wall wall = hitObject.GetComponent<Wall>();
+                        if (wall != null)
+                        {
+                            if (wall.tier == 0)
+                            {
+                                Debug.Log($"[Utility.ProcessAttackHits] Wall {wall.name} (Tier 0) không nhận sát thương.");
+                                continue; // Wall Tier 0 không nhận sát thương
+                            }
+                            else
+                            {
+                                Debug.Log($"[Utility.ProcessAttackHits] Wall {wall.name} (Tier {wall.tier}) nhận sát thương {damageAmount} từ {instigator.name}.");
+                                target.TakeDamage((int)damageAmount, instigator);
+                            }
+                        }
+                        else
+                        {
+                             Debug.LogWarning($"[Utility.ProcessAttackHits] Đối tượng {hitObject.name} có tag 'Wall' nhưng không có script Wall. Bỏ qua.");
+                        }
+                    }
+                    else // Đối tượng không phải Wall hoặc Wall không phải Tier 0
+                    {
+                        Debug.Log($"[Utility.ProcessAttackHits] {hitObject.name} (Tag: {hitObject.tag}) nhận sát thương {damageAmount} từ {instigator.name}.");
+                        target.TakeDamage((int)damageAmount, instigator);
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[Utility.ProcessAttackHits] Đối tượng {hitObject.name} (Tag: {hitObject.tag}) không implement IDamageable. Bỏ qua.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// In ra thông tin debug về các GameObject đã va chạm.
+        /// </summary>
+        /// <param name="colliderName">Tên của collider đã thực hiện va chạm.</param>
+        /// <param name="hits">Mảng các Collider2D bị va chạm.</param>
+        /// <param name="count">Số lượng đối tượng va chạm hợp lệ trong mảng hits.</param>
+        public static void LogCollidedObjects(string colliderName, Collider2D[] hits, int count)
+        {
+            if (isDebug)
+            {
+                string logMessage = @$"[Utility.LogCollidedObjects] Collider ""{colliderName}"" đã va chạm với {count} đối tượng: ";
+                if (count > 0)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (hits[i] != null)
+                        {
+                            logMessage += $"{hits[i].gameObject.name} (Tag: {hits[i].gameObject.tag}), ";
+                        }
+                    }
+                    Debug.Log(logMessage.TrimEnd(',', ' '));
+                }
+                else
+                {
+                    Debug.Log(@$"[Utility.LogCollidedObjects] Collider ""{colliderName}"" không va chạm với đối tượng nào.");
+                }
+            }
+        }
+
         public static void RotateObjectTowardsTownCenter(GameObject obj, Vector3 referencePos, Vector3 townCenterPos)
         {
             Vector3 scale = obj.transform.localScale;

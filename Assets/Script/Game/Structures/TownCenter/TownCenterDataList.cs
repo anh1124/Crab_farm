@@ -72,7 +72,7 @@ namespace Script.Game.Structures.TownCenter
                 nextUpgradePrefab = null,
                 maxLevel = true,
             });
-            Debug.Log("TownCentrerList data initialized. Count: " + townCentrerList.Count);
+            //Debug.Log("TownCentrerList data initialized. Count: " + townCentrerList.Count);
         }
         
         public TownCenterData GetWallDataByTier(int tier)

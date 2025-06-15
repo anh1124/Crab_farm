@@ -8,6 +8,9 @@ namespace Script.PlayerController
     {
         public static PlayerController Instance { get; private set; }
 
+        public bool damageAlly = false;
+
+
         #region Helper script,component
         public CoinUser coinUser;
         private TriggerCheckHelper triggerCheckHelper;

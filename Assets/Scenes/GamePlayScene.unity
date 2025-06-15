@@ -530,7 +530,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1159096413}
-  - component: {fileID: 1159096414}
   m_Layer: 0
   m_Name: PlayerContainer
   m_TagString: PlayerContainer
@@ -553,28 +552,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 510060679}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1159096414
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1159096412}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 36ffd90c3d84a3d41b13bd7282b662e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  coinUser: {fileID: 0}
-  rb: {fileID: 0}
-  playerStatus: {fileID: 0}
-  player: {fileID: 0}
-  direction: 0
-  isGrounded: 0
-  moveSpeed: 0
-  isActiveUpdate: 0
-  isAlive: 1
-  currentStructureShowCoinSlot: {fileID: 0}
 --- !u!1 &1284934382
 GameObject:
   m_ObjectHideFlags: 0

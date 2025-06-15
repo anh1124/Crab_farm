@@ -234,7 +234,10 @@ namespace Script.Data_Model
         [Space(5)]  
         [Header("other ")]
         //danh sách những thứ có coinUser và tag để hiện coin slot
-        public List<string> playerCoinUserInteractable ; 
+        public List<string> playerCoinUserInteractable ;
+        
+        // Danh sách các tag của các đối tượng được coi là đồng minh (Ally Tags)
+        public List<string> allyTags = new List<string> { "Player", "Archer", "Wall","Villager" };
       
         public readonly Dictionary<string, int> productPrices = new Dictionary<string, int>
         {
@@ -373,7 +376,7 @@ namespace Script.Data_Model
                 }
                 else
                 {
-                    Debug.Log("Main camera found and assigned.");
+                  //  Debug.Log("Main camera found and assigned.");
                 }
             }
             else
@@ -440,7 +443,7 @@ namespace Script.Data_Model
             if (coinPrefab == null) Debug.LogError("coinPrefab is missing!");
             
             // Check if prefabs are properly registered in dictionary
-            Debug.Log("Checking vendor prefab registrations...");
+            //Debug.Log("Checking vendor prefab registrations...");
             if (!_prefabDict.ContainsKey("bow_vendor")) 
                 Debug.LogError("bow_vendor not registered in prefab dictionary!");
             if (!_prefabDict.ContainsKey("hammer_vendor")) 
@@ -458,7 +461,7 @@ namespace Script.Data_Model
         // New method to load player character data from JSON
         public void LoadPlayerCharactersFromJson()
         {
-            Debug.Log("Starting to load player characters from JSON...");
+            //Debug.Log("Starting to load player characters from JSON...");
             try
             {
                 // Clear existing player character list
@@ -468,7 +471,7 @@ namespace Script.Data_Model
                 TextAsset jsonTextAsset = Resources.Load<TextAsset>("DataConfig/Player/PlayerCharacterConfig");
                 if (jsonTextAsset != null)
                 {
-                    Debug.Log($"Successfully loaded PlayerCharacterConfig.json: {jsonTextAsset.text}");
+                    //Debug.Log($"Successfully loaded PlayerCharacterConfig.json: {jsonTextAsset.text}");
                     
                     // Deserialize the JSON
                     var config = JsonConvert.DeserializeObject<PlayerPrefabConfig>(jsonTextAsset.text);
@@ -478,7 +481,7 @@ namespace Script.Data_Model
                         
                         foreach (var prefabPath in config.playerPrefabPaths)
                         {
-                            Debug.Log($"Attempting to load prefab from path: {prefabPath}");
+                           // Debug.Log($"Attempting to load prefab from path: {prefabPath}");
                             
                             // Try to load the prefab directly
                             GameObject prefab = Resources.Load<GameObject>(prefabPath);
@@ -486,16 +489,16 @@ namespace Script.Data_Model
                             if (prefab != null)
                             {
                                 playerCharacterList.Add(prefab);
-                                Debug.Log($"SUCCESS: Added player prefab from path: {prefabPath}");
+                               // Debug.Log($"SUCCESS: Added player prefab from path: {prefabPath}");
                             }
                             else
                             {
                                 Debug.LogError($"FAILED: Could not load player prefab from path: {prefabPath}");
                                 // Try to list available resources in the directory
                                 string directory = System.IO.Path.GetDirectoryName(prefabPath).Replace("\\", "/");
-                                Debug.Log($"Checking directory: {directory}");
+                              //  Debug.Log($"Checking directory: {directory}");
                                 UnityEngine.Object[] resources = Resources.LoadAll(directory);
-                                Debug.Log($"Found {resources.Length} resources in directory {directory}:");
+                              //  Debug.Log($"Found {resources.Length} resources in directory {directory}:");
                                 foreach (var resource in resources)
                                 {
                                     Debug.Log($"- {resource.name} (Type: {resource.GetType()})");

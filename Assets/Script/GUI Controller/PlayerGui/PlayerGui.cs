@@ -42,6 +42,7 @@ namespace Script.GUI_Controller.PlayerGui
         // Events
         public Action OnSkill3PressedACT;//debug btn
         public Action OnSkill2PressedACT;//spawn vagrant btn
+        public Action OnSkill1PressedACT; // New: Event for Skill 1
         
         private void Start()
         {
@@ -53,6 +54,7 @@ namespace Script.GUI_Controller.PlayerGui
             AddEventTriggers(useCoin, PlayerController.PlayerController.Instance.UseCoinDownAction, PlayerController.PlayerController.Instance.UseCoinUpAction);
             
             // Add listeners for skill buttons
+            skill1.onClick.AddListener(OnSkill1Pressed); // New: Listener for Skill 1
             skill2.onClick.AddListener(OnSkill2Pressed);
             skill3.onClick.AddListener(OnSkill3Pressed);
         }
@@ -61,16 +63,53 @@ namespace Script.GUI_Controller.PlayerGui
         private void OnSkill2Pressed()
         {
             Debug.Log("Skill 2 button pressed! Spawning Vagrant...");
+            OnSkill2PressedACT?.Invoke();
             
-            // Get player position
-            Vector2 playerPosition = PlayerController.PlayerController.Instance.player.transform.position;
-            
-            // Spawn the vagrant slightly offset from the player
-            if (PrefabData.Instance.vagrant != null)
+        }
+        
+        // Hàm được gọi khi skill3 được nhấn
+        private void OnSkill3Pressed()
+        {
+            Debug.Log("Skill 3 button pressed!");
+            OnSkill3PressedACT?.Invoke();
+        }
+
+        // Hàm được gọi khi skill1 được nhấn
+        private void OnSkill1Pressed()
+        {
+            Debug.Log("Skill 1 button pressed!");
+            OnSkill1PressedACT?.Invoke();
+        }
+        
+        // Hàm để fix lỗi container không nằm đúng vị trí
+        // private void FixContainers()
+        // {
+        //     Debug.Log("Fixing containers structure...");
+        //     EntitySaveManager.Instance.ResetupAllContainers();
+        //     Debug.Log("Containers fixed!");
+        // }
+        
+        private void AddEventTriggers(Button button, Action onPointerDown, Action onPointerUp)
+        {
+            EventTrigger trigger = button.gameObject.AddComponent<EventTrigger>();
+
+            EventTrigger.Entry pointerDownEntry = new EventTrigger.Entry
             {
-                Debug.Log("Vagrant prefab tag before instantiate: " + PrefabData.Instance.vagrant.tag);
-                
-                // Đảm bảo prefab có tag đúng
+                eventID = EventTriggerType.PointerDown
+            };
+            pointerDownEntry.callback.AddListener((eventData) => { onPointerDown(); });
+            trigger.triggers.Add(pointerDownEntry);
+
+            EventTrigger.Entry pointerUpEntry = new EventTrigger.Entry
+            {
+                eventID = EventTriggerType.PointerUp
+            };
+            pointerUpEntry.callback.AddListener((eventData) => { onPointerUp(); });
+            trigger.triggers.Add(pointerUpEntry);
+        }
+        
+        /*//demo spawn vagrant
+          // Đảm bảo prefab có tag đúng
                 if (PrefabData.Instance.vagrant.tag != "Vagrant")
                 {
                     Debug.LogWarning("Prefab không có tag 'Vagrant', đang set lại tag cho prefab");
@@ -111,48 +150,6 @@ namespace Script.GUI_Controller.PlayerGui
             {
                 Debug.LogError("Vagrant prefab not found in PrefabData.Instance.vagrant!");
             }
-            
-            // Gọi event nếu có class nào đó đã đăng ký lắng nghe
-            OnSkill2PressedACT?.Invoke();
-        }
-        
-        // Hàm được gọi khi skill3 được nhấn
-        private void OnSkill3Pressed()
-        {
-            Debug.Log("Skill 3 button pressed!");
-            
-            // Gọi hàm sửa container
-            FixContainers();
-
-            // Gọi event nếu có class nào đó đã đăng ký lắng nghe
-            OnSkill3PressedACT?.Invoke();
-        }
-        
-        // Hàm để fix lỗi container không nằm đúng vị trí
-        private void FixContainers()
-        {
-            Debug.Log("Fixing containers structure...");
-            EntitySaveManager.Instance.ResetupAllContainers();
-            Debug.Log("Containers fixed!");
-        }
-        
-        private void AddEventTriggers(Button button, Action onPointerDown, Action onPointerUp)
-        {
-            EventTrigger trigger = button.gameObject.AddComponent<EventTrigger>();
-
-            EventTrigger.Entry pointerDownEntry = new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerDown
-            };
-            pointerDownEntry.callback.AddListener((eventData) => { onPointerDown(); });
-            trigger.triggers.Add(pointerDownEntry);
-
-            EventTrigger.Entry pointerUpEntry = new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerUp
-            };
-            pointerUpEntry.callback.AddListener((eventData) => { onPointerUp(); });
-            trigger.triggers.Add(pointerUpEntry);
-        }
+         */
     }
 }

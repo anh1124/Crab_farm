@@ -40,7 +40,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+
                 LoadStumpData();
             }
             else
@@ -60,7 +60,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 if (wrapper != null && wrapper.stumps != null)
                 {
                     stumpDataList = wrapper.stumps;
-                    Debug.Log($"[StumpDataList] Loaded {stumpDataList.Count} stump data entries.");
+                   // Debug.Log($"[StumpDataList] Loaded {stumpDataList.Count} stump data entries.");
                 }
                 else
                 {

@@ -49,11 +49,11 @@ namespace Script.Save_Controller
             if (!Directory.Exists(saveRootPath))
             {
                 Directory.CreateDirectory(saveRootPath);
-                Debug.Log("Created saves directory at: " + saveRootPath);
+                // Debug.Log("Created saves directory at: " + saveRootPath);
             }
             else
             {
-                Debug.Log("Saves directory already exists at: " + saveRootPath);
+                // Debug.Log("Saves directory already exists at: " + saveRootPath);
             }
         }
 
@@ -98,7 +98,7 @@ namespace Script.Save_Controller
             // Thông báo rằng worldInfo đã thay đổi
             OnWorldInfoChanged?.Invoke(worldInfo);
     
-            Debug.Log($"Created new world save directories for: {worldName}");
+            // Debug.Log($"Created new world save directories for: {worldName}");
             
             
             //cái hàm này phải bỏ vào chỗ khác
@@ -133,7 +133,7 @@ namespace Script.Save_Controller
             string worldInfoJson = JsonConvert.SerializeObject(newWorldInfo, Formatting.Indented);
 
             File.WriteAllText(worldInfoPath, worldInfoJson);
-            Debug.Log("World info saved to: " + worldInfoPath);
+            // Debug.Log("World info saved to: " + worldInfoPath);
             
             return newWorldInfo;
         }
@@ -172,7 +172,7 @@ namespace Script.Save_Controller
                 {
                     worldFolder = Path.Combine(saveRootPath, nameToSave);
                     Directory.CreateDirectory(worldFolder);
-                    Debug.Log($"Đã tạo thư mục mới cho thế giới: {nameToSave}");
+                    // Debug.Log($"Đã tạo thư mục mới cho thế giới: {nameToSave}");
                     
                     // Tạo thư mục map
                     Directory.CreateDirectory(Path.Combine(worldFolder, "map"));
@@ -186,7 +186,7 @@ namespace Script.Save_Controller
                 string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
                 File.WriteAllText(worldInfoPath, json);
                 
-                Debug.Log($"Đã lưu WorldInfo vào: {worldInfoPath}");
+                // Debug.Log($"Đã lưu WorldInfo vào: {worldInfoPath}");
                 
                 // Thông báo thay đổi
                 OnWorldInfoChanged?.Invoke(worldInfo);
@@ -207,7 +207,7 @@ namespace Script.Save_Controller
             if (declaringType != null)
             {
                 string callingScript = declaringType.Name;
-                Debug.Log($"{callingScript} save map");
+                // Debug.Log($"{callingScript} save map");
             }
 
             // Các logic save game
@@ -258,7 +258,7 @@ namespace Script.Save_Controller
             // Serialize và ghi file JSON
             string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
             File.WriteAllText(worldInfoPath, json);
-            Debug.Log("Game time đã được lưu vào " + worldInfoPath);
+            // Debug.Log("Game time đã được lưu vào " + worldInfoPath);
             
             // Thông báo rằng worldInfo đã thay đổi
             OnWorldInfoChanged?.Invoke(worldInfo);
@@ -290,7 +290,7 @@ namespace Script.Save_Controller
             // Serialize and write JSON file
             string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
             File.WriteAllText(worldInfoPath, json);
-            Debug.Log("Trạng thái tech đã được lưu vào " + worldInfoPath);
+            // Debug.Log("Trạng thái tech đã được lưu vào " + worldInfoPath);
             
             // Thông báo rằng worldInfo đã thay đổi
             OnWorldInfoChanged?.Invoke(worldInfo);
@@ -329,7 +329,7 @@ namespace Script.Save_Controller
                 // Gán vào biến worldInfo
                 worldInfo = loadedInfo;
                 
-                Debug.Log($"Đã load thông tin thế giới: {worldName}");
+                // Debug.Log($"Đã load thông tin thế giới: {worldName}");
                 
                 // Thông báo rằng worldInfo đã thay đổi
                 OnWorldInfoChanged?.Invoke(worldInfo);
@@ -377,7 +377,7 @@ namespace Script.Save_Controller
             // Thông báo cho tất cả các thành phần quan tâm rằng worldInfo đã được tải
             OnWorldInfoChanged?.Invoke(worldInfo);
             
-            Debug.Log("Đã thông báo cho các thành phần về dữ liệu tech hiện tại");
+            //Debug.Log("Đã thông báo cho các thành phần về dữ liệu tech hiện tại");
         }
         
         /// <summary>
@@ -403,7 +403,7 @@ namespace Script.Save_Controller
                 worldInfo.TechAdhesive
             );
             
-            Debug.Log("Đã lưu thông tin tech vào worldInfo");
+            // Debug.Log("Đã lưu thông tin tech vào worldInfo");
         }
         
         /// <summary>
@@ -415,7 +415,7 @@ namespace Script.Save_Controller
             if (worldInfo != null)
             {
                 OnWorldInfoChanged?.Invoke(worldInfo);
-                Debug.Log("Đã thông báo worldInfo thay đổi");
+                // Debug.Log("Đã thông báo worldInfo thay đổi");
             }
             else
             {
@@ -450,7 +450,7 @@ namespace Script.Save_Controller
             if (Directory.Exists(worldPath))
             {
                 Directory.Delete(worldPath, true); // Xóa thư mục và tất cả các tệp tin bên trong
-                Debug.Log($"Deleted world save directory for: {worldName}");
+                // Debug.Log($"Deleted world save directory for: {worldName}");
             }
             else
             {
@@ -485,7 +485,7 @@ namespace Script.Save_Controller
                             if (worldInfo != null)
                             {
                                 WorldInfos.Add(worldInfo);
-                                Debug.Log($"Loaded WorldInfo: {worldInfo.Name}");
+                                // Debug.Log($"Loaded WorldInfo: {worldInfo.Name}");
                             }
                         }
                         catch (System.Exception ex)
@@ -499,7 +499,7 @@ namespace Script.Save_Controller
                     }
                 }
 
-                Debug.Log($"Number of world saves loaded: {WorldInfos.Count}");
+                // Debug.Log($"Number of world saves loaded: {WorldInfos.Count}");
             }
             else
             {
@@ -547,7 +547,7 @@ namespace Script.Save_Controller
                     // Đồng bộ các thông tin tech vào PrefabData
                     SyncTechToPrefabData();
                     
-                    Debug.Log($"Đã chọn và load thế giới: {loadedInfo.Name}");
+                    // Debug.Log($"Đã chọn và load thế giới: {loadedInfo.Name}");
                     return true;
                 }
             }

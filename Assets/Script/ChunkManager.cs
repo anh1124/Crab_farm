@@ -126,7 +126,7 @@ public class ChunkManager : MonoBehaviour
         else
         {
             chunkPrefabsList.AddRange(loadedPrefabs);
-            Debug.Log($"Đã load {loadedPrefabs.Length} ground chunk prefab(s) thành công từ {groundChunkPath}.");
+           // Debug.Log($"Đã load {loadedPrefabs.Length} ground chunk prefab(s) thành công từ {groundChunkPath}.");
         }
     }
 
@@ -156,7 +156,7 @@ public class ChunkManager : MonoBehaviour
         else
         {
             impassableRockPrefabs.AddRange(loadedRocks);
-            Debug.Log($"Đã load {loadedRocks.Length} impassable rock prefab(s) thành công từ {impassableRockPath}.");
+          //  Debug.Log($"Đã load {loadedRocks.Length} impassable rock prefab(s) thành công từ {impassableRockPath}.");
             FindImpassableRockPrefabs();
         }
     }
@@ -165,12 +165,12 @@ public class ChunkManager : MonoBehaviour
     {
         foreach (string path in paths)
         {
-            Debug.Log($"Thử tải prefab từ: {path}");
+            //Debug.Log($"Thử tải prefab từ: {path}");
             GameObject[] prefabs = Resources.LoadAll<GameObject>(path);
             
             if (prefabs != null && prefabs.Length > 0)
             {
-                Debug.Log($"Đã tìm thấy {prefabs.Length} prefab(s) ở đường dẫn: {path}");
+               // Debug.Log($"Đã tìm thấy {prefabs.Length} prefab(s) ở đường dẫn: {path}");
                 targetList.AddRange(prefabs);
                 return true;
             }
@@ -187,12 +187,12 @@ public class ChunkManager : MonoBehaviour
             if (rock.name.Contains("Left"))
             {
                 impassableRockLeft = rock;
-                Debug.Log("Đã tìm thấy ImpassableRockLeft prefab: " + rock.name);
+             //   Debug.Log("Đã tìm thấy ImpassableRockLeft prefab: " + rock.name);
             }
             else if (rock.name.Contains("Right"))
             {
                 impassableRockRight = rock;
-                Debug.Log("Đã tìm thấy ImpassableRockRight prefab: " + rock.name);
+               // Debug.Log("Đã tìm thấy ImpassableRockRight prefab: " + rock.name);
             }
         }
 
@@ -202,7 +202,7 @@ public class ChunkManager : MonoBehaviour
             impassableRockLeft = Resources.Load<GameObject>("Prefab/Chunk/ImpassableRock/ImpassableRockLeft");
             if (impassableRockLeft != null)
             {
-                Debug.Log("Đã tải ImpassableRockLeft bằng Resources.Load");
+               // Debug.Log("Đã tải ImpassableRockLeft bằng Resources.Load");
                 if (!impassableRockPrefabs.Contains(impassableRockLeft))
                     impassableRockPrefabs.Add(impassableRockLeft);
             }
@@ -213,7 +213,7 @@ public class ChunkManager : MonoBehaviour
             impassableRockRight = Resources.Load<GameObject>("Prefab/Chunk/ImpassableRock/ImpassableRockRight");
             if (impassableRockRight != null)
             {
-                Debug.Log("Đã tải ImpassableRockRight bằng Resources.Load");
+               // Debug.Log("Đã tải ImpassableRockRight bằng Resources.Load");
                 if (!impassableRockPrefabs.Contains(impassableRockRight))
                     impassableRockPrefabs.Add(impassableRockRight);
             }
@@ -251,14 +251,14 @@ public class ChunkManager : MonoBehaviour
         if (PrefabData.Instance != null)
         {
             groundChunkCount = PrefabData.Instance.currentCreatChunk;
-            Debug.Log($"Using PrefabData.currentCreatChunk value: {groundChunkCount}");
+          //  Debug.Log($"Using PrefabData.currentCreatChunk value: {groundChunkCount}");
         }
         else
         {
             Debug.LogWarning("PrefabData.Instance is null, using default value of 3 chunks");
         }
         
-        Debug.Log($"Đang tạo map với {groundChunkCount} ground chunks và 2 impassable rocks");
+     //   Debug.Log($"Đang tạo map với {groundChunkCount} ground chunks và 2 impassable rocks");
         
         CreateInitialChunks(groundChunkCount);
         EntitySaveManager.Instance.SaveAllContainer();
@@ -687,7 +687,7 @@ public class ChunkManager : MonoBehaviour
                             if (impassableRockLeft != null)
                             {
                                 prefabToUse = impassableRockLeft;
-                                Debug.Log("Restoring ImpassableRockLeft at " + position);
+                                //Debug.Log("Restoring ImpassableRockLeft at " + position);
                             }
                             break;
                             
@@ -695,7 +695,7 @@ public class ChunkManager : MonoBehaviour
                             if (impassableRockRight != null)
                             {
                                 prefabToUse = impassableRockRight;
-                                Debug.Log("Restoring ImpassableRockRight at " + position);
+                               // Debug.Log("Restoring ImpassableRockRight at " + position);
                             }
                             break;
                             

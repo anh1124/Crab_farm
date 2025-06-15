@@ -6,11 +6,12 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
 {
     public class SpearManAnimationController : MonoBehaviour
     {
-        
+        #region Fields
         //lưu ý:
         //tất cả các player phải có tag Player và layer Player 
         public Rigidbody2D rb;
         public bool isGround;
+        public bool IsSkillAnimationPlaying = false; // Mới: Thêm biến để theo dõi trạng thái animation kỹ năng
 
         private PlayerController _playerController;
         public BaseStatus status;
@@ -20,6 +21,9 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         private bool _isFacingRight = true;
 
         public float speedNeedToShowRun = 0.1f;
+        #endregion
+
+        #region Unity Lifecycle Methods
         private void Start()
         {
             status = gameObject.GetComponent<BaseStatus>();
@@ -33,7 +37,9 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
             UpdateFacingDirection();
             UpdateAnimationState();
         }
+        #endregion
 
+        #region Core Animation Logic
         public void UpdateStatus()
         {
             isGround = status.isGround;
@@ -68,6 +74,12 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         {
             float speed = rb.velocity.magnitude;
 
+            // Mới: Chỉ cập nhật animation di chuyển nếu không có animation kỹ năng đang chạy
+            if (IsSkillAnimationPlaying)
+            {
+                return; // Thoát nếu đang phát animation kỹ năng
+            }
+
             if (isGround)
             {
                 if (speed >= speedNeedToShowRun)
@@ -80,5 +92,58 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
                 }
             }
         }
+        #endregion
+
+        #region Skill Animation Control
+        // Hàm để kích hoạt animation ChopDown
+        public void TriggerChopDownAnimation()
+        {
+            if (_animator == null)
+            {
+                Debug.LogError("[SpearManAnimationController] Animator không được tìm thấy. Không thể phát animation ChopDown.");
+                return;
+            }
+            IsSkillAnimationPlaying = true; // Báo hiệu animation kỹ năng đang chạy
+            _animator.SetTrigger("ChopDown");
+            Debug.Log("[SpearManAnimationController] Kích hoạt Trigger ChopDown.");
+        }
+
+        // Hàm để kích hoạt animation Thrust
+        public void TriggerThrustAnimation()
+        {
+            if (_animator == null)
+            {
+                Debug.LogError("[SpearManAnimationController] Animator không được tìm thấy. Không thể phát animation Thrust.");
+                return;
+            }
+            IsSkillAnimationPlaying = true; // Báo hiệu animation kỹ năng đang chạy
+            _animator.SetTrigger("Thrust");
+            Debug.Log("[SpearManAnimationController] Kích hoạt Trigger Thrust.");
+        }
+
+        // Hàm để kích hoạt animation ThrowSpear
+        public void TriggerThrowSpearAnimation()
+        {
+            if (_animator == null)
+            {
+                Debug.LogError("[SpearManAnimationController] Animator không được tìm thấy. Không thể phát animation ThrowSpear.");
+                return;
+            }
+            IsSkillAnimationPlaying = true; // Báo hiệu animation kỹ năng đang chạy
+            _animator.SetTrigger("ThrowSpear");
+            Debug.Log("[SpearManAnimationController] Kích hoạt Trigger ThrowSpear.");
+        }
+
+        /// <summary>
+        /// Hàm này được gọi từ Animation Event trong Unity Editor khi animation kỹ năng kết thúc.
+        /// Nó không được gọi trực tiếp từ code C#.
+        /// Đảm bảo đã thêm Animation Event vào cuối các Animation Clip của kỹ năng (ChopDown, Thrust, ThrowSpear).
+        /// </summary>
+        public void OnSkillAnimationEnd()
+        {
+            Debug.Log("[SpearManAnimationController] Animation kỹ năng kết thúc. Reset trạng thái.");
+            IsSkillAnimationPlaying = false; // Reset trạng thái để quay lại animation di chuyển cơ bản
+        }
+        #endregion
     }
 }
