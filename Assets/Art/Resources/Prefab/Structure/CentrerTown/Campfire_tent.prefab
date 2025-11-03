@@ -128,7 +128,8 @@ GameObject:
   - component: {fileID: 83944744110831243}
   - component: {fileID: 2257573948226559644}
   - component: {fileID: 6868009307681456013}
-  - component: {fileID: 4810159015605881407}
+  - component: {fileID: 1186328156643503206}
+  - component: {fileID: 1595055298338466532}
   m_Layer: 12
   m_Name: Campfire_tent
   m_TagString: TownCenter
@@ -296,7 +297,7 @@ MonoBehaviour:
   coinSlots: []
   coinsInTransit: []
   playerTrigger: 0
---- !u!114 &4810159015605881407
+--- !u!114 &1186328156643503206
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -305,16 +306,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 5576259235428986809}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f8f114f010e6604bb1047da44a0d394, type: 3}
+  m_Script: {fileID: 11500000, guid: bf27e088f49f8494c81d7343b20a9a6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  status: {fileID: 0}
+  plazaDistance: 0
+  coinUser: {fileID: 0}
+--- !u!114 &1595055298338466532
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5576259235428986809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baea668cd6798ba4c93461a8561df092, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   level: 2
   upgradeCost: 0
-  currentPrefab: {fileID: 0}
-  nextUpgradePrefab: {fileID: 0}
   readyToUpgrade: 0
   maxLevel: 0
   buildProgress: 0
   buildProgressMax: 0
-  plazaDistance: 0
-  coinUser: {fileID: 0}
+  currentPrefab: {fileID: 0}
+  nextUpgradePrefab: {fileID: 0}

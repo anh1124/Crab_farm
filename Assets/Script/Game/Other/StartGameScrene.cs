@@ -4,6 +4,10 @@ using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.IO;
+using Script.Manager;
+using System.Linq;
+using Script.Controller.PlayerController;
+using Script.Data_Model.Interfaces;
 
 namespace Script.Game.Other
 {
@@ -13,8 +17,10 @@ namespace Script.Game.Other
        
         public void Start()
         {
+            InitializeCoreData();//load data từ prefabdata sang các boottrap
             PrefabData.Instance.LoadPlayerCharactersFromJson();
-            //thực hiện load thế giới,tạo map,load container,etc...
+            
+            //thực hiện load thế giới từ path
             if (!LoadFromSave.Instance.DoLoadFromSaveFilePath(PlayerPrefs.GetString("SaveFilePath", "")))
             {
                 Debug.LogError("Không thể load từ file save, chuyển về màn hình chính");
@@ -22,13 +28,51 @@ namespace Script.Game.Other
                 return;
             }
             
-            // Kiểm tra và load WorldInfo sau khi load save
+            // Kiểm tra và load WorldInfo từ file save hiện tại
             LoadWorldInfoIfNeeded();
+            
             //instancePlayer
             InstancePlayerAndSetCamera();
-            PlayerController.PlayerController.Instance.damageAlly = true; // Cho phép gây damage lên đồng minh khi test
             
             //gán player cho các script cần thiết player khác
+            InitializePlayer();
+            
+            //setup lại Gui khác
+            SetupGUI();
+
+            CheckScriptsReady();
+            
+            // Chỉ chạy DevelopTest trong môi trường phát triển
+            #if UNITY_EDITOR
+            DevelopTest();
+            #endif
+            
+          
+        }
+
+        private void CheckScriptsReady()
+        {
+            if (EntitySaveManager.Instance == null)
+            {
+                Debug.LogError("EntitySaveManager.Instance is null.");
+            }
+        }
+
+        private void SetupGUI()
+        {
+            //tự động disable khi laod game
+            if (pauseMenuPanel == null)
+            {
+                Debug.LogError("pauseMenuPanel là null");
+            }
+            else
+            {
+                pauseMenuPanel.SetActive(true);
+            }
+        }
+
+        private void InitializePlayer()
+        {
             if (BuildMenu.instance != null)
             {
                 BuildMenu.instance.InitializePlayer();
@@ -37,32 +81,38 @@ namespace Script.Game.Other
             {
                 Debug.LogWarning("BuildMenu.instance không tồn tại, không thể khởi tạo player cho BuildMenu");
             }
-            
-            //thêm setup lại mấy cái gui ở dưới
-            if (pauseMenuPanel != null)
-            {
-                pauseMenuPanel.SetActive(true);
-            }
-            else
-            {
-                Debug.LogWarning("pauseMenuPanel là null, không thể hiển thị menu tạm dừng");
-            }
-            
-            // Chỉ chạy DevelopTest trong môi trường phát triển
-            #if UNITY_EDITOR
-            DevelopTest();
-           
-            #endif
-            
-            if (EntitySaveManager.Instance == null)
-            {
-                Debug.LogError("EntitySaveManager.Instance is null.");
-            }
         }
 
-        /// <summary>
-        /// Kiểm tra và load WorldInfo từ file save hiện tại
-        /// </summary>
+        private void InitializeCoreData()
+        {
+            // 1)kiểm tra prefabdata sẵn sàng
+            if (PrefabData.Instance == null)
+            {
+                var prefabData = FindObjectOfType<PrefabData>(true);
+                if (prefabData == null)
+                {
+                    Debug.LogError("[Bootstrap] PrefabData missing. Put a PrefabData in the scene before loading.");
+                    return;
+                }
+            }
+            
+            // 2) Tự động tìm tất cả IDataListBootstrap, sắp xếp theo Order và khởi tạo
+            var dataLists = FindObjectsOfType<MonoBehaviour>(true)
+                .OfType<IDataListBootstrap>()
+                .OrderBy(x => x.Order)
+                .ToList();
+            foreach (var list in dataLists)
+            {
+                try
+                {
+                    list.InitializeData(PrefabData.Instance);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[Bootstrap] Failed to initialize {list.GetType().Name}: {ex.Message}");
+                }
+            }
+        }
         private void LoadWorldInfoIfNeeded()
         {
             if (WorldFileManager.Instance == null)
@@ -95,8 +145,6 @@ namespace Script.Game.Other
                     return;
                 }
                 
-                //Debug.Log($"Tên thế giới được xác định: {worldName}");
-                
                 // Load WorldInfo
                 WorldInfo loadedInfo = WorldFileManager.Instance.LoadWorldInfo(worldName);
                 if (loadedInfo != null)
@@ -119,7 +167,7 @@ namespace Script.Game.Other
                 CreateDefaultWorldInfo();
             }
         }
-
+        
         /// <summary>
         /// Trích xuất tên thế giới từ đường dẫn save
         /// </summary>
@@ -191,13 +239,13 @@ namespace Script.Game.Other
         public void InstancePlayerAndSetCamera()
         {
             // Kiểm tra PlayerController.Instance tồn tại
-            if (PlayerController.PlayerController.Instance == null)
+            if (PlayerController.Instance == null)
             {
                 Debug.LogError("PlayerController.Instance là null, không thể tạo player");
                 return;
             }
             
-            if (PlayerController.PlayerController.Instance.player != null)
+            if (PlayerController.Instance.player != null)
             {
                 // Kiểm tra CameraFollowPlayer.Instance tồn tại
                 if (CameraFollowPlayer.Instance == null)
@@ -208,7 +256,7 @@ namespace Script.Game.Other
                 
                 // Nếu player đã được load, chỉ cần set lại camera
                 CameraFollowPlayer.Instance.setCameraTarget();
-                CameraFollowPlayer.Instance.TeleportCameraTo(PlayerController.PlayerController.Instance.player.transform.position);
+                CameraFollowPlayer.Instance.TeleportCameraTo(PlayerController.Instance.player.transform.position);
                 return;
             }
 
@@ -230,11 +278,11 @@ namespace Script.Game.Other
             GameObject player = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
             if (player == null)
             {
-                Debug.LogError("Failed to instantiate Player from prefab. Make sure player characters are loaded correctly.");
+                Debug.LogError("Failed to instantiate Player from prefabWall. Make sure player characters are loaded correctly.");
                 return;
             }
-            PlayerController.PlayerController.Instance.player = player;
-            PlayerController.PlayerController.Instance.SetUpControllerPlayer();
+            PlayerController.Instance.player = player;
+            PlayerController.Instance.SetUpControllerPlayer();
             
             // Kiểm tra CameraFollowPlayer.Instance tồn tại
             if (CameraFollowPlayer.Instance == null)
@@ -250,23 +298,18 @@ namespace Script.Game.Other
         public static void DevelopTest()
         {
             // Kiểm tra PlayerController.Instance tồn tại
-            if (PlayerController.PlayerController.Instance == null || 
-                PlayerController.PlayerController.Instance.player == null)
+            if (PlayerController.Instance == null || 
+                PlayerController.Instance.player == null)
             {
                 Debug.LogError("Player không tồn tại, không thể chạy DevelopTest");
                 return;
             }
             
-            // Kiểm tra component PlayerStatus tồn tại
-            PlayerStatus playerStatus = PlayerController.PlayerController.Instance.player.GetComponent<PlayerStatus>();
-            if (playerStatus == null)
-            {
-                Debug.LogError("Component PlayerStatus không tồn tại trên player");
-                return;
-            }
-            
             //add some coin for player test
-            playerStatus.Coin += 100;
+            PlayerController.Instance.playerBehavior.Coin += 100;
+            
+            // Cho phép gây damage lên đồng minh khi test
+            PlayerController.Instance.damageAlly = true;
             
             // Kiểm tra và log thông tin WorldInfo hiện tại
             if (WorldFileManager.Instance != null && WorldFileManager.Instance.worldInfo != null)

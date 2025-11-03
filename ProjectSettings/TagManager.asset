@@ -39,6 +39,7 @@ TagManager:
   - Vagrant
   - Villager
   - Stump
+  - CoinSlotLocation
   layers:
   - Default
   - TransparentFX
@@ -56,10 +57,10 @@ TagManager:
   - Player
   - TriggerLayer
   - Wall
+  - WallEnemy
+  - 
   - Item
   - PreviewPlace
-  - 
-  - 
   - 
   - 
   - 

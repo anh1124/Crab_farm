@@ -1,5 +1,5 @@
 using System;
-using Script.PlayerController;
+using Script.Controller.PlayerController;
 using UnityEngine;
 
 namespace Art.Resources.Character.PlayerCharactor.Spear_Man
@@ -14,7 +14,6 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         public bool IsSkillAnimationPlaying = false; // Mới: Thêm biến để theo dõi trạng thái animation kỹ năng
 
         private PlayerController _playerController;
-        public BaseStatus status;
 
         private Animator _animator;
         private Vector2 _previousPosition;
@@ -26,7 +25,6 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         #region Unity Lifecycle Methods
         private void Start()
         {
-            status = gameObject.GetComponent<BaseStatus>();
             _animator = GetComponent<Animator>();
             _previousPosition = rb.position;
         }
@@ -42,7 +40,8 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         #region Core Animation Logic
         public void UpdateStatus()
         {
-            isGround = status.isGround;
+            // Lấy trạng thái grounded từ PlayerController (đã tính theo hệ thống hiện tại)
+            isGround = PlayerController.Instance != null && PlayerController.Instance.isGrounded;
         }
 
         private void UpdateFacingDirection()

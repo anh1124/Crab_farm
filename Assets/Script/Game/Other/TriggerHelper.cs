@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class TriggerHelper : MonoBehaviour
 {
-    //script này sinh ra để giúp cho việc nhét tiền trong playeycontroller.đừng sờ vào nó
+    //script này dùng để kiểm tra trigger với layer thuộc list layer playerCoinUserInteractable
     
     
     public Collider2D structureCollider2D;

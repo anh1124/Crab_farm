@@ -3082,7 +3082,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 906688918}
-  - component: {fileID: 906688917}
+  - component: {fileID: 906688919}
   m_Layer: 0
   m_Name: Save Manager
   m_TagString: Untagged
@@ -3090,31 +3090,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &906688917
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 906688916}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19b854e817e4c6746bd362e42c3adf56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  saveRootPath: 
-  worldInfo:
-    Name: 
-    Seed: 0
-    GameHour: 0
-    GameMinute: 0
-    GameDay: 0
-    GameMonth: 0
-    GameYear: 0
-    TechFireArrow: 0
-    TechPenetrating: 0
-    TechForge: 0
-    TechAdhesive: 0
 --- !u!4 &906688918
 Transform:
   m_ObjectHideFlags: 0
@@ -3130,6 +3105,31 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &906688919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 906688916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78afa22a4cf1f0f49a4da66140800d1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  saveRootPath: 
+  worldInfo:
+    Name: 
+    Seed: 0
+    GameHour: 0
+    GameMinute: 0
+    GameDay: 0
+    GameMonth: 0
+    GameYear: 0
+    TechFireArrow: 0
+    TechPenetrating: 0
+    TechForge: 0
+    TechAdhesive: 0
 --- !u!1 &911617183
 GameObject:
   m_ObjectHideFlags: 0

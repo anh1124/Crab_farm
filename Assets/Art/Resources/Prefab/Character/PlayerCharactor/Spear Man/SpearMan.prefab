@@ -181,10 +181,11 @@ GameObject:
   - component: {fileID: 5869260686601916359}
   - component: {fileID: 1316814979545364949}
   - component: {fileID: 3654314619067390282}
-  - component: {fileID: 4325251575502946318}
+  - component: {fileID: 908741990135464966}
   - component: {fileID: -3560308634815069677}
-  - component: {fileID: 8514044053820796137}
   - component: {fileID: 7822777025946917786}
+  - component: {fileID: 8413050269500814157}
+  - component: {fileID: 8516832215337478737}
   m_Layer: 13
   m_Name: SpearMan
   m_TagString: Player
@@ -360,7 +361,6 @@ MonoBehaviour:
   rb: {fileID: 1457712919463588002}
   isGround: 0
   IsSkillAnimationPlaying: 0
-  status: {fileID: 0}
   speedNeedToShowRun: 5
 --- !u!114 &3654314619067390282
 MonoBehaviour:
@@ -376,7 +376,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   triggerLayerName: TriggerLayer
   collidingObjectsList: []
---- !u!114 &4325251575502946318
+--- !u!114 &908741990135464966
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -385,7 +385,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5938808828433451200}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afdd0db0f4ff75a4dac1c2868084117f, type: 3}
+  m_Script: {fileID: 11500000, guid: 9816b912a4d3c6d4a844f660372ce488, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameObjectHasShowCoinSlot: {fileID: 0}
@@ -402,24 +402,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e1ac23c20c5884e92821d6f65c0639, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &8514044053820796137
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5938808828433451200}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 0
-  position: {x: 0, y: 0}
-  isGround: 0
-  maxHp: 0
-  currentHp: 0
-  coin: 0
 --- !u!114 &7822777025946917786
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -439,6 +421,40 @@ MonoBehaviour:
   throwSpearCollider: {fileID: 0}
   throwSpearDamage: 20
   playerController: {fileID: 0}
+--- !u!114 &8413050269500814157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 774d7b74a987eaa4789776568dc254e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  status: {fileID: 8516832215337478737}
+--- !u!114 &8516832215337478737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHp: 10
+  currentHp: 10
+  coin: 0
+  moveSpeed: 7
+  positionX: 0
+  positionY: 0
+  attackDame: 10
+  attackSpeed: 1
+  isGround: 0
 --- !u!1 &6752379391725988446
 GameObject:
   m_ObjectHideFlags: 0

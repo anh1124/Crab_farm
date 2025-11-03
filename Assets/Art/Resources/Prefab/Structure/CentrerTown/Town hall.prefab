@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 230853267246012537}
   - component: {fileID: 6226230491599058176}
   - component: {fileID: 1444184655723440287}
+  - component: {fileID: 3880995909453524723}
   m_Layer: 12
   m_Name: Town hall
   m_TagString: TownCenter
@@ -180,19 +181,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 4357016612535733957}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f8f114f010e6604bb1047da44a0d394, type: 3}
+  m_Script: {fileID: 11500000, guid: bf27e088f49f8494c81d7343b20a9a6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  status: {fileID: 0}
+  plazaDistance: 0
+  coinUser: {fileID: 0}
+--- !u!114 &3880995909453524723
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4357016612535733957}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baea668cd6798ba4c93461a8561df092, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   level: 3
   upgradeCost: 0
-  currentPrefab: {fileID: 0}
-  nextUpgradePrefab: {fileID: 0}
   readyToUpgrade: 0
   maxLevel: 0
   buildProgress: 0
   buildProgressMax: 0
-  plazaDistance: 0
-  coinUser: {fileID: 0}
+  currentPrefab: {fileID: 0}
+  nextUpgradePrefab: {fileID: 0}
 --- !u!1 &6307660453676820116
 GameObject:
   m_ObjectHideFlags: 0

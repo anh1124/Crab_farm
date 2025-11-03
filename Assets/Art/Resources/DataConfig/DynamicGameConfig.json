@@ -1,0 +1,14 @@
+{
+  "vendorPrices": [
+    { "productId": "BowVendor", "price": 2 },
+    { "productId": "HammerVendor", "price": 3 },
+    { "productId": "ScytheVendor", "price": 3 },
+    { "productId": "SwordVendor", "price": 3 },
+    { "productId": "SpikeVendor", "price": 3 }
+  ],
+  "allyTags": {
+    "allyTags": ["Player", "Archer", "Wall", "Villager"]
+  }
+}
+
+

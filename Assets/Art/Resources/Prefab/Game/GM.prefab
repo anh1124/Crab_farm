@@ -1,5 +1,241 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &489224416659448179
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1109258664885330200}
+  - component: {fileID: 2315010559345707460}
+  - component: {fileID: 7904837307964083632}
+  - component: {fileID: 1745067882597772487}
+  - component: {fileID: 1234561615662485248}
+  - component: {fileID: 3643117081489509252}
+  - component: {fileID: 3821632200359627947}
+  - component: {fileID: 3334930835799587854}
+  - component: {fileID: 4930023356812252655}
+  - component: {fileID: 3345430047266833447}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1109258664885330200
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8862165295465698764}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2315010559345707460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94ca18e9b02094a47bc8d6aad890e6fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  placementLayers:
+  - Structure
+  invalidPlacementTags: []
+  tagsToOrient:
+  - Wall
+  - ArcherTower
+  raycastYOffset: 0.8
+  showDebugLog: 0
+--- !u!114 &7904837307964083632
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 700cda727ac103e4b8039e403d31454a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableDebugLogs: 0
+  townCenterPrefabs: []
+  townCenterData:
+    tier: 0
+    upgradeCost: 0
+    readyToUpgrade: 0
+    buildProgress: 0
+    buildProgressMax: 0
+    maxTier: 0
+  configFileName: BuildingLimits
+  townCenterConfigs: []
+  availableStructures: []
+  currentTownCenterLevel: 0
+  currentTownCenter: {fileID: 0}
+  townCenter: {fileID: 0}
+--- !u!114 &1745067882597772487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78afa22a4cf1f0f49a4da66140800d1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  saveRootPath: 
+  worldInfo:
+    Name: 
+    Seed: 0
+    GameHour: 0
+    GameMinute: 0
+    GameDay: 0
+    GameMonth: 0
+    GameYear: 0
+    TechFireArrow: 0
+    TechPenetrating: 0
+    TechForge: 0
+    TechAdhesive: 0
+--- !u!114 &1234561615662485248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e459c5e8e2332d8429b816e24ed2e6a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  seed: 0
+  groundChunkPath: Prefab/Chunk/ChunkGround
+  impassableRockPath: Prefab/Chunk/ImpassableRock
+  chunkPrefabsList: []
+  impassableRockPrefabs: []
+  emptyChunk: {fileID: 3831790649435925577, guid: d81c400a7debd014e972751dbc6c579b, type: 3}
+  chunkList: []
+  impassableRockLeft: {fileID: 0}
+  impassableRockRight: {fileID: 0}
+--- !u!114 &3643117081489509252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d62d6202e3fd4742a46c32b0221ee76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  timeDisplay: {fileID: 0}
+  inspectorHour: 0
+  inspectorMinute: 0
+  inspectorDay: 1
+  inspectorMonth: 1
+  inspectorYear: 1
+  realSecondsPerGameDay: 240
+  hourlyEventDebug: []
+--- !u!114 &3821632200359627947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7c3102440a64f84eb5f0cda140aff0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  saveFilePath: 
+  worldInfo:
+    Name: 
+    Seed: 0
+    GameHour: 0
+    GameMinute: 0
+    GameDay: 0
+    GameMonth: 0
+    GameYear: 0
+    TechFireArrow: 0
+    TechPenetrating: 0
+    TechForge: 0
+    TechAdhesive: 0
+--- !u!114 &3334930835799587854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e0a85350342ff244b9e08d48b59f7b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allContainers: []
+  playerContainer: {fileID: 0}
+  chunkContainer: {fileID: 0}
+  coinContainer: {fileID: 0}
+  structureContainer: {fileID: 0}
+  natureContainer: {fileID: 0}
+  animalsContainer: {fileID: 0}
+  enemyContainer: {fileID: 0}
+  wanderersContainer: {fileID: 0}
+  villagersContainer: {fileID: 0}
+  statuesContainer: {fileID: 0}
+  otherContainer: {fileID: 0}
+--- !u!114 &4930023356812252655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7314a43da306c144b0c2397324382cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinSlotPrefab: {fileID: 9131483258529145134, guid: 00c8c248ccb96644ebd4bbf202bac74e, type: 3}
+  coinEmpty: {fileID: 21300000, guid: 00ebcb4d2f9ca514a9560a1cfc61a5ed, type: 3}
+  coinLocked: {fileID: 21300000, guid: f4f6dd70f2a00cb49a3b8e7463463f7c, type: 3}
+  x: 1.6
+  y: 1.5
+  curvature: 0.5
+  locations: {fileID: 0}
+--- !u!114 &3345430047266833447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1089468f53d33734e9caa71f022533c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinThrowForce: 10
+  coinThrowDistance: 2
+  coinPrefab: {fileID: 0}
 --- !u!1 &1595070778010574993
 GameObject:
   m_ObjectHideFlags: 0
@@ -10,18 +246,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8862165295465698764}
   - component: {fileID: 7567741772578441490}
-  - component: {fileID: 8461418768698195358}
-  - component: {fileID: 9035146963247413293}
-  - component: {fileID: 7479803545423749147}
-  - component: {fileID: 9144216874767433334}
-  - component: {fileID: 1785875979016078859}
-  - component: {fileID: 6439472928953053899}
-  - component: {fileID: 4628210728400573778}
-  - component: {fileID: 1557313042388775290}
-  - component: {fileID: 814197313591573416}
-  - component: {fileID: 4896579773367113099}
-  - component: {fileID: 7170061680519524738}
-  - component: {fileID: 2909569434897254568}
   m_Layer: 0
   m_Name: GM
   m_TagString: Untagged
@@ -45,6 +269,7 @@ Transform:
   - {fileID: 8680344821423139051}
   - {fileID: 2949667043601837865}
   - {fileID: 6346922608528192028}
+  - {fileID: 1109258664885330200}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7567741772578441490
@@ -60,303 +285,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pauseMenuPanel: {fileID: 0}
---- !u!114 &8461418768698195358
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1089468f53d33734e9caa71f022533c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  coinThrowForce: 10
-  coinThrowDistance: 2
-  coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
---- !u!114 &9035146963247413293
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7314a43da306c144b0c2397324382cb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  coinSlotPrefab: {fileID: 9131483258529145134, guid: 00c8c248ccb96644ebd4bbf202bac74e, type: 3}
-  coinEmpty: {fileID: 21300000, guid: 00ebcb4d2f9ca514a9560a1cfc61a5ed, type: 3}
-  coinLocked: {fileID: 21300000, guid: f4f6dd70f2a00cb49a3b8e7463463f7c, type: 3}
-  x: 1.6
-  y: 1.5
-  curvature: 0.5
-  locations: {fileID: 0}
---- !u!114 &7479803545423749147
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4633b0cd12656b4495dc0efff176b3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  playerSpeed: 7
-  mainCamera: {fileID: 0}
-  skipBuildingProcess: 1
-  ToolTag:
-  - Hammer
-  - Bow
-  playerCharacterList: []
-  currentCreatChunk: 21
-  wallDirtMound0: {fileID: 0}
-  wallList: []
-  stumpList: []
-  coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
-  coinMoveSpeed: 0.5
-  fallSpeed: 15
-  timeMaxFloatCoin: 3
-  townCenterList: []
-  plazaDistance: 10
-  farmWaterStream0: {fileID: 0}
-  farmWell1: {fileID: 0}
-  farmHouse2: {fileID: 0}
-  farmPlot: {fileID: 0}
-  towerList: []
-  upgradeHouse: {fileID: 0}
-  siegeWorkshop: {fileID: 0}
-  bowVendor: {fileID: 0}
-  hammerVendor: {fileID: 0}
-  oilBarrelVendor: {fileID: 0}
-  catapult: {fileID: 0}
-  vagrant: {fileID: 0}
-  village: {fileID: 0}
-  Bow: {fileID: 0}
-  Hammer: {fileID: 0}
-  tree: {fileID: 0}
-  treePrefabsList: []
-  treeChopCost: 1
-  TreeMaxWorkProgress: 5
-  maxDistanceFromBush: 5
-  rabbitBush: {fileID: 0}
-  maxRabbitLimit: 0
-  rabbit: {fileID: 0}
-  rabbitHp: 1
-  rabbitSpeed: 1
-  rabbitDieReward: 1
-  summoningPortal: {fileID: 0}
-  gameObjectHaveCanvas: {fileID: 0}
-  confirmationPanel: {fileID: 1899307974243404924, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
-  playerCoinUserInteractable: []
-  buildingDataList: []
---- !u!114 &9144216874767433334
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63af5ef4c08bac44bb5747827b3a7680, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  timeDisplay: {fileID: 0}
-  inspectorHour: 0
-  inspectorMinute: 0
-  inspectorDay: 1
-  inspectorMonth: 1
-  inspectorYear: 1
-  realSecondsPerGameDay: 240
-  hourlyEventDebug: []
---- !u!114 &1785875979016078859
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aeb8b6717605ca94db171d15c9e6d3f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  growthRate: 5
-  portalSummond: {fileID: 0}
-  portalL: {fileID: 0}
-  portalR: {fileID: 0}
-  portalLEnemyList: []
-  portalREnemyList: []
-  currentWaveEnemies: []
---- !u!114 &6439472928953053899
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5570bdb9c7e363340bdbdf95c4b137f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  seed: 0
-  groundChunkPath: Prefab/Chunk/ChunkGround
-  impassableRockPath: Prefab/Chunk/ImpassableRock
-  chunkPrefabsList: []
-  impassableRockPrefabs: []
-  emptyChunk: {fileID: 0}
-  chunkList: []
-  impassableRockLeft: {fileID: 0}
-  impassableRockRight: {fileID: 0}
---- !u!114 &4628210728400573778
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8dedbdf52520ab41a8ead08d59c2c07, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  allContainers: []
-  playerContainer: {fileID: 0}
-  chunkContainer: {fileID: 0}
-  coinContainer: {fileID: 0}
-  structureContainer: {fileID: 0}
-  natureContainer: {fileID: 0}
-  animalsContainer: {fileID: 0}
-  enemyContainer: {fileID: 0}
-  wanderersContainer: {fileID: 0}
-  villagersContainer: {fileID: 0}
-  statuesContainer: {fileID: 0}
-  otherContainer: {fileID: 0}
---- !u!114 &1557313042388775290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19b854e817e4c6746bd362e42c3adf56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  saveRootPath: 
-  worldInfo:
-    Name: 
-    Seed: 0
-    GameHour: 0
-    GameMinute: 0
-    GameDay: 0
-    GameMonth: 0
-    GameYear: 0
-    TechFireArrow: 0
-    TechPenetrating: 0
-    TechForge: 0
-    TechAdhesive: 0
---- !u!114 &814197313591573416
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9da208acbbd84c849820ebc982b66db6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  saveFilePath: 
-  worldInfo:
-    Name: 
-    Seed: 0
-    GameHour: 0
-    GameMinute: 0
-    GameDay: 0
-    GameMonth: 0
-    GameYear: 0
-    TechFireArrow: 0
-    TechPenetrating: 0
-    TechForge: 0
-    TechAdhesive: 0
---- !u!114 &4896579773367113099
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: abfb00970c6b2404bb5808ad84aaeef3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  placementLayers:
-  - Structure
-  invalidPlacementTags: []
-  tagsToOrient:
-  - Wall
-  - ArcherTower
-  raycastYOffset: 0.8
-  showDebugLog: 0
---- !u!114 &7170061680519524738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b321a4322334657959f70c67d207eda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  enableDebugLogs: 0
-  townCenterPrefabs:
-  - {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
-  - {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
-  - {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
-  - {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
-  - {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
-  townCenterData:
-    level: 0
-    upgradeCost: 0
-    readyToUpgrade: 0
-    buildProgress: 0
-    buildProgressMax: 0
-    maxLevel: 0
-  configFileName: BuildingLimits
-  townCenterConfigs: []
-  availableStructures: []
-  currentTownCenterLevel: 0
-  currentTownCenter: {fileID: 0}
-  townCenter: {fileID: 0}
---- !u!114 &2909569434897254568
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595070778010574993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 013b498618cd5c44d8501f7304bafd1a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  townCenter: {fileID: 0}
-  leftWalls: []
-  rightWalls: []
-  stumps: []
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -367,9 +295,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2949667043601837865}
   - component: {fileID: 7765439820989704710}
-  - component: {fileID: 6521232738708841770}
   - component: {fileID: 2954578663607396334}
-  - component: {fileID: 1230726632427416621}
+  - component: {fileID: 6834463355008516617}
   m_Layer: 0
   m_Name: Data
   m_TagString: Untagged
@@ -410,97 +337,6 @@ MonoBehaviour:
   twoHeadBot: {fileID: 0}
   stormHead: {fileID: 0}
   toucher: {fileID: 0}
---- !u!114 &6521232738708841770
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3590571741115332272}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b89a3b3d0fbfc144ab1ce42e8c32e121, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  wallList:
-  - tier: 0
-    upgradeCost: 0
-    rebuildCost: 0
-    normalMaxHp: 0
-    blessedMaxHp: 0
-    buildProgress: 0
-    prefabId: 
-    stumpPrefabId: 
-    nextUpgradePrefabId: 
-    curentPrefab: {fileID: 0}
-    stumpPrefab: {fileID: 0}
-    nextUpgradePrefab: {fileID: 0}
-    maxLevel: 0
-  - tier: 0
-    upgradeCost: 0
-    rebuildCost: 0
-    normalMaxHp: 0
-    blessedMaxHp: 0
-    buildProgress: 0
-    prefabId: 
-    stumpPrefabId: 
-    nextUpgradePrefabId: 
-    curentPrefab: {fileID: 0}
-    stumpPrefab: {fileID: 0}
-    nextUpgradePrefab: {fileID: 0}
-    maxLevel: 0
-  - tier: 0
-    upgradeCost: 0
-    rebuildCost: 0
-    normalMaxHp: 0
-    blessedMaxHp: 0
-    buildProgress: 0
-    prefabId: 
-    stumpPrefabId: 
-    nextUpgradePrefabId: 
-    curentPrefab: {fileID: 0}
-    stumpPrefab: {fileID: 0}
-    nextUpgradePrefab: {fileID: 0}
-    maxLevel: 0
-  - tier: 0
-    upgradeCost: 0
-    rebuildCost: 0
-    normalMaxHp: 0
-    blessedMaxHp: 0
-    buildProgress: 0
-    prefabId: 
-    stumpPrefabId: 
-    nextUpgradePrefabId: 
-    curentPrefab: {fileID: 0}
-    stumpPrefab: {fileID: 0}
-    nextUpgradePrefab: {fileID: 0}
-    maxLevel: 0
-  - tier: 0
-    upgradeCost: 0
-    rebuildCost: 0
-    normalMaxHp: 0
-    blessedMaxHp: 0
-    buildProgress: 0
-    prefabId: 
-    stumpPrefabId: 
-    nextUpgradePrefabId: 
-    curentPrefab: {fileID: 0}
-    stumpPrefab: {fileID: 0}
-    nextUpgradePrefab: {fileID: 0}
-    maxLevel: 0
-  - tier: 0
-    upgradeCost: 0
-    rebuildCost: 0
-    normalMaxHp: 0
-    blessedMaxHp: 0
-    buildProgress: 0
-    prefabId: 
-    stumpPrefabId: 
-    nextUpgradePrefabId: 
-    curentPrefab: {fileID: 0}
-    stumpPrefab: {fileID: 0}
-    nextUpgradePrefab: {fileID: 0}
-    maxLevel: 0
 --- !u!114 &2954578663607396334
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -514,7 +350,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   townCentrerList: []
---- !u!114 &1230726632427416621
+--- !u!114 &6834463355008516617
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -523,10 +359,75 @@ MonoBehaviour:
   m_GameObject: {fileID: 3590571741115332272}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f977e21e9d3f9941951f8f25beaa29e, type: 3}
+  m_Script: {fileID: 11500000, guid: b4633b0cd12656b4495dc0efff176b3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stumpDataList: []
+  player: {fileID: 0}
+  playerSpeed: 10
+  mainCamera: {fileID: 0}
+  skipBuildingProcess: 1
+  toolTag:
+  - Hammer
+  - Bow
+  playerCharacterList: []
+  currentCreatChunk: 21
+  prefabWall: {fileID: 0}
+  coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+  coinMoveSpeed: 0.5
+  fallSpeed: 15
+  timeMaxFloatCoin: 3
+  townCenterList:
+  - {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
+  - {fileID: 3216475986092817579, guid: 4f9bfc469d4d43540a0e4111736b6cb5, type: 3}
+  - {fileID: 5576259235428986809, guid: d3401a1317e1ee84481b2829dd902b7f, type: 3}
+  - {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
+  - {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
+  plazaDistance: 10
+  farmWaterStream0: {fileID: 0}
+  farmWell1: {fileID: 0}
+  farmHouse2: {fileID: 0}
+  farmPlot: {fileID: 0}
+  towerList: []
+  upgradeHouse: {fileID: 0}
+  siegeWorkshop: {fileID: 0}
+  bowVendor: {fileID: 8435948595016383760, guid: 2924dde1c8b980840bdb397795e30461, type: 3}
+  hammerVendor: {fileID: 3757704238293593943, guid: b6693e7d830a7ce41a55bd13977bc0ba, type: 3}
+  oilBarrelVendor: {fileID: 0}
+  catapult: {fileID: 0}
+  vagrant: {fileID: 6666266359872341608, guid: 83039224ec1923345b722033f7cd42f7, type: 3}
+  village: {fileID: 5039406809920019329, guid: 62484807a96713f4391ad84443d83fd2, type: 3}
+  bow: {fileID: 0}
+  hammer: {fileID: 0}
+  tree: {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+  treePrefabsList:
+  - {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+  - {fileID: 9095888047805289594, guid: c5ed5e1fcf7218e43b7e1df17f8e351d, type: 3}
+  - {fileID: 9095888047805289594, guid: 8e3bbeb21a362064db4a4cba03b23a4a, type: 3}
+  - {fileID: 9095888047805289594, guid: 71df83a18c7099448840889844da1756, type: 3}
+  - {fileID: 9095888047805289594, guid: a67bdc87840d20448a47e69b6470b287, type: 3}
+  - {fileID: 9095888047805289594, guid: b3abe100a1eac0a4eb188cafa16f661f, type: 3}
+  - {fileID: 9095888047805289594, guid: 5b8adaff6d5a76c46a7edd8ac05a86de, type: 3}
+  - {fileID: 9095888047805289594, guid: 97329e58892e3ae4e906fba837ec0523, type: 3}
+  - {fileID: 9095888047805289594, guid: 89beb37cd8903ee428f6380d6bbebeea, type: 3}
+  treeChopCost: 1
+  treeMaxWorkProgress: 5
+  maxDistanceFromBush: 5
+  rabbitBush: {fileID: 2753735699085606491, guid: acceee6205802574c804cf8b9f9278ef, type: 3}
+  maxRabbitLimit: 5
+  rabbit: {fileID: 1797552028611793394, guid: f9ccfd666c9086141b84c1e379daebf9, type: 3}
+  rabbitHp: 1
+  rabbitSpeed: 1
+  rabbitDieReward: 1
+  summoningPortal: {fileID: 0}
+  gameObjectHaveCanvas: {fileID: 0}
+  confirmationPanel: {fileID: 1899307974243404924, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
+  playerCoinUserInteractable: []
+  allyTags:
+  - Player
+  - Archer
+  - Wall
+  - Villager
+  buildingDataList: []
 --- !u!1 &5848034847329386121
 GameObject:
   m_ObjectHideFlags: 0
@@ -539,6 +440,7 @@ GameObject:
   - component: {fileID: 8848505126678873454}
   - component: {fileID: 8165894474658827718}
   - component: {fileID: 3049763487298047513}
+  - component: {fileID: 4707844484781350320}
   m_Layer: 0
   m_Name: MobsManager
   m_TagString: Untagged
@@ -604,6 +506,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f57c4ca86551b34dafa2cf9519883b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &4707844484781350320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5848034847329386121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 013b498618cd5c44d8501f7304bafd1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  townCenter: {fileID: 0}
+  leftWalls: []
+  rightWalls: []
+  stumps: []
 --- !u!1 &8561453029835615655
 GameObject:
   m_ObjectHideFlags: 0
@@ -648,14 +566,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ffd90c3d84a3d41b13bd7282b662e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageAlly: 0
-  coinUser: {fileID: 0}
   rb: {fileID: 0}
-  playerStatus: {fileID: 0}
+  playerBehavior: {fileID: 0}
   player: {fileID: 0}
   direction: 0
   isGrounded: 0
   moveSpeed: 0
   isActiveUpdate: 0
   isAlive: 1
+  damageAlly: 0
+  coinUser: {fileID: 0}
   currentStructureShowCoinSlot: {fileID: 0}

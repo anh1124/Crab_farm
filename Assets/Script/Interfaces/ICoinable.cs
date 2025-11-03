@@ -1,0 +1,12 @@
+using UnityEngine;
+
+namespace Script.Data_Model.Interfaces
+{
+    public interface ICoinable 
+    {
+        int Coin { get; set; }
+        void SubtractCoin(int amount);//bớt coin
+        void AddCoin(int amount);//thêm coin
+        void PickUpCoin(GameObject coinGameObject);// nhặt coin
+    }
+}

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a61ce7147391034c964782acfb99403, type: 3}
+  m_Name: Wall_Tier3
+  m_EditorClassIdentifier: 
+  tier: 3
+  prefabWall: {fileID: 1135329394323526417, guid: 36fdd08005536274ab9f4b149a596c63, type: 3}
+  prefabStump: {fileID: 1913700099761040674, guid: ba587d698125f3a4a9309e0fa3c17dd6, type: 3}
+  normalMaxHp: 200
+  blessedMaxHp: 360
+  reBuildCost: 3
+  upgradeCost: 5
+  upgradeProgressMax: 15
+  buildTier1Cost: 0
+  description: 

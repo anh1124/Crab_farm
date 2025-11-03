@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Script;
 using Script.Data_Model;
 using Script.Game.Item.Coin;
+using Script.Manager;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -151,13 +152,13 @@ public class Spawner : MonoBehaviour
     /// Spawns a mob at the specified position
     /// </summary>
     /// <param name="position">Spawn position</param>
-    /// <param name="prefab">The prefab to spawn</param>
+    /// <param name="prefab">The prefabWall to spawn</param>
     /// <returns>The spawned GameObject or null if spawn failed</returns>
     public GameObject SpawnMob(Vector3 position, GameObject prefab)
     {
         if (prefab == null)
         {
-            Debug.LogError("[Spawner] Cannot spawn mob - prefab is null!");
+            Debug.LogError("[Spawner] Cannot spawn mob - prefabWall is null!");
             return null;
         }
 

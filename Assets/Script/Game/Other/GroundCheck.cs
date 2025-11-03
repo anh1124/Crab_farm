@@ -1,16 +1,17 @@
 using System.Collections.Generic;
+using Script.Data_Model.Status;
 using UnityEngine;
 
 public class GroundCheck : MonoBehaviour
 {
     private TriggerCheckSetup triggerCheckSetup; // Script quản lý danh sách các trigger
     private List<GameObject> collidingObjectsList; // Danh sách các đối tượng đang va chạm
-    private BaseStatus status; // Truy cập trạng thái từ script Status
+    private PlayerStatus status; // Truy cập trạng thái từ script Status
 
     private void Start()
     {
         // Lấy tham chiếu tới script Status
-        status = gameObject.GetComponent<BaseStatus>();
+        status = gameObject.GetComponent<PlayerStatus>();
         // Lấy tham chiếu tới TriggerCheckSetup
         triggerCheckSetup = gameObject.GetComponent<TriggerCheckSetup>();
         if (triggerCheckSetup == null)

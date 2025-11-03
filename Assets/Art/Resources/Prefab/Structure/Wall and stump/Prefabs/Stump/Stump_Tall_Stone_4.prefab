@@ -11,8 +11,6 @@ GameObject:
   - component: {fileID: 1251693087776401996}
   - component: {fileID: 5587528273868844152}
   - component: {fileID: 1629825323379375850}
-  - component: {fileID: -1823940190482569443}
-  - component: {fileID: -7802363813840858878}
   m_Layer: 12
   m_Name: Stump_Tall_Stone_4
   m_TagString: Stump
@@ -133,46 +131,6 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 3.6, y: 0.92353797}
   m_EdgeRadius: 0
---- !u!114 &-1823940190482569443
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2072569183713251011}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canAcceptCoins: 1
-  requiredCoins: 0
-  collectedCoins: 0
-  coinCollectionTimeout: 0
-  coinCollectionTimer: 0
-  coinSlotParent: {fileID: 0}
-  isReadyToUpgrade: 0
-  buildingType: 0
-  currentTier: 0
-  coinPrefab: {fileID: 0}
-  coinSlots: []
-  coinsInTransit: []
-  playerTrigger: 0
---- !u!114 &-7802363813840858878
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2072569183713251011}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9dfa10f8cb6030248981236b427e5a11, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tier: 4
-  rebuildCost: 0
-  wallPrefab: {fileID: 0}
 --- !u!1 &5760120219769081468
 GameObject:
   m_ObjectHideFlags: 0
