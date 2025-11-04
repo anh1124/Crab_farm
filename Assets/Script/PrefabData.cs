@@ -167,8 +167,8 @@ namespace Script.Data_Model
         #region Subjects
         
         public GameObject catapult;
-        public GameObject vagrant;
-        public GameObject village;
+        
+        public GameObject denizen;//base prefab for village,archer,vagrant,... 
         #endregion
         [FormerlySerializedAs("Bow")] [Space(15)] [Header("ItemItem ")] [Space(5)]  
         #region ItemItem
@@ -310,20 +310,12 @@ namespace Script.Data_Model
                 Debug.LogError("Coin prefabWall is missing! Make sure to assign it in the inspector.");
             }
             
-            // Register vagrant prefabWall
-            if (vagrant != null)
-            {
-                prefabDict.Add("vagrant", vagrant);
-            }
+           
 
-            // Register villager prefabWall
-            if (village != null)
+            // Register denizen prefab (unified subject prefab)
+            if (denizen != null)
             {
-                prefabDict.Add("villager", village);
-            }
-            else
-            {
-                Debug.LogError("Villager prefabWall is missing! Make sure to assign it in the inspector.");
+                prefabDict.Add("denizen", denizen);
             }
         }
         

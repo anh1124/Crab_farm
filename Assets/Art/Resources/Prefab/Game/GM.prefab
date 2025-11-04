@@ -55,9 +55,6 @@ MonoBehaviour:
   placementLayers:
   - Structure
   invalidPlacementTags: []
-  tagsToOrient:
-  - Wall
-  - ArcherTower
   raycastYOffset: 0.8
   showDebugLog: 0
 --- !u!114 &7904837307964083632
@@ -72,21 +69,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700cda727ac103e4b8039e403d31454a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableDebugLogs: 0
-  townCenterPrefabs: []
-  townCenterData:
-    tier: 0
-    upgradeCost: 0
-    readyToUpgrade: 0
-    buildProgress: 0
-    buildProgressMax: 0
-    maxTier: 0
   configFileName: BuildingLimits
   townCenterConfigs: []
   availableStructures: []
-  currentTownCenterLevel: 0
   currentTownCenter: {fileID: 0}
-  townCenter: {fileID: 0}
 --- !u!114 &1745067882597772487
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -394,8 +380,7 @@ MonoBehaviour:
   hammerVendor: {fileID: 3757704238293593943, guid: b6693e7d830a7ce41a55bd13977bc0ba, type: 3}
   oilBarrelVendor: {fileID: 0}
   catapult: {fileID: 0}
-  vagrant: {fileID: 6666266359872341608, guid: 83039224ec1923345b722033f7cd42f7, type: 3}
-  village: {fileID: 5039406809920019329, guid: 62484807a96713f4391ad84443d83fd2, type: 3}
+  denizen: {fileID: 0}
   bow: {fileID: 0}
   hammer: {fileID: 0}
   tree: {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
@@ -437,6 +422,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8680344821423139051}
+  - component: {fileID: 5652501071760087765}
   - component: {fileID: 8848505126678873454}
   - component: {fileID: 8165894474658827718}
   - component: {fileID: 3049763487298047513}
@@ -463,6 +449,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8862165295465698764}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5652501071760087765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5848034847329386121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c09f8f18291cf904daa8523840b37abf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &8848505126678873454
 MonoBehaviour:
   m_ObjectHideFlags: 0

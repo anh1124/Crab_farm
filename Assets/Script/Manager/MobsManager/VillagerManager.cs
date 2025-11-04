@@ -36,6 +36,8 @@ namespace Script.Game.Mobs
 
         // Lists for tracking
         private List<GameObject> villagers = new List<GameObject>();
+
+        //lẽ ra nên tạo toolmanager nhưng hiện tại chỉ có villager chuyển nghề nhờ tool nên chưa làm 
         private List<ToolData> availableTools = new List<ToolData>();
 
         // Cache khoảng cách để tránh tính toán lại
@@ -154,6 +156,27 @@ namespace Script.Game.Mobs
         #endregion
 
         #region Villager Management
+        // New API preferred by DenizenManager
+        public void OnRegister(GameObject denizen)
+        {
+            if (denizen == null) return;
+            var ctrl = denizen.GetComponent<DenizenController>();
+            if (ctrl == null || ctrl.CurrentRole != NPCRole.Villager) return;
+
+            if (!villagers.Contains(denizen))
+            {
+                villagers.Add(denizen);
+                CheckForUnassignedTools(denizen);
+            }
+        }
+
+        public void OnUnregister(GameObject denizen)
+        {
+            if (denizen == null) return;
+            villagers.Remove(denizen);
+            ClearCacheEntriesForVillager(denizen);
+        }
+
         public void RegisterVillager(GameObject villager)
         {
             if (villager != null && !villagers.Contains(villager))

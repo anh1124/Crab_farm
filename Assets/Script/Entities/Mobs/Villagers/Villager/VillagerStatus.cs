@@ -2,11 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Script.Data_Model.Interfaces;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Data_Model.Status
 {
     [System.Serializable]
-    public class VillagerStatus : MonoBehaviour
+    public class VillagerStatus : MonoBehaviour, INPCStatus
     {
         /// <summary>
         /// script này chỉ lưu data
@@ -40,6 +42,9 @@ namespace Script.Data_Model.Status
             set => currentCoins = Mathf.Clamp(value, 0, maxCoins);
         }
         public int MaxCoins => maxCoins;
+
+        // INPCStatus implementation
+        public NPCRole Role => NPCRole.Villager;
 
         // Save Data Structure
         [System.Serializable]

@@ -4,6 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Script.Controller.PlayerController;
 using Script.Data_Model;
+using Script.Data_Model.Status;
 using Script.Data_Model.Interfaces;
 using UnityEngine;
 // using Script.Manager.BuildingManager; // Avoid importing this namespace here to prevent name conflict with class BuildingManager
@@ -804,6 +805,28 @@ namespace Script.Manager
 
                     if (isDebug) Debug.Log($"Creating instance of prefabWall: {prefab.name}");
                     var instance = Instantiate(prefab, container.transform);
+
+                    // Special handling: if this is a TownCenter prefab, infer and set tier from prefabID before RestoreData
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(savedObject.prefabID) && savedObject.prefabID.StartsWith("town_center_"))
+                        {
+                            var tcs = instance.GetComponent<TownCenterStatus>();
+                            if (tcs != null)
+                            {
+                                var suffix = savedObject.prefabID.Substring("town_center_".Length);
+                                if (int.TryParse(suffix, out int parsedTier))
+                                {
+                                    tcs.tier = parsedTier;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"[EntitySaveManager] Failed to set TownCenter tier from prefabID: {e.Message}");
+                    }
+
                     var saveable = instance.GetComponent<ISaveable>();
                     if (saveable != null)
                     {

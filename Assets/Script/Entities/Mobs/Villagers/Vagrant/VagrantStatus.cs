@@ -1,10 +1,12 @@
 using System;
 using UnityEngine;
+using Script.Data_Model.Interfaces;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Data_Model.Status
 {
     [System.Serializable]
-    public class VagrantStatus : MonoBehaviour
+    public class VagrantStatus : MonoBehaviour, INPCStatus
     {
         // Enum Declaration
         public enum VagrantState
@@ -41,7 +43,7 @@ namespace Script.Data_Model.Status
         [SerializeField] private float roadToTarget = 0f;
         [SerializeField] private Vector2 targetPosition;
         [SerializeField] private GameObject coin;
-
+        
         public float RoadToTarget
         {
             get => roadToTarget;
@@ -58,6 +60,15 @@ namespace Script.Data_Model.Status
         {
             get => coin;
             set => coin = value;
+        }
+
+         
+        // INPCStatus implementation - Simplify Coins vì không dùng(vagrant nhặt coin sẽ thành villager nên coin luôn = 0)
+        public NPCRole Role => NPCRole.Vagrant;
+        public int CurrentCoins
+        {
+            get => 0;  // Luôn 0 ở Vagrant, không cần field
+            set { /* Ignore set, vì không tích lũy */ }
         }
 
         // State and Tracking

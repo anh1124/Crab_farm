@@ -12,7 +12,7 @@ using Script.Manager.GamePlayManager;
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VagrantController to VagrantBehavior to reflect Behavior + Status architecture
-    public class VagrantBehavior : MonoBehaviour, ISaveable
+    public class VagrantBehavior : MonoBehaviour, ISaveable, INPCBehavior
     {
         private VagrantStatus status;
         
@@ -69,7 +69,7 @@ namespace Script.Game.Mobs.Subjects
             GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, HandleTimeChange);
         }
 
-        private void Update()
+        public void UpdateBehavior()
         {
             UpdateStateHandler();
         }
@@ -178,48 +178,27 @@ namespace Script.Game.Mobs.Subjects
         {
             // Destroy the coin first
             Destroy(coinObject);
+            StartCoroutine(TransformToVillagerNextFrame());
+        }
 
-            // Transform into villager after picking up coin
+        private IEnumerator TransformToVillagerNextFrame()
+        {
+            yield return null;
             TransformToVillager();
         }
 
         private void TransformToVillager()
         {
-            if (PrefabData.Instance != null && PrefabData.Instance.village != null)
+            var controller = GetComponent<DenizenController>();
+            if (controller != null)
             {
-                Vector3 position = transform.position;
-                Quaternion rotation = transform.rotation;
-                Vector3 scale = transform.localScale;
-                
-                // Use Spawner to create villager
-                if (Spawner.Instance != null)
-                {
-                    GameObject villager = Spawner.Instance.SpawnMob(position, PrefabData.Instance.village);
-                    if (villager != null)
-                    {
-                        // Maintain the same orientation and scale
-                        villager.transform.rotation = rotation;
-                        villager.transform.localScale = scale;
-                        // Đảm bảo villager có ít nhất 1 coin
-                        var villageStatus = villager.GetComponent<VillagerStatus>();
-                        if (villageStatus != null)
-                        {
-                            villageStatus.CurrentCoins = 1;
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.LogError("[VagrantBehavior] Spawner instance not found!");
-                }
-                
-                // Destroy the vagrant
-                Destroy(gameObject);
+                controller.ChangeRole(NPCRole.Villager);
+                // Đảm bảo có ít nhất 1 coin sau khi đổi role
+                var vs = GetComponent<VillagerStatus>();
+                if (vs != null && vs.CurrentCoins < 1) vs.CurrentCoins = 1;
+                return;
             }
-            else
-            {
-                Debug.LogError("[VagrantBehavior] Villager prefabWall not found in PrefabData!");
-            }
+            Debug.LogError("[VagrantBehavior] DenizenController missing; expected all NPCs to be Denizen. Skipping legacy fallback.");
         }
 
         #endregion

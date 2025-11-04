@@ -7,6 +7,7 @@ using Script.Data_Model.Status;
 using Script.Manager;
 using Script.Manager.Building;
 using Script.Manager.WorldManager;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -219,9 +220,9 @@ namespace Script.Game.Mobs.MobsManager
         /// </summary>
         public void SpawnVagrants(int count, bool? isRight = null, Vector3? customPosition = null)
         {
-            if (PrefabData.Instance == null || PrefabData.Instance.vagrant == null)
+            if (PrefabData.Instance == null || PrefabData.Instance.denizen == null)
             {
-                Debug.LogError("Không tìm thấy prefabWall vagrant!");
+                Debug.LogError("Không tìm thấy denizen trong PrefabData!");
                 return;
             }
 
@@ -255,11 +256,25 @@ namespace Script.Game.Mobs.MobsManager
                     }
                 }
             
-                // Sinh vagrant
+                // Sinh denizen và gán role Vagrant
                 GameObject vagrantObj = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(
-                    PrefabData.Instance.vagrant, 
+                    PrefabData.Instance.denizen,
                     spawnPosition
                 );
+                if (vagrantObj != null)
+                {
+                    // Đặt tag trước để re-parent ngay lập tức vào container đúng
+                    vagrantObj.tag = "Vagrant";
+                    EntitySaveManager.Instance?.MoveObjectToContainer(vagrantObj);
+
+                    var controller = vagrantObj.GetComponent<DenizenController>();
+                    if (controller == null)
+                    {
+                        controller = vagrantObj.AddComponent<DenizenController>();
+                    }
+                    // ChangeRole về Vagrant (no-op nếu mặc định), đảm bảo ApplyRole chạy và đồng bộ trạng thái
+                    controller.ChangeRole(NPCRole.Vagrant);
+                }
             
                 if (vagrantObj != null)
                 {

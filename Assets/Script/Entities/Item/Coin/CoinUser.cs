@@ -100,8 +100,8 @@ namespace Script.Game.Item.Coin
                 {
                     // Show feedback to the player about why they can't upgrade - only when debugging
                    
-                        Debug.Log($"Building cannot be upgraded: canAcceptCoins={canAcceptCoins}," +
-                                  $" type={buildingType}, tier={currentTier}");
+                      //  Debug.Log($"Building cannot be upgraded: canAcceptCoins={canAcceptCoins}," +
+                       //           $" type={buildingType}, tier={currentTier}");
                     
                 }
             }

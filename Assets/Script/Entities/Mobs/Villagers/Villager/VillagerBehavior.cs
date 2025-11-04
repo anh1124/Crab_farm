@@ -17,7 +17,7 @@ using Script.Manager.WorldManager;
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
-    public class VillagerBehavior : MonoBehaviour, ISaveable, IHealth
+    public class VillagerBehavior : MonoBehaviour, ISaveable, IHealth, INPCBehavior
     {
         #region Variables and Properties
         private VillagerStatus status;
@@ -94,17 +94,10 @@ namespace Script.Game.Mobs.Subjects
             InitComponent();
             InitializeVillager();
             
-            if (VillagerManager.Instance != null)
-            {
-                VillagerManager.Instance.RegisterVillager(gameObject);
-            }
-            else
-            {
-                Debug.LogError("[VillagerBehavior] VillagerManager instance not found!");
-            }
+            // Registration is now handled by DenizenController when role is applied
         }
 
-        private void Update()
+        public void UpdateBehavior()
         {
             // Update fear timer
             if (fearTimer > 0)
@@ -558,36 +551,14 @@ namespace Script.Game.Mobs.Subjects
         private void ConvertToVagrant()
         {
             if (this == null || !gameObject || !gameObject.activeInHierarchy) return;
-            
-            if (PrefabData.Instance != null && PrefabData.Instance.vagrant != null)
+
+            var controller = GetComponent<DenizenController>();
+            if (controller != null)
             {
-                Vector3 position = transform.position;
-                Quaternion rotation = transform.rotation;
-                Vector3 scale = transform.localScale;
-                
-                if (Spawner.Instance != null)
-                {
-                    GameObject vagrant = Spawner.Instance.SpawnMob(position, PrefabData.Instance.vagrant);
-                    if (vagrant != null)
-                    {
-                        vagrant.transform.rotation = rotation;
-                        vagrant.transform.localScale = scale;
-                    }
-                }
-                else
-                {
-                    Debug.LogError("[VillagerBehavior] Spawner instance not found!");
-                    return; // Don't destroy if spawn failed
-                }
-                
-                // Stop all coroutines before destroying
-                StopAllCoroutines();
-                Destroy(gameObject);
+                controller.ChangeRole(NPCRole.Vagrant);
+                return;
             }
-            else
-            {
-                Debug.LogError("[VillagerBehavior] Vagrant prefabWall not found in PrefabData!");
-            }
+            Debug.LogError("[VillagerBehavior] DenizenController missing; expected all NPCs to be Denizen. Skipping legacy fallback.");
         }
         #endregion
 

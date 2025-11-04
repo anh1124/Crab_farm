@@ -639,6 +639,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 510060679}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1824331059 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1146501083492694080, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+  m_PrefabInstance: {fileID: 5788159800298087748}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1959103269
 GameObject:
   m_ObjectHideFlags: 0
@@ -856,10 +867,34 @@ PrefabInstance:
       propertyPath: emptyChunk
       value: 
       objectReference: {fileID: 3831790649435925577, guid: d81c400a7debd014e972751dbc6c579b, type: 3}
+    - target: {fileID: 3643117081489509252, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: timeDisplay
+      value: 
+      objectReference: {fileID: 1824331059}
+    - target: {fileID: 3643117081489509252, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: inspectorDay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3643117081489509252, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: inspectorYear
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3643117081489509252, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: inspectorMonth
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: denizen
+      value: 
+      objectReference: {fileID: 5039406809920019329, guid: 94c1559fd1e75c147852a1bdee23c353, type: 3}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: prefabWall
       value: 
       objectReference: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+    - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: denizenPrefab
+      value: 
+      objectReference: {fileID: 5039406809920019329, guid: 94c1559fd1e75c147852a1bdee23c353, type: 3}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: gameObjectHaveCanvas
       value: 

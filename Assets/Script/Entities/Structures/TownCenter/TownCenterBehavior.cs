@@ -42,11 +42,32 @@ namespace Script.Game.Structures.TownCenter
             
             Debug.Log($"[TownCenterBehavior] Starting. Current tier: {status.tier}");
             
+            // Nếu tier chưa đúng (ví dụ từ save cũ không lưu tier), thử suy ra từ visuals
+            TryInferTierFromVisuals();
+
             // Sync status data from TownCenterDataList based on current tier
             GetDataFromDataList();
             
             Ini();
             BuildingManager.instance.currentTownCenter = gameObject;//tự khai báo đến BuildingManager
+
+            
+            
+        }
+
+        private void FixTownCenterTier2Update()
+        {
+            // Nếu trước khi nâng đang ở tier 3: xóa child tên "tent"
+            if (status.tier == 3)
+            {
+                var tent = transform.Find("tent");
+                if (tent != null)
+                {
+                    Destroy(tent.gameObject);
+                    Debug.LogWarning("destroy tent");
+                }
+                
+            }
         }
 
         private void Ini()
@@ -105,6 +126,7 @@ namespace Script.Game.Structures.TownCenter
                 Debug.LogError($"[TownCenterBehavior] Không có tier tiếp theo.");
                 return;
             }
+
             
             // thay đổi sprite từ prefab mới
             SpriteRenderer currentSpriteRenderer = GetComponent<SpriteRenderer>();
@@ -173,7 +195,7 @@ namespace Script.Game.Structures.TownCenter
             {
                 BuildingManager.instance.UpdateAvailableBuildings();
             }
-            
+            FixTownCenterTier2Update();
             Debug.Log($"[TownCenterBehavior] Upgraded to tier {status.tier}");
         }
 
@@ -191,6 +213,7 @@ namespace Script.Game.Structures.TownCenter
         {
             public float positionX;
             public float positionY;
+            public int tier;
             public bool readyToUpgrade;
             public int buildProgress;
             public int buildProgressMax;
@@ -200,6 +223,7 @@ namespace Script.Game.Structures.TownCenter
         {
             positionX = transform.position.x,
             positionY = transform.position.y,
+            tier = status.tier,
             readyToUpgrade = status.readyToUpgrade,
             buildProgress = status.buildProgress,
             buildProgressMax = status.buildProgressMax
@@ -207,7 +231,25 @@ namespace Script.Game.Structures.TownCenter
         public void RestoreData(object data)
         {
             var d = (TownCenterData)data;
+            if (status == null) status = GetComponent<TownCenterStatus>();
             transform.position = new Vector3(d.positionX, d.positionY, 0);
+            // Khôi phục tier trước để đồng bộ lại dữ liệu phụ thuộc (fallback suy luận nếu dữ liệu cũ không có tier)
+            if (d.tier > 0)
+            {
+                status.tier = d.tier;
+            }
+            else
+            {
+                // Nếu tier đã được đặt trước (ví dụ bởi EntitySaveManager dựa trên prefabID), giữ nguyên
+                if (status.tier <= 0)
+                {
+                    TryInferTierFromVisuals();
+                }
+            }
+            // Đồng bộ lại dữ liệu theo tier hiện tại (upgradeCost, prefab tham chiếu, ...)
+            GetDataFromDataList();
+
+            // Phần trạng thái còn lại
             status.readyToUpgrade = d.readyToUpgrade;
             status.buildProgress = d.buildProgress;
             status.buildProgressMax = d.buildProgressMax;
@@ -217,6 +259,53 @@ namespace Script.Game.Structures.TownCenter
                 coinUser.requiredCoins = status.upgradeCost;
                 coinUser.onUpgradeComplete = Upgrade;
                 coinUser.SetBuildingInfo(BuildingType.TownCenter, status.tier);
+            }
+            // Thông báo BuildingManager tham chiếu lại currentTownCenter nếu cần
+            if (BuildingManager.instance != null)
+            {
+                BuildingManager.instance.currentTownCenter = gameObject;
+            }
+        }
+
+        // Cố gắng suy ra tier hiện tại dựa trên Sprite/Animator của đối tượng so với danh sách prefab trong PrefabData
+        private void TryInferTierFromVisuals()
+        {
+            try
+            {
+                if (status != null && status.tier > 0) return;
+                if (PrefabData.Instance == null || PrefabData.Instance.townCenterList == null) return;
+
+                var sr = GetComponent<SpriteRenderer>();
+                var anim = GetComponent<Animator>();
+                for (int i = 0; i < PrefabData.Instance.townCenterList.Count; i++)
+                {
+                    var prefab = PrefabData.Instance.townCenterList[i];
+                    if (prefab == null) continue;
+                    bool match = false;
+                    var psr = prefab.GetComponent<SpriteRenderer>();
+                    if (sr != null && psr != null && sr.sprite == psr.sprite)
+                    {
+                        match = true;
+                    }
+                    if (!match)
+                    {
+                        var pAnim = prefab.GetComponent<Animator>();
+                        if (anim != null && pAnim != null && anim.runtimeAnimatorController == pAnim.runtimeAnimatorController)
+                        {
+                            match = true;
+                        }
+                    }
+                    if (match)
+                    {
+                        status.tier = i;
+                        Debug.Log($"[TownCenterBehavior] Inferred tier from visuals: {status.tier}");
+                        break;
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[TownCenterBehavior] Failed to infer tier from visuals: {e.Message}");
             }
         }
     }
