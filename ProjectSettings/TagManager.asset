@@ -8,7 +8,6 @@ TagManager:
   - PlayerContainer
   - Structure
   - Coin
-  - Denizens
   - StructureContainer
   - CameraTaget
   - CoinContainer
@@ -40,6 +39,7 @@ TagManager:
   - Villager
   - Stump
   - CoinSlotLocation
+  - Denizen
   layers:
   - Default
   - TransparentFX

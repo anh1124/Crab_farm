@@ -14,49 +14,68 @@ namespace Script.Game.Other
     public class StartGameScrene : MonoBehaviour
     {
         public GameObject pauseMenuPanel;
-       
+        
         public void Start()
         {
-            InitializeCoreData();//load data từ prefabdata sang các boottrap
-            PrefabData.Instance.LoadPlayerCharactersFromJson();
-            
-            //thực hiện load thế giới từ path
-            if (!LoadFromSave.Instance.DoLoadFromSaveFilePath(PlayerPrefs.GetString("SaveFilePath", "")))
+            try
             {
-                Debug.LogError("Không thể load từ file save, chuyển về màn hình chính");
-                SceneManager.LoadScene("MainMenuScene");//về màn hình chính nếu hàm trên false
-                return;
-            }
-            
-            // Kiểm tra và load WorldInfo từ file save hiện tại
-            LoadWorldInfoIfNeeded();
-            
-            //instancePlayer
-            InstancePlayerAndSetCamera();
-            
-            //gán player cho các script cần thiết player khác
-            InitializePlayer();
-            
-            //setup lại Gui khác
-            SetupGUI();
+                //Debug.Log("🚀 Bắt đầu load game với thứ tự phase tối ưu...");
 
-            CheckScriptsReady();
-            
-            // Chỉ chạy DevelopTest trong môi trường phát triển
-            #if UNITY_EDITOR
-            DevelopTest();
-            #endif
-            
-          
+                // ===== PHASE 1: CORE DATA =====
+                // Load tất cả data lists cần thiết cho game (WallDataList, TownCenterDataList, etc.)
+                // Đây là data cơ bản phải có trước khi spawn bất kỳ entity nào
+                //Debug.Log("📦 PHASE 1: CORE DATA - Loading essential data lists...");
+                InitializeCoreData(); // Init PrefabData và bootstrap system (tự động load các datalist-towncenterlistdata theo thứ tự đã đăng ký trong bootstrap)
+
+                // ===== PHASE 2: WORLD INFO =====
+                // Load world information (tech, time, weather) - thông tin context cho save/load
+                // Phải load trước save để có data context khi quyết định spawn entities
+                //Debug.Log("🌍 PHASE 2: WORLD INFO - Loading world context data...");
+                // Kiểm tra và load data thế giới đang hoạt động (hoặc hủy load nếu thất bại)
+                if (!WorldFileManager.Instance.ValidateAndLoadActiveWorld())
+                {
+                    return; // Load thất bại, đã tự động quay về menu
+                }
+                ValidateWorldData();
+
+                // ===== PHASE 3: UI SETUP =====
+                // Setup UI components trước khi player spawn
+                // Đảm bảo UI ready khi player cần interact
+                //Debug.Log("🖥️ PHASE 3: UI SETUP - Initializing UI components...");
+                SetupGUI(); // Setup pause menu và UI elements
+
+                // ===== PHASE 4: SAVE LOAD ENTITIES =====
+                // Load entities từ save file (walls, towncenters, enemies, etc.)
+                // Load TRƯỚC player để tránh dependency issues
+                //Debug.Log("💾 PHASE 4: SAVE LOAD ENTITIES - Loading saved entities...");
+                if (WorldFileManager.Instance.IsActiveWorldPathValid())
+                {
+                    // NEW: Use refactored LoadFromSave methods
+                    LoadFromSave.Instance.LoadTechAndTimeFromSave();
+                    LoadFromSave.Instance.LoadEntitiesFromSave();
+                }
+
+                // ===== PHASE 5: PLAYER INSTANCE =====
+                // Instance/setup player object và camera
+                // Player spawn SAU khi entities đã load để tránh conflicts
+              //  Debug.Log("👤 PHASE 5: PLAYER INSTANCE - Creating/setup player object...");
+                InstancePlayerAndSetCamera(); // Check if loaded from save, else spawn new
+                InitializePlayer(); // Setup BuildMenu với player
+             
+
+                // Development features
+                #if UNITY_EDITOR
+                DevelopTest();
+                #endif
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"❌ Game loading failed: {ex.Message}\n{ex.StackTrace}");
+                // Fallback to main menu on critical error
+                SceneManager.LoadScene("MainMenuScene");
+            }
         }
 
-        private void CheckScriptsReady()
-        {
-            if (EntitySaveManager.Instance == null)
-            {
-                Debug.LogError("EntitySaveManager.Instance is null.");
-            }
-        }
 
         private void SetupGUI()
         {
@@ -83,36 +102,58 @@ namespace Script.Game.Other
             }
         }
 
+        // ==================== PHASED LOADING METHODS ====================
+
+
         private void InitializeCoreData()
         {
-            // 1)kiểm tra prefabdata sẵn sàng
+            // 1) Check PrefabData sẵn sàng
             if (PrefabData.Instance == null)
             {
                 var prefabData = FindObjectOfType<PrefabData>(true);
                 if (prefabData == null)
                 {
-                    Debug.LogError("[Bootstrap] PrefabData missing. Put a PrefabData in the scene before loading.");
-                    return;
+                    throw new System.Exception("[Bootstrap] PrefabData missing. Put a PrefabData in the scene before loading.");
                 }
             }
-            
-            // 2) Tự động tìm tất cả IDataListBootstrap, sắp xếp theo Order và khởi tạo
+
+            // 2) Trigger bootstrap system để init IDataListBootstrap components
             var dataLists = FindObjectsOfType<MonoBehaviour>(true)
                 .OfType<IDataListBootstrap>()
                 .OrderBy(x => x.Order)
                 .ToList();
+
+            Debug.Log($"📦 Initializing {dataLists.Count} data managers via bootstrap...");
             foreach (var list in dataLists)
             {
                 try
                 {
                     list.InitializeData(PrefabData.Instance);
+                    Debug.Log($"  ✅ {list.GetType().Name} initialized");
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[Bootstrap] Failed to initialize {list.GetType().Name}: {ex.Message}");
+                    Debug.LogError($"❌ Failed to initialize {list.GetType().Name}: {ex.Message}");
+                    throw; // Re-throw to fail loading
                 }
             }
         }
+
+        // ==================== VALIDATION METHODS ====================
+
+
+        private void ValidateWorldData()
+        {
+            if (WorldFileManager.Instance == null)
+                throw new System.Exception("WorldFileManager.Instance is null");
+
+            if (WorldFileManager.Instance.worldInfo == null)
+                Debug.LogWarning("⚠️ WorldInfo is null - using default world");
+
+          //  Debug.Log("✅ World data validation passed");
+        }
+
+     
         private void LoadWorldInfoIfNeeded()
         {
             if (WorldFileManager.Instance == null)
@@ -122,7 +163,7 @@ namespace Script.Game.Other
             }
 
             // Lấy tên thế giới từ đường dẫn save hiện tại
-            string savePath = PlayerPrefs.GetString("SaveFilePath", "");
+            string savePath = PlayerPrefs.GetString("ActiveWorldPath", "");
             if (string.IsNullOrEmpty(savePath))
             {
                 Debug.LogError("Đường dẫn save không hợp lệ");
@@ -238,86 +279,107 @@ namespace Script.Game.Other
 
         public void InstancePlayerAndSetCamera()
         {
-            // Kiểm tra PlayerController.Instance tồn tại
+            Debug.Log("👤 PHASE 5: Creating/setup player object...");
+
+            // Kiểm tra các instance cần thiết
             if (PlayerController.Instance == null)
             {
                 Debug.LogError("PlayerController.Instance là null, không thể tạo player");
                 return;
             }
-            
-            if (PlayerController.Instance.player != null)
-            {
-                // Kiểm tra CameraFollowPlayer.Instance tồn tại
-                if (CameraFollowPlayer.Instance == null)
-                {
-                    Debug.LogError("CameraFollowPlayer.Instance là null, không thể thiết lập camera");
-                    return;
-                }
-                
-                // Nếu player đã được load, chỉ cần set lại camera
-                CameraFollowPlayer.Instance.setCameraTarget();
-                CameraFollowPlayer.Instance.TeleportCameraTo(PlayerController.Instance.player.transform.position);
-                return;
-            }
 
-            // Kiểm tra EntitySaveManager.Instance tồn tại
             if (EntitySaveManager.Instance == null)
             {
                 Debug.LogError("EntitySaveManager.Instance là null, không thể tạo player");
                 return;
             }
-            
-            // Kiểm tra PrefabData.Instance tồn tại
+
             if (PrefabData.Instance == null || PrefabData.Instance.player == null)
             {
-                Debug.LogError("PrefabData.Instance hoặc PrefabData.Instance.player là null, không thể tạo player");
+                Debug.LogError("PrefabData.Instance.player là null, không thể tạo player");
                 return;
             }
 
-            // Nếu player chưa tồn tại thì tạo mới
-            GameObject player = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
+            // Kiểm tra xem có save data của player không để quyết định vị trí spawn
+            Vector2 spawnPosition = Vector2.zero; // Vị trí mặc định
+            string playerPath = System.IO.Path.Combine(LoadFromSave.Instance.saveFilePath, "PlayerContainer.json");
+
+            if (!string.IsNullOrEmpty(LoadFromSave.Instance.saveFilePath) && System.IO.File.Exists(playerPath))
+            {
+                try
+                {
+                    // Đọc vị trí từ save file để spawn player tại đúng vị trí đã save
+                    string json = System.IO.File.ReadAllText(playerPath);
+                    var savedObjects = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.List<EntitySaveManager.SavedObject>>(json,
+                        new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto });
+
+                    if (savedObjects != null && savedObjects.Count > 0)
+                    {
+                        // Đọc trực tiếp vị trí từ PlayerStatusData mà không cần tạo temporary player
+                        var playerData = savedObjects[0].data as Script.Game.Player.PlayerBehavior.PlayerStatusData;
+                        if (playerData != null)
+                        {
+                            spawnPosition = new Vector2(playerData.positionX, playerData.positionY);
+                            Debug.Log($"Player sẽ được spawn tại vị trí đã save: {spawnPosition}");
+                        }
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"Không thể đọc vị trí player từ save, dùng vị trí mặc định: {e.Message}");
+                }
+            }
+
+            // Tạo player instance tại vị trí đã xác định
+            GameObject player = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, spawnPosition);
             if (player == null)
             {
-                Debug.LogError("Failed to instantiate Player from prefabWall. Make sure player characters are loaded correctly.");
+                Debug.LogError("Failed to instantiate Player from prefab. Make sure player characters are loaded correctly.");
                 return;
             }
+
+            // Đảm bảo player ở đúng vị trí (nếu save data đã set vị trí khác)
+            player.transform.position = new Vector3(spawnPosition.x, spawnPosition.y, 0);
+
+            // Setup PlayerController
             PlayerController.Instance.player = player;
             PlayerController.Instance.SetUpControllerPlayer();
-            
-            // Kiểm tra CameraFollowPlayer.Instance tồn tại
-            if (CameraFollowPlayer.Instance == null)
+
+            // Setup Camera
+            if (CameraFollowPlayer.Instance != null)
             {
-                Debug.LogError("CameraFollowPlayer.Instance là null, không thể thiết lập camera");
-                return;
+                CameraFollowPlayer.Instance.setCameraTarget();
+                CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
             }
-            
-            CameraFollowPlayer.Instance.setCameraTarget();
-            CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
+
+            Debug.Log($"✅ Player instance created at {spawnPosition} and systems setup completed");
         }
+
+
 
         public static void DevelopTest()
         {
             // Kiểm tra PlayerController.Instance tồn tại
-            if (PlayerController.Instance == null || 
+            if (PlayerController.Instance == null ||
                 PlayerController.Instance.player == null)
             {
                 Debug.LogError("Player không tồn tại, không thể chạy DevelopTest");
                 return;
             }
-            
+
             //add some coin for player test
             PlayerController.Instance.playerBehavior.Coin += 100;
-            
+
             // Cho phép gây damage lên đồng minh khi test
             PlayerController.Instance.damageAlly = true;
-            
+
             // Kiểm tra và log thông tin WorldInfo hiện tại
             if (WorldFileManager.Instance != null && WorldFileManager.Instance.worldInfo != null)
             {
                 var info = WorldFileManager.Instance.worldInfo;
                 Debug.Log($"WorldInfo hiện tại: {info.Name}, Tech: FireArrow={info.TechFireArrow}, Penetrating={info.TechPenetrating}, Forge={info.TechForge}, Adhesive={info.TechAdhesive}");
             }
-            
+
             Debug.LogWarning("DevelopTest đang bật ở StartGameScrene");
         }
     }

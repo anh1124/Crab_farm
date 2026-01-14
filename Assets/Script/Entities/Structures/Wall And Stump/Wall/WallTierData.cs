@@ -18,7 +18,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         [Min(1)] public int normalMaxHp;
         [Min(1)] public int blessedMaxHp;
         
-        [Min(1)] public int reBuildCost;//giá xây lại
+        [FormerlySerializedAs("reBuildCost")] [Min(1)] public int rebuildCost;//giá xây lại
         [Min(1)] public int upgradeCost;//giá để nâng lên cấp kế tiếp
         
         [Min(1)] public int upgradeProgressMax;//công sức phải bỏ ra để xây (behavior sẽ dùng wallDataList.GetNext(data);)

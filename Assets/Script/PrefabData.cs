@@ -15,7 +15,6 @@ namespace Script.Data_Model
 
         [Header("Player / Camera")]
         public GameObject player;
-        public float playerSpeed = 7;
         public Camera mainCamera;
         
         // Biến kiểm soát quá trình xây dựng (bỏ qua quá trình xây dựng hoặc yêu cầu thợ xây)
@@ -58,6 +57,7 @@ namespace Script.Data_Model
         #region TownCenter
         public List<GameObject> townCenterList = new List<GameObject>();
         public float plazaDistance = 10f;//khoảng cách quảng trường
+        public GameObject tent;// for towncenter tier 2
         #endregion
 
         [Space(15)] [Header("Farm ")] [Space(5)]  
@@ -168,6 +168,7 @@ namespace Script.Data_Model
         
         public GameObject catapult;
         
+        
         public GameObject denizen;//base prefab for village,archer,vagrant,... 
         #endregion
         [FormerlySerializedAs("Bow")] [Space(15)] [Header("ItemItem ")] [Space(5)]  
@@ -254,7 +255,10 @@ namespace Script.Data_Model
 			playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
 				"BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 
 
-			// Loại bỏ tất cả các phần tử null khỏi danh sách charactor 
+            // Load player characters from JSON first
+            LoadPlayerCharactersFromJson();
+
+            // Loại bỏ tất cả các phần tử null khỏi danh sách charactor
             playerCharacterList.RemoveAll(item => item == null);
             RequirePrefabCheck();
 
@@ -277,46 +281,21 @@ namespace Script.Data_Model
             {
                 prefabDict.Add($"tree_{i}", treePrefabsList[i]);
             }
-
-            // Future: when migrating to ScriptableObjects, keep both paths during transition
-            // if (treeDefinitions != null)
-            // {
-            //     foreach (var def in treeDefinitions)
-            //     {
-            //         if (def != null && def.prefabWall != null)
-            //             _prefabDict[$"tree_{def.id}"] = def.prefabWall;
-            //     }
-            // }
             // Đăng ký các prefabWall tower
             for (int i = 0; i < towerList.Count; i++)
             {
                 prefabDict.Add($"tower_{i}", towerList[i]);
             }
-           
             // Register vendor prefabs
             prefabDict.Add("bow_vendor", bowVendor);
             prefabDict.Add("hammer_vendor", hammerVendor);
             prefabDict.Add("scythe_vendor", oilBarrelVendor);
             prefabDict.Add("sword_vendor", siegeWorkshop);
             prefabDict.Add("spike_vendor", upgradeHouse);
+            prefabDict.Add("wall", prefabWall);
+            prefabDict.Add("coin", coinPrefab);
+            prefabDict.Add("denizen", denizen);
             
-            // Register coin prefabWall
-            if (coinPrefab != null)
-            {
-                prefabDict.Add("coin", coinPrefab);
-            }
-            else
-            {
-                Debug.LogError("Coin prefabWall is missing! Make sure to assign it in the inspector.");
-            }
-            
-           
-
-            // Register denizen prefab (unified subject prefab)
-            if (denizen != null)
-            {
-                prefabDict.Add("denizen", denizen);
-            }
         }
         
         public GameObject GetPrefabByID(string id)

@@ -30,7 +30,7 @@ namespace Script.Game.Structures.Wall_And_Stump
            sprite:
            */
         
-        //TODO: kiểm tra physic như trên
+        
         //thêm wallmanager để wall tự đăng ký khi chúng được xây
       
         #region === Reference Variables ===
@@ -90,63 +90,119 @@ namespace Script.Game.Structures.Wall_And_Stump
         private void Awake()
         {
             InitializeComponents();
-            status.state = WallState.Wall;
-            //load cấp 1
-            ApplyTierToStatus(wallDataList.GetBaseTier());
-            //load tier theo tier từ status
-            LoadWallComponents(GetCurrentTier(),status.state);//cái đầu là data,cái 2 là state để biết load dạng wall hay stump
-            
-            // Xử lý logic sau khi load data
-            UpdateMaxHp();
-            status.currentHp = status.maxHp;  // Tường mới có HP đầy
-            
+    
+            // Load cấp 1 (base tier)
+            WallTierData baseTierData = wallDataList.GetBaseTier();
+            InitializeFromTier(baseTierData, WallState.Wall);//helper khởi tạo data 
             Debug.Log($"[Wall] Initialized. Tier: {status.tier}, MaxHP: {status.maxHp}, State: {status.state}");
         }
         private void Start()
         {
-            
+
             UpdateCoinUserData();//cậpt nhật coinuser theo status
             RegisterWithManager();//đăng ký với manager
             SubscribeToWorldInfoChanges(); //đăng ký file thế giới (buff tăng máu)
+
+            // FIX: Wall mới build cũng cần check upgrade status sau khi BuildingManager ready
+            StartCoroutine(DelayedUpgradeCheck());
         }
         public WallTierData GetCurrentTier()
         {
             return wallDataList.GetByTier(status.tier);
         }
         
-        //TODO: kieemr tra lại  hàm này
+        
         private void OnDestroy()
         {
             UnregisterFromManager();
             UnsubscribeFromWorldInfoChanges();//hủy lắng nghe worldinfo(script này sử dụng biến blessing)
         }
-        
-        //hàm này chỉ dùng để load data vào status
-        void ApplyTierToStatus(WallTierData data)
+
+        private void OnTriggerEnter2D(Collider2D other)
         {
-            // Copy tất cả data từ WallTierData sang WallStatus
+            if (other.CompareTag("Player"))
+            {
+                // Khi player trigger wall, cập nhật lại trạng thái coin user
+                // để đảm bảo check town center level một lần nữa
+                UpdateCoinUserData();
+                Debug.Log($"[Wall] Player triggered wall - rechecking upgrade capability");
+            }
+        }
+        
+        /// Sao chép data từ inputStatus vào status hiện tại, sau đó load tier và components dựa trên status mới.
+        public void ApplyAndLoadFromStatus(WallStatus inputStatus)
+        {
+            if (inputStatus == null)
+            {
+                Debug.LogError("[WallBehavior] Input status is null");
+                return;
+            }
+
+            // Sao chép (paste) toàn bộ fields từ inputStatus vào status
+            status.tier = inputStatus.tier;
+            status.state = inputStatus.state;
+            status.maxHp = inputStatus.maxHp;
+            status.currentHp = inputStatus.currentHp;
+            status.normalMaxHp = inputStatus.normalMaxHp;
+            status.blessedMaxHp = inputStatus.blessedMaxHp;
+            status.upgradeCost = inputStatus.upgradeCost;
+            status.readyToUpgrade = inputStatus.readyToUpgrade;
+            status.isMaxTier = inputStatus.isMaxTier;
+            status.upgradeProgress = inputStatus.upgradeProgress;
+            status.upgradeProgressMax = inputStatus.upgradeProgressMax;
+            status.minimumDistance = inputStatus.minimumDistance;
+            status.rebuildCost = inputStatus.rebuildCost;
+
+            // Load tier từ status.tier mới
+            WallTierData tierData = wallDataList.GetByTier(status.tier);
+            if (tierData != null)
+            {
+                // Apply tier data nếu cần (cập nhật các fields từ tierData, nhưng không overwrite những fields đã sao chép từ input)
+                ApplyTierToStatus(tierData);  // Gọi nếu bạn muốn sync với tierData (ví dụ: update upgradeCost nếu cần)
+
+                // Load components dựa trên state và tier
+                LoadWallComponents(tierData, status.state);
+            }
+            else
+            {
+                Debug.LogError($"[WallBehavior] No tier data found for tier {status.tier}");
+            }
+
+            // Cập nhật thêm (nếu cần): Update maxHp dựa trên world info
+            UpdateMaxHp();
+
+            // Cập nhật coinUser nếu cần
+            UpdateCoinUserData();
+
+            Debug.Log($"[WallBehavior] Applied status from input. New tier: {status.tier}, State: {status.state}");
+        }
+        //hàm này chỉ dùng để load data vào status
+        
+        // Hàm này chỉ dùng để load data vào status từ WallTierData
+        private void ApplyTierToStatus(WallTierData data)
+        {
+            if (data == null)
+            {
+                Debug.LogError("[Wall] WallTierData is null");
+                return;
+            }
+
+            // Sao chép data từ WallTierData sang WallStatus
             status.tier = data.tier;
             status.normalMaxHp = data.normalMaxHp;
             status.blessedMaxHp = data.blessedMaxHp;
             status.upgradeCost = data.upgradeCost;
-            status.rebuildCost = data.reBuildCost;
-            status.upgradeProgressMax = data.upgradeProgressMax;
-            
-            // Reset upgrade progress
-            status.upgradeProgress = 0;
-            
-            // Kiểm tra xem tường max cấp chưa
-            if (wallDataList.GetNext(data) != null)
+            status.rebuildCost = data.rebuildCost;  // Sửa typo từ rebuildCost thành rebuildCost để nhất quán
+            if (status.upgradeProgressMax == 0)  // Chỉ set nếu chưa set, tránh overwrite building process max
             {
-                status.isMaxTier = false;
+                status.upgradeProgressMax = data.upgradeProgressMax;
             }
-            else status.isMaxTier = true;
- 
-            
-            Debug.Log($"[Wall] Applied tier {data.tier} data. MaxHP: {data.normalMaxHp}, UpgradeCost: {data.upgradeCost}, RebuildCost: {data.reBuildCost}");
-            
+
+            // Kiểm tra xem tường max cấp chưa
+            status.isMaxTier = (wallDataList.GetNext(data) == null);
+
+            Debug.Log($"[Wall] Applied tier {data.tier} data. MaxHP: {data.normalMaxHp}, UpgradeCost: {data.upgradeCost}, RebuildCost: {data.rebuildCost}");
         }
-        
         #region Load new sprite and collider to current
     
         /// Load các component từ WallTierData.prefabWall và trích xuất collider/sprite renderer
@@ -182,86 +238,125 @@ namespace Script.Game.Structures.Wall_And_Stump
                 this.spriteRenderer.sortingOrder = prefabSpriteRenderer.sortingOrder;
                 this.spriteRenderer.sortingLayerName = prefabSpriteRenderer.sortingLayerName;
                 
-                Debug.Log($"[Wall] Copied sprite renderer from tier {tierData.tier}");
+               // Debug.Log($"[Wall] Copied sprite renderer from tier {tierData.tier}");
                 
             }
         }
         
         /// Đổi colliders từ prefabdata vào collider hiện tại
-        private void ChangeColliders(WallTierData tierData,WallState currentState)
+        /// Theo logic mới: xóa collider cũ -> setup trigger -> setup blocker (nếu tier > 0)
+        private void ChangeColliders(WallTierData tierData, WallState currentState)
         {
-            GameObject sourcePrefab = currentState == WallState.Wall ? tierData.prefabWall : tierData.prefabStump;
-            
-            if (sourcePrefab == null)
+            // Bước 1: Lấy data từ tier hiện tại
+            WallTierData currentTierData = GetCurrentTier();
+            if (currentTierData == null || currentTierData.prefabWall == null)
             {
-                Debug.LogError($"[Wall] Source prefab is null for state {currentState}");
+                Debug.LogError("[Wall] Không thể lấy data tier hoặc prefabWall null");
                 return;
             }
-            
-            // Lấy collider TRIGGER từ prefab CHÍNH (parent)
-            Collider2D prefabTriggerCollider = null;
-            Collider2D[] parentColliders = sourcePrefab.GetComponents<Collider2D>();
-            
-            foreach (var collider in parentColliders)
+
+            // Bước 2: Xóa tất cả collider cũ trong gameObject và children
+            RemoveAllColliders();
+
+            // Bước 3: Lấy collider từ prefab data
+            Collider2D sourceCollider = GetTriggerColliderFromPrefab(currentTierData.prefabWall);
+            if (sourceCollider == null)
+            {
+                Debug.LogWarning("[Wall] Không tìm thấy trigger collider trong prefab");
+                return;
+            }
+
+            // Bước 4: Setup TRIGGER COLLIDER - luôn có cho mọi tier
+            SetupTriggerCollider(sourceCollider);
+
+            // Bước 5: Setup BLOCKER COLLIDER - chỉ cho tier > 0 (wall chặn được enemy)
+            if (status.tier > 0)
+            {
+                SetupBlockerCollider(sourceCollider);
+            }
+            else
+            {
+                // Tier 0: không có blocker collider
+                blockerCollider2D = null;
+                Debug.Log($"[Wall] Tier {status.tier} không cần blocker collider");
+            }
+
+            // Đảm bảo childBlocker được setup đúng
+            if (childBlocker != null)
+            {
+                childBlocker.transform.localPosition = Vector3.zero;
+                childBlocker.transform.localRotation = Quaternion.identity;
+                childBlocker.transform.localScale = Vector3.one;
+            }
+        }
+
+        /// Xóa tất cả Collider2D trong gameObject chính và tất cả children
+        private void RemoveAllColliders()
+        {
+            // Xóa collider trong gameObject chính
+            Collider2D[] mainColliders = GetComponents<Collider2D>();
+            foreach (var collider in mainColliders)
+            {
+                DestroyImmediate(collider);
+            }
+
+            // Xóa collider trong tất cả children
+            Collider2D[] childColliders = GetComponentsInChildren<Collider2D>(true);
+            foreach (var collider in childColliders)
+            {
+                DestroyImmediate(collider);
+            }
+
+            // Reset references
+            triggerCollider2D = null;
+            blockerCollider2D = null;
+
+            Debug.Log("[Wall] Đã xóa tất cả collider cũ");
+        }
+
+        /// Lấy trigger collider từ prefab
+        private Collider2D GetTriggerColliderFromPrefab(GameObject prefab)
+        {
+            if (prefab == null) return null;
+
+            Collider2D[] colliders = prefab.GetComponents<Collider2D>();
+            foreach (var collider in colliders)
             {
                 if (collider.isTrigger)
                 {
-                    prefabTriggerCollider = collider;
-                    break;
+                    return collider;
                 }
             }
-            
-            if (prefabTriggerCollider == null)
-            {
-                Debug.LogWarning("[Wall] No trigger collider found in prefab");
-                return;
-            }
-            
-            // Copy vào triggerCollider2D (trên GameObject chính)
+            return null;
+        }
+
+        /// Setup trigger collider trên gameObject chính (luôn trigger = true)
+        private void SetupTriggerCollider(Collider2D sourceCollider)
+        {
+            triggerCollider2D = CreateColliderFromPrefab(sourceCollider);
             if (triggerCollider2D != null)
             {
-                // Copy properties, GIỮ isTrigger = true
-                CopyColliderProperties(prefabTriggerCollider, triggerCollider2D);
+                CopyColliderProperties(sourceCollider, triggerCollider2D);
                 triggerCollider2D.isTrigger = true;
-                Debug.Log($"[Wall] Updated triggerCollider2D properties (isTrigger=true)");
+                Debug.Log($"[Wall] Đã setup trigger collider (isTrigger=true)");
             }
-            else
+        }
+
+        /// Setup blocker collider trên childBlocker (trigger = false, chỉ cho tier > 0)
+        private void SetupBlockerCollider(Collider2D sourceCollider)
+        {
+            if (childBlocker == null)
             {
-                // Tạo mới nếu chưa có
-                triggerCollider2D = ReplaceCollider(prefabTriggerCollider, null);
-                if (triggerCollider2D != null)
-                {
-                    triggerCollider2D.isTrigger = true;
-                    Debug.Log($"[Wall] Created new triggerCollider2D (isTrigger=true)");
-                }
+                Debug.LogWarning("[Wall] childBlocker null, không thể setup blocker collider");
+                return;
             }
-            
-            // Copy VÀO CẢ blockerCollider2D (trên childBlocker) - giống properties nhưng isTrigger = false
-            if (childBlocker != null)
+
+            blockerCollider2D = CreateColliderOnChild(sourceCollider, childBlocker);
+            if (blockerCollider2D != null)
             {
-                blockerCollider2D = childBlocker.GetComponent<Collider2D>();
-                
-                if (blockerCollider2D != null)
-                {
-                    // Copy properties GIỐNG Y HỆT triggerCollider2D, nhưng isTrigger = false
-                    CopyColliderProperties(prefabTriggerCollider, blockerCollider2D);
-                    blockerCollider2D.isTrigger = false;
-                    Debug.Log($"[Wall] Updated blockerCollider2D properties (isTrigger=false)");
-                }
-                else
-                {
-                    // Tạo mới trên childBlocker
-                    blockerCollider2D = CreateColliderOnChild(prefabTriggerCollider, childBlocker);
-                    if (blockerCollider2D != null)
-                    {
-                        blockerCollider2D.isTrigger = false;
-                        Debug.Log($"[Wall] Created new blockerCollider2D on childBlocker (isTrigger=false)");
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[Wall] childBlocker is null");
+                CopyColliderProperties(sourceCollider, blockerCollider2D);
+                blockerCollider2D.isTrigger = false;
+                Debug.Log($"[Wall] Đã setup blocker collider trên childBlocker (isTrigger=false)");
             }
         }
         
@@ -430,23 +525,23 @@ namespace Script.Game.Structures.Wall_And_Stump
         /// <summary>
         /// hàm này được gọi sau khi wall vừa chuyển từ wall thành stump và ngược lại
         /// Cập nhật CoinUser theo WallState: Wall = nâng cấp, Stump = sửa chữa
-        
+
         private void UpdateCoinUserData()
         {
             if (coinUser == null) return;
-            
+
             if (status.state == WallState.Wall)
             {
                 // Wall: Chế độ nâng cấp
                 coinUser.requiredCoins = status.upgradeCost;
                 coinUser.onUpgradeComplete = OnCoinCollectionComplete; // Gọi hàm xử lý chung
                 coinUser.SetBuildingInfo(BuildingType.Wall, status.tier);
-            
-                bool canBeUpgraded = CanUpgradeByTownCenterLevel();
-                bool isMaxTierForTownCenter = !canBeUpgraded;
+
+                // Kiểm tra khả năng nâng cấp thực tế thay vì dùng cached value
+                bool canActuallyUpgrade = CanUpgradeByTownCenterLevel();
                 bool isMaxTierForWall = status.isMaxTier;
-            
-                coinUser.canAcceptCoins = !isMaxTierForTownCenter && !isMaxTierForWall;
+
+                coinUser.canAcceptCoins = canActuallyUpgrade && !isMaxTierForWall;
             }
             else if (status.state == WallState.Stump)
             {
@@ -454,14 +549,14 @@ namespace Script.Game.Structures.Wall_And_Stump
                 coinUser.requiredCoins = status.rebuildCost;
                 coinUser.onUpgradeComplete = OnCoinCollectionComplete; // Gọi hàm xử lý chung
                 coinUser.SetBuildingInfo(BuildingType.Wall, status.tier);
-                
+
                 // Stump luôn có thể nhận coin để sửa chữa
                 coinUser.canAcceptCoins = true;
             }
-            
-            
-            Debug.Log($"[Wall] Updated CoinUser for {status.state}. Required coins: {coinUser.requiredCoins}, Can accept: {coinUser.canAcceptCoins}");
-            
+
+
+           // Debug.Log($"[Wall] Updated CoinUser for {status.state}. Required coins: {coinUser.requiredCoins}, Can accept: {coinUser.canAcceptCoins}");
+
         }
         #endregion
         
@@ -532,7 +627,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         private void OnWorldInfoChanged(WorldInfo worldInfo)
         {
             UpdateMaxHp();
-            Debug.Log($"Wall {gameObject.name} updated HP due to WorldInfo change. TechAdhesive: {worldInfo.TechAdhesive}, MaxHP: {status.maxHp}");
+            //Debug.Log($"Wall {gameObject.name} updated HP due to WorldInfo change. TechAdhesive: {worldInfo.TechAdhesive}, MaxHP: {status.maxHp}");
             
         }
         public void TakeDamage(int amount)
@@ -566,7 +661,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 status.currentHp = Mathf.Min(status.currentHp + amount, status.maxHp);
             }
             
-            Debug.Log($"[Wall] Healed {amount} HP. Current HP: {status.currentHp}/{status.maxHp}");
+           // Debug.Log($"[Wall] Healed {amount} HP. Current HP: {status.currentHp}/{status.maxHp}");
             
         }
         public void Die()
@@ -585,15 +680,32 @@ namespace Script.Game.Structures.Wall_And_Stump
         //khi trigger,gọi hàm này kiểm tra xem có thể nâng cấp không để hiện coinslot 
         private bool CanUpgradeByTownCenterLevel()
         {
-            if (BuildingManager.instance == null) return false;
-            
-            int townCenterLevel = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>().tier;
+            if (BuildingManager.instance == null)
+            {
+                Debug.LogError("[Wall] BuildingManager.instance is null");
+                return false;
+            }
+
+            if (BuildingManager.instance.currentTownCenter == null)
+            {
+               Debug.LogError("[Wall] currentTownCenter is null");
+                return false;
+            }
+
+            var townCenterStatus = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>();
+            if (townCenterStatus == null)
+            {
+                Debug.LogError("[Wall] TownCenterStatus component not found on currentTownCenter");
+                return false;
+            }
+
+            int townCenterLevel = townCenterStatus.tier;
             int maxAllowedTier = BuildingManager.instance.GetMaxAllowedTier(BuildingType.Wall);
-            
-            
-            Debug.Log($"Town Center Level: {townCenterLevel}, Max Wall tier Allowed: {maxAllowedTier}, Current Wall tier: {status.tier}");
-            
-            return BuildingManager.instance.CanBuildingBeUpgraded(BuildingType.Wall, status.tier);
+            bool canUpgrade = BuildingManager.instance.CanBuildingBeUpgraded(BuildingType.Wall, status.tier);
+
+            // Detailed logging now handled in GetWallDebugInfo()
+
+            return canUpgrade;
         }
         
          /// <summary>
@@ -618,8 +730,8 @@ namespace Script.Game.Structures.Wall_And_Stump
              else if (status.state == WallState.Stump)
              {
                  // Stump: Chế độ sửa chữa
-                 Debug.Log($"[Wall] Stump tại vị trí {transform.position} đã nhận đủ {status.rebuildCost} coin để sửa chữa!");
-                 Debug.LogWarning($"[Hệ thống xây dựng] Stump cấp {status.tier} tại vị trí {transform.position} đã sẵn sàng để sửa chữa! Cần thợ xây đến làm việc.");
+                // Debug.Log($"[Wall] Stump tại vị trí {transform.position} đã nhận đủ {status.rebuildCost} coin để sửa chữa!");
+                 //Debug.LogWarning($"[Hệ thống xây dựng] Stump cấp {status.tier} tại vị trí {transform.position} đã sẵn sàng để sửa chữa! Cần thợ xây đến làm việc.");
                  
                  // [TODO] Khi có thợ xây, sẽ gọi hàm RepairStump()
                  // Hiện tại: Tạm thời tự động sửa chữa để test
@@ -631,48 +743,42 @@ namespace Script.Game.Structures.Wall_And_Stump
          }
          
 
-        //TODO: sửa lại hàm update này ,nó đang thay gameobejct mới thay vì load newtier
+        
+      
         public void OnUpgradeComplete()
         {
             if (!CanUpgradeByTownCenterLevel())
             {
                 Debug.LogWarning($"Wall at tier {status.tier} cannot be upgraded: Town Center tier is too low.");
-                
                 return;
             }
-            
+
             // Get next tier data
             WallTierData nextTierData = wallDataList.GetNext(GetCurrentTier());
             if (nextTierData != null)
             {
-                Debug.Log($"Upgrading wall from tier {status.tier} to tier {nextTierData.tier}");
-                
+               // Debug.Log($"Upgrading wall from tier {status.tier} to tier {nextTierData.tier}");
 
-                status.state = WallState.Wall;
-                ApplyTierToStatus(nextTierData);
-                LoadWallComponents(nextTierData,status.state);
-                
-                status.currentHp = status.maxHp; //làm mới hp
-                
+                // Sử dụng helper để khởi tạo từ tier mới và state Wall
+                InitializeFromTier(nextTierData, WallState.Wall);
+
                 // QUAN TRỌNG: Reset CoinUser state để có thể nhận coin tiếp
                 if (coinUser != null)
                 {
                     coinUser.ResetUpgradeState();
-                    Debug.Log("[WallBehavior] CoinUser reset để có thể nhận coin tiếp");
+                   // Debug.Log("[WallBehavior] CoinUser reset để có thể nhận coin tiếp");
                 }
-                
+
                 // Cập nhật CoinUser với cost mới
                 UpdateCoinUserData();
-            
+
                 OnWallUpgraded?.Invoke(this);
             }
             else
             {
                 Debug.LogWarning($"Cannot upgrade wall at tier {status.tier}: No next tier data available");
-                
             }
         }
-        
         public int GetUpgradeCost()
         {
             return status.upgradeCost;
@@ -686,7 +792,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 status.upgradeProgress = status.upgradeProgressMax;
             }
             
-            Debug.LogWarning($"[WallBehavior] AddWorkingProcess: upgradeProgress = {status.upgradeProgress}/{status.upgradeProgressMax}");
+           // Debug.LogWarning($"[WallBehavior] AddWorkingProcess: upgradeProgress = {status.upgradeProgress}/{status.upgradeProgressMax}");
             
             
             if (status.upgradeProgress >= status.upgradeProgressMax)
@@ -708,7 +814,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
             return false;
         }
-        
+
         public void PerformUpgrade()
         {
             if (coinUser != null)
@@ -716,7 +822,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 coinUser.PerformUpgrade();
             }
         }
-        
+
         public void ResetUpgradeState()
         {
             if (coinUser != null)
@@ -724,6 +830,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 coinUser.ResetUpgradeState();
             }
         }
+
         #endregion
         
         #region Save System Implementation
@@ -734,21 +841,16 @@ namespace Script.Game.Structures.Wall_And_Stump
             public float positionY;
             public int tier;
             public int currentHp;
-            public int maxHp;
             public bool readyToUpgrade;
             public int buildProgress;
-            public int buildProgressMax;
             public WallState wallState;
+            public float scaleX = 1f;
         }
-        //kiểm tra lại cách hệ thống save
+        
         public string GetPrefabID()
         {
-            // Return prefab ID based on current state and tier
-            if (status.state == WallState.Stump)
-            {
-                return $"stump_{status.tier}";
-            }
-            return $"wall_{status.tier}";
+            // Return prefab ID based on current state (bỏ tier vì tier lưu trong data, load base prefab)
+            return status.state == WallState.Stump ? "stump" : "wall";
         }
         
         public object CaptureData()
@@ -757,12 +859,11 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 positionX = transform.position.x,
                 positionY = transform.position.y,
+                scaleX = transform.localScale.x,
                 tier = status.tier,
                 currentHp = status.currentHp,
-                maxHp = status.maxHp,
                 readyToUpgrade = status.readyToUpgrade,
                 buildProgress = status.upgradeProgress,
-                buildProgressMax = status.upgradeProgressMax,
                 wallState = status.state
             };
         }
@@ -771,38 +872,30 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             WallBehaviorData wallData = (WallBehaviorData)data;
             transform.position = new Vector3(wallData.positionX, wallData.positionY, 0);
-            
-            // Lưu lại các giá trị từ save data
+
+            // Lưu lại các giá trị từ save data để overwrite sau
             int savedCurrentHp = wallData.currentHp;
-            int savedMaxHp = wallData.maxHp;
             bool savedReadyToUpgrade = wallData.readyToUpgrade;
             int savedBuildProgress = wallData.buildProgress;
-            int savedBuildProgressMax = wallData.buildProgressMax;
             WallState savedWallState = wallData.wallState;
-            // Khôi phục state TRƯỚC KHI load components để sử dụng đúng prefab wall/stump
-            status.state = savedWallState;
-            
+
             // Apply tier data based on saved tier
-            WallTierData tierData =  wallDataList.GetByTier(wallData.tier);
+            WallTierData tierData = wallDataList.GetByTier(wallData.tier);
             if (tierData != null)
             {
-                ApplyTierToStatus(tierData);
-                LoadWallComponents(tierData, status.state);
-                
-                // Xử lý logic sau khi load data
-                UpdateMaxHp();  // Tính toán maxHp dựa trên tech hiện tại
+                // Sử dụng helper để khởi tạo từ tier và state từ save
+                InitializeFromTier(tierData, savedWallState);
             }
             else
             {
-                Debug.LogError("wall.tierData is null");
+                Debug.LogError("[WallBehavior] wall.tierData is null during restore");
             }
-            
-            // Khôi phục giá trị từ save data
+
+            // Overwrite giá trị từ save data (sau khi init để không bị reset)
             status.currentHp = savedCurrentHp;
             status.readyToUpgrade = savedReadyToUpgrade;
             status.upgradeProgress = savedBuildProgress;
-            status.upgradeProgressMax = savedBuildProgressMax;
-            
+           
             // Đảm bảo HP không âm và không vượt quá maxHp
             if (status.currentHp <= 0)
             {
@@ -812,7 +905,151 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 status.currentHp = status.maxHp;
             }
+            // Flip hướng nếu scaleX từ save
+            transform.localScale = new Vector3(wallData.scaleX, transform.localScale.y, transform.localScale.z);
+            
+            // Debug log trạng thái trước khi cập nhật
+           // Debug.Log($"[WallBehavior] Before Update - coinUser: {coinUser != null}, readyToUpgrade: {status.readyToUpgrade}, State: {status.state}, Tier: {status.tier}");
+            
+            // Kiểm tra và cập nhật readyToUpgrade dựa trên trạng thái hiện tại
+            // FIX: Defer việc kiểm tra CanUpgradeByTownCenterLevel() đến sau khi load hoàn tất
+            // để tránh trường hợp TownCenter chưa được set
+            if (status.state == WallState.Wall)
+            {
+                // Tạm thời set readyToUpgrade = true để có thể nhận coin
+                // Sẽ được update lại sau khi TownCenter được load xong
+                status.readyToUpgrade = true;
+               // Debug.Log("[WallBehavior] Temporarily set readyToUpgrade to true during restore (will be updated after TownCenter loads)");
+            }
+            else if (status.state == WallState.Stump)
+            {
+                // Nếu là gốc cây, luôn cho phép ném tiền để xây lại
+                status.readyToUpgrade = true;
+                //.Log("[WallBehavior] Stump state - Set readyToUpgrade to true");
+            }
+
+            // Cập nhật coinUser với trạng thái tạm thời
+            UpdateCoinUserData();
+
+            // Debug log trạng thái sau khi cập nhật
+            // Debug.Log($"[WallBehavior] After UpdateCoinUserData - canAcceptCoins: {coinUser?.canAcceptCoins}");
+
+            // Đảm bảo coinUser có thể nhận coin nếu readyToUpgrade là true
+            if (coinUser != null)
+            {
+                coinUser.canAcceptCoins = status.readyToUpgrade;
+               // Debug.Log($"[WallBehavior] Final set - canAcceptCoins: {coinUser.canAcceptCoins}, readyToUpgrade: {status.readyToUpgrade}");
+            }
+            else
+            {
+                Debug.LogError("[WallBehavior] coinUser is null when trying to set canAcceptCoins");
+                coinUser = GetComponentInChildren<CoinUser>(true);
+                if (coinUser != null)
+                {
+                  //  Debug.Log($"[WallBehavior] Đã tìm thấy CoinUser. Trạng thái: {status.state}, Có thể nhận coin: {coinUser.canAcceptCoins}");
+                }
+                else
+                {
+                    Debug.LogError("[WallBehavior] Failed to find CoinUser in children");
+                }
+            }
+
+            // Schedule update sau khi TownCenter được load xong
+            StartCoroutine(DelayedUpgradeCheck());
+
+           // Debug.Log($"[WallBehavior] Restored from save. Tier: {status.tier}, State: {status.state}, HP: {status.currentHp}/{status.maxHp}, ReadyToUpgrade: {status.readyToUpgrade}, CanAcceptCoins: {coinUser?.canAcceptCoins}");
+        }
+        #endregion
+        
+        /// Update sprite, colliders, và set active blocker dựa trên tier và state. Giảm lặp code ở các nơi thay đổi state/tier.
+        private void UpdateVisualAndPhysics(WallTierData tierData, WallState currentState)
+        {
+            LoadWallComponents(tierData, currentState);
+
+            // Set active blocker dựa trên state
+            if (childBlocker != null)
+            {
+                childBlocker.SetActive(currentState == WallState.Wall);
+            }
+        }
+        
+        /// Khởi tạo từ tier data và state. Giảm lặp ở Awake và RestoreData.
+        private void InitializeFromTier(WallTierData tierData, WallState initialState)
+        {
+            status.state = initialState;
+            ApplyTierToStatus(tierData);
+            UpdateVisualAndPhysics(tierData, initialState);
+            UpdateMaxHp();
+            status.currentHp = status.maxHp;
+        }
+     
+        /// Load tier/components từ current status (tier/state), update maxHp/coin. Dùng cho RestoreData sau set fields.
+        private void LoadFromCurrentStatus()
+        {
+            WallTierData tierData = wallDataList.GetByTier(status.tier);
+            if (tierData != null)
+            {
+                ApplyTierToStatus(tierData);  // Sync costs/maxHp variants từ tierData (không overwrite progress)
+                UpdateVisualAndPhysics(tierData, status.state);  // Load components theo tier/state
+            }
+            else
+            {
+                Debug.LogError($"[WallBehavior] No tier data found for tier {status.tier}");
+            }
+
+            UpdateMaxHp();  // Update maxHp dựa trên world info
+            UpdateCoinUserData();  // Update coin theo state
+        }
+
+        /// Coroutine để kiểm tra upgrade status sau khi TownCenter đã được load xong
+        private System.Collections.IEnumerator DelayedUpgradeCheck()
+        {
+            // Đợi 1 frame để đảm bảo TownCenter đã được set
+            yield return null;
+
+            // Kiểm tra lại upgrade status với TownCenter đã load
+            if (status.state == WallState.Wall)
+            {
+                bool canActuallyUpgrade = CanUpgradeByTownCenterLevel();
+                status.readyToUpgrade = canActuallyUpgrade;
+
+                // Cập nhật CoinUser với trạng thái chính xác
+                if (coinUser != null)
+                {
+                    coinUser.canAcceptCoins = canActuallyUpgrade;
+                  //  Debug.Log($"[WallBehavior] Delayed upgrade check - Can upgrade: {canActuallyUpgrade}, CanAcceptCoins: {coinUser.canAcceptCoins}");
+                }
+            }
+            // Stump không cần kiểm tra lại vì luôn có thể nhận coin
+        }
+
+        #region Debug Methods
+        /// <summary>
+        /// Debug method để tạo string thông tin wall khi player trigger
+        /// </summary>
+        public string GetWallDebugInfo()
+        {
+            string tcInfo = "NULL";
+            bool canUpgradeByTC = false;
+
+            if (BuildingManager.instance?.currentTownCenter != null)
+            {
+                var tcStatus = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>();
+                if (tcStatus != null)
+                {
+                    tcInfo = $"Lv.{tcStatus.tier}";
+                    canUpgradeByTC = CanUpgradeByTownCenterLevel();
+                }
+            }
+
+            string coinUserInfo = "NULL";
+            if (coinUser != null)
+            {
+                coinUserInfo = $"Accept:{coinUser.canAcceptCoins}, Req:{coinUser.requiredCoins}, Collected:{coinUser.collectedCoins}, Ready:{coinUser.isReadyToUpgrade}, Trigger:{coinUser.playerTrigger}";
+            }
+
+            return $"WALL[{gameObject.name}]: Pos{transform.position}, State:{status.state}, Tier:{status.tier}, HP:{status.currentHp}/{status.maxHp}, ReadyUpgrade:{status.readyToUpgrade}, MaxTier:{status.isMaxTier}, UpgradeCost:{status.upgradeCost}, RebuildCost:{status.rebuildCost}, TC:{tcInfo}, CanUpgradeByTC:{canUpgradeByTC}, CoinUser:{coinUserInfo}, CanAccept:{CanAcceptCoins}, IsReady:{IsReadyToUpgrade}";
         }
         #endregion
     }
-} 
+}

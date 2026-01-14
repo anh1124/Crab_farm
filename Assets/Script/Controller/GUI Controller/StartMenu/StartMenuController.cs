@@ -120,21 +120,21 @@ namespace Script.GUI_Controller.StartMenu
             deleteSaveBtn.onClick.AddListener(DeleteCurrentWorldSave);
             
             //truyền save path đến screenGamePlay
-            //đối với save đã có sẵn 
-            playBtn.onClick.AddListener(() => SendDataAndOpenPlayScreend(worldName.text));
-            //đối với save được tạo bằng createBtn thì được ghi bên trong luôn 
+            //đối với save đã có sẵn
+            playBtn.onClick.AddListener(() => LoadSelectedWorldAndTransitionToGame(worldName.text));
+            //đối với save được tạo bằng createBtn thì được ghi bên trong luôn
         }
 
-        public void SendDataAndOpenPlayScreend(string name)
+        public void LoadSelectedWorldAndTransitionToGame(string worldName)
         {
-            string checkFilePath = WorldFileManager.Instance.GetWorldFolderPath(name);
-            
-            if (checkFilePath != null)
+            string worldFolderPath = WorldFileManager.Instance.GetWorldFolderPath(worldName);
+
+            if (worldFolderPath != null)
             {
-                PlayerPrefs.SetString("SaveFilePath",  WorldFileManager.Instance.GetWorldFolderPath(name)); 
-                SceneManager.LoadScene("GamePlayScene"); //Debug.LogError("StartMenuController11111: "+name);
+                WorldFileManager.Instance.SetActiveWorldPath(worldFolderPath);
+                SceneManager.LoadScene("GamePlayScene");
             }
-           else Debug.LogError("StartMenuController: save file path is not found");
+           else Debug.LogError("StartMenuController: world folder path is not found");
         }
         
         public void createNewWorldAction()
@@ -149,8 +149,8 @@ namespace Script.GUI_Controller.StartMenu
             
             if (createWorldDone)
             {
-                //mở thế giới vừa được tạo ra 
-                SendDataAndOpenPlayScreend(inputWorldName.text);
+                //mở thế giới vừa được tạo ra
+                LoadSelectedWorldAndTransitionToGame(inputWorldName.text);
             }
             //ở hàm WorldFileManager.Instance.CreateWorldSave đã có sẵn debug khi sai rồi nên không cần tạo nữa
         }

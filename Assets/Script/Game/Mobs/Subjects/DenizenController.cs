@@ -33,10 +33,7 @@ namespace Script.Game.Mobs.Subjects
         {
             animator = GetComponent<Animator>();
             rayCastHelper = GetComponent<RayCastHelper>();
-            if (gameObject.tag != "Vagrant" && gameObject.tag != "Villager" && gameObject.tag != "Archer")
-            {
-                gameObject.tag = "Denizen"; // base tag; ApplyRole will overwrite with specific role tag
-            }
+          
         }
 
         private void Start()

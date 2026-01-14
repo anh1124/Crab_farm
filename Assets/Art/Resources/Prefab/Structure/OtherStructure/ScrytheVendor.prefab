@@ -172,7 +172,7 @@ GameObject:
   - component: {fileID: 8979053782143595466}
   - component: {fileID: 5577631807386491776}
   - component: {fileID: 6575017997877564678}
-  m_Layer: 12
+  m_Layer: 0
   m_Name: ScrytheVendor
   m_TagString: GameController
   m_Icon: {fileID: 0}
@@ -312,6 +312,8 @@ MonoBehaviour:
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 8590597031284531867}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []

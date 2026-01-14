@@ -85,24 +85,63 @@ namespace Script.Game.Item.Coin
             currentTier = tier;
         }
 
+        /// <summary>
+        /// Debug method để tạo string thông tin CoinUser trigger
+        /// </summary>
+        public string GetTriggerDebugInfo(out bool shouldShowSlots)
+        {
+            shouldShowSlots = false;
+            string result = $"CoinUser[{gameObject.name}]: AcceptCoins={canAcceptCoins}, ReadyToUpgrade={isReadyToUpgrade}, PlayerTrigger={playerTrigger}";
+
+            // If component implements IUpgradeable, check if it's upgradeable based on owner's canAcceptCoins value
+            var upgradeableComponent = GetComponent<IUpgradeable>();
+            if (upgradeableComponent != null)
+            {
+                result += " | Has IUpgradeable";
+                // Ready to upgrade will be determined by parent component (Wall, TownCenter, etc.)
+                if (canAcceptCoins && !isReadyToUpgrade)
+                {
+                    result += " | Conditions met - WILL SHOW SLOTS";
+                    shouldShowSlots = true;
+                }
+                else if (!canAcceptCoins)
+                {
+                    result += " | Cannot accept coins";
+                }
+                else
+                {
+                    result += " | Already ready or other condition";
+                }
+            }
+            else
+            {
+                result += " | No IUpgradeable - Fallback";
+                // Fallback for non-IUpgradeable components
+                if (canAcceptCoins && !isReadyToUpgrade)
+                {
+                    result += " | Fallback: Conditions met - WILL SHOW SLOTS";
+                    shouldShowSlots = true;
+                }
+                else
+                {
+                    result += " | Fallback: Cannot setup slots";
+                }
+            }
+
+            return result;
+        }
+
         public void PlayerTriggerOn()
         {
+            bool shouldShowSlots = false;
+
             // If component implements IUpgradeable, check if it's upgradeable based on owner's canAcceptCoins value
             if (upgradeableComponent != null)
             {
                 // Ready to upgrade will be determined by parent component (Wall, TownCenter, etc.)
                 if (canAcceptCoins && !isReadyToUpgrade)
                 {
-                    SetupCoinSlots();
-                    playerTrigger = true;
-                }
-                else if (!canAcceptCoins)
-                {
-                    // Show feedback to the player about why they can't upgrade - only when debugging
-                   
-                      //  Debug.Log($"Building cannot be upgraded: canAcceptCoins={canAcceptCoins}," +
-                       //           $" type={buildingType}, tier={currentTier}");
-                    
+                    shouldShowSlots = true;
                 }
             }
             else
@@ -110,9 +149,14 @@ namespace Script.Game.Item.Coin
                 // Fallback for non-IUpgradeable components
                 if (canAcceptCoins && !isReadyToUpgrade)
                 {
-                    SetupCoinSlots();
-                    playerTrigger = true;
+                    shouldShowSlots = true;
                 }
+            }
+
+            if (shouldShowSlots)
+            {
+                SetupCoinSlots();
+                playerTrigger = true;
             }
         }
         

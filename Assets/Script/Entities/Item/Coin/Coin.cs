@@ -175,7 +175,7 @@ namespace Script.Game.Item.Coin
             {
                 HandlePlayerPickup(other);
             }*/
-             if (other.CompareTag("Denizens"))
+             if (other.CompareTag("Denizen"))
             {
                 HandleDenizensPickup(other);
             }

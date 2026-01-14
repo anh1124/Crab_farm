@@ -37,7 +37,7 @@ namespace Script.Manager.Building
     
     // Lớp lưu danh sách cấu hình công trình cho một cấp của TownCenter
     [Serializable]
-    public class TownCenterConfig
+    public class TownCenterBuildingLimits
     {
         public int townCenterLevel;
         public List<StructureInfo> buildAvailableStructuresList;
@@ -49,17 +49,17 @@ namespace Script.Manager.Building
         public static BuildingManager instance;
         
         [Header("Config File Settings")]
-        [Tooltip("Tên file config trong thư mục Resources/DataConfig")]
-        public string configFileName = "BuildingLimits";
+        [Tooltip("Tên file config trong thư mục Resources/DataConfig/Structure")]
+        public string configFileName = "TownCenterBuildingLimits";
 
         [Header("Town Center Build Configs")]
-        [SerializeField] 
+        [SerializeField]
         //danh sách config được load từ json ra
-        private List<TownCenterConfig> townCenterConfigs = new List<TownCenterConfig>();
-        
-        
+        private List<TownCenterBuildingLimits> townCenterConfigs = new List<TownCenterBuildingLimits>();
+
+
         // Public property to access townCenterConfigs from other classes
-        public List<TownCenterConfig> TownCenterConfigs => townCenterConfigs;
+        public List<TownCenterBuildingLimits> TownCenterConfigs => townCenterConfigs;
 
         
         [Header("Available Structures (Debug)")]
@@ -107,20 +107,20 @@ namespace Script.Manager.Building
                     if (jsonObject != null && jsonObject.ContainsKey("townCenterConfigs"))
                     {
                         var configsArray = JsonConvert.DeserializeObject<List<object>>(jsonObject["townCenterConfigs"].ToString());
-                        townCenterConfigs = new List<TownCenterConfig>();
-                        
+                        townCenterConfigs = new List<TownCenterBuildingLimits>();
+
                         foreach (var configObj in configsArray)
                         {
                             var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(configObj.ToString());
                             int level = Convert.ToInt32(configDict["townCenterLevel"]);
-                            
-                            var config = new TownCenterConfig
+
+                            var config = new TownCenterBuildingLimits
                             {
                                 townCenterLevel = level,
                                 buildAvailableStructuresList = new List<StructureInfo>()
                             };
                             
-                            // tìm key "availableStructures" trong JSON (tên đúng từ BuildingLimits.json)
+                            // tìm key "availableStructures" trong JSON (tên đúng từ TownCenterBuildingLimits.json)
                             string structureKey = configDict.ContainsKey("availableStructures") ? "availableStructures" :
                                                   configDict.ContainsKey("structures") ? "structures" : 
                                                   configDict.ContainsKey("build_Available_Structures_List") ? "build_Available_Structures_List" : null;
@@ -192,9 +192,9 @@ namespace Script.Manager.Building
             }
 
             // tìm config cho tier hiện tại của TownCenter
-            TownCenterConfig currentConfig = null;
+            TownCenterBuildingLimits currentConfig = null;
             int currentTownCenterLevel = currentTownCenter.GetComponent<TownCenterStatus>().tier;
-            
+
             foreach (var config in townCenterConfigs)
             {
                 if (config.townCenterLevel == currentTownCenterLevel)
@@ -282,7 +282,7 @@ namespace Script.Manager.Building
                 return false;
             }
 
-            Debug.Log($"Building type {buildingType} at tier {currentTier} can be upgraded to tier {nextTier}, max allowed tier is {structureInfo.maxTier}");
+           // Debug.Log($"Building type {buildingType} at tier {currentTier} can be upgraded to tier {nextTier}, max allowed tier is {structureInfo.maxTier}");
             return true;
         }
         
@@ -308,7 +308,7 @@ namespace Script.Manager.Building
             }
             
             int townCenterTier = currentTownCenter != null ? currentTownCenter.GetComponent<TownCenterStatus>().tier : 0;
-            Debug.Log($"Town center tier {townCenterTier} cho phép {buildingType} up to tier {structureInfo.maxTier}");
+            //Debug.Log($"Town center tier {townCenterTier} cho phép {buildingType} up to tier {structureInfo.maxTier}");
             
             return structureInfo.maxTier;
         }

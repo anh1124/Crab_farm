@@ -75,7 +75,7 @@ GameObject:
   - component: {fileID: 4916670322947810626}
   - component: {fileID: 424655460207028796}
   - component: {fileID: 4115908289567977180}
-  m_Layer: 12
+  m_Layer: 0
   m_Name: SpikeVendor
   m_TagString: SpikeVendor
   m_Icon: {fileID: 0}
@@ -215,6 +215,8 @@ MonoBehaviour:
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 4385865509838838666}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []

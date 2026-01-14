@@ -20,7 +20,6 @@ public class LoadFromSave : MonoBehaviour
     public string saveFilePath;
     public WorldInfo worldInfo;
    
-  
     private void Awake()
     {
         AddSingleton();
@@ -37,31 +36,32 @@ public class LoadFromSave : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    [Obsolete("Use modular methods: LoadWorldInfoFromSave, LoadMapFromSave, LoadTechAndTimeFromSave, LoadEntitiesFromSave", true)]
     public bool DoLoadFromSaveFilePath(string filePath)
     {
         saveFilePath = filePath;
-        
+
         //kiểm tra đường dẫn file null?
         if (string.IsNullOrEmpty(saveFilePath))
         {
             Debug.LogError("filepath is null or empty");
             return false;
         }
-        
-        
+
         //kiểm tra file worldInfo.json
         //và lấy data trong worldInfo.json truyền vào class worldInfo ở script này
         if (!ExtractDataFromWorldInfoJson()) { return false; }
 
-        
-        //các structure và map hoặc linh tinh sẽ được load ở hàm dưới vì nó phụ thuộc vào việc map đã được tạo hay chưa 
+
+        //các structure và map hoặc linh tinh sẽ được load ở hàm dưới vì nó phụ thuộc vào việc map đã được tạo hay chưa
         LoadMapJson();
-        
+
         GameTimeManager.Instance.SetGameTimeFromSave();
-        
+
         // Load tech status from WorldInfo to PrefabData
         LoadTechStatus();
-        
+
         //instance OtherCharactor on container
         EntitySaveManager.Instance.LoadAllContainer();
         //EntitySaveManager.Instance.SaveAllContainer();//vì tạo cây trong hàm tạo thế giới nên phải lưu ngay sau kho load ra
@@ -109,6 +109,7 @@ public class LoadFromSave : MonoBehaviour
         }
     }
     
+    //khi file map.json không tồn tại, tạo map mới từ seed trong worldinfo từ saveFilePath hiện tại
     private void GenerateNewMap()
     {
         try
@@ -131,7 +132,6 @@ public class LoadFromSave : MonoBehaviour
         }
     }
   
-
     private bool ExtractDataFromWorldInfoJson()
     {
         string worldInfoJsonPath = Path.Combine(saveFilePath, "worldInfo.json");
@@ -170,28 +170,6 @@ public class LoadFromSave : MonoBehaviour
         return true;
     }
  
-    
-    //kiểm tra file có tồn tại trong path không
-    public bool ExistenceFileCheck(string saveFilePath,string fileName)
-    {
-        // Kiểm tra sự tồn tại của tệp map.json trong thư mục
-        string mapFilePath = Path.Combine(saveFilePath,fileName);
-        if (!File.Exists(mapFilePath))
-        {
-            return false;
-        }
-        return true;
-    }
-    
-    // Hàm để tải dữ liệu từ file map.json
-    private void LoadMapData(string mapFilePath)
-    {
-        // Đọc dữ liệu từ tệp và xử lý (ví dụ: parse JSON, khôi phục trạng thái trò chơi)
-        string mapData = File.ReadAllText(mapFilePath);
-        Debug.Log("Map data loaded: " + mapData);
-        // Thêm logic xử lý dữ liệu map tại đây
-    }
-
     // Method to load tech status from WorldInfo to PrefabData
     private void LoadTechStatus()
     {
@@ -200,7 +178,7 @@ public class LoadFromSave : MonoBehaviour
             // Không cần gán trực tiếp vào PrefabData nữa vì tech đã được di chuyển vào WorldInfo
             // Thay vào đó, sẽ gán thông tin tech từ worldInfo sang WorldFileManager.Instance.worldInfo
             // và thông báo thay đổi để các component cập nhật
-            
+
             if (WorldFileManager.Instance != null && WorldFileManager.Instance.worldInfo != null)
             {
                 // Cập nhật dữ liệu tech vào WorldFileManager
@@ -208,10 +186,10 @@ public class LoadFromSave : MonoBehaviour
                 WorldFileManager.Instance.worldInfo.TechPenetrating = worldInfo.TechPenetrating;
                 WorldFileManager.Instance.worldInfo.TechForge = worldInfo.TechForge;
                 WorldFileManager.Instance.worldInfo.TechAdhesive = worldInfo.TechAdhesive;
-                
+
                 // Sử dụng phương thức công khai để thông báo thay đổi
                 WorldFileManager.Instance.NotifyWorldInfoChanged();
-                
+
                 Debug.Log("Đã tải trạng thái tech từ file save vào WorldFileManager");
             }
             else
@@ -224,4 +202,161 @@ public class LoadFromSave : MonoBehaviour
             Debug.LogWarning("Không thể tải trạng thái tech: worldInfo của LoadFromSave là null");
         }
     }
+
+    #region NEW MODULAR METHODS - Phase 1 Implementation
+
+    /// <summary>
+    /// PHASE 2: Load world info from worldInfo.json
+    /// Called early in loading sequence for context
+    /// Dependencies: WorldFileManager.Instance must exist
+    ///
+    /// HÀM NÀY LÀM GÌ:
+    /// - Đọc file worldInfo.json từ thư mục save game
+    /// - Parse JSON và tạo object WorldInfo
+    /// - Lưu vào this.worldInfo để các hàm khác sử dụng
+    /// - Cung cấp seed, tech, time data cho loading tiếp theo
+    ///
+    /// ĐƯỢC GỌI Ở: StartGameScrene.cs Phase 2
+    /// CẦN GỌI TRƯỚC: LoadMapFromSave() (cần seed từ worldInfo)
+    /// </summary>
+    public bool LoadWorldInfoFromSave(string filePath)
+    {
+        // Validate dependencies
+        if (WorldFileManager.Instance == null)
+        {
+            Debug.LogError("[LoadFromSave] WorldFileManager.Instance is null! Cannot load world info.");
+            return false;
+        }
+
+        // Validate input
+        if (string.IsNullOrEmpty(filePath))
+        {
+            Debug.LogError("[LoadFromSave] filePath is null or empty");
+            return false;
+        }
+
+        // Set save path
+        saveFilePath = filePath;
+
+        // Extract worldInfo.json and populate this.worldInfo
+        bool success = ExtractDataFromWorldInfoJson();
+
+        if (success && worldInfo != null)
+        {
+            Debug.Log($"[LoadFromSave] Successfully loaded world info for: {worldInfo.Name}");
+        }
+        else
+        {
+            Debug.LogError("[LoadFromSave] Failed to load world info from save");
+        }
+
+        return success;
+    }
+
+    /// <summary>
+    /// PHASE 2: Load map data or generate new map
+    /// Called after world info is loaded
+    /// Dependencies: worldInfo must be loaded, ChunkManager.Instance must exist
+    /// </summary>
+    public bool LoadMapFromSave(string filePath)
+    {
+        // Validate dependencies
+        if (worldInfo == null)
+        {
+            Debug.LogError("[LoadFromSave] WorldInfo not loaded! Call LoadWorldInfoFromSave first.");
+            return false;
+        }
+
+        if (ChunkManager.Instance == null)
+        {
+            Debug.LogError("[LoadFromSave] ChunkManager.Instance is null! Cannot load/generate map.");
+            return false;
+        }
+
+        // Set save path
+        saveFilePath = filePath;
+
+        try
+        {
+            // Call existing LoadMapJson() method
+            LoadMapJson();
+            Debug.Log("[LoadFromSave] Map loading/generation completed successfully");
+            return true;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[LoadFromSave] Exception during map loading: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// PHASE 4: Load tech status and game time
+    /// Called before entity loading
+    /// Dependencies: worldInfo must be loaded, managers must exist
+    /// </summary>
+    public void LoadTechAndTimeFromSave()
+    {
+        // Validate dependencies
+        if (worldInfo == null)
+        {
+            Debug.LogWarning("[LoadFromSave] WorldInfo not loaded, skipping tech/time load");
+            return;
+        }
+
+        if (WorldFileManager.Instance == null)
+        {
+            Debug.LogWarning("[LoadFromSave] WorldFileManager.Instance is null, skipping tech load");
+            return;
+        }
+
+        if (GameTimeManager.Instance == null)
+        {
+            Debug.LogWarning("[LoadFromSave] GameTimeManager.Instance is null, skipping time load");
+            return;
+        }
+
+        try
+        {
+            // Load game time
+            GameTimeManager.Instance.SetGameTimeFromSave();
+            Debug.Log("[LoadFromSave] Game time loaded successfully");
+
+            // Load tech status
+            LoadTechStatus();
+            Debug.Log("[LoadFromSave] Tech and time loading completed");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[LoadFromSave] Exception during tech/time loading: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// PHASE 4: Load all entities (walls, structures, enemies, etc.)
+    /// Called last in loading sequence
+    /// Dependencies: EntitySaveManager.Instance must exist
+    /// </summary>
+    public void LoadEntitiesFromSave()
+    {
+        // Validate dependencies
+        if (EntitySaveManager.Instance == null)
+        {
+            Debug.LogError("[LoadFromSave] EntitySaveManager.Instance is null! Cannot load entities.");
+            return;
+        }
+
+        try
+        {
+            // Load all entities via EntitySaveManager
+            EntitySaveManager.Instance.LoadAllContainer();
+            Debug.Log("[LoadFromSave] Entity loading completed successfully");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[LoadFromSave] Exception during entity loading: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

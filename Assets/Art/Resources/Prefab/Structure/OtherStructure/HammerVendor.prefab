@@ -44,7 +44,7 @@ GameObject:
   - component: {fileID: 198238418296870793}
   - component: {fileID: 1318534020235523589}
   - component: {fileID: 2081080134800859281}
-  m_Layer: 12
+  m_Layer: 0
   m_Name: HammerVendor
   m_TagString: HammerVendor
   m_Icon: {fileID: 0}
@@ -184,6 +184,8 @@ MonoBehaviour:
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 4011623317375564041}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []

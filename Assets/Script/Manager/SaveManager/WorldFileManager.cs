@@ -17,6 +17,9 @@ namespace Script.Save_Controller
 
         [Tooltip("thông tin thế giới hiện tạitại")]
         [SerializeField] public WorldInfo worldInfo;
+
+        // Đường dẫn đến thế giới đang hoạt động
+        private string activeWorldPath;
         
         // Event delegate khi worldInfo thay đổi
         public delegate void WorldInfoChangedHandler(WorldInfo info);
@@ -202,7 +205,7 @@ namespace Script.Save_Controller
             }
         }
 
-        //hàm này là hàm save chính 
+        //hàm này là hàm save chính
         public void SaveCurrentMap()
         {
             var declaringType = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().DeclaringType;
@@ -214,7 +217,7 @@ namespace Script.Save_Controller
 
             // Các logic save game
             EntitySaveManager.Instance.SaveAllContainer();
-            ChunkManager.Instance.SaveMapToJson(PlayerPrefs.GetString("SaveFilePath", ""));
+            ChunkManager.Instance.SaveMapToJson(GetActiveWorldPath());
             SaveGameTime();
             
             // Sử dụng worldInfo trực tiếp thay vì PrefabData
@@ -425,7 +428,7 @@ namespace Script.Save_Controller
             }
         }
         
-        #region StartMenuController use
+      
 
         //hàm này trả về path của fodel có tên được truyền vào trong /saves/ 
         public string GetWorldFolderPath(string worldName)
@@ -548,15 +551,111 @@ namespace Script.Save_Controller
                 {
                     // Đồng bộ các thông tin tech vào PrefabData
                     SyncTechToPrefabData();
-                    
+
                     // Debug.Log($"Đã chọn và load thế giới: {loadedInfo.Name}");
                     return true;
                 }
             }
-            
+
             Debug.LogError("Không thể chọn và load thế giới với index: " + index);
             return false;
         }
+
+        #region Active World Path Management
+
+        /// <summary>
+        /// Thiết lập đường dẫn thế giới đang hoạt động từ PlayerPrefs
+        /// </summary>
+        public void LoadActiveWorldPath()
+        {
+            activeWorldPath = PlayerPrefs.GetString("ActiveWorldPath", "");
+        }
+
+        /// <summary>
+        /// Lấy đường dẫn thế giới đang hoạt động
+        /// </summary>
+        public string GetActiveWorldPath()
+        {
+            return activeWorldPath;
+        }
+
+        /// <summary>
+        /// Thiết lập đường dẫn thế giới đang hoạt động
+        /// </summary>
+        public void SetActiveWorldPath(string path)
+        {
+            activeWorldPath = path;
+            PlayerPrefs.SetString("ActiveWorldPath", path);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// Kiểm tra xem đường dẫn thế giới đang hoạt động có hợp lệ không (tồn tại thư mục)
+        /// </summary>
+        public bool IsActiveWorldPathValid()
+        {
+            return !string.IsNullOrEmpty(activeWorldPath) && Directory.Exists(activeWorldPath);
+        }
+
+        /// <summary>
+        /// Load world info và map từ thế giới đang hoạt động
+        /// </summary>
+        /// <returns>True nếu load thành công, False nếu thất bại</returns>
+        public bool LoadActiveWorldData()
+        {
+            if (!IsActiveWorldPathValid())
+            {
+                Debug.LogError("Active world path is not valid");
+                return false;
+            }
+
+            // Load world info từ file save
+            bool worldInfoLoaded = LoadFromSave.Instance.LoadWorldInfoFromSave(activeWorldPath);
+            if (!worldInfoLoaded)
+            {
+                Debug.LogError("Failed to load world info!");
+                return false;
+            }
+
+            // Load/generates map từ file save
+            bool mapLoaded = LoadFromSave.Instance.LoadMapFromSave(activeWorldPath);
+            if (!mapLoaded)
+            {
+                Debug.LogError("Failed to load/generate map!");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Hủy bỏ việc load game và quay về menu
+        /// </summary>
+        public void CancelGameLoadAndReturnToMenu()
+        {
+            Debug.LogError("Game loading failed, returning to main menu");
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenuScene");
+        }
+
+        /// <summary>
+        /// Kiểm tra tính hợp lệ của ActiveWorldPath và load data nếu thành công,
+        /// hoặc hủy load nếu thất bại
+        /// </summary>
+        public bool ValidateAndLoadActiveWorld()
+        {
+            LoadActiveWorldPath(); // Đảm bảo activeWorldPath được load từ PlayerPrefs
+
+            if (IsActiveWorldPathValid())
+            {
+                return LoadActiveWorldData();
+            }
+            else
+            {
+                CancelGameLoadAndReturnToMenu();
+                return false;
+            }
+        }
+
         #endregion
     }
 }

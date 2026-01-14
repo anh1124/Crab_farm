@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 753727371407242939}
   - component: {fileID: 9035074715423480370}
   - component: {fileID: 6307281304895230152}
-  m_Layer: 12
+  m_Layer: 0
   m_Name: SwordVendor
   m_TagString: SwordVendor
   m_Icon: {fileID: 0}
@@ -218,7 +218,7 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 3.05}
+  m_Offset: {x: 0.86366916, y: 3.05}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -229,7 +229,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 9.3, y: 6.1}
+  m_Size: {x: 12.391029, y: 6.1}
   m_EdgeRadius: 0
 --- !u!114 &9035074715423480370
 MonoBehaviour:
@@ -250,6 +250,8 @@ MonoBehaviour:
   coinCollectionTimer: 0
   coinSlotParent: {fileID: 683573431496621821}
   isReadyToUpgrade: 0
+  buildingType: 0
+  currentTier: 0
   coinPrefab: {fileID: 0}
   coinSlots: []
   coinsInTransit: []

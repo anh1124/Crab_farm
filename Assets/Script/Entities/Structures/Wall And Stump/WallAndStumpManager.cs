@@ -53,7 +53,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 rightWalls.Add(wall);
                 rightWalls = rightWalls.OrderBy(w => w.transform.position.x).ToList();
             }
-            Debug.Log($"[WallAndStumpManager] Registered wall {wall.name}. Left Walls: {leftWalls.Count}, Right Walls: {rightWalls.Count}");
+            //Debug.Log($"[WallAndStumpManager] Registered wall {wall.name}. Left Walls: {leftWalls.Count}, Right Walls: {rightWalls.Count}");
         }
 
         public void UnregisterWall(GameObject wall)
@@ -68,7 +68,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 rightWalls.Remove(wall);
             }
-            Debug.Log($"[WallAndStumpManager] Unregistered wall {wall.name}. Left Walls: {leftWalls.Count}, Right Walls: {rightWalls.Count}");
+            //Debug.Log($"[WallAndStumpManager] Unregistered wall {wall.name}. Left Walls: {leftWalls.Count}, Right Walls: {rightWalls.Count}");
         }
         #endregion
 

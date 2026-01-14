@@ -56,7 +56,8 @@ namespace Script.Controller.PlayerController
         {
             if (isActiveUpdate)
             {
-                moveSpeed = playerBehavior.MoveSpeed;
+                // Lấy tốc độ di chuyển trực tiếp từ player.status
+                moveSpeed = playerBehavior.status.moveSpeed;
                 // TODO: cập nhật grounded theo GroundCheck/physics nếu cần
                 isGrounded = playerBehavior != null && playerBehavior.HasHp;
                 if (triggerCheckHelper != null)

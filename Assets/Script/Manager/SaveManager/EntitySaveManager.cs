@@ -539,47 +539,33 @@ namespace Script.Manager
                 string playerPath = Path.Combine(LoadFromSave.Instance.saveFilePath, "PlayerContainer.json");
                 if (!File.Exists(playerPath))
                 {
-                    if (isDebug) Debug.LogWarning("Không tìm thấy file save của player, tạo player mới");
-                    CreateNewPlayer();
-                    return;
+                    if (isDebug) Debug.LogWarning("Không tìm thấy file save của player, player sẽ dùng data mặc định");
+                    return; // Không có save data, player sẽ dùng giá trị mặc định
                 }
 
-                // Instance player mới từ prefabWall
-                if (PrefabData.Instance == null || PrefabData.Instance.player == null)
+                // Kiểm tra PlayerController.Instance và player đã tồn tại chưa
+                if (PlayerController.Instance == null || PlayerController.Instance.player == null)
                 {
-                    Debug.LogError("PrefabData.Instance hoặc player prefabWall là null");
-                    return;
-                }
-                
-                GameObject player = InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
-                if (player == null)
-                {
-                    Debug.LogError("Không thể tạo instance của player!");
-                    return;
+                    if (isDebug) Debug.LogWarning("PlayerController hoặc player chưa được tạo, sẽ bỏ qua load data");
+                    return; // Player chưa được tạo, để StartGameScrene.InstancePlayerAndSetCamera() tạo trước
                 }
 
-                // Kiểm tra PlayerController.Instance tồn tại
-                if (PlayerController.Instance == null)
-                {
-                    Debug.LogError("PlayerController.Instance là null, không thể thiết lập player");
-                    return;
-                }
-                
-                // Gán player vào PlayerController
-                PlayerController.Instance.player = player;
+                // Player đã tồn tại, chỉ restore data (không di chuyển vị trí vì đã được xử lý trong InstancePlayerAndSetCamera)
+                GameObject player = PlayerController.Instance.player;
 
                 // Load data từ file save
                 var json = File.ReadAllText(playerPath);
                 var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json,
                     new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
 
-                // Áp dụng data vào player
+                // Áp dụng data vào player hiện có (chỉ stats, không vị trí vì vị trí đã được set khi spawn)
                 if (savedObjects != null && savedObjects.Count > 0)
                 {
                     var saveable = player.GetComponent<ISaveable>();
                     if (saveable != null)
                     {
                         saveable.RestoreData(savedObjects[0].data);
+                        if (isDebug) Debug.Log("Đã restore data cho player từ save (không thay đổi vị trí)");
                     }
                     else
                     {
@@ -587,26 +573,12 @@ namespace Script.Manager
                     }
                 }
 
-                // Setup các thành phần liên quan
-                PlayerController.Instance.SetUpControllerPlayer();
-                
-                // Kiểm tra CameraFollowPlayer.Instance tồn tại
-                if (CameraFollowPlayer.Instance != null)
-                {
-                    CameraFollowPlayer.Instance.setCameraTarget();
-                    CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
-                }
-                else
-                {
-                    Debug.LogError("CameraFollowPlayer.Instance là null, không thể thiết lập camera");
-                }
-
-                if (isDebug) Debug.Log("Đã load và setup player thành công");
+                if (isDebug) Debug.Log("Đã load data player thành công (vị trí đã được set khi spawn)");
             }
             catch (Exception e)
             {
-                Debug.LogError($"Lỗi khi load player: {e.Message}\n{e.StackTrace}");
-                CreateNewPlayer();
+                Debug.LogError($"Lỗi khi load player data: {e.Message}\n{e.StackTrace}");
+                // Không tạo player mới, để StartGameScrene.InstancePlayerAndSetCamera() xử lý
             }
         }
 
@@ -732,118 +704,133 @@ namespace Script.Manager
         }
 
         private void LoadContainer(GameObject container)
+{
+    if (container == null) return;
+
+    try
+    {
+        // Kiểm tra LoadFromSave.Instance tồn tại
+        if (LoadFromSave.Instance == null || string.IsNullOrEmpty(LoadFromSave.Instance.saveFilePath))
         {
-            if (container == null) return;
+            Debug.LogError("LoadFromSave.Instance hoặc saveFilePath là null, không thể load container");
+            return;
+        }
+        
+        var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
+        if (!File.Exists(path))
+        {
+            if (isDebug) Debug.LogWarning($"File {path} không tồn tại!");
+            return;
+        }
+        // Đọc và log nội dung JSON
+        var json = File.ReadAllText(path);
+        if (isDebug) Debug.Log($"JSON của {container.name}: {json}");
 
-            try
+        var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
+            new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+
+        if (savedObjects == null)
+        {
+            Debug.LogError($"Không thể deserialize JSON của {container.name}!");
+            return;
+        }
+
+        if (isDebug) Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
+
+        // Xóa toàn bộ object cũ trong container
+        RemoveAllChildObjects(container);
+
+        // Load và tạo object mới
+        foreach (var savedObject in savedObjects)
+        {
+            if (isDebug) Debug.Log($"Attempting to load prefab with ID: {savedObject.prefabID}");
+            // Kiểm tra PrefabData.Instance tồn tại
+            if (PrefabData.Instance == null)
             {
-                // Kiểm tra LoadFromSave.Instance tồn tại
-                if (LoadFromSave.Instance == null || string.IsNullOrEmpty(LoadFromSave.Instance.saveFilePath))
+                Debug.LogError("PrefabData.Instance là null, không thể load prefab");
+                continue;
+            }
+            
+            var prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
+            if (prefab == null)
+            {
+                // Fallback cho "stump" nếu chưa có prefab riêng: dùng "wall" làm base
+                if (savedObject.prefabID == "stump")
                 {
-                    Debug.LogError("LoadFromSave.Instance hoặc saveFilePath là null, không thể load container");
-                    return;
-                }
-                
-                var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
-                if (!File.Exists(path))
-                {
-                    if (isDebug) Debug.LogWarning($"File {path} không tồn tại!");
-                    return;
-                }
-                // Đọc và log nội dung JSON
-                var json = File.ReadAllText(path);
-                if (isDebug) Debug.Log($"JSON của {container.name}: {json}");
-
-                var savedObjects = JsonConvert.DeserializeObject<List<SavedObject>>(json, 
-                    new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
-
-                if (savedObjects == null)
-                {
-                    Debug.LogError($"Không thể deserialize JSON của {container.name}!");
-                    return;
-                }
-
-                if (isDebug) Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
-
-                // Xóa toàn bộ object cũ trong container
-                RemoveAllChildObjects(container);
-
-                // Load và tạo object mới
-                foreach (var savedObject in savedObjects)
-                {
-                    if (isDebug) Debug.Log($"Attempting to load prefabWall with ID: {savedObject.prefabID}");
-                    // Kiểm tra PrefabData.Instance tồn tại
-                    if (PrefabData.Instance == null)
-                    {
-                        Debug.LogError("PrefabData.Instance là null, không thể load prefabWall");
-                        continue;
-                    }
-                    
-                    var prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
+                    prefab = PrefabData.Instance.prefabWall;  // Hoặc PrefabData.Instance.prefabWall nếu public
                     if (prefab == null)
                     {
-                        Debug.LogError($"Prefab not found: {savedObject.prefabID}");
-                        // Log all keys in the prefabWall dictionary for debugging
-                        if (isDebug)
-                        {
-                            var prefabDictType = PrefabData.Instance.GetType().GetField("_prefabDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                            if (prefabDictType != null)
-                            {
-                                var prefabDict = prefabDictType.GetValue(PrefabData.Instance) as Dictionary<string, GameObject>;
-                                if (prefabDict != null)
-                                {
-                                    Debug.Log("Available prefabWall IDs:");
-                                    foreach (var key in prefabDict.Keys)
-                                    {
-                                        Debug.Log($"- {key}");
-                                    }
-                                }
-                            }
-                        }
+                        Debug.LogError($"Prefab fallback 'wall' not found for 'stump'");
                         continue;
                     }
-
-                    if (isDebug) Debug.Log($"Creating instance of prefabWall: {prefab.name}");
-                    var instance = Instantiate(prefab, container.transform);
-
-                    // Special handling: if this is a TownCenter prefab, infer and set tier from prefabID before RestoreData
-                    try
+                    if (isDebug) Debug.Log($"Using fallback 'wall' prefab for 'stump'");
+                }
+                else
+                {
+                    Debug.LogError($"Prefab not found: {savedObject.prefabID}");
+                    // Log all keys in the prefab dictionary for debugging (giữ nguyên)
+                    if (isDebug)
                     {
-                        if (!string.IsNullOrEmpty(savedObject.prefabID) && savedObject.prefabID.StartsWith("town_center_"))
+                        var prefabDictType = PrefabData.Instance.GetType().GetField("_prefabDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (prefabDictType != null)
                         {
-                            var tcs = instance.GetComponent<TownCenterStatus>();
-                            if (tcs != null)
+                            var prefabDict = prefabDictType.GetValue(PrefabData.Instance) as Dictionary<string, GameObject>;
+                            if (prefabDict != null)
                             {
-                                var suffix = savedObject.prefabID.Substring("town_center_".Length);
-                                if (int.TryParse(suffix, out int parsedTier))
+                                Debug.Log("Available prefab IDs:");
+                                foreach (var key in prefabDict.Keys)
                                 {
-                                    tcs.tier = parsedTier;
+                                    Debug.Log($"- {key}");
                                 }
                             }
                         }
                     }
-                    catch (Exception e)
-                    {
-                        Debug.LogWarning($"[EntitySaveManager] Failed to set TownCenter tier from prefabID: {e.Message}");
-                    }
+                    continue;
+                }
+            }
 
-                    var saveable = instance.GetComponent<ISaveable>();
-                    if (saveable != null)
+            if (isDebug) Debug.Log($"Creating instance of prefab: {prefab.name}");
+            var instance = Instantiate(prefab, container.transform);
+
+            // Special handling: if this is a TownCenter prefab, infer and set tier from prefabID before RestoreData
+            // (Giữ nguyên cho TownCenter, nhưng bỏ nếu prefabID không còn tier)
+            try
+            {
+                if (!string.IsNullOrEmpty(savedObject.prefabID) && savedObject.prefabID.StartsWith("town_center_"))
+                {
+                    var tcs = instance.GetComponent<TownCenterStatus>();
+                    if (tcs != null)
                     {
-                        saveable.RestoreData(savedObject.data);
-                        if (isDebug) Debug.Log($"Restored data for {instance.name}");
-                    }
-                    else
-                    {
-                        Debug.LogError($"ISaveable not found on {instance.name}");
+                        var suffix = savedObject.prefabID.Substring("town_center_".Length);
+                        if (int.TryParse(suffix, out int parsedTier))
+                        {
+                            tcs.tier = parsedTier;
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"Lỗi khi load container {container.name}: {e.Message}\n{e.StackTrace}");
+                Debug.LogWarning($"[EntitySaveManager] Failed to set TownCenter tier from prefabID: {e.Message}");
             }
-        }   
+
+            var saveable = instance.GetComponent<ISaveable>();
+            if (saveable != null)
+            {
+                saveable.RestoreData(savedObject.data);
+                if (isDebug) Debug.Log($"Restored data for {instance.name}");
+            }
+            else
+            {
+                Debug.LogError($"ISaveable not found on {instance.name}");
+            }
+        }
+    }
+    catch (Exception e)
+    {
+        Debug.LogError($"Lỗi khi load container {container.name}: {e.Message}\n{e.StackTrace}");
+    }
+}
         
         public void RemoveAllChildObjects(GameObject parent)
         {
