@@ -221,10 +221,12 @@ public class BuildMenu : MonoBehaviour
                     // Nếu không tìm thấy ở root, tìm trong children
                     sr = prefab.GetComponentInChildren<SpriteRenderer>();
                 }
-                
+
                 if (sr != null)
                 {
                     btnImage.sprite = sr.sprite;
+                    // Preserve aspect ratio để tránh bị méo sprite
+                    btnImage.preserveAspect = true;
                     Debug.Log($"[BuildMenu] Set sprite for {prefab.name}. Sprite: {sr.sprite?.name ?? "null"}, SpriteRenderer on: {sr.gameObject.name}");
                 }
                 else

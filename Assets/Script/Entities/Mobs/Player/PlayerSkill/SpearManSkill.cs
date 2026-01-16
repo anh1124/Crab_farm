@@ -87,7 +87,7 @@ namespace Script.Game.PlayerCharacter
         // Hàm này được gọi từ Animation Event để xử lý sát thương cho ChopDown
         public void ProcessChopDownDamage()
         {
-            Debug.Log("[SpearManSkill] ProcessChopDownDamage được gọi.");
+            //Debug.Log("[SpearManSkill] ProcessChopDownDamage được gọi.");
             if (chopDownCollider == null)
             {
                 Debug.LogError("[SpearManSkill] ChopDownCollider chưa được gán! Không thể tấn công.");
@@ -99,7 +99,7 @@ namespace Script.Game.PlayerCharacter
 
             var hits = new Collider2D[10];
             int count = chopDownCollider.OverlapCollider(new ContactFilter2D().NoFilter(), hits);
-            Debug.Log($"[SpearManSkill] Collider {chopDownCollider.name} đã tìm thấy {count} đối tượng va chạm.");
+           // Debug.Log($"[SpearManSkill] Collider {chopDownCollider.name} đã tìm thấy {count} đối tượng va chạm.");
 
             Utility.LogCollidedObjects(chopDownCollider.name, hits, count);
 
@@ -113,7 +113,7 @@ namespace Script.Game.PlayerCharacter
             Utility.ProcessAttackHits(gameObject, hits, count, chopDownDamage, playerController.damageAlly);
 
             chopDownCollider.enabled = false; // Tắt collider ngay lập tức sau khi xử lý va chạm
-            Debug.Log($"[SpearManSkill] Tắt Collider {chopDownCollider.name} sau khi xử lý sát thương.");
+           // Debug.Log($"[SpearManSkill] Tắt Collider {chopDownCollider.name} sau khi xử lý sát thương.");
         }
         #endregion
 

@@ -31,20 +31,20 @@ namespace Script.Utils
             {
                 if (hits[i] == null)
                 {
-                    Debug.LogWarning($"[Utility.ProcessAttackHits] Collider tại vị trí {i} trong mảng hits là null. Bỏ qua.");
+                    //Debug.LogWarning($"[Utility.ProcessAttackHits] Collider tại vị trí {i} trong mảng hits là null. Bỏ qua.");
                     continue;
                 }
 
                 GameObject hitObject = hits[i].gameObject;
                 if (hitObject == null)
                 {
-                    Debug.LogWarning($"[Utility.ProcessAttackHits] GameObject của collider {hits[i].name} tại vị trí {i} là null. Bỏ qua.");
+                    //Debug.LogWarning($"[Utility.ProcessAttackHits] GameObject của collider {hits[i].name} tại vị trí {i} là null. Bỏ qua.");
                     continue;
                 }
 
                 if (hitObject == instigator)
                 {
-                    Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đối tượng gây tấn công {hitObject.name} (Tag: {hitObject.tag}).");
+                    //Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đối tượng gây tấn công {hitObject.name} (Tag: {hitObject.tag}).");
                     continue;
                 }
 
@@ -56,7 +56,7 @@ namespace Script.Utils
 
                     if (!allowDamageAlly && isTargetAlly)
                     {
-                        Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đồng minh {hitObject.name} (Tag: {hitObject.tag}).");
+                        //Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đồng minh {hitObject.name} (Tag: {hitObject.tag}).");
                         continue;
                     }
 
@@ -75,6 +75,7 @@ namespace Script.Utils
                             }
                             else
                             {
+                                Debug.Log($"[CombatUtility.ProcessAttackHits] Wall {hitObject.name} (Tag: {hitObject.tag}, Tier: {wall.tier}) nhận sát thương {damageAmount} từ {instigator.name}.");
                                 Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
                             }
                         }
@@ -85,17 +86,15 @@ namespace Script.Utils
                     }
                     else
                     {
-                        Debug.Log($"[Utility.ProcessAttackHits] {hitObject.name} (Tag: {hitObject.tag}) nhận sát thương {damageAmount} từ {instigator.name}.");
+                        Debug.Log($"[CombatUtility.ProcessAttackHits] {hitObject.name} (Tag: {hitObject.tag}) nhận sát thương {damageAmount} từ {instigator.name}.");
                         Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
                     }
                 }
                 else
                 {
-                    Debug.Log($"[Utility.ProcessAttackHits] Đối tượng {hitObject.name} (Tag: {hitObject.tag}) không implement IHealth. Bỏ qua.");
+                    //Debug.Log($"[Utility.ProcessAttackHits] Đối tượng {hitObject.name} (Tag: {hitObject.tag}) không implement IHealth. Bỏ qua.");
                 }
             }
         }
     }
 }
-
-
