@@ -10,11 +10,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1347347115286631322, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: type
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_Name
-      value: Tree Variant
+      value: Tree_3
       objectReference: {fileID: 0}
     - target: {fileID: 4816307330424263397, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_LocalPosition.x
@@ -59,26 +59,30 @@ PrefabInstance:
     - target: {fileID: 6711325549887260467, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: bc7b79590217a3846bb62382f5d34eef, type: 3}
+      objectReference: {fileID: 21300000, guid: 0d08642dfef073d40ae2938de4a597fe, type: 3}
     - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: Type
-      value: 1
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+      propertyPath: type
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8696114519552286638, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_Size.x
-      value: 1.3226273
+      value: 0.81814647
       objectReference: {fileID: 0}
     - target: {fileID: 8696114519552286638, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_Offset.x
-      value: -0.30777323
+      value: -0.23785365
       objectReference: {fileID: 0}
     - target: {fileID: 8696114519552286638, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_SpriteTilingProperty.oldSize.x
-      value: 12.7
+      value: 9.1
       objectReference: {fileID: 0}
     - target: {fileID: 8696114519552286638, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_SpriteTilingProperty.oldSize.y
-      value: 14.8
+      value: 14.4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
