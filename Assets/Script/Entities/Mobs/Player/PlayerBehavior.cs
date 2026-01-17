@@ -4,6 +4,9 @@ using Script.Data_Model.Interfaces;
 using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 using UnityEngine;
+using Script.Game.PlayerCharacter;
+using Script.Controller.PlayerController; // For PlayerController.Instance
+using Art.Resources.Character.PlayerCharactor.Spear_Man; // Namespace cho AnimController
 
 namespace Script.Game.Player
 {
@@ -15,6 +18,9 @@ namespace Script.Game.Player
     {
         [Header("Player Status Data")]
         public PlayerStatus status;
+        
+        [Header("Animation Reference")]
+        public SpearManAnimationController playerAnim; // Script Animation tự đăng ký vào đây(sau này tạo quy chuẩn riêng cho anim, cứ anim player là đăng ký vào đượkc)
 
         [Serializable]
         public class PlayerStatusData
@@ -28,10 +34,25 @@ namespace Script.Game.Player
             public int attackDame;
             public float attackSpeed;
             public bool isGround;
+            
+            // NEW: Resource data for save/load
+            public float currentStamina;
+            public float currentMana;
         }
 
         private void Awake()
         {
+            // Register to PlayerController
+            if (PlayerController.Instance != null)
+            {
+                PlayerController.Instance.playerBehavior = this;
+                Debug.Log("[PlayerBehavior] Registered to PlayerController.");
+            }
+            else
+            {
+                Debug.LogError("[PlayerBehavior] PlayerController.Instance is null! Cannot register.");
+            }
+            
             if (status == null)
             {
                 status = GetComponent<PlayerStatus>();
@@ -40,6 +61,49 @@ namespace Script.Game.Player
                     status = gameObject.AddComponent<PlayerStatus>();
                 }
             }
+        }
+        
+        private void OnDestroy()
+        {
+            // Unregister from PlayerController
+            if (PlayerController.Instance != null && PlayerController.Instance.playerBehavior == this)
+            {
+                PlayerController.Instance.playerBehavior = null;
+                Debug.Log("[PlayerBehavior] Unregistered from PlayerController.");
+            }
+        }
+
+        private void Update()
+        {
+            // Tự động regen stamina
+            if (status.currentStamina < status.maxStamina)
+            {
+                status.currentStamina += status.staminaRegenRate * Time.deltaTime;
+                status.currentStamina = Mathf.Min(status.currentStamina, status.maxStamina);
+            }
+            
+            // Tự động regen mana
+            if (status.currentMana < status.maxMana)
+            {
+                status.currentMana += status.manaRegenRate * Time.deltaTime;
+                status.currentMana = Mathf.Min(status.currentMana, status.maxMana);
+            }
+        }
+        
+        // === RESOURCE HELPERS ===
+        public bool CanUseSkill(float staminaCost, float manaCost)
+        {
+            return status.currentStamina >= staminaCost && status.currentMana >= manaCost;
+        }
+
+        public void ConsumeSkillResources(float staminaCost, float manaCost)
+        {
+            status.currentStamina -= staminaCost;
+            status.currentMana -= manaCost;
+            
+            // Validate không âm
+            status.currentStamina = Mathf.Max(0f, status.currentStamina);
+            status.currentMana = Mathf.Max(0f, status.currentMana);
         }
 
         public float MoveSpeed { get => status.moveSpeed; set => status.moveSpeed = value; }
@@ -143,6 +207,8 @@ namespace Script.Game.Player
 
         public object CaptureData()
         {
+            // Resource data is now in status, no need for ResourceManager
+            
             return new PlayerStatusData
             {
                 maxHp = status.maxHp,
@@ -153,7 +219,11 @@ namespace Script.Game.Player
                 positionY = transform.position.y,
                 attackDame = status.attackDame,
                 attackSpeed = status.attackSpeed,
-                isGround = status.isGround
+                isGround = status.isGround,
+                
+                // Save current resources directly from status
+                currentStamina = status.currentStamina,
+                currentMana = status.currentMana
             };
         }
 
@@ -170,6 +240,12 @@ namespace Script.Game.Player
                 status.attackSpeed = loaded.attackSpeed;
                 status.isGround = loaded.isGround;
                 transform.position = new Vector3(loaded.positionX, loaded.positionY, 0);
+                
+                // NEW: Restore resources to PlayerStatus
+                status.currentStamina = loaded.currentStamina;
+                status.currentMana = loaded.currentMana;
+                
+                // ResourceManager removed, data lives in PlayerStatus now
             }
         }
 

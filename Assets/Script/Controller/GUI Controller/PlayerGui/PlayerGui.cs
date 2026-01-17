@@ -1,11 +1,11 @@
 using System;
-using Script.Controller.PlayerController;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using Script.Data_Model;
+using UnityEngine.UI;
 
-namespace Script.GUI_Controller.PlayerGui
+// For PlayerController.Instance
+
+namespace Script.Controller.GUI_Controller.PlayerGui
 {
     public class PlayerGui : MonoBehaviour
     {
@@ -46,15 +46,13 @@ namespace Script.GUI_Controller.PlayerGui
         
         private void Start()
         {
-            
-            //cái này phải sửa lại,không được đặt nó vào hàm start
             // Add event triggers for move buttons
-            AddEventTriggers(moveLeft, PlayerController.Instance.MoveLeftDown, PlayerController.Instance.MoveLeftUp);
-            AddEventTriggers(moveRight, PlayerController.Instance.MoveRightDown, PlayerController.Instance.MoveRightUp);
-            AddEventTriggers(useCoin, PlayerController.Instance.UseCoinDownAction, PlayerController.Instance.UseCoinUpAction);
+            AddEventTriggers(moveLeft, PlayerController.PlayerController.Instance.MoveLeftDown, PlayerController.PlayerController.Instance.MoveLeftUp);
+            AddEventTriggers(moveRight, PlayerController.PlayerController.Instance.MoveRightDown, PlayerController.PlayerController.Instance.MoveRightUp);
+            AddEventTriggers(useCoin, PlayerController.PlayerController.Instance.UseCoinDownAction, PlayerController.PlayerController.Instance.UseCoinUpAction);
             
             // Add listeners for skill buttons
-            skill1.onClick.AddListener(OnSkill1Pressed); // New: Listener for Skill 1
+            skill1.onClick.AddListener(OnSkill1Pressed);
             skill2.onClick.AddListener(OnSkill2Pressed);
             skill3.onClick.AddListener(OnSkill3Pressed);
         }
@@ -62,22 +60,45 @@ namespace Script.GUI_Controller.PlayerGui
         // Hàm được gọi khi skill2 được nhấn
         private void OnSkill2Pressed()
         {
-            Debug.Log("Skill 2 button pressed! Spawning Vagrant...");
-            OnSkill2PressedACT?.Invoke();
+            Debug.Log("[PlayerGui] OnSkill2Pressed called!");
+            if (PlayerController.PlayerController.Instance?.playerBehavior == null)
+            {
+                Debug.LogError("[PlayerGui] Player not spawned yet!");
+                return;
+            }
             
+            var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
+            skillManager?.ExecuteSkill(1);
+            OnSkill2PressedACT?.Invoke();
         }
         
         // Hàm được gọi khi skill3 được nhấn
         private void OnSkill3Pressed()
         {
-            Debug.Log("Skill 3 button pressed!");
+            Debug.Log("[PlayerGui] OnSkill3Pressed called!");
+            if (PlayerController.PlayerController.Instance?.playerBehavior == null)
+            {
+                Debug.LogError("[PlayerGui] Player not spawned yet!");
+                return;
+            }
+            
+            var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
+            skillManager?.ExecuteSkill(2);
             OnSkill3PressedACT?.Invoke();
         }
 
         // Hàm được gọi khi skill1 được nhấn
         private void OnSkill1Pressed()
         {
-            Debug.Log("Skill 1 button pressed!");
+            Debug.Log("[PlayerGui] OnSkill1Pressed called!");
+            if (PlayerController.PlayerController.Instance?.playerBehavior == null)
+            {
+                Debug.LogError("[PlayerGui] Player not spawned yet!");
+                return;
+            }
+            
+            var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
+            skillManager?.ExecuteSkill(0);
             OnSkill1PressedACT?.Invoke();
         }
         

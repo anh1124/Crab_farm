@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Script.Game.Enemy;
-using Script.GUI_Controller.PlayerGui;
 using UnityEngine;
 using Script.Manager.WorldManager;
 

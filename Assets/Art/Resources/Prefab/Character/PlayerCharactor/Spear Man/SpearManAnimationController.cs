@@ -1,6 +1,8 @@
 using System;
 using Script.Controller.PlayerController;
+using Script.Game.PlayerCharacter;
 using UnityEngine;
+using Script.Game.Player; // Namespace chứa PlayerBehavior
 
 namespace Art.Resources.Character.PlayerCharactor.Spear_Man
 {
@@ -12,6 +14,11 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         public Rigidbody2D rb;
         public bool isGround;
         public bool IsSkillAnimationPlaying = false; // Mới: Thêm biến để theo dõi trạng thái animation kỹ năng
+
+        // Skill system references
+        private PlayerSkillManager skillManager;
+        private int currentExecutingSkillSlot = -1;
+        private string currentSkillTrigger = ""; // Lưu trigger hiện tại để reset sau
 
         private PlayerController _playerController;
 
@@ -27,6 +34,24 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         {
             _animator = GetComponent<Animator>();
             _previousPosition = rb.position;
+            
+            // NEW: Get skill manager reference
+            skillManager = GetComponent<PlayerSkillManager>();
+            if (skillManager == null)
+            {
+                Debug.LogError("[SpearManAnimationController] PlayerSkillManager not found!");
+            }
+            
+            // NEW: Auto-register to PlayerBehavior
+            var behavior = GetComponent<PlayerBehavior>();
+            if (behavior != null)
+            {
+                behavior.playerAnim = this;
+            }
+            else
+            {
+                 Debug.LogError("[SpearManAnimationController] PlayerBehavior not found!");
+            }
         }
 
         private void Update()
@@ -94,54 +119,82 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         #endregion
 
         #region Skill Animation Control
-        // Hàm để kích hoạt animation ChopDown
-        public void TriggerChopDownAnimation()
+        /// <summary>
+        /// Trigger skill animation với animation trigger name và slot index
+        /// </summary>
+        /// <param name="animationTrigger">Tên trigger trong Animator</param>
+        /// <param name="slotIndex">Index của skill slot đang execute</param>
+        public void TriggerSkillAnimation(string animationTrigger, int slotIndex)
         {
+            Debug.Log($"[SpearManAnimationController] TriggerSkillAnimation called: trigger='{animationTrigger}', slot={slotIndex}");
+            
             if (_animator == null)
             {
-                Debug.LogError("[SpearManAnimationController] Animator không được tìm thấy. Không thể phát animation ChopDown.");
+                Debug.LogError("[SpearManAnimationController] Animator not found!");
                 return;
             }
-            IsSkillAnimationPlaying = true; // Báo hiệu animation kỹ năng đang chạy
-            _animator.SetTrigger("ChopDown");
-            Debug.Log("[SpearManAnimationController] Kích hoạt Trigger ChopDown.");
+            
+            IsSkillAnimationPlaying = true;
+            currentExecutingSkillSlot = slotIndex;
+            currentSkillTrigger = animationTrigger; // Lưu trigger để reset sau
+            _animator.SetTrigger(animationTrigger);
+            
+            Debug.Log($"[SpearManAnimationController] Triggered animation: {animationTrigger} for slot {slotIndex}");
         }
 
-        // Hàm để kích hoạt animation Thrust
-        public void TriggerThrustAnimation()
+        /// <summary>
+        /// Được gọi từ Animation Event tại frame damage
+        /// </summary>
+        /// <param name="slotIndex">Index của skill slot</param>
+        public void OnSkillDamageFrame(int slotIndex)
         {
-            if (_animator == null)
+            if (skillManager != null && slotIndex >= 0)
             {
-                Debug.LogError("[SpearManAnimationController] Animator không được tìm thấy. Không thể phát animation Thrust.");
-                return;
+                skillManager.OnSkillAnimationDamageFrame(slotIndex);
             }
-            IsSkillAnimationPlaying = true; // Báo hiệu animation kỹ năng đang chạy
-            _animator.SetTrigger("Thrust");
-            Debug.Log("[SpearManAnimationController] Kích hoạt Trigger Thrust.");
-        }
-
-        // Hàm để kích hoạt animation ThrowSpear
-        public void TriggerThrowSpearAnimation()
-        {
-            if (_animator == null)
+            else
             {
-                Debug.LogError("[SpearManAnimationController] Animator không được tìm thấy. Không thể phát animation ThrowSpear.");
-                return;
+                Debug.LogError($"[SpearManAnimationController] Cannot process damage frame - skillManager null or invalid slot: {slotIndex}");
             }
-            IsSkillAnimationPlaying = true; // Báo hiệu animation kỹ năng đang chạy
-            _animator.SetTrigger("ThrowSpear");
-            Debug.Log("[SpearManAnimationController] Kích hoạt Trigger ThrowSpear.");
         }
 
         /// <summary>
         /// Hàm này được gọi từ Animation Event trong Unity Editor khi animation kỹ năng kết thúc.
-        /// Nó không được gọi trực tiếp từ code C#.
-        /// Đảm bảo đã thêm Animation Event vào cuối các Animation Clip của kỹ năng (ChopDown, Thrust, ThrowSpear).
         /// </summary>
-        public void OnSkillAnimationEnd()
+        /// <param name="slotIndex">Index của skill slot</param>
+        public void OnSkillAnimationEnd(int slotIndex)
         {
-            Debug.Log("[SpearManAnimationController] Animation kỹ năng kết thúc. Reset trạng thái.");
-            IsSkillAnimationPlaying = false; // Reset trạng thái để quay lại animation di chuyển cơ bản
+            // Guard: Tránh gọi nhiều lần
+            if (!IsSkillAnimationPlaying)
+            {
+                return;
+            }
+            
+            Debug.Log($"[SpearManAnimationController] Skill animation ended for slot {slotIndex}.");
+            IsSkillAnimationPlaying = false;
+            
+            // CRITICAL: Reset trigger để tránh Any State transition lại
+            if (_animator != null && !string.IsNullOrEmpty(currentSkillTrigger))
+            {
+                _animator.ResetTrigger(currentSkillTrigger);
+                Debug.Log($"[SpearManAnimationController] Reset trigger: {currentSkillTrigger}");
+                currentSkillTrigger = "";
+            }
+            
+            // Force chuyển về Idle animation
+            if (_animator != null)
+            {
+                _animator.Play("Idle", 0, 0f); // Layer 0, normalized time 0
+                Debug.Log("[SpearManAnimationController] Forced transition to Idle.");
+            }
+            
+            // NEW: Notify skill manager
+            if (skillManager != null && slotIndex >= 0)
+            {
+                skillManager.OnSkillAnimationEnd(slotIndex);
+            }
+            
+            currentExecutingSkillSlot = -1;
         }
         #endregion
     }

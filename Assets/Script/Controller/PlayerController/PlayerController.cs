@@ -1,6 +1,7 @@
-using Script.Game.Item.Coin;
 using Script.Game.Player;
 using UnityEngine;
+using Script.Game.PlayerCharacter;
+using Script.Game.Item.Coin;
 
 namespace Script.Controller.PlayerController
 {
@@ -11,16 +12,24 @@ namespace Script.Controller.PlayerController
     {
         public static PlayerController Instance { get; private set; }
 
-        [Header("References")]
-        public Rigidbody2D rb;
-        public PlayerBehavior playerBehavior;
+        [Header("Player Reference")]
+        [Tooltip("Reference tới Player GameObject (sẽ được gán khi spawn)")]
         public GameObject player;
+        
+        [Tooltip("Reference tới PlayerBehavior (tự đăng ký khi player spawn)")]
+        public PlayerBehavior playerBehavior;
+        public Rigidbody2D rb;
         public int direction;
         public bool isGrounded;//vài skill dùng biến này(game chưa có nhảynhảy)
         public float moveSpeed;
         public bool isActiveUpdate;
         public bool isAlive = true;
+        public bool canMove = true; // Cho phép khóa di chuyển
         public bool damageAlly = false; // allow damaging ally for testing
+        
+        [Header("Skill System")]
+        [Tooltip("Kéo GameObject container rỗng (child của Player) vào đây. Hitbox của skill sẽ được spawn vào đây.")]
+        public Transform skillColliderContainer;
 
         // Coin-use related
         public CoinUser coinUser;
@@ -41,6 +50,18 @@ namespace Script.Controller.PlayerController
                 //lỗi singleton
                 Debug.LogError("PlayerController already exists");
                 //Destroy(gameObject);
+            }
+
+            // Tự động add PlayerBehavior nếu chưa có
+            if (GetComponent<PlayerBehavior>() == null)
+            {
+                gameObject.AddComponent<PlayerBehavior>();
+            }
+            
+            // Tự động add PlayerSkillManager nếu chưa có
+            if (GetComponent<PlayerSkillManager>() == null)
+            {
+                gameObject.AddComponent<PlayerSkillManager>();
             }
         }
 
@@ -75,7 +96,7 @@ namespace Script.Controller.PlayerController
 
         public void Movement(int direction)
         {
-            if (isGrounded)
+            if (isGrounded && canMove)
             {
                 if (direction == -1)
                 {

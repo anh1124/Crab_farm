@@ -18,6 +18,40 @@ namespace Script.Data_Model.Status
         public float attackSpeed;
         public bool isGround;
         
+        [Header("Resources")]
+        public float currentStamina;
+        public float maxStamina;
+        public float staminaRegenRate;
+        
+        public float currentMana;
+        public float maxMana;
+        public float manaRegenRate;
+        
+        // Khởi tạo mặc định khi component được tạo runtime (AddComponent)
+        private void Awake()
+        {
+            // Chỉ khởi tạo nếu chưa có giá trị (tránh ghi đè data đã load)
+            if (maxStamina == 0f)
+            {
+                maxStamina = 100f;
+                currentStamina = 100f;
+                staminaRegenRate = 10f;
+                
+                maxMana = 50f;
+                currentMana = 50f;
+                manaRegenRate = 5f;
+            }
+            
+            if (maxHp == 0)
+            {
+                maxHp = 100;
+                currentHp = 100;
+                moveSpeed = 7f;
+                attackDame = 1;
+                attackSpeed = 1f;
+            }
+        }
+        
         // Thiết lập mặc định khi thêm component trong Editor (không ghi đè runtime)
         private void Reset()
         {
@@ -30,6 +64,15 @@ namespace Script.Data_Model.Status
             attackDame = 1;
             attackSpeed = 1f;
             isGround = false;
+            
+            // NEW: Initialize resources
+            maxStamina = 100f;
+            currentStamina = 100f;
+            staminaRegenRate = 10f;
+            
+            maxMana = 50f;
+            currentMana = 50f;
+            manaRegenRate = 5f;
         }
     }
 }

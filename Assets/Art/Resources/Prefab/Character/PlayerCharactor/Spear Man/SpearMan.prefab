@@ -1,94 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &42976328746571904
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8532425305401120750}
-  - component: {fileID: 367253208538780107}
-  m_Layer: 13
-  m_Name: ChopDown
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8532425305401120750
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 42976328746571904}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.5500002, y: 1.9845085, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5999046417218851504}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!60 &367253208538780107
-PolygonCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 42976328746571904}
-  m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 1.2760754, y: 2.197548}
-      - {x: -0.86449814, y: 3.548668}
-      - {x: -3.4422274, y: 3.4682102}
-      - {x: -5.27472, y: 2.4895773}
-      - {x: -5.585016, y: 1.7001514}
-      - {x: -4.5923257, y: 1.3259344}
-      - {x: -2.0897102, y: 0.93723845}
-      - {x: -1.9423909, y: -1.1427592}
-      - {x: -0.8433708, y: -2.0846145}
-      - {x: 0.39651585, y: -1.5381765}
-      - {x: 1.4179506, y: -0.3316679}
-      - {x: 1.6185446, y: 0.7998161}
-  m_UseDelaunayMesh: 0
 --- !u!1 &1741431696939278040
 GameObject:
   m_ObjectHideFlags: 0
@@ -183,9 +94,9 @@ GameObject:
   - component: {fileID: 3654314619067390282}
   - component: {fileID: 908741990135464966}
   - component: {fileID: -3560308634815069677}
-  - component: {fileID: 7822777025946917786}
   - component: {fileID: 8413050269500814157}
   - component: {fileID: 8516832215337478737}
+  - component: {fileID: 3731640909503210370}
   m_Layer: 13
   m_Name: SpearMan
   m_TagString: Player
@@ -402,25 +313,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e1ac23c20c5884e92821d6f65c0639, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &7822777025946917786
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5938808828433451200}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba7fac87ab0244148bb0665021eec2ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  chopDownCollider: {fileID: 367253208538780107}
-  chopDownDamage: 10
-  thrustCollider: {fileID: 0}
-  thrustDamage: 15
-  throwSpearCollider: {fileID: 0}
-  throwSpearDamage: 20
-  playerController: {fileID: 0}
 --- !u!114 &8413050269500814157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -455,6 +347,35 @@ MonoBehaviour:
   attackDame: 10
   attackSpeed: 1
   isGround: 0
+  currentStamina: 0
+  maxStamina: 0
+  staminaRegenRate: 0
+  currentMana: 0
+  maxMana: 0
+  manaRegenRate: 0
+--- !u!114 &3731640909503210370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69268d707e9629f4bbc8510d6cd4952a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skillSlots:
+  - skill: {fileID: 11400000, guid: cd02f2b29e2862c4790c3869c80729b7, type: 2}
+    state: 0
+    cooldownTimer: 0
+  - skill: {fileID: 0}
+    state: 0
+    cooldownTimer: 0
+  - skill: {fileID: 0}
+    state: 0
+    cooldownTimer: 0
+  playerBehavior: {fileID: 0}
 --- !u!1 &6752379391725988446
 GameObject:
   m_ObjectHideFlags: 0
@@ -514,7 +435,6 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8532425305401120750}
+  m_Children: []
   m_Father: {fileID: 1207333865757873293}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
