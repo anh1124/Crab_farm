@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Script.Game.Mobs.MobsManager;
 
 // For PlayerController.Instance
 
@@ -57,18 +58,34 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             skill3.onClick.AddListener(OnSkill3Pressed);
         }
         
-        // Hàm được gọi khi skill2 được nhấn
+        // Hàm được gọi khi skill2 được nhấn - DEBUG: SPAWN VAGRANT
         private void OnSkill2Pressed()
         {
-            Debug.Log("[PlayerGui] OnSkill2Pressed called!");
-            if (PlayerController.PlayerController.Instance?.playerBehavior == null)
+            Debug.Log("[PlayerGui] OnSkill2Pressed called - Spawning Vagrant!");
+            if (PlayerController.PlayerController.Instance?.player == null)
             {
-                Debug.LogError("[PlayerGui] Player not spawned yet!");
+                Debug.LogError("[PlayerGui] Player instance not found!");
                 return;
             }
             
+            // Lấy vị trí trước mặt player
+            float direction = PlayerController.PlayerController.Instance.player.transform.localScale.x;
+            Vector3 spawnPos = PlayerController.PlayerController.Instance.player.transform.position + new Vector3(direction * 2, 2, 0); // +2Y to drop from sky
+
+            if (VagrantManager.Instance != null)
+            {
+                VagrantManager.Instance.SpawnVagrants(1, null, spawnPos);
+                Debug.Log($"[PlayerGui] Spawned vagrant at {spawnPos}");
+            }
+            else
+            {
+                Debug.LogError("[PlayerGui] VagrantManager instance not found!");
+            }
+            
+            /* Old skill logic
             var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
             skillManager?.ExecuteSkill(1);
+            */
             OnSkill2PressedACT?.Invoke();
         }
         
@@ -129,48 +146,6 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             trigger.triggers.Add(pointerUpEntry);
         }
         
-        /*//demo spawn vagrant
-          // Đảm bảo prefabWall có tag đúng
-                if (PrefabData.Instance.vagrant.tag != "Vagrant")
-                {
-                    Debug.LogWarning("Prefab không có tag 'Vagrant', đang set lại tag cho prefabWall");
-                    PrefabData.Instance.vagrant.tag = "Vagrant";
-                }
-                
-                // Calculate spawn position (2 units in front of the player based on direction)
-                float direction = PlayerController.PlayerController.Instance.player.transform.localScale.x;
-                Vector2 spawnPosition = new Vector2(playerPosition.x + (direction * 2), playerPosition.y);
-                
-                // Use EntitySaveManager to spawn and organize the vagrant
-                GameObject vagrant = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(
-                    PrefabData.Instance.vagrant, 
-                    spawnPosition
-                );
-                
-                if (vagrant != null)
-                {
-                    // Đảm bảo đối tượng đã tạo có tag Vagrant đúng
-                    if (vagrant.tag != "Vagrant")
-                    {
-                        Debug.LogWarning("Vagrant đã tạo không có tag 'Vagrant', đang gán lại tag...");
-                        vagrant.tag = "Vagrant";
-                        // Set lại container
-                        EntitySaveManager.Instance.MoveObjectToContainer(vagrant);
-                    }
-                    
-                    Debug.Log("Vagrant spawned successfully at position: " + spawnPosition);
-                    Debug.Log("Vagrant tag: " + vagrant.tag);
-                    Debug.Log("Vagrant parent container: " + vagrant.transform.parent.name);
-                }
-                else
-                {
-                    Debug.LogError("Failed to spawn Vagrant!");
-                }
-            }
-            else
-            {
-                Debug.LogError("Vagrant prefabWall not found in PrefabData.Instance.vagrant!");
-            }
-         */
+    
     }
 }

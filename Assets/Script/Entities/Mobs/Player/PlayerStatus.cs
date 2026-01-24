@@ -46,7 +46,7 @@ namespace Script.Data_Model.Status
             {
                 maxHp = 100;
                 currentHp = 100;
-                moveSpeed = 7f;
+                moveSpeed = 10f;
                 attackDame = 1;
                 attackSpeed = 1f;
             }

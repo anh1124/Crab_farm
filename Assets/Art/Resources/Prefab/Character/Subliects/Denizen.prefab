@@ -219,4 +219,6 @@ MonoBehaviour:
   CurrentRole: 0
   vagrantController: {fileID: 9100000, guid: 9ed78963ace87684cb2b21fd66341b30, type: 2}
   villagerController: {fileID: 9100000, guid: c6ad815e1a9aa014b839538879eda4db, type: 2}
-  archerController: {fileID: 0}
+  archerController: {fileID: 9100000, guid: 31cd6837cf250b446bc498f5895f6dbb, type: 2}
+  workerController: {fileID: 0}
+  farmerController: {fileID: 0}

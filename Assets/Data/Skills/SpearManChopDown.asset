@@ -18,6 +18,6 @@ MonoBehaviour:
   manaCost: 10
   cooldown: 2
   allowMovementDuringSkill: 0
-  hitbox: {fileID: 7390544792056086237, guid: 3e5278dc97b535840bea76508714840b, type: 3}
+  hitbox: {fileID: 0}
   animationTrigger: ChopDown
   hitboxPrefab: {fileID: 7138325472076543894, guid: 3e5278dc97b535840bea76508714840b, type: 3}

@@ -1,9 +1,11 @@
 using UnityEngine;
+using Script.Data_Model.Interfaces;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Data_Model.Status
 {
     [System.Serializable]
-    public class ArcherStatus : MonoBehaviour
+    public class ArcherStatus : MonoBehaviour, INPCStatus
     {
         public enum ArcherState
         {
@@ -34,6 +36,17 @@ namespace Script.Data_Model.Status
         {
             get => currentState;
             set => currentState = value;
+        }
+
+        // Coin System (for INPCStatus)
+        [SerializeField] private int currentCoins = 0;
+
+        // INPCStatus implementation
+        public NPCRole Role => NPCRole.Archer;
+        public int CurrentCoins
+        {
+            get => currentCoins;
+            set => currentCoins = value;
         }
 
         // Save Data Structure

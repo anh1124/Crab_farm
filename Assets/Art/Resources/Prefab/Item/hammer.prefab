@@ -10,9 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5965534699043581405}
   - component: {fileID: 1185166644503604080}
-  - component: {fileID: -5645762394204160530}
-  - component: {fileID: -1812880946040773428}
   - component: {fileID: 6916635577820106134}
+  - component: {fileID: 1951243999690800037}
   m_Layer: 0
   m_Name: hammer
   m_TagString: Hammer
@@ -87,30 +86,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &-5645762394204160530
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4558516452142004041}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a5c317fed184fb49a9901f72c47cf6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &-1812880946040773428
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4558516452142004041}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03bedfd0a26365142a14a668d7c96ca1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!61 &6916635577820106134
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -156,3 +131,18 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.41666666, y: 0.9166667}
   m_EdgeRadius: 0
+--- !u!114 &1951243999690800037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4558516452142004041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 347dee65a0e4c354087fabc491e779de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 1
+  picked: 0
+  pickedBy: {fileID: 0}

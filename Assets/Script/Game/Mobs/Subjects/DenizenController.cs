@@ -11,12 +11,14 @@ namespace Script.Game.Mobs.Subjects
     {
         Vagrant,
         Villager,
-        Archer
+        Archer,
+        Worker,
+        Farmer
     }
 
     public class DenizenController : MonoBehaviour, ISaveable
     {
-        public NPCRole CurrentRole = NPCRole.Vagrant;
+        public NPCRole CurrentRole = NPCRole.Villager;//khởi đầu là dân làng 
 
         private Animator animator;
         private RayCastHelper rayCastHelper;
@@ -28,6 +30,8 @@ namespace Script.Game.Mobs.Subjects
         [SerializeField] private RuntimeAnimatorController vagrantController;
         [SerializeField] private RuntimeAnimatorController villagerController;
         [SerializeField] private RuntimeAnimatorController archerController;
+        [SerializeField] private RuntimeAnimatorController workerController;
+        [SerializeField] private RuntimeAnimatorController farmerController;
 
         private void Awake()
         {
@@ -38,6 +42,15 @@ namespace Script.Game.Mobs.Subjects
 
         private void Start()
         {
+            // Validate Animator Controllers
+            if (vagrantController == null) Debug.LogError($"[DenizenController] Vagrant Animator Controller is missing on {gameObject.name}!");
+            if (villagerController == null) Debug.LogError($"[DenizenController] Villager Animator Controller is missing on {gameObject.name}!");
+            if (archerController == null) Debug.LogError($"[DenizenController] Archer Animator Controller is missing on {gameObject.name}!");
+            // Worker and Farmer checks are optional for now as they are not implemented, 
+            // but good to check if you plan to use them soon.
+            // if (workerController == null) Debug.LogError($"[DenizenController] Worker Animator Controller is missing on {gameObject.name}!");
+            // if (farmerController == null) Debug.LogError($"[DenizenController] Farmer Animator Controller is missing on {gameObject.name}!");
+
             ApplyRole(CurrentRole, null);
             RegisterWithManager();
         }
@@ -63,13 +76,6 @@ namespace Script.Game.Mobs.Subjects
 
             ApplyRole(newRole, previousStatus);
             RegisterWithManager();
-
-            if (animator != null)
-            {
-                // Optional: play a transition animation if exists
-                // animator.Play("ChangeRole");
-            }
-
             CurrentRole = newRole;
         }
 
@@ -92,10 +98,34 @@ namespace Script.Game.Mobs.Subjects
                     break;
                 case NPCRole.Archer:
                     gameObject.tag = "Archer";
-                    // currentStatus = gameObject.AddComponent<ArcherStatus>();
-                    // currentBehavior = gameObject.AddComponent<ArcherBehavior>();
+                    currentStatus = gameObject.GetComponent<ArcherStatus>() ?? gameObject.AddComponent<ArcherStatus>();
+                    currentBehavior = gameObject.GetComponent<ArcherBehavior>() ?? gameObject.AddComponent<ArcherBehavior>();
                     targetController = archerController;
                     break;
+
+                case NPCRole.Worker:
+                    // TODO: Implement WorkerStatus and WorkerBehavior classes
+                    Debug.LogWarning($"[DenizenController] Worker role not implemented yet! Staying as {CurrentRole}");
+                    return; // Don't change role
+                    /*
+                    gameObject.tag = "Worker";
+                    currentStatus = gameObject.GetComponent<WorkerStatus>() ?? gameObject.AddComponent<WorkerStatus>();
+                    currentBehavior = gameObject.GetComponent<WorkerBehavior>() ?? gameObject.AddComponent<WorkerBehavior>();
+                    targetController = workerController;
+                    break;
+                    */
+
+                case NPCRole.Farmer:
+                    // TODO: Implement FarmerStatus and FarmerBehavior classes
+                    Debug.LogWarning($"[DenizenController] Farmer role not implemented yet! Staying as {CurrentRole}");
+                    return; // Don't change role
+                    /*
+                    gameObject.tag = "Farmer";
+                    currentStatus = gameObject.GetComponent<FarmerStatus>() ?? gameObject.AddComponent<FarmerStatus>();
+                    currentBehavior = gameObject.GetComponent<FarmerBehavior>() ?? gameObject.AddComponent<FarmerBehavior>();
+                    targetController = farmerController;
+                    break;
+                    */
             }
 
             if (animator != null && targetController != null)

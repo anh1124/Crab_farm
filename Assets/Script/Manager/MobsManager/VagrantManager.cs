@@ -255,6 +255,9 @@ namespace Script.Game.Mobs.MobsManager
                         continue;
                     }
                 }
+
+                // Force Y position to 0 to ensure spawning on ground
+                spawnPosition.y = 0;
             
                 // Sinh denizen và gán role Vagrant
                 GameObject vagrantObj = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(

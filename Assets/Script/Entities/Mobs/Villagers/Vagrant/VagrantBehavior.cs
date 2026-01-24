@@ -176,9 +176,13 @@ namespace Script.Game.Mobs.Subjects
 
         private void PickUpCoin(GameObject coinObject)
         {
-            // Destroy the coin first
-            Destroy(coinObject);
-            StartCoroutine(TransformToVillagerNextFrame());
+            Script.Utility.ProcessCoinPickup(coinObject,
+                condition: () => true, // Vagrant always picks up coin
+                onPickupSuccess: () =>
+                {
+                    StartCoroutine(TransformToVillagerNextFrame());
+                }
+            );
         }
 
         private IEnumerator TransformToVillagerNextFrame()

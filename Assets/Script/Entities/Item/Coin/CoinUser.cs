@@ -213,7 +213,8 @@ namespace Script.Game.Item.Coin
         
         public void PerformUpgrade()
         {
-            if (!isReadyToUpgrade && collectedCoins < requiredCoins) return;
+            // Fix: Check if already upgraded OR not enough coins
+            if (isReadyToUpgrade || collectedCoins < requiredCoins) return;
             // Finalize coin collection and trigger upgrade
             foreach (GameObject coin in coinsInTransit)
             {

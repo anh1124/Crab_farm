@@ -145,9 +145,10 @@ namespace Script.Game.Player
 
         public void PickUpCoin(GameObject coinGameObject)
         {
-            if (coinGameObject == null) return;
-            AddCoin(1);
-            Destroy(coinGameObject);
+            Script.Utility.ProcessCoinPickup(coinGameObject,
+                condition: () => true,
+                onPickupSuccess: () => AddCoin(1)
+            );
         }
 
         // Implement các interface khác nếu cần

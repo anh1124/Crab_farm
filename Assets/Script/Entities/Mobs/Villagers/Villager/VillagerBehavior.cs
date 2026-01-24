@@ -35,7 +35,7 @@ namespace Script.Game.Mobs.Subjects
 
         [Header("Tool")]
         [Tooltip("Công cụ được giao để đi lấy")]
-        public GameObject currentTool;
+        public ToolItem currentTool;
         
         // Component References
         private Animator animator;
@@ -87,6 +87,18 @@ namespace Script.Game.Mobs.Subjects
                 GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, HandleDayTime);
             }
             StopCheckRoutine();
+        }
+
+        private void OnDestroy()
+        {
+            // If villager is destroyed while having an assigned tool that hasn't been picked up yet,
+            // re-register the tool so another villager can pick it up
+            if (currentTool != null && !currentTool.picked && VillagerManager.Instance != null)
+            {
+                Debug.Log($"[VillagerBehavior] {gameObject.name} destroyed with unpicked tool {currentTool.type}, re-registering tool");
+                VillagerManager.Instance.RegisterTool(currentTool);
+                currentTool = null;
+            }
         }
 
         private void Start()
@@ -333,11 +345,10 @@ namespace Script.Game.Mobs.Subjects
                 return;
             }
 
-            // Kiểm tra xem tool có bị enemy lấy không
-            var toolStats = currentTool.GetComponent<ToolStats>();
-            if (toolStats != null && toolStats.isPickedByEnemy)
+            // Kiểm tra xem tool có bị picked trước không
+            if (currentTool.picked)
             {
-                Debug.Log($"[VillagerBehavior] {gameObject.name}: Tool đã bị enemy lấy mất, hủy nhiệm vụ");
+                Debug.Log($"[VillagerBehavior] {gameObject.name}: Tool đã bị nhặt trước, hủy nhiệm vụ");
                 currentTool = null;
                 currentState = VillagerStatus.VillagerState.Idle;
                 return;
@@ -588,25 +599,33 @@ namespace Script.Game.Mobs.Subjects
         #region Trigger and Pickup
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (currentState == VillagerStatus.VillagerState.RunToGetTool && 
-                currentTool != null && 
-                other.gameObject == currentTool)
+            // Check if villager is picking up assigned tool
+            var item = other.GetComponent<ToolItem>();
+            if (item != null && currentTool == item && currentState == VillagerStatus.VillagerState.RunToGetTool)
             {
-                var toolStats = currentTool.GetComponent<ToolStats>();
-                if (toolStats != null && !toolStats.isPickedByEnemy)
+                // Atomic ownership claim to prevent race condition
+                if (!item.picked && item.pickedBy == null)
                 {
-                    // Đánh dấu tool đã được villager nhặt
-                    toolStats.SetPickedUp(gameObject);
-                    // Xóa tool
-                    Destroy(currentTool);
+                    // Claim ownership immediately
+                    item.pickedBy = gameObject;
+                    item.picked = true;
+
+                    // Change role based on tool type
+                    ChangeRoleByTool(item.type);
+
+                    // Destroy tool
+                    Destroy(other.gameObject);
+
+                    // Reset state
+                    currentTool = null;
+                    currentState = VillagerStatus.VillagerState.Idle;
                 }
                 else
                 {
-                    Debug.Log($"[VillagerBehavior] {gameObject.name} không thể nhặt tool (toolStats null hoặc tool đã bị enemy lấy)");
+                    Debug.Log($"[VillagerBehavior] {gameObject.name} không thể nhặt tool (đã bị nhặt bởi {item.pickedBy?.name ?? "unknown"})");
+                    currentTool = null;
+                    currentState = VillagerStatus.VillagerState.Idle;
                 }
-                
-                currentTool = null;
-                currentState = VillagerStatus.VillagerState.Idle;
             }
             else if (other.CompareTag("Coin"))
             {
@@ -618,12 +637,47 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
         }
+        
         private void PickUpCoin(GameObject coinObject)
         {
-            if (status.CurrentCoins < status.MaxCoins)
+            Script.Utility.ProcessCoinPickup(coinObject,
+                condition: () => status.CurrentCoins < status.MaxCoins,
+                onPickupSuccess: () =>
+                {
+                    status.CurrentCoins++;
+                }
+            );
+        }
+
+        /// <summary>
+        /// Change villager role based on picked tool type
+        /// </summary>
+        private void ChangeRoleByTool(ToolType type)
+        {
+            var ctrl = GetComponent<DenizenController>();
+            if (ctrl == null)
             {
-                status.CurrentCoins++;
-                Destroy(coinObject);
+                Debug.LogError($"[VillagerBehavior] {gameObject.name} missing DenizenController!");
+                return;
+            }
+
+            switch (type)
+            {
+                case ToolType.Bow:
+                    ctrl.ChangeRole(NPCRole.Archer);
+                    break;
+
+                case ToolType.Hammer:
+                    ctrl.ChangeRole(NPCRole.Worker);
+                    break;
+
+                case ToolType.Scythe:
+                    ctrl.ChangeRole(NPCRole.Farmer);
+                    break;
+
+                default:
+                    Debug.LogWarning($"[VillagerBehavior] Unknown tool type: {type}");
+                    break;
             }
         }
         #endregion

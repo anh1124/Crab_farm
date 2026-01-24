@@ -278,7 +278,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 // Tier 0: không có blocker collider
                 blockerCollider2D = null;
-                Debug.Log($"[Wall] Tier {status.tier} không cần blocker collider");
+               // Debug.Log($"[Wall] Tier {status.tier} không cần blocker collider");
             }
 
             // Đảm bảo childBlocker được setup đúng
@@ -311,7 +311,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             triggerCollider2D = null;
             blockerCollider2D = null;
 
-            Debug.Log("[Wall] Đã xóa tất cả collider cũ");
+            //Debug.Log("[Wall] Đã xóa tất cả collider cũ");
         }
 
         /// Lấy trigger collider từ prefab
@@ -338,7 +338,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 CopyColliderProperties(sourceCollider, triggerCollider2D);
                 triggerCollider2D.isTrigger = true;
-                Debug.Log($"[Wall] Đã setup trigger collider (isTrigger=true)");
+              //  Debug.Log($"[Wall] Đã setup trigger collider (isTrigger=true)");
             }
         }
 

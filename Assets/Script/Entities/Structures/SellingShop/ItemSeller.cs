@@ -59,6 +59,7 @@ namespace Script.Game.Structures.SellingShop
         private void InitializeComponents()
         {
             coinUser = gameObject.GetComponent<CoinUser>();
+            coinUser.onUpgradeComplete -= OnUpgradeComplete; // Prevent duplicate subscription
             coinUser.onUpgradeComplete += OnUpgradeComplete;
             
             // Set building type information for the CoinUser

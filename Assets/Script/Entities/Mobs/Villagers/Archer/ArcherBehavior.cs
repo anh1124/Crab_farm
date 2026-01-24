@@ -13,8 +13,7 @@ using Script.Interfaces;
 
 namespace Script.Game.Mobs.Subjects
 {
-    // Renamed from ArcherController to ArcherBehavior to reflect Behavior + Status architecture
-    public class ArcherBehavior : MonoBehaviour, ISaveable, IHealth, ICoinShield
+    public class ArcherBehavior : MonoBehaviour, ISaveable, IHealth, ICoinShield, INPCBehavior
     {
         private ArcherStatus status;
         public bool isGuard = false;
@@ -26,6 +25,16 @@ namespace Script.Game.Mobs.Subjects
         [SerializeField] private int maxCoins = 5;
         [SerializeField] private int maxHp = 50;
         [SerializeField] private int currentHp = 50;
+
+        /*
+         * Animation List:
+         * - archerIdle
+         * - archerDraw
+         * - archerRelease
+         * - archerHit
+         * - archerMove
+         * - archerDie
+         */
 
         // IDamageable implementation
         public bool HasCoinShield => currentCoins > 0;
@@ -98,7 +107,8 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
-        private void Update()
+        // INPCBehavior implementation
+        public void UpdateBehavior()
         {
             switch (status.CurrentState)
             {

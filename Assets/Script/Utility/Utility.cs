@@ -66,5 +66,19 @@ namespace Script
         {
             return WorldUtility.GetTownCenter();
         }
+
+        public static void ProcessCoinPickup(GameObject coinObj, System.Func<bool> condition, System.Action onPickupSuccess)
+        {
+            if (coinObj == null) return;
+
+            // Check condition if provided
+            if (condition != null && !condition.Invoke()) return;
+
+            // Destroy coin
+            UnityEngine.Object.Destroy(coinObj);
+
+            // Success callback
+            onPickupSuccess?.Invoke();
+        }
     }
 }

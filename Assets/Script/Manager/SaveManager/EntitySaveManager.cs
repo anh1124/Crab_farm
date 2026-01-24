@@ -306,6 +306,9 @@ namespace Script.Manager
                         break;
                     
                     case "Villager":
+                    case "Archer":
+                    case "Worker":
+                    case "Farmer":
                         if (villagersContainer != null)
                             obj.transform.SetParent(villagersContainer.transform, true);
                         else
