@@ -125,7 +125,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 // Khi player trigger wall, cập nhật lại trạng thái coin user
                 // để đảm bảo check town center level một lần nữa
                 UpdateCoinUserData();
-                Debug.Log($"[Wall] Player triggered wall - rechecking upgrade capability");
+              //  Debug.Log($"[Wall] Player triggered wall - rechecking upgrade capability");
             }
         }
         

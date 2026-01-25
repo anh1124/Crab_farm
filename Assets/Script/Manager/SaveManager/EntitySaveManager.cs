@@ -34,8 +34,7 @@ namespace Script.Manager
         
         public GameObject enemyContainer;//chứa portal và enemy
         
-        public GameObject wanderersContainer;
-        public GameObject villagersContainer;
+        public GameObject denizenContainer; // All denizens (Vagrant, Villager, Archer, etc.)
         public GameObject statuesContainer;
        
         public GameObject otherContainer;
@@ -84,8 +83,7 @@ namespace Script.Manager
                 chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
                 enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
                 animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
-                wanderersContainer = SetupContainerHelper("WanderersContainer", ref wanderersContainer);
-                villagersContainer = SetupContainerHelper("VillagersContainer", ref villagersContainer);
+                denizenContainer = SetupContainerHelper("DenizenContainer", ref denizenContainer);
                 statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
                 otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
                 
@@ -107,8 +105,7 @@ namespace Script.Manager
                 coinContainer,
                 enemyContainer,
                 animalsContainer,
-                wanderersContainer,
-                villagersContainer,
+                denizenContainer,
                 statuesContainer,
                 otherContainer
             };
@@ -131,12 +128,22 @@ namespace Script.Manager
                 
                 if (container == null)
                 {
-                    container = GameObject.FindGameObjectWithTag(containerName);
-                    if (container == null)
+                    // Check if child exists in parent first
+                    Transform existingChild = containerParent.transform.Find(containerName);
+                    if (existingChild != null)
                     {
-                        container = new GameObject(containerName);
-                        container.tag = containerName;
-                        if (isDebug) Debug.Log($"Created new container: {containerName}");
+                        container = existingChild.gameObject;
+                    }
+                    else
+                    {
+                        // Fallback: Try finding by name globally (though finding in parent is preferred)
+                        container = GameObject.Find(containerName);
+                        
+                        if (container == null)
+                        {
+                            container = new GameObject(containerName);
+                            if (isDebug) Debug.Log($"Created new container: {containerName}");
+                        }
                     }
                     
                     // Đảm bảo container là con của containerParent
@@ -298,22 +305,15 @@ namespace Script.Manager
                     
                     case "Wanderer":
                     case "Vagrant":
-                        if (wanderersContainer != null)
-                            obj.transform.SetParent(wanderersContainer.transform, true);
-                        else
-                            Debug.LogError("wanderersContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to WanderersContainer");
-                        break;
-                    
                     case "Villager":
                     case "Archer":
                     case "Worker":
                     case "Farmer":
-                        if (villagersContainer != null)
-                            obj.transform.SetParent(villagersContainer.transform, true);
+                        if (denizenContainer != null)
+                            obj.transform.SetParent(denizenContainer.transform, true);
                         else
-                            Debug.LogError("villagersContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to VillagersContainer");
+                            Debug.LogError("denizenContainer is null");
+                        if (isDebug) Debug.Log($"Set parent of {obj.name} to DenizenContainer");
                         break;
                     
                     case "Statues":
@@ -407,8 +407,7 @@ namespace Script.Manager
                 chunkContainer = EnsureContainerExists("ChunkContainer", ref chunkContainer);
                 enemyContainer = EnsureContainerExists("EnemyContainer", ref enemyContainer);
                 animalsContainer = EnsureContainerExists("AnimalsContainer", ref animalsContainer);
-                wanderersContainer = EnsureContainerExists("WanderersContainer", ref wanderersContainer);
-                villagersContainer = EnsureContainerExists("VillagersContainer", ref villagersContainer);
+                denizenContainer = EnsureContainerExists("DenizenContainer", ref denizenContainer);
                 statuesContainer = EnsureContainerExists("StatuesContainer", ref statuesContainer);
                 otherContainer = EnsureContainerExists("OtherContainer", ref otherContainer);
                 
@@ -942,8 +941,7 @@ namespace Script.Manager
                 chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
                 enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
                 animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
-                wanderersContainer = SetupContainerHelper("WanderersContainer", ref wanderersContainer);
-                villagersContainer = SetupContainerHelper("VillagersContainer", ref villagersContainer);
+                denizenContainer = SetupContainerHelper("DenizenContainer", ref denizenContainer);
                 statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
                 otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
                 

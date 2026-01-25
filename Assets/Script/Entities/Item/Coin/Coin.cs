@@ -171,23 +171,39 @@ namespace Script.Game.Item.Coin
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            /*if (other.CompareTag("Player"))
+            Debug.Log($"[Coin] OnTriggerEnter2D with {other.name}, tag: {other.tag}, playerPickupAble: {playerPickupAble}, denizensPickupAble: {denizensPickupAble}");
+            
+            if (other.CompareTag("Player"))
             {
-                HandlePlayerPickup(other);
-            }*/
-             if (other.CompareTag("Denizen"))
+                Debug.Log($"[Coin] Player detected: {other.name}");
+                HandlePlayerPickup(other.gameObject);
+            }
+            
+            // Check for all denizen types
+            if (other.CompareTag("Vagrant") || other.CompareTag("Villager") || 
+                other.CompareTag("Archer") || other.CompareTag("Worker") || 
+                other.CompareTag("Farmer") || other.CompareTag("Denizen"))
             {
+                Debug.Log($"[Coin] Denizen detected: {other.name} with tag {other.tag}");
                 HandleDenizensPickup(other);
             }
         }
 
         public void HandlePlayerPickup(GameObject player)
         {
-            if (!playerPickupAble) return;
+            Debug.Log($"[Coin] HandlePlayerPickup called for {player.name}, playerPickupAble: {playerPickupAble}");
+            
+            if (!playerPickupAble)
+            {
+                Debug.Log($"[Coin] Player pickup blocked - playerPickupAble is false");
+                return;
+            }
+            
             StopAllCoroutines();
             var coinable = player.GetComponent<ICoinable>();
             if (coinable != null)
             {
+                Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on player {player.name}");
                 coinable.PickUpCoin(gameObject);
             }
             else
@@ -198,11 +214,19 @@ namespace Script.Game.Item.Coin
 
         private void HandleDenizensPickup(Collider2D denizens)
         {
-            if (!denizensPickupAble) return;
+            Debug.Log($"[Coin] HandleDenizensPickup called for {denizens.name}, denizensPickupAble: {denizensPickupAble}");
+            
+            if (!denizensPickupAble)
+            {
+                Debug.Log($"[Coin] Pickup blocked - denizensPickupAble is false");
+                return;
+            }
+            
             StopAllCoroutines();
             var coinable = denizens.GetComponent<ICoinable>();
             if (coinable != null)
             {
+                Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on {denizens.name}");
                 coinable.PickUpCoin(gameObject);
             }
             else

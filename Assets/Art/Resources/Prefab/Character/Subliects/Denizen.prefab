@@ -216,7 +216,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0723d76b1aa770246ba62927f66cbb10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CurrentRole: 0
+  CurrentRole: 1
   vagrantController: {fileID: 9100000, guid: 9ed78963ace87684cb2b21fd66341b30, type: 2}
   villagerController: {fileID: 9100000, guid: c6ad815e1a9aa014b839538879eda4db, type: 2}
   archerController: {fileID: 9100000, guid: 31cd6837cf250b446bc498f5895f6dbb, type: 2}

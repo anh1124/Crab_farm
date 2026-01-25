@@ -17,7 +17,7 @@ using Script.Manager.WorldManager;
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
-    public class VillagerBehavior : MonoBehaviour, ISaveable, IHealth, INPCBehavior
+    public class VillagerBehavior : MonoBehaviour, ISaveable, IHealth, INPCBehavior, ICoinable
     {
         #region Variables and Properties
         private VillagerStatus status;
@@ -64,6 +64,12 @@ namespace Script.Game.Mobs.Subjects
             {
                 Debug.LogWarning($"{gameObject.name} have no script VillageStatus, has auto add");
                 status = gameObject.AddComponent<VillagerStatus>();
+            }
+            
+            rayCastHelper = GetComponent<RayCastHelper>();
+            if (rayCastHelper == null)
+            {
+                rayCastHelper = gameObject.AddComponent<RayCastHelper>();
             }
         }
     
@@ -629,21 +635,30 @@ namespace Script.Game.Mobs.Subjects
             }
             else if (other.CompareTag("Coin"))
             {
+                Debug.Log($"[VillagerBehavior] OnTriggerEnter2D - Coin detected: {other.name}");
                 // Kiểm tra thuộc tính denizensPickupAble nếu có
                 var coinScript = other.GetComponent<Coin>();
                 if (coinScript == null || coinScript.denizensPickupAble)
                 {
-                    PickUpCoin(other.gameObject);
+                    PickUpCoinInternal(other.gameObject);
                 }
             }
         }
         
-        private void PickUpCoin(GameObject coinObject)
+        
+        private void PickUpCoinInternal(GameObject coinObject)
         {
+            Debug.Log($"[VillagerBehavior] PickUpCoinInternal called for {coinObject.name}");
+            
             Script.Utility.ProcessCoinPickup(coinObject,
-                condition: () => status.CurrentCoins < status.MaxCoins,
+                condition: () => 
+                {
+                    Debug.Log($"[VillagerBehavior] ProcessCoinPickup condition check - CurrentCoins: {status.CurrentCoins}/{status.MaxCoins}");
+                    return status.CurrentCoins < status.MaxCoins;
+                },
                 onPickupSuccess: () =>
                 {
+                    Debug.Log($"[VillagerBehavior] Coin pickup successful, adding coin");
                     status.CurrentCoins++;
                 }
             );
@@ -785,6 +800,34 @@ namespace Script.Game.Mobs.Subjects
             Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
             Destroy(gameObject);
         }
+        #endregion
+        
+        #region ICoinable Implementation
+
+        public int Coin 
+        { 
+            get => status.CurrentCoins; 
+            set => status.CurrentCoins = value; 
+        }
+
+        public void AddCoin(int amount)
+        {
+            status.CurrentCoins += amount;
+            Debug.Log($"[VillagerBehavior] Added {amount} coins. Total: {status.CurrentCoins}");
+        }
+
+        public void SubtractCoin(int amount)
+        {
+            status.CurrentCoins -= amount;
+            Debug.Log($"[VillagerBehavior] Subtracted {amount} coins. Total: {status.CurrentCoins}");
+        }
+
+        public void PickUpCoin(GameObject coinGameObject)
+        {
+            Debug.Log($"[VillagerBehavior] PickUpCoin (ICoinable) called for {coinGameObject.name}");
+            PickUpCoinInternal(coinGameObject);
+        }
+
         #endregion
     }
 }

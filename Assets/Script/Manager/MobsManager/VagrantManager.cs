@@ -192,13 +192,13 @@ namespace Script.Game.Mobs.MobsManager
         /// </summary>
         private int CountExistingVagrants()
         {
-            if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.wanderersContainer == null)
+            if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.denizenContainer == null)
             {
                 return 0;
             }
 
             // Lấy tất cả đối tượng từ container
-            List<GameObject> objects = EntitySaveManager.Instance.GetObjectsFromContainerList(EntitySaveManager.Instance.wanderersContainer);
+            List<GameObject> objects = EntitySaveManager.Instance.GetObjectsFromContainerList(EntitySaveManager.Instance.denizenContainer);
             
             // Đếm chỉ các đối tượng có tag "Vagrant"
             int vagrantCount = 0;

@@ -278,7 +278,7 @@ namespace Script.Manager.Building
             if (nextTier > structureInfo.maxTier)
             {
                 int townCenterTier = currentTownCenter != null ? currentTownCenter.GetComponent<TownCenterStatus>().tier : 0;
-                Debug.Log($"Building type {buildingType} at tier {currentTier} cannot be upgraded. Max tier is {structureInfo.maxTier}, town center tier is {townCenterTier}");
+                //Debug.Log($"Building type {buildingType} at tier {currentTier} cannot be upgraded. Max tier is {structureInfo.maxTier}, town center tier is {townCenterTier}");
                 return false;
             }
 

@@ -12,7 +12,7 @@ using Script.Manager.GamePlayManager;
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VagrantController to VagrantBehavior to reflect Behavior + Status architecture
-    public class VagrantBehavior : MonoBehaviour, ISaveable, INPCBehavior
+    public class VagrantBehavior : MonoBehaviour, ISaveable, INPCBehavior, ICoinable
     {
         private VagrantStatus status;
         
@@ -102,12 +102,19 @@ namespace Script.Game.Mobs.Subjects
         
                 if (obj.CompareTag("Coin"))
                 {
+                    Debug.Log($"[VagrantBehavior] Coin detected: {obj.name} at {obj.transform.position}, current state: {status.CurrentState}");
+                    
                     if ((status.CurrentState == VagrantStatus.VagrantState.Idle || 
                          status.CurrentState == VagrantStatus.VagrantState.GetCoin) && 
                         status.CurrentState != VagrantStatus.VagrantState.Fear)
                     {
+                        Debug.Log($"[VagrantBehavior] Changing state to GetCoin for coin: {obj.name}");
                         status.CurrentState = VagrantStatus.VagrantState.GetCoin;
                         status.Coin = obj;
+                    }
+                    else
+                    {
+                        Debug.Log($"[VagrantBehavior] Not changing state - current state: {status.CurrentState}");
                     }
                     break;
                 }
@@ -168,18 +175,28 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnTriggerEnter2D(Collider2D other)
         {
+            Debug.Log($"[VagrantBehavior] OnTriggerEnter2D with {other.name}, tag: {other.tag}");
+            
             if (other.CompareTag("Coin"))
             {
-                PickUpCoin(other.gameObject);
+                Debug.Log($"[VagrantBehavior] Coin trigger detected, calling PickUpCoinInternal");
+                PickUpCoinInternal(other.gameObject);
             }
         }
 
-        private void PickUpCoin(GameObject coinObject)
+        private void PickUpCoinInternal(GameObject coinObject)
         {
+            Debug.Log($"[VagrantBehavior] PickUpCoin called for {coinObject.name}");
+            
             Script.Utility.ProcessCoinPickup(coinObject,
-                condition: () => true, // Vagrant always picks up coin
+                condition: () => 
+                {
+                    Debug.Log($"[VagrantBehavior] ProcessCoinPickup condition check - always true for Vagrant");
+                    return true; // Vagrant always picks up coin
+                },
                 onPickupSuccess: () =>
                 {
+                    Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
                     StartCoroutine(TransformToVillagerNextFrame());
                 }
             );
@@ -408,6 +425,34 @@ namespace Script.Game.Mobs.Subjects
             {
                 StartCheckRoutine();
             }
+        }
+
+        #endregion
+        
+        #region ICoinable Implementation
+
+        public int Coin 
+        { 
+            get => status.CurrentCoins; 
+            set => status.CurrentCoins = value; 
+        }
+
+        public void AddCoin(int amount)
+        {
+            status.CurrentCoins += amount;
+            Debug.Log($"[VagrantBehavior] Added {amount} coins. Total: {status.CurrentCoins}");
+        }
+
+        public void SubtractCoin(int amount)
+        {
+            status.CurrentCoins -= amount;
+            Debug.Log($"[VagrantBehavior] Subtracted {amount} coins. Total: {status.CurrentCoins}");
+        }
+
+        public void PickUpCoin(GameObject coinGameObject)
+        {
+            Debug.Log($"[VagrantBehavior] PickUpCoin (ICoinable) called for {coinGameObject.name}");
+            PickUpCoinInternal(coinGameObject);
         }
 
         #endregion

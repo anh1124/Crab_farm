@@ -158,13 +158,14 @@ namespace Script.Game.Mobs.Subjects
         }
 
         // ISaveable implementation
+        // ISaveable implementation
         [System.Serializable]
         public class DenizenData
         {
             public float positionX;
             public float positionY;
             public float scaleX;
-            public int role;
+            public string role;
             public int coins;
         }
 
@@ -186,7 +187,7 @@ namespace Script.Game.Mobs.Subjects
                 positionX = transform.position.x,
                 positionY = transform.position.y,
                 scaleX = transform.localScale.x,
-                role = (int)CurrentRole,
+                role = CurrentRole.ToString(),
                 coins = coins
             };
         }
@@ -199,11 +200,18 @@ namespace Script.Game.Mobs.Subjects
             transform.position = new Vector3(d.positionX, d.positionY, 0);
             transform.localScale = new Vector3(d.scaleX, 1, 1);
 
-            var savedRole = (NPCRole)d.role;
-            if (savedRole != CurrentRole)
+            if (System.Enum.TryParse<NPCRole>(d.role, out var savedRole))
             {
-                ChangeRole(savedRole);
+                if (savedRole != CurrentRole)
+                {
+                    ChangeRole(savedRole);
+                }
             }
+            else
+            {
+                Debug.LogWarning($"[DenizenController] Could not parse role: {d.role}");
+            }
+
             // Ensure coins applied after role is loaded
             if (currentStatus is INPCStatus s)
             {
