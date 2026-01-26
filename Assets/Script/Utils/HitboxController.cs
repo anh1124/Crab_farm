@@ -43,6 +43,15 @@ namespace Script.Utils
             ContactFilter2D filter = new ContactFilter2D().NoFilter();
             int hitCount = Physics2D.OverlapCollider(hitbox, filter, buffer);
             
+            Debug.Log($"[HitboxController] HitCount: {hitCount}");
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (buffer[i] != null)
+                {
+                    Debug.Log($"[HitboxController] Hit[{i}]: {buffer[i].name} (Tag: {buffer[i].tag})");
+                }
+            }
+            
             // Process damage thông qua CombatUtility (existing system)
             CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage, damageAlly);
             

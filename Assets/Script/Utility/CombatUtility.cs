@@ -25,74 +25,64 @@ namespace Script.Utils
         /// </summary>
         public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, int damageAmount, bool allowDamageAlly)
         {
-            Debug.Log($"[Utility.ProcessAttackHits] {instigator.name} bắt đầu xử lý {count} đối tượng va chạm. Damage: {damageAmount}. Damage Ally: {allowDamageAlly}.");
+            Debug.Log($"[Utility.ProcessAttackHits] {instigator.name} bắt đầu xử lý HIT {count} đối tượng. Damage: {damageAmount}. Damage Ally: {allowDamageAlly}.");
 
             for (int i = 0; i < count; i++)
             {
-                if (hits[i] == null)
-                {
-                    //Debug.LogWarning($"[Utility.ProcessAttackHits] Collider tại vị trí {i} trong mảng hits là null. Bỏ qua.");
-                    continue;
-                }
+                if (hits[i] == null) continue;
 
                 GameObject hitObject = hits[i].gameObject;
-                if (hitObject == null)
-                {
-                    //Debug.LogWarning($"[Utility.ProcessAttackHits] GameObject của collider {hits[i].name} tại vị trí {i} là null. Bỏ qua.");
-                    continue;
-                }
+                if (hitObject == null) continue;
 
-                if (hitObject == instigator)
-                {
-                    //Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đối tượng gây tấn công {hitObject.name} (Tag: {hitObject.tag}).");
-                    continue;
-                }
+                if (hitObject == instigator) continue;
+
+                Debug.Log($"[Utility.ProcessAttackHits] Processing Hit[{i}]: {hitObject.name} (Tag: {hitObject.tag})");
 
                 IHealth target = hitObject.GetComponent<IHealth>();
 
                 if (target != null)
                 {
-                    bool isTargetAlly = IsAlly(hitObject);
-
-                    if (!allowDamageAlly && isTargetAlly)
-                    {
-                        //Debug.Log($"[Utility.ProcessAttackHits] Bỏ qua đồng minh {hitObject.name} (Tag: {hitObject.tag}).");
-                        continue;
-                    }
-
-                    // Kiểm tra tier của Wall
-                    //hiện tại đang test hát thương lên wall bằng dame của player
-                    //khi thêm enemy tấn công sẽ thêm wall và danh sách allyTags
+                    // ƯU TIÊN 1: Xử lý Wall trước (để tránh bị Ally check chặn)
                     if (hitObject.CompareTag("Wall"))
                     {
                         WallStatus wall = hitObject.GetComponent<WallStatus>();
                         if (wall != null)
                         {
-                            //bỏ qua wall tier 0 vì vì đây không phải wall
+                            // Bỏ qua wall tier 0 (stump/foundation chưa xây xong?)
                             if (wall.tier == 0)
                             {
+                                Debug.Log($"[Utility.ProcessAttackHits] SKIP Wall Tier 0: {hitObject.name}");
                                 continue;
                             }
                             else
                             {
-                                Debug.Log($"[CombatUtility.ProcessAttackHits] Wall {hitObject.name} (Tag: {hitObject.tag}, Tier: {wall.tier}) nhận sát thương {damageAmount} từ {instigator.name}.");
+                                Debug.Log($"[Utility.ProcessAttackHits] HIT Wall {hitObject.name} (Tier: {wall.tier}) -> Apply Damage {damageAmount}");
                                 Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
                             }
                         }
                         else
                         {
-                            Debug.LogWarning($"[Utility.ProcessAttackHits] Đối tượng {hitObject.name} có tag 'Wall' nhưng không có script Wall. Bỏ qua.");
+                            Debug.LogWarning($"[Utility.ProcessAttackHits] Object {hitObject.name} tag 'Wall' missing WallStatus script.");
                         }
+                        // Wall đã xử lý xong, tiếp tục vòng lặp
+                        continue;
                     }
-                    else
+
+                    // ƯU TIÊN 2: Ally Check
+                    bool isTargetAlly = IsAlly(hitObject);
+                    if (!allowDamageAlly && isTargetAlly)
                     {
-                        Debug.Log($"[CombatUtility.ProcessAttackHits] {hitObject.name} (Tag: {hitObject.tag}) nhận sát thương {damageAmount} từ {instigator.name}.");
-                        Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
+                        Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {hitObject.name} (Tag: {hitObject.tag}) - IsAlly: {isTargetAlly}");
+                        continue;
                     }
+
+                    // ƯU TIÊN 3: Default Damage (Enemy, Object khác...)
+                    Debug.Log($"[Utility.ProcessAttackHits] HIT Object {hitObject.name} (Tag: {hitObject.tag}) -> Apply Damage {damageAmount}");
+                    Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
                 }
                 else
                 {
-                    //Debug.Log($"[Utility.ProcessAttackHits] Đối tượng {hitObject.name} (Tag: {hitObject.tag}) không implement IHealth. Bỏ qua.");
+                    Debug.Log($"[Utility.ProcessAttackHits] SKIP Object {hitObject.name} - No IHealth component");
                 }
             }
         }

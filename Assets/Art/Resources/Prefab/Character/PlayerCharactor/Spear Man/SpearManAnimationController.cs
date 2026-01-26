@@ -146,8 +146,9 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         /// Được gọi từ Animation Event tại frame damage
         /// </summary>
         /// <param name="slotIndex">Index của skill slot</param>
-        public void OnSkillDamageFrame(int slotIndex)
+        public void OnSkillAttackHit(int slotIndex)
         {
+            Debug.Log($"[SpearManAnimationController] OnSkillAttackHit (formerly OnSkillDamageFrame) called for slot {slotIndex}");
             if (skillManager != null && slotIndex >= 0)
             {
                 skillManager.OnSkillAnimationDamageFrame(slotIndex);
@@ -162,7 +163,7 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         /// Hàm này được gọi từ Animation Event trong Unity Editor khi animation kỹ năng kết thúc.
         /// </summary>
         /// <param name="slotIndex">Index của skill slot</param>
-        public void OnSkillAnimationEnd(int slotIndex)
+        public void OnAnimationFinish(int slotIndex)
         {
             // Guard: Tránh gọi nhiều lần
             if (!IsSkillAnimationPlaying)
@@ -170,7 +171,7 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
                 return;
             }
             
-            Debug.Log($"[SpearManAnimationController] Skill animation ended for slot {slotIndex}.");
+            Debug.Log($"[SpearManAnimationController] OnAnimationFinish (formerly OnSkillAnimationEnd) called for slot {slotIndex}.");
             IsSkillAnimationPlaying = false;
             
             // CRITICAL: Reset trigger để tránh Any State transition lại
@@ -191,6 +192,7 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
             // NEW: Notify skill manager
             if (skillManager != null && slotIndex >= 0)
             {
+                // Gọi sang Manager (Manager vẫn giữ tên hàm cũ, không sao cả)
                 skillManager.OnSkillAnimationEnd(slotIndex);
             }
             

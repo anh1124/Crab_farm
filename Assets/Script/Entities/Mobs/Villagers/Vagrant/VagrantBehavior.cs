@@ -175,11 +175,11 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            Debug.Log($"[VagrantBehavior] OnTriggerEnter2D with {other.name}, tag: {other.tag}");
+           // Debug.Log($"[VagrantBehavior] OnTriggerEnter2D with {other.name}, tag: {other.tag}");
             
             if (other.CompareTag("Coin"))
             {
-                Debug.Log($"[VagrantBehavior] Coin trigger detected, calling PickUpCoinInternal");
+              //  Debug.Log($"[VagrantBehavior] Coin trigger detected, calling PickUpCoinInternal");
                 PickUpCoinInternal(other.gameObject);
             }
         }
