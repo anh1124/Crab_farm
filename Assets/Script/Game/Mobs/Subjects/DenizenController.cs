@@ -197,14 +197,26 @@ namespace Script.Game.Mobs.Subjects
             var d = data as DenizenData;
             if (d == null) return;
 
+            // Debug log to trace restoration
+            //Debug.Log($"[DenizenController] Restoring ID {GetPrefabID()}. Role: {d.role}, Coins: {d.coins}");
+
             transform.position = new Vector3(d.positionX, d.positionY, 0);
             transform.localScale = new Vector3(d.scaleX, 1, 1);
 
             if (System.Enum.TryParse<NPCRole>(d.role, out var savedRole))
             {
+                // Fix: Ensure we Initialize/ApplyRole even if the role matches the default CurrentRole.
+                // This is crucial because RestoreData runs before Start(), so components might not be added yet.
                 if (savedRole != CurrentRole)
                 {
+                  //  Debug.Log($"[DenizenController] Role mismatch ({CurrentRole} -> {savedRole}). Changing role.");
                     ChangeRole(savedRole);
+                }
+                else if (currentStatus == null)
+                {
+                    // Same role, but components not initialized yet (Start hasn't run)
+                   // Debug.Log($"[DenizenController] Role matches default ({savedRole}) but components not ready. Forcing ApplyRole.");
+                    ApplyRole(savedRole, null);
                 }
             }
             else
@@ -212,10 +224,15 @@ namespace Script.Game.Mobs.Subjects
                 Debug.LogWarning($"[DenizenController] Could not parse role: {d.role}");
             }
 
-            // Ensure coins applied after role is loaded
+            // Ensure coins applied after role is loaded and components are ready
             if (currentStatus is INPCStatus s)
             {
                 s.CurrentCoins = d.coins;
+              //  Debug.Log($"[DenizenController] Coins restored set to: {s.CurrentCoins}");
+            }
+            else
+            {
+               Debug.LogError($"[DenizenController] Failed to restore coins! currentStatus is null or invalid.");
             }
 
             // Ensure container is updated after restore

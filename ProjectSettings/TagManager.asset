@@ -5,28 +5,17 @@ TagManager:
   serializedVersion: 2
   tags:
   - Ground
-  - PlayerContainer
   - Structure
   - Coin
-  - StructureContainer
   - CameraTaget
-  - CoinContainer
-  - NatureContainer
   - LootMob
   - Tree
   - Wall
   - Enemy
-  - ChunkContainer
   - RabbitBush
   - Rabbit
   - ArcherTower
   - 'Player '
-  - EnemyContainer
-  - AnimalsContainer
-  - WanderersContainer
-  - VillagersContainer
-  - StatuesContainer
-  - OtherContainer
   - TownCenter
   - Bow
   - Hammer
@@ -40,6 +29,9 @@ TagManager:
   - Stump
   - CoinSlotLocation
   - Denizen
+  - Archer
+  - Worker
+  - Farmer
   layers:
   - Default
   - TransparentFX
