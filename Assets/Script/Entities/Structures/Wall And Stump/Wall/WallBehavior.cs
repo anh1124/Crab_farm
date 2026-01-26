@@ -247,11 +247,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         /// Theo logic mới: xóa collider cũ -> setup trigger -> setup blocker (nếu tier > 0)
         private void ChangeColliders(WallTierData tierData, WallState currentState)
         {
+            Debug.Log($"[Wall-Debug] Bắt đầu ChangeColliders cho {gameObject.name}. State: {currentState}, Tier: {tierData.tier}");
+
             // Bước 1: Lấy data từ tier hiện tại
             WallTierData currentTierData = GetCurrentTier();
             if (currentTierData == null || currentTierData.prefabWall == null)
             {
-                Debug.LogError("[Wall] Không thể lấy data tier hoặc prefabWall null");
+                Debug.LogError("[Wall-Debug] Không thể lấy data tier hoặc prefabWall null");
                 return;
             }
 
@@ -262,7 +264,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             Collider2D sourceCollider = GetTriggerColliderFromPrefab(currentTierData.prefabWall);
             if (sourceCollider == null)
             {
-                Debug.LogWarning("[Wall] Không tìm thấy trigger collider trong prefab");
+                Debug.LogWarning("[Wall-Debug] Không tìm thấy trigger collider trong prefab");
                 return;
             }
 
@@ -278,7 +280,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 // Tier 0: không có blocker collider
                 blockerCollider2D = null;
-               // Debug.Log($"[Wall] Tier {status.tier} không cần blocker collider");
+                Debug.Log($"[Wall-Debug] Tier {status.tier} không cần blocker collider");
             }
 
             // Đảm bảo childBlocker được setup đúng
@@ -288,30 +290,73 @@ namespace Script.Game.Structures.Wall_And_Stump
                 childBlocker.transform.localRotation = Quaternion.identity;
                 childBlocker.transform.localScale = Vector3.one;
             }
+            Debug.Log($"[Wall-Debug] Hoàn tất ChangeColliders cho {gameObject.name}.");
         }
 
         /// Xóa tất cả Collider2D trong gameObject chính và tất cả children
         private void RemoveAllColliders()
         {
+            Debug.Log($"[Wall-Debug] Bắt đầu RemoveAllColliders cho {gameObject.name}");
+            
             // Xóa collider trong gameObject chính
             Collider2D[] mainColliders = GetComponents<Collider2D>();
+            Debug.Log($"[Wall-Debug] Tìm thấy {mainColliders.Length} colliders trên Main Object ({gameObject.name})");
             foreach (var collider in mainColliders)
             {
-                DestroyImmediate(collider);
+                if (collider != null)
+                {
+                    Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {gameObject.name}");
+                    Destroy(collider); // Sử dụng Destroy thay vì DestroyImmediate để tránh lỗi trong physics callback
+                }
             }
 
-            // Xóa collider trong tất cả children
-            Collider2D[] childColliders = GetComponentsInChildren<Collider2D>(true);
-            foreach (var collider in childColliders)
+            // Xóa collider trong childBlocker Explicitly
+            if (childBlocker != null)
             {
-                DestroyImmediate(collider);
+                Collider2D[] blockerColliders = childBlocker.GetComponents<Collider2D>();
+                Debug.Log($"[Wall-Debug] Tìm thấy {blockerColliders.Length} colliders trên ChildBlocker ({childBlocker.name})");
+                foreach (var collider in blockerColliders)
+                {
+                    if (collider != null)
+                    {
+                        Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {childBlocker.name}");
+                        Destroy(collider);
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogError($"[Wall-Debug] ChildBlocker là null trên {gameObject.name}!");
+            }
+
+            // Xóa collider trong tất cả children khác (quét dọn sạch sẽ)
+            foreach (Transform child in transform)
+            {
+                // Skip childBlocker vì đã xử lý ở trên
+                if (childBlocker != null && child == childBlocker.transform) continue;
+
+                Collider2D[] childColliders = child.GetComponents<Collider2D>();
+                if (childColliders.Length > 0)
+                {
+                    Debug.Log($"[Wall-Debug] Tìm thấy {childColliders.Length} colliders trên Child khác ({child.name})");
+                    foreach (var collider in childColliders)
+                    {
+                        if (collider != null)
+                        {
+                            Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {child.name}");
+                            Destroy(collider);
+                        }
+                    }
+                }
             }
 
             // Reset references
             triggerCollider2D = null;
             blockerCollider2D = null;
-
-            //Debug.Log("[Wall] Đã xóa tất cả collider cũ");
+            
+            // Verify sau khi xóa
+            int remainingColliders = GetComponentsInChildren<Collider2D>(true).Length;
+            Debug.Log($"[Wall-Debug] Kết thúc RemoveAllColliders. Tổng số collider còn active (lưu ý: Destroy sẽ thực hiện cuối frame nên số lượng chưa giảm ngay): {remainingColliders}");
         }
 
         /// Lấy trigger collider từ prefab
@@ -338,7 +383,11 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 CopyColliderProperties(sourceCollider, triggerCollider2D);
                 triggerCollider2D.isTrigger = true;
-              //  Debug.Log($"[Wall] Đã setup trigger collider (isTrigger=true)");
+                Debug.Log($"[Wall-Debug] Đã tạo mới Trigger Collider ({triggerCollider2D.GetType().Name}) trên {gameObject.name}");
+            }
+            else
+            {
+                Debug.LogError($"[Wall-Debug] Thất bại khi tạo Trigger Collider trên {gameObject.name}");
             }
         }
 
@@ -347,7 +396,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             if (childBlocker == null)
             {
-                Debug.LogWarning("[Wall] childBlocker null, không thể setup blocker collider");
+                Debug.LogWarning("[Wall-Debug] childBlocker null, không thể setup blocker collider");
                 return;
             }
 
@@ -356,7 +405,11 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 CopyColliderProperties(sourceCollider, blockerCollider2D);
                 blockerCollider2D.isTrigger = false;
-                Debug.Log($"[Wall] Đã setup blocker collider trên childBlocker (isTrigger=false)");
+                Debug.Log($"[Wall-Debug] Đã tạo mới Blocker Collider ({blockerCollider2D.GetType().Name}) trên {childBlocker.name}");
+            }
+            else
+            {
+                Debug.LogError($"[Wall-Debug] Thất bại khi tạo Blocker Collider trên {childBlocker.name}");
             }
         }
         
@@ -514,7 +567,18 @@ namespace Script.Game.Structures.Wall_And_Stump
             status.currentHp = status.maxHp;
             status.state = WallState.Wall;
             LoadWallComponents(GetCurrentTier(),status.state);
-                
+            
+            // Explicitly re-enable childBlocker to ensure physics blocker is active
+            if (childBlocker != null)
+            {
+                childBlocker.SetActive(true);
+                Debug.Log($"[Wall-Debug] RepairStump: Reactivated childBlocker for {gameObject.name}");
+            }
+            else
+            {
+                Debug.LogWarning($"[Wall-Debug] RepairStump: childBlocker is null for {gameObject.name}");
+            }
+
             // Cập nhật CoinUser cho chế độ nâng cấp
             UpdateCoinUserData();
             
@@ -897,9 +961,10 @@ namespace Script.Game.Structures.Wall_And_Stump
             status.upgradeProgress = savedBuildProgress;
            
             // Đảm bảo HP không âm và không vượt quá maxHp
-            if (status.currentHp <= 0)
+            // Note: Stump có thể có hp <= 0 (đang chờ sửa), chỉ auto-revive nếu là Wall bị lỗi data
+            if (status.currentHp < 0)
             {
-                status.currentHp = status.maxHp;
+                status.currentHp = 0;
             }
             else if (status.currentHp > status.maxHp)
             {

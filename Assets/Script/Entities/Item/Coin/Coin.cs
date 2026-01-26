@@ -171,11 +171,11 @@ namespace Script.Game.Item.Coin
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            Debug.Log($"[Coin] OnTriggerEnter2D with {other.name}, tag: {other.tag}, playerPickupAble: {playerPickupAble}, denizensPickupAble: {denizensPickupAble}");
+          //  Debug.Log($"[Coin] OnTriggerEnter2D with {other.name}, tag: {other.tag}, playerPickupAble: {playerPickupAble}, denizensPickupAble: {denizensPickupAble}");
             
             if (other.CompareTag("Player"))
             {
-                Debug.Log($"[Coin] Player detected: {other.name}");
+               // Debug.Log($"[Coin] Player detected: {other.name}");
                 HandlePlayerPickup(other.gameObject);
             }
             
@@ -184,18 +184,18 @@ namespace Script.Game.Item.Coin
                 other.CompareTag("Archer") || other.CompareTag("Worker") || 
                 other.CompareTag("Farmer") || other.CompareTag("Denizen"))
             {
-                Debug.Log($"[Coin] Denizen detected: {other.name} with tag {other.tag}");
+               // Debug.Log($"[Coin] Denizen detected: {other.name} with tag {other.tag}");
                 HandleDenizensPickup(other);
             }
         }
 
         public void HandlePlayerPickup(GameObject player)
         {
-            Debug.Log($"[Coin] HandlePlayerPickup called for {player.name}, playerPickupAble: {playerPickupAble}");
+            //Debug.Log($"[Coin] HandlePlayerPickup called for {player.name}, playerPickupAble: {playerPickupAble}");
             
             if (!playerPickupAble)
             {
-                Debug.Log($"[Coin] Player pickup blocked - playerPickupAble is false");
+                //Debug.Log($"[Coin] Player pickup blocked - playerPickupAble is false");
                 return;
             }
             
@@ -203,22 +203,22 @@ namespace Script.Game.Item.Coin
             var coinable = player.GetComponent<ICoinable>();
             if (coinable != null)
             {
-                Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on player {player.name}");
+                //Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on player {player.name}");
                 coinable.PickUpCoin(gameObject);
             }
             else
             {
-                Debug.LogWarning($"[Coin] Player {player.name} does not implement ICoinable.");
+                Debug.LogError($"[Coin] Player {player.name} does not implement ICoinable.");
             }
         }
 
         private void HandleDenizensPickup(Collider2D denizens)
         {
-            Debug.Log($"[Coin] HandleDenizensPickup called for {denizens.name}, denizensPickupAble: {denizensPickupAble}");
+           // Debug.Log($"[Coin] HandleDenizensPickup called for {denizens.name}, denizensPickupAble: {denizensPickupAble}");
             
             if (!denizensPickupAble)
             {
-                Debug.Log($"[Coin] Pickup blocked - denizensPickupAble is false");
+                //Debug.Log($"[Coin] Pickup blocked - denizensPickupAble is false");
                 return;
             }
             
@@ -226,7 +226,7 @@ namespace Script.Game.Item.Coin
             var coinable = denizens.GetComponent<ICoinable>();
             if (coinable != null)
             {
-                Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on {denizens.name}");
+                //Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on {denizens.name}");
                 coinable.PickUpCoin(gameObject);
             }
             else
