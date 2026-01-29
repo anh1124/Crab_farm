@@ -125,6 +125,13 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleIdleState()
         {
+            if (animator == null)
+            {
+               // Try to get animator if null
+               animator = GetComponent<Animator>();
+               if (animator == null) return;
+            }
+
             if (idleWalkRoutine == null)
             {
                 idleWalkRoutine = StartCoroutine(IdleWalkRoutine());
@@ -294,6 +301,8 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleTimeChange()
         {
+            if (GameTimeManager.Instance == null || EnemyWaveManager.Instance == null) return;
+
             if (GameTimeManager.Instance.IsDaytime && EnemyWaveManager.Instance.EnemyRemaining() <= 0)
             {
                 StartCheckRoutine();

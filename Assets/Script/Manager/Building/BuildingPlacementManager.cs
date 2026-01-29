@@ -106,14 +106,69 @@ namespace Script.Manager.Building
 
         private void SetupPreview(GameObject preview)
         {
-            previewCollider = preview.GetComponent<Collider2D>();
-            if (previewCollider != null)
-                previewCollider.isTrigger = true;
+            // Check if this is a Wall
+            var wallBehavior = preview.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
+            if (wallBehavior != null)
+            {
+                SetupWallPreview(preview, wallBehavior);
+            }
+            else
+            {
+                SetupGenericPreview(preview);
+            }
+        }
 
+        private void SetupWallPreview(GameObject preview, Script.Game.Structures.Wall_And_Stump.WallBehavior wallBehavior)
+        {
+            // 1. Remove WallBehavior to prevent logic execution
+            Destroy(wallBehavior);
+
+            // 2. Remove CoinUser if present
             var coinUser = preview.GetComponent<CoinUser>();
             if (coinUser != null)
                 Destroy(coinUser);
 
+            // 3. Setup Root Collider for Overlap Checks
+            previewCollider = preview.GetComponent<Collider2D>();
+            if (previewCollider != null)
+            {
+                previewCollider.isTrigger = true;
+            }
+
+            // 4. Remove Child Colliders (Blockers specific to Wall)
+            foreach (Transform child in preview.transform)
+            {
+                var childColliders = child.GetComponents<Collider2D>();
+                foreach (var col in childColliders)
+                {
+                    Destroy(col);
+                }
+            }
+
+            // 5. Visuals
+            ApplyPreviewVisuals(preview);
+        }
+
+        private void SetupGenericPreview(GameObject preview)
+        {
+            // Generic CoinUser cleanup
+            var coinUser = preview.GetComponent<CoinUser>();
+            if (coinUser != null)
+                Destroy(coinUser);
+
+            // Generic Collider setup
+            previewCollider = preview.GetComponent<Collider2D>();
+            if (previewCollider != null)
+            {
+                previewCollider.isTrigger = true;
+            }
+
+            // Visuals
+            ApplyPreviewVisuals(preview);
+        }
+
+        private void ApplyPreviewVisuals(GameObject preview)
+        {
             var renderers = preview.GetComponentsInChildren<SpriteRenderer>();
             foreach (var renderer in renderers)
             {

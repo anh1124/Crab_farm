@@ -24,6 +24,13 @@ namespace Script.Data_Model.Status
         [SerializeField] private float currentSpeed;
         [SerializeField] private ArcherState currentState;
 
+        [Header("Defense Assignment")]
+        [Tooltip("True if assigned to left flank, False for right")]
+        public bool isLeftFlank;
+        
+        [Tooltip("The wall this archer is currently defending")]
+        public GameObject assignedWall;
+
         // Properties
         public float WalkSpeed => walkSpeed;
         public float RunSpeed => runSpeed;

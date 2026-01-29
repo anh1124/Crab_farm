@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 3334930835799587854}
   - component: {fileID: 4930023356812252655}
   - component: {fileID: 3345430047266833447}
+  - component: {fileID: 4067834079159621169}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -184,8 +185,7 @@ MonoBehaviour:
   natureContainer: {fileID: 0}
   animalsContainer: {fileID: 0}
   enemyContainer: {fileID: 0}
-  wanderersContainer: {fileID: 0}
-  villagersContainer: {fileID: 0}
+  denizenContainer: {fileID: 0}
   statuesContainer: {fileID: 0}
   otherContainer: {fileID: 0}
 --- !u!114 &4930023356812252655
@@ -222,6 +222,26 @@ MonoBehaviour:
   coinThrowForce: 10
   coinThrowDistance: 2
   coinPrefab: {fileID: 0}
+--- !u!114 &4067834079159621169
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04a205cf139ec384ea3ad5d15e12055f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  leftFlankArchers: []
+  rightFlankArchers: []
+  isAlarmActive: 0
+  alarmSource: {fileID: 0}
+  alarmCooldownTime: 30
+  totalArchers: 0
+  archersInCombat: 0
+  showDebugLogs: 1
 --- !u!1 &1595070778010574993
 GameObject:
   m_ObjectHideFlags: 0
@@ -349,7 +369,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
-  playerSpeed: 10
   mainCamera: {fileID: 0}
   skipBuildingProcess: 1
   toolTag:
@@ -369,6 +388,7 @@ MonoBehaviour:
   - {fileID: 4357016612535733957, guid: 49bb22d8b9551d34dbe5b34e87c07f22, type: 3}
   - {fileID: 3012772318344221171, guid: 7c31c5e61bd88ea409b9826d5292ac04, type: 3}
   plazaDistance: 10
+  tent: {fileID: 0}
   farmWaterStream0: {fileID: 0}
   farmWell1: {fileID: 0}
   farmHouse2: {fileID: 0}
@@ -425,7 +445,6 @@ GameObject:
   - component: {fileID: 5652501071760087765}
   - component: {fileID: 8848505126678873454}
   - component: {fileID: 8165894474658827718}
-  - component: {fileID: 3049763487298047513}
   - component: {fileID: 4707844484781350320}
   m_Layer: 0
   m_Name: MobsManager
@@ -492,18 +511,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4cf065eb1bb6b08408c464700bd19913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &3049763487298047513
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5848034847329386121}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f57c4ca86551b34dafa2cf9519883b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  allVillagers: []
 --- !u!114 &4707844484781350320
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -520,6 +528,9 @@ MonoBehaviour:
   leftWalls: []
   rightWalls: []
   stumps: []
+  criticalHPThreshold: 10
+  defendableLeftWalls: []
+  defendableRightWalls: []
 --- !u!1 &8561453029835615655
 GameObject:
   m_ObjectHideFlags: 0
@@ -564,14 +575,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ffd90c3d84a3d41b13bd7282b662e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
-  playerBehavior: {fileID: 0}
   player: {fileID: 0}
+  playerBehavior: {fileID: 0}
+  rb: {fileID: 0}
   direction: 0
   isGrounded: 0
   moveSpeed: 0
   isActiveUpdate: 0
   isAlive: 1
+  canMove: 1
   damageAlly: 0
+  skillColliderContainer: {fileID: 0}
   coinUser: {fileID: 0}
   currentStructureShowCoinSlot: {fileID: 0}

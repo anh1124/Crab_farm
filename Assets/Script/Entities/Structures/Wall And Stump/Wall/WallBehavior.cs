@@ -175,6 +175,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             UpdateCoinUserData();
 
             Debug.Log($"[WallBehavior] Applied status from input. New tier: {status.tier}, State: {status.state}");
+
+            // Sau khi load xong data, cập nhật lại trạng thái defendable trên manager
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.UpdateDefendableWalls();
+            }
         }
         //hàm này chỉ dùng để load data vào status
         
@@ -584,6 +590,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             // Thông báo cho manager
             OnWallRepaired?.Invoke(this);
+
+            // Sync with manager explicitly
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.UpdateDefendableWalls();
+            }
         
         }
         /// <summary>
@@ -697,6 +709,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         public void TakeDamage(int amount)
         {
             status.currentHp -= amount;
+            
+            // Notify manager to check critical HP
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.CheckWallCriticalHP(gameObject);
+            }
+            
             if (status.currentHp <= 0)
             {
                 // Tường bị xập -> gọi Die()
@@ -725,6 +744,14 @@ namespace Script.Game.Structures.Wall_And_Stump
                 status.currentHp = Mathf.Min(status.currentHp + amount, status.maxHp);
             }
             
+            // Notify manager about repair
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.OnWallRepaired(gameObject);
+                // Also force update to check for threshold crossing (critical -> safe)
+                WallAndStumpManager.Instance.UpdateDefendableWalls();
+            }
+            
            // Debug.Log($"[Wall] Healed {amount} HP. Current HP: {status.currentHp}/{status.maxHp}");
             
         }
@@ -737,6 +764,14 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             // Thông báo cho manager biết tường bị xập
             OnWallDestroyed?.Invoke(this);
+            
+            // Note: WallAndStumpManager handles unregister/register in its own logic or via this event?
+            // Actually, Collapse() usually doesn't destroy the object, just changes state.
+            // But if it needs to update defendable list:
+            if (WallAndStumpManager.Instance != null)
+            {
+                WallAndStumpManager.Instance.UpdateDefendableWalls();
+            }
         }
         #endregion
         

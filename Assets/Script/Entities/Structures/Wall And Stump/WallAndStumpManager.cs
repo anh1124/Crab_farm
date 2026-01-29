@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Script.Data_Model.Status;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
@@ -13,6 +14,29 @@ namespace Script.Game.Structures.Wall_And_Stump
         public List<GameObject> rightWalls = new List<GameObject>();
         public List<GameObject> stumps = new List<GameObject>();
 
+        [Header("Critical HP Settings")]
+        [Tooltip("HP threshold để coi như wall nguy hiểm, cần rút lui")]
+        public int criticalHPThreshold = 10;
+
+        [Header("Defendable Wall Tracking")]
+        [Tooltip("List các wall bên trái còn có thể phòng thủ (HP >= threshold)")]
+        public List<GameObject> defendableLeftWalls = new List<GameObject>();
+        
+        [Tooltip("List các wall bên phải còn có thể phòng thủ (HP >= threshold)")]
+        public List<GameObject> defendableRightWalls = new List<GameObject>();
+
+        // Cached references to avoid null checks every frame
+        private Script.Game.Mobs.MobsManager.GuardManager guardManager;
+
+        private void Start()
+        {
+            // Cache GuardManager reference
+            guardManager = Script.Game.Mobs.MobsManager.GuardManager.Instance;
+            
+            // Initialize defendable walls
+            UpdateDefendableWalls();
+        }
+
         private void Awake()
         {
             if (Instance == null)
@@ -24,6 +48,313 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Destroy(gameObject);
             }
         }
+
+        #region Wall HP Monitoring
+
+        /// <summary>
+        /// Kiểm tra HP của wall và thông báo nếu critical
+        /// GỌI HÀM NÀY từ WallBehavior.TakeDamage()
+        /// </summary>
+        /// <param name="wall">Wall cần kiểm tra</param>
+        public void CheckWallCriticalHP(GameObject wall)
+        {
+            if (wall == null)
+            {
+                Debug.LogWarning("[WallAndStumpManager] CheckWallCriticalHP: wall is null");
+                return;
+            }
+
+            var wallStatus = wall.GetComponent<WallStatus>();
+            if (wallStatus == null)
+            {
+                Debug.LogWarning($"[WallAndStumpManager] Wall {wall.name} missing WallStatus component");
+                return;
+            }
+
+            // Check if HP is below critical threshold
+            if (wallStatus.currentHp < criticalHPThreshold)
+            {
+                Debug.Log($"[WallAndStumpManager] ⚠️ WALL CRITICAL: {wall.name} HP={wallStatus.currentHp}/{criticalHPThreshold}");
+                
+                // Determine which side the wall is on
+                bool isLeftSide = IsWallOnLeftSide(wall);
+                
+                // Notify GuardManager
+                NotifyGuardManagerWallCritical(wall, isLeftSide);
+                
+                // Update defendable walls list
+                UpdateDefendableWalls();
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra wall có nằm bên trái town center không
+        /// </summary>
+        private bool IsWallOnLeftSide(GameObject wall)
+        {
+            if (wall == null) return false;
+            
+            if (townCenter == null)
+            {
+                townCenter = Utility.GetTownCenter();
+            }
+
+            if (townCenter == null)
+            {
+                Debug.LogError("[WallAndStumpManager] Cannot determine wall side - Town Center not found!");
+                return false;
+            }
+
+            float wallX = wall.transform.position.x;
+            float townCenterX = townCenter.transform.position.x;
+            
+            return wallX < townCenterX;
+        }
+
+        /// <summary>
+        /// Thông báo GuardManager về wall critical
+        /// </summary>
+        private void NotifyGuardManagerWallCritical(GameObject wall, bool isLeftSide)
+        {
+            if (guardManager == null)
+            {
+                // Try to get it again
+                guardManager = Script.Game.Mobs.MobsManager.GuardManager.Instance;
+            }
+
+            if (guardManager != null)
+            {
+                guardManager.NotifyWallCritical(wall, isLeftSide);
+                Debug.Log($"[WallAndStumpManager] Notified GuardManager about critical wall: {wall.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[WallAndStumpManager] GuardManager not found, cannot notify!");
+            }
+        }
+
+        #endregion
+
+        #region Defendable Wall Management
+
+        /// <summary>
+        /// Cập nhật danh sách các wall còn có thể phòng thủ (HP >= threshold)
+        /// Gọi hàm này mỗi khi wall HP thay đổi hoặc wall bị destroy
+        /// </summary>
+        public void UpdateDefendableWalls()
+        {
+            defendableLeftWalls.Clear();
+            defendableRightWalls.Clear();
+
+            // Check left walls
+            foreach (var wall in leftWalls)
+            {
+                if (wall == null) continue;
+
+                var wallStatus = wall.GetComponent<WallStatus>();
+                if (wallStatus != null && wallStatus.currentHp >= criticalHPThreshold)
+                {
+                    defendableLeftWalls.Add(wall);
+                }
+            }
+
+            // Check right walls
+            foreach (var wall in rightWalls)
+            {
+                if (wall == null) continue;
+
+                var wallStatus = wall.GetComponent<WallStatus>();
+                if (wallStatus != null && wallStatus.currentHp >= criticalHPThreshold)
+                {
+                    defendableRightWalls.Add(wall);
+                }
+            }
+
+            // Debug.Log($"[WallAndStumpManager] Updated defendable walls - Left: {defendableLeftWalls.Count}, Right: {defendableRightWalls.Count}");
+        }
+
+        /// <summary>
+        /// Lấy wall có thể phòng thủ xa nhất (cho archer mới spawn)
+        /// </summary>
+        /// <param name="isLeft">Bên trái hay phải</param>
+        /// <returns>Wall xa nhất có thể phòng thủ, hoặc null nếu không có</returns>
+        public GameObject GetFarthestDefendableWall(bool isLeft)
+        {
+            List<GameObject> walls = isLeft ? defendableLeftWalls : defendableRightWalls;
+
+            if (walls.Count > 0)
+            {
+                // Defendable walls already sorted because source lists (leftWalls/rightWalls) are sorted
+                // leftWalls: sorted descending by X (farthest left is index 0)
+                // rightWalls: sorted ascending by X (closest to town is index 0... WAIT)
+                
+                // Checking sort order in RegisterWall:
+                // Left: OrderByDescending(x) -> Largest X first? No.
+                // Left side: X < TownX. Farthest is Smallest X.
+                // OrderByDescending: 10, 5, 2... No wait. -2, -5, -10. Descending means -2 first (closest).
+                // Let's re-read RegisterWall logic carefully.
+                
+                // LOGIC CHECK: 
+                // leftWalls.OrderByDescending(w => w.transform.position.x)
+                // If Town is 0. Walls at -5, -10, -20.
+                // Descending: -5, -10, -20. 
+                // Index 0 is -5 (Closest to town). Index Last is -20 (Farthest).
+                
+                // rightWalls.OrderBy(w => w.transform.position.x)
+                // Walls at 5, 10, 20.
+                // Ascending: 5, 10, 20.
+                // Index 0 is 5 (Closest to town). Index Last is 20 (Farthest).
+                
+                // SO: For BOTH lists, Index 0 is CLOSEST to town. Index Last is FARTHEST.
+                
+                // GetFarthestDefendableWall needs the one FARTHEST from town.
+                // That means the LAST element in the list.
+                
+                GameObject farthest = walls[walls.Count - 1];
+                Debug.Log($"[WallAndStumpManager] GetFarthestDefendableWall({(isLeft ? "LEFT" : "RIGHT")}): {farthest.name}");
+                return farthest;
+            }
+
+            Debug.LogWarning($"[WallAndStumpManager] No defendable wall on {(isLeft ? "LEFT" : "RIGHT")} side!");
+            return null;
+        }
+
+        /// <summary>
+        /// Kiểm tra xem có wall nào có thể phòng thủ phía sau wall hiện tại không
+        /// </summary>
+        /// <param name="currentWall">Wall hiện tại</param>
+        /// <returns>Wall phía sau có thể phòng thủ, hoặc null nếu không có</returns>
+        public GameObject GetDefendableWallBehind(GameObject currentWall)
+        {
+            if (currentWall == null) return null;
+
+            // First get the normal wall behind
+            GameObject wallBehind = GetWallBehind(currentWall);
+
+            // If no wall behind at all
+            if (wallBehind == null)
+            {
+                // Debug.Log($"[WallAndStumpManager] No wall behind {currentWall.name} at all");
+                return null;
+            }
+
+            // Check if wall behind is defendable
+            var wallStatus = wallBehind.GetComponent<WallStatus>();
+            if (wallStatus != null && wallStatus.currentHp >= criticalHPThreshold)
+            {
+                // Debug.Log($"[WallAndStumpManager] Defendable wall behind {currentWall.name}: {wallBehind.name}");
+                return wallBehind;
+            }
+
+            // Wall behind is not defendable, try to find next one
+            // Debug.Log($"[WallAndStumpManager] Wall behind {currentWall.name} ({wallBehind.name}) is NOT defendable, searching further...");
+            return GetDefendableWallBehind(wallBehind); // Recursive call
+        }
+
+        /// <summary>
+        /// Đếm số lượng wall có thể phòng thủ ở một bên
+        /// </summary>
+        public int GetDefendableWallCount(bool isLeft)
+        {
+            return isLeft ? defendableLeftWalls.Count : defendableRightWalls.Count;
+        }
+
+        /// <summary>
+        /// Kiểm tra xem một wall có thể phòng thủ không
+        /// </summary>
+        public bool IsWallDefendable(GameObject wall)
+        {
+            if (wall == null) return false;
+
+            var wallStatus = wall.GetComponent<WallStatus>();
+            if (wallStatus == null) return false;
+
+            return wallStatus.currentHp >= criticalHPThreshold;
+        }
+
+        #endregion
+
+        #region Wall Recovery
+
+        /// <summary>
+        /// Gọi hàm này khi wall được repair/heal
+        /// Sẽ cập nhật lại defendable walls list
+        /// </summary>
+        public void OnWallRepaired(GameObject wall)
+        {
+            if (wall == null) return;
+
+            var wallStatus = wall.GetComponent<WallStatus>();
+            if (wallStatus == null) return;
+
+            Debug.Log($"[WallAndStumpManager] Wall {wall.name} repaired to HP={wallStatus.currentHp}");
+            
+            // Update defendable walls
+            UpdateDefendableWalls();
+
+            // Notify GuardManager that wall is now safe again (optional)
+            if (wallStatus.currentHp >= criticalHPThreshold && guardManager != null)
+            {
+                // guardManager.NotifyWallRecovered(wall); // Future feature
+            }
+        }
+
+        #endregion
+
+        #region Debug Helpers
+
+        /// <summary>
+        /// In ra thông tin tất cả walls và trạng thái HP
+        /// </summary>
+        [ContextMenu("Debug: Print All Walls HP")]
+        public void DebugPrintAllWallsHP()
+        {
+            Debug.Log("=== LEFT WALLS HP ===");
+            foreach (var wall in leftWalls)
+            {
+                if (wall == null) continue;
+                var status = wall.GetComponent<WallStatus>();
+                string defendable = IsWallDefendable(wall) ? "✅ DEFENDABLE" : "❌ CRITICAL";
+                Debug.Log($"{wall.name}: HP={status?.currentHp ?? 0}/{status?.maxHp ?? 0} {defendable}");
+            }
+
+            Debug.Log("=== RIGHT WALLS HP ===");
+            foreach (var wall in rightWalls)
+            {
+                if (wall == null) continue;
+                var status = wall.GetComponent<WallStatus>();
+                string defendable = IsWallDefendable(wall) ? "✅ DEFENDABLE" : "❌ CRITICAL";
+                Debug.Log($"{wall.name}: HP={status?.currentHp ?? 0}/{status?.maxHp ?? 0} {defendable}");
+            }
+
+            Debug.Log($"Defendable: Left={defendableLeftWalls.Count}, Right={defendableRightWalls.Count}");
+        }
+
+        /// <summary>
+        /// Test hàm GetDefendableWallBehind
+        /// </summary>
+        [ContextMenu("Debug: Test GetDefendableWallBehind")]
+        public void DebugTestGetDefendableWallBehind()
+        {
+            if (leftWalls.Count > 0)
+            {
+                // Assuming leftWalls[0] is closest to town (Wait, let's verify sort logic again).
+                // Based on RegisterWall:
+                // Left: -5, -10, -20. Descending. -5 is index 0. -20 is index Last.
+                // Closest to town is index 0. Farthest is index Last.
+                
+                // So if we are at Farthest (Last), behind is Closer (Last - 1).
+                
+                GameObject farthestWall = GetFarthestDefendableWall(true);
+                if (farthestWall != null)
+                {
+                   GameObject wallBehind = GetDefendableWallBehind(farthestWall);
+                   Debug.Log($"Test wall: {farthestWall.name}, Defendable wall behind: {wallBehind?.name ?? "NULL"}");
+                }
+            }
+        }
+
+        #endregion
 
         #region Wall Management
         public void RegisterWall(GameObject wall)
@@ -54,6 +385,9 @@ namespace Script.Game.Structures.Wall_And_Stump
                 rightWalls = rightWalls.OrderBy(w => w.transform.position.x).ToList();
             }
             //Debug.Log($"[WallAndStumpManager] Registered wall {wall.name}. Left Walls: {leftWalls.Count}, Right Walls: {rightWalls.Count}");
+            
+            // Update defendable walls list too (ensure new wall is counted if healthy)
+            UpdateDefendableWalls();
         }
 
         public void UnregisterWall(GameObject wall)
@@ -69,6 +403,9 @@ namespace Script.Game.Structures.Wall_And_Stump
                 rightWalls.Remove(wall);
             }
             //Debug.Log($"[WallAndStumpManager] Unregistered wall {wall.name}. Left Walls: {leftWalls.Count}, Right Walls: {rightWalls.Count}");
+            
+            // Update defendable walls list too
+            UpdateDefendableWalls();
         }
         #endregion
 
