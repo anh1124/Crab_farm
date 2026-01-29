@@ -25,7 +25,10 @@ namespace Script.Game.Other
                 // Load tất cả data lists cần thiết cho game (WallDataList, TownCenterDataList, etc.)
                 // Đây là data cơ bản phải có trước khi spawn bất kỳ entity nào
                 //Debug.Log("📦 PHASE 1: CORE DATA - Loading essential data lists...");
+                //Debug.Log("📦 PHASE 1: CORE DATA - Loading essential data lists...");
                 InitializeCoreData(); // Init PrefabData và bootstrap system (tự động load các datalist-towncenterlistdata theo thứ tự đã đăng ký trong bootstrap)
+
+
 
                 // ===== PHASE 2: WORLD INFO =====
                 // Load world information (tech, time, weather) - thông tin context cho save/load
@@ -116,8 +119,14 @@ namespace Script.Game.Other
                     throw new System.Exception("[Bootstrap] PrefabData missing. Put a PrefabData in the scene before loading.");
                 }
             }
-
-            // 2) Trigger bootstrap system để init IDataListBootstrap components
+            // 2) Check & Initialize Singletons (GuardManager)
+            if (Script.Game.Mobs.MobsManager.GuardManager.Instance == null)
+            {
+                Debug.LogWarning("⚠️ GuardManager missing in scene! Creating new instance automatically.");
+                GameObject gmObj = new GameObject("GuardManager");
+                gmObj.AddComponent<Script.Game.Mobs.MobsManager.GuardManager>();
+            }
+            // 3) Trigger bootstrap system để init IDataListBootstrap components
             var dataLists = FindObjectsOfType<MonoBehaviour>(true)
                 .OfType<IDataListBootstrap>()
                 .OrderBy(x => x.Order)
@@ -137,6 +146,8 @@ namespace Script.Game.Other
                     throw; // Re-throw to fail loading
                 }
             }
+
+            
         }
 
         // ==================== VALIDATION METHODS ====================

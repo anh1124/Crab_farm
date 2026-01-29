@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Script.Game.Structures.Wall_And_Stump;
+using Script.Data_Model.Interfaces;
+using Script.Data_Model;
 using Script.Data_Model.Status;
 
 namespace Script.Game.Mobs.MobsManager
@@ -9,7 +11,7 @@ namespace Script.Game.Mobs.MobsManager
     /// GuardManager - Quản lý hệ thống phòng thủ của kingdom
     /// Điều phối tất cả archer và phản ứng với các mối đe dọa
     /// </summary>
-    public class GuardManager : MonoBehaviour
+    public class GuardManager : MonoBehaviour, IDataListBootstrap
     {
         public static GuardManager Instance { get; private set; }
 
@@ -55,7 +57,12 @@ namespace Script.Game.Mobs.MobsManager
 
         private void Start()
         {
-            InitializeReferences();
+            // InitializeReferences() is now called via Bootstrap if this component exists in scene
+            // But for safety, check if it was initialized
+            if (wallManager == null && WallAndStumpManager.Instance != null)
+            {
+                InitializeReferences();
+            }
         }
 
         private void InitializeSingleton()
@@ -65,7 +72,7 @@ namespace Script.Game.Mobs.MobsManager
                 Instance = this;
                 DebugLog("GuardManager initialized");
             }
-            else
+            else if (Instance != this)
             {
                 Debug.LogWarning("[GuardManager] Duplicate instance detected, destroying...");
                 Destroy(gameObject);
@@ -78,9 +85,24 @@ namespace Script.Game.Mobs.MobsManager
             
             if (wallManager == null)
             {
-                Debug.LogError("[GuardManager] WallAndStumpManager not found! Guard system may not work properly.");
+                // This might happen if WallAndStumpManager hasn't initialized yet
+                // But since we are using bootstrap order, we can control this if WallAndStumpManager also uses Bootstrap
+                // For now, just log warning if not found
+                Debug.LogWarning("[GuardManager] WallAndStumpManager not found during init! Will retry in Update or when needed.");
             }
         }
+
+        #region IDataListBootstrap Implementation
+        // High priority (1) to ensure it's initialized early
+        public int Order => 1; 
+
+        public void InitializeData(PrefabData context)
+        {
+            InitializeSingleton();
+            InitializeReferences();
+            DebugLog("✅ GuardManager initialized via Bootstrap");
+        }
+        #endregion
 
         #endregion
 

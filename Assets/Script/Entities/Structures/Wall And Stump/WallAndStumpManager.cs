@@ -3,9 +3,12 @@ using UnityEngine;
 using System.Linq;
 using Script.Data_Model.Status;
 
+using Script.Data_Model.Interfaces;
+using Script.Data_Model;
+
 namespace Script.Game.Structures.Wall_And_Stump
 {
-    public class WallAndStumpManager : MonoBehaviour
+    public class WallAndStumpManager : MonoBehaviour, IDataListBootstrap
     {
         //TODO: kiểm tra xem script này có trong GM chưa
         public static WallAndStumpManager Instance { get; private set; }
@@ -30,24 +33,55 @@ namespace Script.Game.Structures.Wall_And_Stump
 
         private void Start()
         {
-            // Cache GuardManager reference
-            guardManager = Script.Game.Mobs.MobsManager.GuardManager.Instance;
-            
-            // Initialize defendable walls
-            UpdateDefendableWalls();
+            // Initialization is now handled via Bootstrap (InitializeData)
+            // However, we can keep a safety check here or perform non-critical startup tasks
         }
 
         private void Awake()
+        {
+            // Singleton init handled in InitializeSingleton which is called by Bootstrap
+            // But if Bootstrap doesn't run (e.g. testing scene without Bootstrap), we need this:
+            if (Instance == null)
+            {
+                InitializeSingleton();
+                InitializeReferences();
+                UpdateDefendableWalls();
+            }
+        }
+
+        private void InitializeSingleton()
         {
             if (Instance == null)
             {
                 Instance = this;
             }
-            else
+            else if (Instance != this)
             {
                 Destroy(gameObject);
             }
         }
+
+        private void InitializeReferences()
+        {
+            // Cache GuardManager reference
+            if (guardManager == null)
+            {
+                guardManager = Script.Game.Mobs.MobsManager.GuardManager.Instance;
+            }
+        }
+
+        #region IDataListBootstrap Implementation
+        // Highest priority (0) - must initialize before GuardManager (Order 1)
+        public int Order => 0;
+
+        public void InitializeData(PrefabData context)
+        {
+            InitializeSingleton();
+            InitializeReferences();
+            UpdateDefendableWalls();
+            // Debug.Log("[WallAndStumpManager] Initialized via Bootstrap");
+        }
+        #endregion
 
         #region Wall HP Monitoring
 
@@ -248,7 +282,11 @@ namespace Script.Game.Structures.Wall_And_Stump
 
             // Wall behind is not defendable, try to find next one
             // Debug.Log($"[WallAndStumpManager] Wall behind {currentWall.name} ({wallBehind.name}) is NOT defendable, searching further...");
-            return GetDefendableWallBehind(wallBehind); // Recursive call
+            
+            // Recursive call to find the next wall behind that IS defendable.
+            // If this returns null, it means there are NO more defendable walls behind up to the town center.
+            // Archers receiving null should enter "Last Stand" mode (fight to the death).
+            return GetDefendableWallBehind(wallBehind); 
         }
 
         /// <summary>
