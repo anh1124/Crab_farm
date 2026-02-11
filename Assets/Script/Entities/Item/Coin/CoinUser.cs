@@ -184,6 +184,7 @@ namespace Script.Game.Item.Coin
             {
                 Destroy(child.gameObject);
             }
+            coinSlots.Clear();
             currentSlotIndex = 0;
         }
 
@@ -270,10 +271,15 @@ namespace Script.Game.Item.Coin
         {
             if (coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count)
             {
-                
                 Debug.LogWarning("No available coin slots.");
-                
                 return;
+            }
+
+            if (coinSlots[currentSlotIndex] == null)
+            {
+                 // Handle stale slot case
+                 // Debug.LogWarning("Target Coin Slot is null/destroyed.");
+                 return;
             }
 
             Vector3 playerPosition = player.transform.position;
@@ -307,12 +313,13 @@ namespace Script.Game.Item.Coin
 
             while (elapsedTime < coinMoveSpeed)
             {
+                if (coin == null) yield break; // Safety check
                 coin.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / coinMoveSpeed);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
-            coin.transform.position = targetPosition;
+            if (coin != null) coin.transform.position = targetPosition;
             collectedCoins++;
             CheckUpgradeStatus();
         }

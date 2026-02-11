@@ -243,6 +243,13 @@ public class LoadFromSave : MonoBehaviour
 
         if (success && worldInfo != null)
         {
+            // Sync to WorldFileManager
+            if (WorldFileManager.Instance != null)
+            {
+                WorldFileManager.Instance.worldInfo = worldInfo;
+                WorldFileManager.Instance.NotifyWorldInfoChanged();
+            }
+
             Debug.Log($"[LoadFromSave] Successfully loaded world info for: {worldInfo.Name}");
         }
         else

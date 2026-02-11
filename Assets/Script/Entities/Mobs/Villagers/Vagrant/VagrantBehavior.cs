@@ -12,9 +12,9 @@ using Script.Manager.GamePlayManager;
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VagrantController to VagrantBehavior to reflect Behavior + Status architecture
-    public class VagrantBehavior : MonoBehaviour, ISaveable, INPCBehavior, ICoinable
+    public class VagrantBehavior : MonoBehaviour, INPCBehavior, ICoinable
     {
-        private VagrantStatus status;
+        private DenizenStatus status;
         
         // Component References
         private Animator animator;
@@ -26,14 +26,32 @@ namespace Script.Game.Mobs.Subjects
         private void Awake()
         {
             gameObject.tag = "Vagrant";
-            status = GetComponent<VagrantStatus>();
+            status = GetComponent<DenizenStatus>();
             if (status == null)
             {
-                status = gameObject.AddComponent<VagrantStatus>();
+                status = gameObject.AddComponent<DenizenStatus>();
             }
-            status.StartPosition = transform.position;
+            // Ensure StartPosition is set if it's zero (first init)
+            if (status.startPosition == Vector3.zero)
+            {
+                status.startPosition = transform.position;
+            }
         }
     
+        private void OnEnable()
+        {
+            // Re-initialize when role switches back to Vagrant or upon creation
+            InitializeVagrant();
+            GameTimeManager.Instance?.SubscribeToHourlyEvent(6, HandleTimeChange);
+        }
+
+        private void OnDisable()
+        {
+             GameTimeManager.Instance?.UnsubscribeFromHourlyEvent(6, HandleTimeChange);
+             StopCheckRoutine();
+             StopAllMovementRoutines();
+        }
+
         private void Start()
         {
             InitComponent();
@@ -46,27 +64,26 @@ namespace Script.Game.Mobs.Subjects
             if (rayCastHelper == null)
             {
                 rayCastHelper = gameObject.AddComponent<RayCastHelper>();
-                Debug.LogWarning(gameObject.name + " chưa có RayCastHelper, đã thêm 1 cái vào " + gameObject.name);
+                // Debug.LogWarning(gameObject.name + " chưa có RayCastHelper, đã thêm 1 cái vào " + gameObject.name);
             }
         }
 
-        private void InitializeVagrant()
+        public void InitializeVagrant()
         {
-            status.RoadToTarget = 0f;
-            status.CurrentState = VagrantStatus.VagrantState.Idle;
+            if (status == null) status = GetComponent<DenizenStatus>();
+            
+            status.roadToTarget = 0f;
+            // Only reset state if it's undefined or we are restarting logic? 
+            // Better to keep existing state if reloading, but for safety:
+            if (status.vagrantState == DenizenStatus.VagrantState.Idle) 
+            {
+                 // Keep as Idle
+            }
+            
             animator = GetComponent<Animator>();
-            status.StartPosition = transform.position;
+            if (status.startPosition == Vector3.zero) status.startPosition = transform.position;
+            
             StartCheckRoutine();
-        }
-
-        private void OnEnable()
-        {
-            GameTimeManager.Instance.SubscribeToHourlyEvent(6, HandleTimeChange);
-        }
-
-        private void OnDisable()
-        {
-            GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, HandleTimeChange);
         }
 
         public void UpdateBehavior()
@@ -76,15 +93,15 @@ namespace Script.Game.Mobs.Subjects
 
         private void UpdateStateHandler()
         {
-            switch (status.CurrentState)
+            switch (status.vagrantState)
             {
-                case VagrantStatus.VagrantState.Idle:
+                case DenizenStatus.VagrantState.Idle:
                     HandleIdleState();
                     break;
-                case VagrantStatus.VagrantState.Fear:
+                case DenizenStatus.VagrantState.Fear:
                     HandleFearState();
                     break;
-                case VagrantStatus.VagrantState.GetCoin:
+                case DenizenStatus.VagrantState.GetCoin:
                     HandleGetCoinState();
                     break;
             }
@@ -96,25 +113,21 @@ namespace Script.Game.Mobs.Subjects
             {
                 if (obj.CompareTag("Enemy"))
                 {
-                    status.CurrentState = VagrantStatus.VagrantState.Fear;
+                    status.vagrantState = DenizenStatus.VagrantState.Fear;
                     break;
                 }
         
                 if (obj.CompareTag("Coin"))
                 {
-                    Debug.Log($"[VagrantBehavior] Coin detected: {obj.name} at {obj.transform.position}, current state: {status.CurrentState}");
+                   // Debug.Log($"[VagrantBehavior] Coin detected: {obj.name} at {obj.transform.position}, current state: {status.vagrantState}");
                     
-                    if ((status.CurrentState == VagrantStatus.VagrantState.Idle || 
-                         status.CurrentState == VagrantStatus.VagrantState.GetCoin) && 
-                        status.CurrentState != VagrantStatus.VagrantState.Fear)
+                    if ((status.vagrantState == DenizenStatus.VagrantState.Idle || 
+                         status.vagrantState == DenizenStatus.VagrantState.GetCoin) && 
+                        status.vagrantState != DenizenStatus.VagrantState.Fear)
                     {
-                        Debug.Log($"[VagrantBehavior] Changing state to GetCoin for coin: {obj.name}");
-                        status.CurrentState = VagrantStatus.VagrantState.GetCoin;
-                        status.Coin = obj;
-                    }
-                    else
-                    {
-                        Debug.Log($"[VagrantBehavior] Not changing state - current state: {status.CurrentState}");
+                       // Debug.Log($"[VagrantBehavior] Changing state to GetCoin for coin: {obj.name}");
+                        status.vagrantState = DenizenStatus.VagrantState.GetCoin;
+                        status.coinTarget = obj;
                     }
                     break;
                 }
@@ -127,7 +140,6 @@ namespace Script.Game.Mobs.Subjects
         {
             if (animator == null)
             {
-               // Try to get animator if null
                animator = GetComponent<Animator>();
                if (animator == null) return;
             }
@@ -135,10 +147,9 @@ namespace Script.Game.Mobs.Subjects
             if (idleWalkRoutine == null)
             {
                 idleWalkRoutine = StartCoroutine(IdleWalkRoutine());
-               
             }
             
-            if (status.IsWalking)
+            if (status.isWalking)
             {
                 MoveTowardsIdleTarget();
                 animator.Play("walk");
@@ -157,23 +168,23 @@ namespace Script.Game.Mobs.Subjects
         private void HandleFearState()
         {
             animator.Play("fear");
-            status.RoadToTarget = 0;
+            status.roadToTarget = 0;
             StopCheckRoutine();
             StopAllMovementRoutines();
         }
         
         private void HandleGetCoinState()
         {
-            if (status.Coin == null || status.Coin.Equals(null))
+            if (status.coinTarget == null || status.coinTarget.Equals(null))
             {
-                status.CurrentState = VagrantStatus.VagrantState.Idle;
+                status.vagrantState = DenizenStatus.VagrantState.Idle;
                 return;
             }
 
             StopAllMovementRoutines();
             
-            status.RoadToTarget = Vector2.Distance(transform.position, status.Coin.transform.position);
-            MoveTowardsTarget(status.Coin.transform.position, "run");
+            status.roadToTarget = Vector2.Distance(transform.position, status.coinTarget.transform.position);
+            MoveTowardsTarget(status.coinTarget.transform.position, "run");
         }
 
         #endregion
@@ -182,28 +193,27 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-           // Debug.Log($"[VagrantBehavior] OnTriggerEnter2D with {other.name}, tag: {other.tag}");
-            
-            if (other.CompareTag("Coin"))
+             // Only active if enabled
+             if (!this.enabled) return;
+
+             if (other.CompareTag("Coin"))
             {
-              //  Debug.Log($"[VagrantBehavior] Coin trigger detected, calling PickUpCoinInternal");
                 PickUpCoinInternal(other.gameObject);
             }
         }
 
         private void PickUpCoinInternal(GameObject coinObject)
         {
-            Debug.Log($"[VagrantBehavior] PickUpCoin called for {coinObject.name}");
+           // Debug.Log($"[VagrantBehavior] PickUpCoin called for {coinObject.name}");
             
             Script.Utility.ProcessCoinPickup(coinObject,
                 condition: () => 
                 {
-                    Debug.Log($"[VagrantBehavior] ProcessCoinPickup condition check - always true for Vagrant");
                     return true; // Vagrant always picks up coin
                 },
                 onPickupSuccess: () =>
                 {
-                    Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
+                   // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
                     StartCoroutine(TransformToVillagerNextFrame());
                 }
             );
@@ -217,16 +227,16 @@ namespace Script.Game.Mobs.Subjects
 
         private void TransformToVillager()
         {
-            var controller = GetComponent<DenizenController>();
+            var controller = GetComponent<DenizenRoleController>();
             if (controller != null)
             {
+                // Set initial coin for Villager
+                if (status != null && status.CurrentCoins < 1) status.CurrentCoins = 1;
+                
                 controller.ChangeRole(NPCRole.Villager);
-                // Đảm bảo có ít nhất 1 coin sau khi đổi role
-                var vs = GetComponent<VillagerStatus>();
-                if (vs != null && vs.CurrentCoins < 1) vs.CurrentCoins = 1;
                 return;
             }
-            Debug.LogError("[VagrantBehavior] DenizenController missing; expected all NPCs to be Denizen. Skipping legacy fallback.");
+            Debug.LogError("[VagrantBehavior] DenizenRoleController missing!");
         }
 
         #endregion
@@ -249,21 +259,20 @@ namespace Script.Game.Mobs.Subjects
         
         private void MoveTowardsIdleTarget()
         {
-            float distanceToTarget = Vector3.Distance(transform.position, status.CurrentIdleTarget);
+            float distanceToTarget = Vector3.Distance(transform.position, status.currentIdleWalkTarget);
             if (distanceToTarget < 0.1f)
             {
-               
-                status.IsWalking = false;
+                status.isWalking = false;
                 return;
             }
             
-            FlipDirection(status.CurrentIdleTarget);
+            FlipDirection(status.currentIdleWalkTarget);
             
             Vector2 currentPosition = transform.position;
             Vector2 newPosition = Vector2.MoveTowards(
                 new Vector2(currentPosition.x, 0),
-                new Vector2(status.CurrentIdleTarget.x, 0),
-                status.IdleSpeed * Time.deltaTime
+                new Vector2(status.currentIdleWalkTarget.x, 0),
+                status.WalkSpeed * Time.deltaTime
             );
             transform.position = new Vector3(newPosition.x, transform.position.y, transform.position.z);
         }
@@ -294,7 +303,10 @@ namespace Script.Game.Mobs.Subjects
         {
             while (true)
             {
-                UpdateStateBasedOnDetection(rayCastHelper.DrawRayAndReturnListHitObjects());
+                if (rayCastHelper != null)
+                {
+                    UpdateStateBasedOnDetection(rayCastHelper.DrawRayAndReturnListHitObjects());
+                }
                 yield return new WaitForSeconds(0.5f);
             }
         }
@@ -306,7 +318,7 @@ namespace Script.Game.Mobs.Subjects
             if (GameTimeManager.Instance.IsDaytime && EnemyWaveManager.Instance.EnemyRemaining() <= 0)
             {
                 StartCheckRoutine();
-                status.CurrentState = VagrantStatus.VagrantState.Idle;
+                status.vagrantState = DenizenStatus.VagrantState.Idle;
             }
         }
 
@@ -321,11 +333,11 @@ namespace Script.Game.Mobs.Subjects
 
         private IEnumerator RandomFlipRoutine()
         {
-            while (status.CurrentState == VagrantStatus.VagrantState.Idle && !status.IsWalking)
+            while (status.vagrantState == DenizenStatus.VagrantState.Idle && !status.isWalking)
             {
                 yield return new WaitForSeconds(UnityEngine.Random.Range(2f, 5f));
 
-                if (status.CurrentState == VagrantStatus.VagrantState.Idle && !status.IsWalking)
+                if (status.vagrantState == DenizenStatus.VagrantState.Idle && !status.isWalking)
                 {
                     FlipDirection(transform.position + new Vector3(transform.localScale.x * -1, 0, 0));
                 }
@@ -336,11 +348,11 @@ namespace Script.Game.Mobs.Subjects
         
         private IEnumerator IdleWalkRoutine()
         {
-            while (status.CurrentState == VagrantStatus.VagrantState.Idle)
+            while (status.vagrantState == DenizenStatus.VagrantState.Idle)
             {
                 yield return new WaitForSeconds(UnityEngine.Random.Range(3f, 8f));
                 
-                if (status.CurrentState != VagrantStatus.VagrantState.Idle) break;
+                if (status.vagrantState != DenizenStatus.VagrantState.Idle) break;
                 
                 if (UnityEngine.Random.value < 0.7f)
                 {
@@ -350,37 +362,35 @@ namespace Script.Game.Mobs.Subjects
                         flipRoutine = null;
                     }
                     
-                    float randomOffset = UnityEngine.Random.Range(-status.MaxIdleWalkDistance, status.MaxIdleWalkDistance);
+                    float randomOffset = UnityEngine.Random.Range(-status.maxIdleWalkDistance, status.maxIdleWalkDistance);
                     float targetX = Mathf.Clamp(
-                        status.StartPosition.x + randomOffset, 
-                        status.StartPosition.x - status.MaxIdleWalkDistance, 
-                        status.StartPosition.x + status.MaxIdleWalkDistance
+                        status.startPosition.x + randomOffset, 
+                        status.startPosition.x - status.maxIdleWalkDistance, 
+                        status.startPosition.x + status.maxIdleWalkDistance
                     );
                     
-                    status.CurrentIdleTarget = new Vector3(targetX, transform.position.y, transform.position.z);
+                    status.currentIdleWalkTarget = new Vector3(targetX, transform.position.y, transform.position.z);
                     
-                   
-                    status.IsWalking = true;
+                    status.isWalking = true;
                     
                     float walkStartTime = Time.time;
-                    while (status.IsWalking && 
+                    while (status.isWalking && 
                            Time.time - walkStartTime < 5f && 
-                           status.CurrentState == VagrantStatus.VagrantState.Idle)
+                           status.vagrantState == DenizenStatus.VagrantState.Idle)
                     {
-                        float distanceToTarget = Vector3.Distance(transform.position, status.CurrentIdleTarget);
-                        if (distanceToTarget < 0.1f)
-                        {
-                           
-                            status.IsWalking = false;
-                            break;
-                        }
+                         // Re-check distance in loop
+                         float distanceToTarget = Vector3.Distance(transform.position, status.currentIdleWalkTarget);
+                         if (distanceToTarget < 0.1f)
+                         {
+                             status.isWalking = false;
+                             break;
+                         }
                         yield return null;
                     }
 
-                    if (status.IsWalking)
+                    if (status.isWalking)
                     {
-                        
-                        status.IsWalking = false;
+                        status.isWalking = false;
                     }
                 }
             }
@@ -402,38 +412,7 @@ namespace Script.Game.Mobs.Subjects
                 idleWalkRoutine = null;
             }
             
-            status.IsWalking = false;
-        }
-
-        #endregion
-        
-        #region Save System Implementation
-
-        public string GetPrefabID()
-        {
-            return "vagrant";
-        }
-        
-        public object CaptureData()
-        {
-            return status.CaptureData(transform);
-        }
-
-        public void RestoreData(object data)
-        {
-            var vagrantData = (VagrantStatus.VagrantData)data;
-            status.RestoreData(vagrantData, transform);
-            
-            if (animator == null)
-            {
-                InitComponent();
-                animator = GetComponent<Animator>();
-            }
-            
-            if (status.CurrentState != VagrantStatus.VagrantState.Fear)
-            {
-                StartCheckRoutine();
-            }
+            status.isWalking = false;
         }
 
         #endregion
@@ -449,18 +428,15 @@ namespace Script.Game.Mobs.Subjects
         public void AddCoin(int amount)
         {
             status.CurrentCoins += amount;
-            Debug.Log($"[VagrantBehavior] Added {amount} coins. Total: {status.CurrentCoins}");
         }
 
         public void SubtractCoin(int amount)
         {
             status.CurrentCoins -= amount;
-            Debug.Log($"[VagrantBehavior] Subtracted {amount} coins. Total: {status.CurrentCoins}");
         }
 
         public void PickUpCoin(GameObject coinGameObject)
         {
-            Debug.Log($"[VagrantBehavior] PickUpCoin (ICoinable) called for {coinGameObject.name}");
             PickUpCoinInternal(coinGameObject);
         }
 

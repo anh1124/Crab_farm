@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Script.Game.Mobs.Subjects; // DenizenController, NPCRole
+using Script.Game.Mobs.Subjects; // DenizenRoleController, NPCRole
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -8,8 +8,18 @@ namespace Script.Game.Mobs.MobsManager
     {
         public static DenizenManager Instance { get; private set; }
 
-        // Danh sách tổng tất cả Denizen (Vagrant, Villager, Archer...)
-        private readonly List<GameObject> allDenizens = new List<GameObject>();
+        //script này lưu danh sách các cư dân (trừ kẻ lang thang )
+        //lưu animcontroller
+         [SerializeField]
+        private List<GameObject> allDenizens = new List<GameObject>();
+
+        [Header("Animator Controllers")]
+        [SerializeField] public RuntimeAnimatorController vagrantAnimatorController;
+        [SerializeField] public RuntimeAnimatorController villagerAnimatorController;
+        [SerializeField] public RuntimeAnimatorController archerAnimatorController;
+        [SerializeField] public RuntimeAnimatorController workerAnimatorController;
+        [SerializeField] public RuntimeAnimatorController farmerAnimatorController;
+
 
         private void Awake()
         {
@@ -23,33 +33,23 @@ namespace Script.Game.Mobs.MobsManager
             }
         }
 
+        private void Start()
+        {
+             // Validate Animator Controllers
+            if (vagrantAnimatorController == null) Debug.LogError($"[DenizenManager] Vagrant Animator Controller is missing!");
+            if (villagerAnimatorController == null) Debug.LogError($"[DenizenManager] Villager Animator Controller is missing!");
+            if (archerAnimatorController == null) Debug.LogError($"[DenizenManager] Archer Animator Controller is missing!");
+            // Worker and Farmer checks optional
+        }
+
         // API chung để đăng ký 1 Denizen
         public void RegisterDenizen(GameObject denizen)
         {
             if (denizen == null || allDenizens.Contains(denizen)) return;
 
             allDenizens.Add(denizen);
-
-            var controller = denizen.GetComponent<DenizenController>();
-            if (controller != null)
-            {
-                switch (controller.CurrentRole)
-                {
-                    case NPCRole.Vagrant:
-                        // Hiện chưa có sub-manager riêng cho Vagrant
-                        break;
-                    case NPCRole.Villager:
-                        if (VillagerManager.Instance != null)
-                        {
-                            VillagerManager.Instance.OnRegister(denizen);
-                        }
-                        break;
-                    // Tránh tham chiếu ArcherManager nếu chưa tồn tại để không lỗi compile
-                }
-                
-            }
-
-            // Debug.Log($"[DenizenManager] Registered {denizen.name} as {controller?.CurrentRole}");
+            
+            // Debug.Log($"[DenizenManager] Registered {denizen.name}");
         }
 
         // API chung để hủy đăng ký 1 Denizen
@@ -58,25 +58,8 @@ namespace Script.Game.Mobs.MobsManager
             if (denizen == null) return;
             allDenizens.Remove(denizen);
 
-            var controller = denizen.GetComponent<DenizenController>();
-            if (controller != null)
-            {
-                switch (controller.CurrentRole)
-                {
-                    case NPCRole.Vagrant:
-                        break;
-                    case NPCRole.Villager:
-                        if (VillagerManager.Instance != null)
-                        {
-                            VillagerManager.Instance.OnUnregister(denizen);
-                        }
-                        break;
-                }
-            }
-
             // Debug.Log($"[DenizenManager] Unregistered {denizen.name}");
         }
-
 
         // Helpers
         public int GetTotalDenizens() => allDenizens.Count;
@@ -87,7 +70,7 @@ namespace Script.Game.Mobs.MobsManager
             foreach (var denizen in allDenizens)
             {
                 if (denizen == null) continue;
-                var controller = denizen.GetComponent<DenizenController>();
+                var controller = denizen.GetComponent<DenizenRoleController>();
                 if (controller != null && controller.CurrentRole == role)
                 {
                     filtered.Add(denizen);
@@ -95,10 +78,50 @@ namespace Script.Game.Mobs.MobsManager
             }
             return filtered;
         }
+        public Script.Game.Mobs.Subjects.VillagerBehavior GetNearestIdleVillager(Vector3 position)
+        {
+            Script.Game.Mobs.Subjects.VillagerBehavior nearestVillager = null;
+            float minDistance = float.MaxValue;
+            int checkedCount = 0;
 
-        // Placeholders for future integration
-        public void SaveAllDenizens() { /* integrate with save system if needed */ }
-        public void LoadAllDenizens() { /* integrate with save system if needed */ }
-        public void UpdateAllDenizens() { /* broadcast events if needed */ }
+            foreach (var denizen in allDenizens)
+            {
+                if (denizen == null) continue;
+                checkedCount++;
+
+                var controller = denizen.GetComponent<DenizenRoleController>();
+                if (controller != null && controller.CurrentRole == NPCRole.Villager)
+                {
+                    var behavior = denizen.GetComponent<Script.Game.Mobs.Subjects.VillagerBehavior>();
+                    if (behavior != null && behavior.enabled)
+                    {
+                         // Check conditions
+                         bool hasNoTool = behavior.currentTool == null;
+                         bool notInDanger = !behavior.isInDanger;
+                         var status = denizen.GetComponent<Script.Data_Model.Status.DenizenStatus>();
+                         bool isIdle = status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.Idle;
+
+                         if (hasNoTool && notInDanger && isIdle)
+                         {
+                            float dist = Vector3.Distance(position, denizen.transform.position);
+                            if (dist < minDistance)
+                            {
+                                minDistance = dist;
+                                nearestVillager = behavior;
+                            }
+                         }
+                         else
+                         {
+                             // Debug.Log($"[DenizenManager] Skip {denizen.name}: NoTool={hasNoTool}, Danger={!notInDanger}, Idle={isIdle} (State: {status.villagerState})");
+                         }
+                    }
+                }
+            }
+            
+            // if (nearestVillager != null) Debug.Log($"[DenizenManager] Found idle villager for tool: {nearestVillager.name}");
+            // else Debug.Log($"[DenizenManager] No idle villager found among {checkedCount} denizens.");
+            
+            return nearestVillager;
+        }
     }
 }

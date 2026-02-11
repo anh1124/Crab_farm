@@ -108,16 +108,9 @@ namespace Script.Game.Structures.Wall_And_Stump
             // Check if HP is below critical threshold
             if (wallStatus.currentHp < criticalHPThreshold)
             {
-                Debug.Log($"[WallAndStumpManager] ⚠️ WALL CRITICAL: {wall.name} HP={wallStatus.currentHp}/{criticalHPThreshold}");
-                
-                // Determine which side the wall is on
-                bool isLeftSide = IsWallOnLeftSide(wall);
-                
-                // Notify GuardManager
-                NotifyGuardManagerWallCritical(wall, isLeftSide);
-                
-                // Update defendable walls list
-                UpdateDefendableWalls();
+               // Debug.Log($"[WallAndStumpManager] ⚠️ WALL CRITICAL: {wall.name} HP={wallStatus.currentHp}/{criticalHPThreshold}");
+               // Logic notify GuardManager đã được chuyển sang Event-based trong WallBehavior -> GuardManager
+               // Hàm này chỉ giữ lại để log hoặc debug nếu cần.
             }
         }
 
@@ -330,10 +323,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             // Update defendable walls
             UpdateDefendableWalls();
 
-            // Notify GuardManager that wall is now safe again (optional)
-            if (wallStatus.currentHp >= criticalHPThreshold && guardManager != null)
+            // Chỉ notify GuardManager nếu KHÔNG đang thiết quân luật
+            // OnWallRepaired chỉ được gọi khi wall ĐẦY MÁU (theo logic WallBehavior.Heal)
+            // Nên không cần check HP threshold nữa
+            if (guardManager != null && guardManager.detectedEnemies.Count == 0)
             {
-                // guardManager.NotifyWallRecovered(wall); // Future feature
+                guardManager.UpdateDefensiveWalls();
             }
         }
 
@@ -426,6 +421,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             // Update defendable walls list too (ensure new wall is counted if healthy)
             UpdateDefendableWalls();
+            
+            // Chỉ notify GuardManager nếu KHÔNG đang trong thiết quân luật
+            if (guardManager != null && guardManager.detectedEnemies.Count == 0)
+            {
+                guardManager.UpdateDefensiveWalls();
+            }
         }
 
         public void UnregisterWall(GameObject wall)

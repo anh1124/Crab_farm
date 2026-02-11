@@ -53,6 +53,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         public event Action<WallBehavior> OnWallDestroyed;//thông báo cho manager xếp lại đội hình lính và rút lui
         public event Action<WallBehavior> OnWallUpgraded;//wall sẵn sàng upgrade ,bảo manager điều thợ đến xây
         public event Action<WallBehavior> OnWallRepaired;//thông báo cho manager xếp lại đội hình vì tường vừa sửa xong
+        public event Action<GameObject> OnCriticalHP; // Sự kiện khi máu wall xuống thấp critical
         //add more even ondame,onupgradedone,onrepaireddone,onlowhealth
         
         
@@ -710,10 +711,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             status.currentHp -= amount;
             
-            // Notify manager to check critical HP
+            // Notify manager to check critical HP logic (still needed for other systems if any)
             if (WallAndStumpManager.Instance != null)
             {
                 WallAndStumpManager.Instance.CheckWallCriticalHP(gameObject);
+                
+                // NEW: Trigger internal event system for GuardManager
+                CheckAndFireCriticalEvent(WallAndStumpManager.Instance.criticalHPThreshold);
             }
             
             if (status.currentHp <= 0)
@@ -732,6 +736,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 if (status.currentHp + amount >= status.maxHp)
                 {
                      RepairStump();
+                     return; // Đã xử lý xong notify trong RepairStump, return để tránh duplicate
                 }
                 else
                 {
@@ -744,12 +749,24 @@ namespace Script.Game.Structures.Wall_And_Stump
                 status.currentHp = Mathf.Min(status.currentHp + amount, status.maxHp);
             }
             
-            // Notify manager about repair
+            // NEW LOGIC: Chỉ gọi OnWallRepaired khi wall đã ĐẦY MÁU
+            // Điều này tránh spam update logic đội hình mỗi lần gõ búa
             if (WallAndStumpManager.Instance != null)
             {
-                WallAndStumpManager.Instance.OnWallRepaired(gameObject);
-                // Also force update to check for threshold crossing (critical -> safe)
-                WallAndStumpManager.Instance.UpdateDefendableWalls();
+                // Luôn cập nhật trạng thái reset cờ critical (để đảm bảo không báo động giả)
+                 ResetCriticalFlag(WallAndStumpManager.Instance.criticalHPThreshold);
+
+                // Chỉ notify Manager khi đầy máu
+                if (status.currentHp >= status.maxHp)
+                {
+                    WallAndStumpManager.Instance.OnWallRepaired(gameObject);
+                    WallAndStumpManager.Instance.UpdateDefendableWalls();
+                }
+                // KHÔNG GỌI UpdateDefendableWalls mỗi lần Heal nữa
+                // Vì danh sách defendable chỉ cần update khi:
+                // 1. Wall đầy máu (đã gọi ở trên)
+                // 2. Wall vượt ngưỡng critical lần đầu (event OnCriticalHP đã xử lý)
+                // 3. Wall bị phá hủy/xây mới (RegisterWall/UnregisterWall đã gọi)
             }
             
            // Debug.Log($"[Wall] Healed {amount} HP. Current HP: {status.currentHp}/{status.maxHp}");
@@ -771,6 +788,27 @@ namespace Script.Game.Structures.Wall_And_Stump
             if (WallAndStumpManager.Instance != null)
             {
                 WallAndStumpManager.Instance.UpdateDefendableWalls();
+            }
+        }
+        #endregion
+
+        #region Critical HP Event Logic
+        private bool hasFiredCriticalEvent = false;
+
+        public void CheckAndFireCriticalEvent(int criticalThreshold)
+        {
+            if (!hasFiredCriticalEvent && status.currentHp < criticalThreshold)
+            {
+                hasFiredCriticalEvent = true;
+                OnCriticalHP?.Invoke(gameObject);
+            }
+        }
+        
+        public void ResetCriticalFlag(int criticalThreshold)
+        {
+            if (status.currentHp >= criticalThreshold)
+            {
+                hasFiredCriticalEvent = false;
             }
         }
         #endregion

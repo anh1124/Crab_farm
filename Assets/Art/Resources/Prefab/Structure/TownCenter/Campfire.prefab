@@ -194,9 +194,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   status: {fileID: 0}
-  plazaDistance: 0
+  plazaDistance: 20
   coinUser: {fileID: 0}
   curentPrefab: {fileID: 0}
+  isDebugPlazaZone: 1
 --- !u!114 &4352082597095238127
 MonoBehaviour:
   m_ObjectHideFlags: 0

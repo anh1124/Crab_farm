@@ -16,7 +16,7 @@ public class RayCastHelper : MonoBehaviour
     
     // Thay LayerMask bằng List<string> để chứa các tag cần kiểm tra
     [Header("Tag Settings")]
-    public List<string> tagsToDetect = new List<string>();
+    public List<string> tagsToDetect = new List<string> { "Player", "Coin", "Enemy" };
     public List<GameObject> hitObjects = new List<GameObject>();
 
     private void Update()

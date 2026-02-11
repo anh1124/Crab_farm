@@ -18,14 +18,16 @@ namespace Script.Game.Structures.TownCenter
     {
         
         public TownCenterStatus status ;
-        public float plazaDistance;
+        public float plazaDistance = 20f;
         public CoinUser coinUser;
         [FormerlySerializedAs("currentPrefab")] public GameObject curentPrefab;
+        
+        [Header("Debug")]
+        [SerializeField] private bool isDebugPlazaZone = true;
         
         private void Awake()
         {
             if (coinUser == null) coinUser = GetComponent<CoinUser>();
-            GetPlazaDistance();
         }
 
         private void Start()
@@ -54,6 +56,17 @@ namespace Script.Game.Structures.TownCenter
 
 
 
+        }
+
+        private void Update()
+        {
+            if (isDebugPlazaZone)
+            {
+                Vector3 center = transform.position;
+                Vector3 start = new Vector3(center.x - plazaDistance, center.y + 5f, center.z);
+                Vector3 end = new Vector3(center.x + plazaDistance, center.y + 5f, center.z);
+                Debug.DrawLine(start, end, Color.white);
+            }
         }
 
         private void AddAndRemoveTentForTier2()
@@ -262,8 +275,7 @@ namespace Script.Game.Structures.TownCenter
         }
 
         public int GetUpgradeCost() => status.upgradeCost;
-        public void GetPlazaDistance() => plazaDistance = PrefabData.Instance != null ? PrefabData.Instance.plazaDistance : 30f;
-        
+  
         public void AddWorkingProcess(int amount)
         {
             status.buildProgress = Mathf.Min(status.buildProgress + amount, status.buildProgressMax);

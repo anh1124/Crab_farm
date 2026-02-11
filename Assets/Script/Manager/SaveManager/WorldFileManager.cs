@@ -122,7 +122,7 @@ namespace Script.Save_Controller
                 name: worldName,
                 creationDate: System.DateTime.Now,
                 seed: seed,
-                gameHour: 0,
+                gameHour: 7,
                 gameMinute: 0,
                 gameDay: 0,
                 gameMonth: 0,
@@ -624,6 +624,12 @@ namespace Script.Save_Controller
                 Debug.LogError("Failed to load/generate map!");
                 return false;
             }
+
+            // Load Tech status and Game Time
+            LoadFromSave.Instance.LoadTechAndTimeFromSave();
+
+            // Load Entities (Walls, Mobs, etc.)
+            LoadFromSave.Instance.LoadEntitiesFromSave();
 
             return true;
         }

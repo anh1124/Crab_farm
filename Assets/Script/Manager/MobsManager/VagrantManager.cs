@@ -270,10 +270,10 @@ namespace Script.Game.Mobs.MobsManager
                     vagrantObj.tag = "Vagrant";
                     EntitySaveManager.Instance?.MoveObjectToContainer(vagrantObj);
 
-                    var controller = vagrantObj.GetComponent<DenizenController>();
+                    var controller = vagrantObj.GetComponent<DenizenRoleController>();
                     if (controller == null)
                     {
-                        controller = vagrantObj.AddComponent<DenizenController>();
+                        controller = vagrantObj.AddComponent<DenizenRoleController>();
                     }
                     // ChangeRole về Vagrant (no-op nếu mặc định), đảm bảo ApplyRole chạy và đồng bộ trạng thái
                     controller.ChangeRole(NPCRole.Vagrant);

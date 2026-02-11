@@ -56,7 +56,7 @@ namespace Script.Data_Model
         [Space(15)] [Header("TownCenter ")] [Space(5)]  
         #region TownCenter
         public List<GameObject> townCenterList = new List<GameObject>();
-        public float plazaDistance = 10f;//khoảng cách quảng trường
+        public float plazaDistance = 30f;//khoảng cách quảng trường
         public GameObject tent;// for towncenter tier 2
         #endregion
 
@@ -233,8 +233,12 @@ namespace Script.Data_Model
         
         // Danh sách các tag của các đối tượng được coi là đồng minh (Ally Tags)
         public List<string> allyTags = new List<string> { "Player", "Archer", "Wall","Villager" };
+        
+        // Danh sách tag mục tiêu săn bắn cho Archer
+        public List<string> huntingTargetTags = new List<string> { "Animal" };
       
         public readonly Dictionary<string, int> productPrices = new Dictionary<string, int>();
+
 
         
         private void Awake()

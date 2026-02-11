@@ -32,6 +32,7 @@ TagManager:
   - Archer
   - Worker
   - Farmer
+  - Animal
   layers:
   - Default
   - TransparentFX

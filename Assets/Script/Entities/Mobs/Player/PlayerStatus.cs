@@ -58,7 +58,7 @@ namespace Script.Data_Model.Status
             maxHp = 100;
             currentHp = 100;
             coin = 0;
-            moveSpeed = 7f;
+            moveSpeed = 12f;
             positionX = 0f;
             positionY = 0f;
             attackDame = 1;

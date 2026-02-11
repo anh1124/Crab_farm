@@ -87,12 +87,12 @@ File: `ToolItem.cs`
 
 Mỗi Tool (Prefab thả ngoài đất) chứa component `ToolItem`, có biến `type` định nghĩa nghề nghiệp nó đại diện:
 
-| ToolType (Enum) | Nghề Tương Ứng (NPCRole) |
-| :--- | :--- |
-| **Bow** | Archer 🏹 |
-| **Hammer** | Worker 🔨 |
-| **Scythe** | Farmer 🌾 |
+| ToolType (Enum) | Nghề Tương Ứng (NPCRole)    |
+|-----------------|-----------------------------|
+| **Bow**         | Archer 🏹                  |
+| **Hammer**      | Worker 🔨                  |
+| **Scythe**      | Farmer 🌾                  |
+
 
 ---
 
-*Tài liệu được cập nhật ngày 24/01/2026 bởi AI Assistant.*

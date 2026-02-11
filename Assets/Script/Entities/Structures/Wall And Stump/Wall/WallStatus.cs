@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -29,6 +30,7 @@ namespace Script.Data_Model.Status
         [Header("Building Settings")]
         public float minimumDistance = 20f;//khoảng cách xây tối thiểu
         public int rebuildCost;//giá xây lại nếu bị phá
+        
     }
     public enum WallState
     {

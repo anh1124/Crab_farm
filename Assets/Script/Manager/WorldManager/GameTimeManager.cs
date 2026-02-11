@@ -22,6 +22,9 @@ public class GameTimeManager : MonoBehaviour
     [SerializeField] private int inspectorMonth = 1;
     [SerializeField] private int inspectorYear = 1;
 
+    public const int MORNING_HOUR = 6;
+    public const int NIGHT_HOUR = 19;
+
     public int GameHour => _totalMinutes / 60 % 24;
     public int GameMinute => _totalMinutes % 60;
     public int GameDay => (_totalMinutes / 1440 % 30) + 1;
@@ -206,6 +209,28 @@ public class GameTimeManager : MonoBehaviour
         inspectorDay = GameDay;
         inspectorMonth = GameMonth;
         inspectorYear = GameYear;
+    }
+
+    [ContextMenu("Set Time To Day (Morning - 07:00)")]
+    public void SetTimeToMorning()
+    {
+        // Set time to 07:00 of the CURRENT day
+        int currentDayStartMinutes = (GameYear - 1) * 172800 + (GameMonth - 1) * 43200 + (GameDay - 1) * 1440;
+        int morningMinutes = currentDayStartMinutes + (7 * 60); // 7:00 AM
+        
+        SetGameTime(morningMinutes);
+        Debug.Log("Time set to Morning (07:00)");
+    }
+
+    [ContextMenu("Set Time To Night (Evening - 19:00)")]
+    public void SetTimeToNight()
+    {
+        // Set time to 19:00 of the CURRENT day
+        int currentDayStartMinutes = (GameYear - 1) * 172800 + (GameMonth - 1) * 43200 + (GameDay - 1) * 1440;
+        int nightMinutes = currentDayStartMinutes + (19 * 60); // 19:00 PM
+        
+        SetGameTime(nightMinutes);
+        Debug.Log("Time set to Night (19:00)");
     }
 }
 }

@@ -38,29 +38,23 @@ namespace Script.Utils
                 return 0f;
             }
 
-            float townCenterX = BuildingManager.instance.currentTownCenter.transform.position.x;
-
-            GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
-            float nearestLeftWall = float.MinValue;
-            float nearestRightWall = float.MaxValue;
-
-            foreach (GameObject wall in walls)
+            var townCenter = BuildingManager.instance.currentTownCenter;
+            float townCenterX = townCenter.transform.position.x;
+            
+            // Get plaza distance from TownCenterBehavior
+            var tcBehavior = townCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+            float radius = 10f; // default fallback
+            if (tcBehavior != null)
             {
-                float wallX = wall.transform.position.x;
-                if (wallX < townCenterX && wallX > nearestLeftWall)
-                {
-                    nearestLeftWall = wallX;
-                }
-                if (wallX > townCenterX && wallX < nearestRightWall)
-                {
-                    nearestRightWall = wallX;
-                }
+                radius = tcBehavior.plazaDistance;
+            }
+            else
+            {
+                 // Try getting from PrefabData directly if behavior missing (unlikely)
+                 if (Script.Data_Model.PrefabData.Instance != null) radius = Script.Data_Model.PrefabData.Instance.plazaDistance;
             }
 
-            if (nearestLeftWall == float.MinValue) nearestLeftWall = townCenterX - 5f;
-            if (nearestRightWall == float.MaxValue) nearestRightWall = townCenterX + 5f;
-
-            return Random.Range(nearestLeftWall, nearestRightWall);
+            return Random.Range(townCenterX - radius, townCenterX + radius);
         }
 
         public static float GetRandomKingdomSafePos()

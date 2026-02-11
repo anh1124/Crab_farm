@@ -27,7 +27,7 @@ namespace Script.Utils
 
             if (go != null)
             {
-                var controller = go.GetComponent<DenizenController>() ?? go.AddComponent<DenizenController>();
+                var controller = go.GetComponent<DenizenRoleController>() ?? go.AddComponent<DenizenRoleController>();
                 controller.ChangeRole(role);
             }
 
@@ -60,20 +60,20 @@ namespace Script.Utils
                     {
                         denizen.transform.rotation = rotation;
                         denizen.transform.localScale = scale;
-                        var controller = denizen.GetComponent<DenizenController>() ?? denizen.AddComponent<DenizenController>();
+                        var controller = denizen.GetComponent<DenizenRoleController>() ?? denizen.AddComponent<DenizenRoleController>();
                         controller.ChangeRole(NPCRole.Villager);
 
                         VillagerBehavior villagerBehavior = denizen.GetComponent<VillagerBehavior>();
                         if (villagerBehavior != null)
                         {
-                            VillagerStatus villagerStatus = denizen.GetComponent<VillagerStatus>();
+                            DenizenStatus villagerStatus = denizen.GetComponent<DenizenStatus>();
                             if (villagerStatus != null)
                             {
                                 villagerStatus.CurrentCoins = currentCoins;
                             }
                             else
                             {
-                                Debug.LogWarning("[Utility] Villager does not have VillagerStatus component.");
+                                Debug.LogWarning("[Utility] Villager does not have DenizenStatus component.");
                             }
                         }
                     }
@@ -82,19 +82,19 @@ namespace Script.Utils
                 {
                     Debug.LogError("[Utility] Spawner instance not found! Cannot spawn using Spawner, using Instantiate fallback.");
                     GameObject denizenInstance = GameObject.Instantiate(PrefabData.Instance.denizen, archerObject.transform.position, Quaternion.identity);
-                    var controller = denizenInstance.GetComponent<DenizenController>() ?? denizenInstance.AddComponent<DenizenController>();
+                    var controller = denizenInstance.GetComponent<DenizenRoleController>() ?? denizenInstance.AddComponent<DenizenRoleController>();
                     controller.ChangeRole(NPCRole.Villager);
                     VillagerBehavior villagerBehavior = denizenInstance.GetComponent<VillagerBehavior>();
                     if (villagerBehavior != null)
                     {
-                        VillagerStatus villagerStatus = denizenInstance.GetComponent<VillagerStatus>();
+                        DenizenStatus villagerStatus = denizenInstance.GetComponent<DenizenStatus>();
                         if (villagerStatus != null)
                         {
                             villagerStatus.CurrentCoins = currentCoins;
                         }
                         else
                         {
-                            Debug.LogWarning("[Utility] Villager does not have VillagerStatus component.");
+                            Debug.LogWarning("[Utility] Villager does not have DenizenStatus component.");
                         }
                     }
                 }

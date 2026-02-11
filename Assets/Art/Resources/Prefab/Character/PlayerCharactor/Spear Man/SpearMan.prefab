@@ -326,6 +326,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   status: {fileID: 8516832215337478737}
+  playerAnim: {fileID: 0}
 --- !u!114 &8516832215337478737
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -341,7 +342,7 @@ MonoBehaviour:
   maxHp: 10
   currentHp: 10
   coin: 0
-  moveSpeed: 7
+  moveSpeed: 12
   positionX: 0
   positionY: 0
   attackDame: 10

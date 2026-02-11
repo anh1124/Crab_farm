@@ -25,31 +25,17 @@ namespace Script.Game.Item
 
         private void OnEnable()
         {
-            // Validate tool type
-            if (!System.Enum.IsDefined(typeof(ToolType), type))
+            if (Script.Manager.MobsManager.ToolManager.Instance != null)
             {
-                Debug.LogError($"[ToolItem] {gameObject.name} has invalid ToolType: {type}. Tool will not be registered.");
-                return;
-            }
-
-            // Tool spawned or enabled => register with VillagerManager
-            if (VillagerManager.Instance != null)
-            {
-                VillagerManager.Instance.RegisterTool(this);
-            }
-            else
-            {
-                Debug.LogError("[ToolItem] VillagerManager instance not found! Destroying tool to prevent orphaned tools.");
-                Destroy(gameObject);
+                Script.Manager.MobsManager.ToolManager.Instance.RegisterTool(this);
             }
         }
 
         private void OnDisable()
         {
-            // Tool disabled or destroyed => unregister from VillagerManager
-            if (VillagerManager.Instance != null)
+            if (Script.Manager.MobsManager.ToolManager.Instance != null)
             {
-                VillagerManager.Instance.UnregisterTool(this);
+                Script.Manager.MobsManager.ToolManager.Instance.UnregisterTool(this);
             }
         }
     }

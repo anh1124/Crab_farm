@@ -15,6 +15,11 @@ GameObject:
   - component: {fileID: 7222628233924619537}
   - component: {fileID: 3953599905532919620}
   - component: {fileID: 3979009691190339230}
+  - component: {fileID: 6225672696307269319}
+  - component: {fileID: 5927039641844638738}
+  - component: {fileID: -5760166657151680781}
+  - component: {fileID: 6996326795921770314}
+  - component: {fileID: 3218344427349539648}
   m_Layer: 9
   m_Name: Denizen
   m_TagString: Denizen
@@ -216,9 +221,102 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0723d76b1aa770246ba62927f66cbb10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CurrentRole: 1
-  vagrantController: {fileID: 9100000, guid: 9ed78963ace87684cb2b21fd66341b30, type: 2}
-  villagerController: {fileID: 9100000, guid: c6ad815e1a9aa014b839538879eda4db, type: 2}
-  archerController: {fileID: 9100000, guid: 31cd6837cf250b446bc498f5895f6dbb, type: 2}
-  workerController: {fileID: 0}
-  farmerController: {fileID: 0}
+  CurrentRole: 0
+--- !u!114 &6225672696307269319
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a6005dce0ab8f242bcff0e212097635, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  role: 0
+  currentCoins: 0
+  maxCoins: 6
+  walkSpeed: 1
+  runSpeed: 3.5
+  huntingMoveSpeed: 1.2
+  currentSpeed: 0
+  vagrantState: 1
+  maxIdleWalkDistance: 3
+  roadToTarget: 0
+  targetPosition: {x: 0, y: 0}
+  coinTarget: {fileID: 0}
+  startPosition: {x: 0, y: 0, z: 0}
+  currentIdleWalkTarget: {x: 0, y: 0, z: 0}
+  isWalking: 0
+  villagerState: 0
+  fearTimer: 0
+  archerState: 0
+  previousArcherState: 0
+  attackRange: 8
+  detectRange: 10
+  attackCooldown: 2
+  lastAttackTime: 0
+  isLeftFlank: 0
+  assignedWall: {fileID: 0}
+  previousWall: {fileID: 0}
+  standBehindWallOffset: 0.8
+  currentTarget: {fileID: 0}
+--- !u!114 &5927039641844638738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 944a5219abc00834da8beee30cc93d8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-5760166657151680781
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b35f9a4dcda5864da06b55f8d18cb68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHp: 50
+  currentHp: 50
+  maxCoins: 5
+  isBehaviorActive: 0
+--- !u!114 &6996326795921770314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b78f2f9c9101ffd438429b0f153dba41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3218344427349539648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcd7a6e11188dc844bab53e20d9aa98d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetPosition: {x: 0, y: 0, z: 0}
+  isMoving: 0
+  isInDanger: 0
+  fearTimer: 0
+  currentTool: {fileID: 0}
+  COIN_DROP_COOLDOWN: 0.7

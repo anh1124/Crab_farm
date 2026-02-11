@@ -45,9 +45,10 @@ GameObject:
   - component: {fileID: -5039798864888199647}
   - component: {fileID: 8515534400631645071}
   - component: {fileID: 2161380434534383262}
+  - component: {fileID: 716058171174489493}
   m_Layer: 7
   m_Name: penguin
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -128,7 +129,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1591732571
-  m_SortingLayer: -3
+  m_SortingLayer: -2
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 7f56a050498b82d4d9c59698212ccb87, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -215,7 +216,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afc3db21249b24748b460fe36a0f9c2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  <MaxHp>k__BackingField: 100
+  <maxHp>k__BackingField: 100
   patrolSpeed: 5
   idleDuration: 3
   raycastDistance: 1.16
@@ -225,3 +226,16 @@ MonoBehaviour:
   raycastHolder: {fileID: 970535821330544681}
   currentState: 0
   idleTimer: 0
+--- !u!114 &716058171174489493
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9082118843843965618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db3151ec341d9144eb1014189dbd631b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hp: 10

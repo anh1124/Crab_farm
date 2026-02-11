@@ -52,17 +52,7 @@ namespace Script.Controller.PlayerController
                 //Destroy(gameObject);
             }
 
-            // Tự động add PlayerBehavior nếu chưa có
-            if (GetComponent<PlayerBehavior>() == null)
-            {
-                gameObject.AddComponent<PlayerBehavior>();
-            }
-            
-            // Tự động add PlayerSkillManager nếu chưa có
-            if (GetComponent<PlayerSkillManager>() == null)
-            {
-                gameObject.AddComponent<PlayerSkillManager>();
-            }
+
         }
 
         public void SetUpControllerPlayer()
