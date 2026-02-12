@@ -18,7 +18,7 @@ using Script.Utils; // For Utility helper
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
-    public class VillagerBehavior : MonoBehaviour, IHealth, INPCBehavior, ICoinable
+    public class VillagerBehavior : MonoBehaviour, IHealth, INPCBehavior
     {
         #region Variables and Properties
         private DenizenStatus status;
@@ -84,27 +84,9 @@ namespace Script.Game.Mobs.Subjects
             // Usually Heal() implies HP. Villagers don't use HP.
         }
 
-        // --- ICoinable Implementation ---
-        public int Coin 
-        { 
-            get => status.CurrentCoins; 
-            set => status.CurrentCoins = value; 
-        }
 
-        public void AddCoin(int amount)
-        {
-            status.CurrentCoins += amount;
-        }
 
-        public void SubtractCoin(int amount)
-        {
-            status.CurrentCoins -= amount; // Just data modification, use DropCoins for visual
-        }
 
-        public void PickUpCoin(GameObject coinObject)
-        {
-            PickUpCoinInternal(coinObject);
-        }
         #endregion
 
         #region Unity Lifecycle Methods

@@ -66,6 +66,76 @@ namespace Script.Game.Mobs.Subjects
         
         [Header("Debug")]
         [SerializeField] private bool isDebugMovePos = false;
+        [SerializeField] private bool isDebugAttackRange = true;
+
+
+
+        [ContextMenu("Debug Status (Print to Console)")]
+        public void DebugStatus()
+        {
+            string timeStatus = timeManager != null ? (timeManager.IsDaytime ? "Day" : "Night") : "Null";
+            string guardStatus = guardManager != null ? (guardManager.isEnemyAttack ? "ALARM" : "Peace") : "Null";
+            string enemiesDetected = guardManager != null ? guardManager.detectedEnemies.Count.ToString() : "N/A";
+            
+            string info = $"--- ARCHER STATUS [{gameObject.name}] ---\n";
+            info += $"Role: {status.Role}\n";
+            info += $"State: {status.archerState}\n";
+            info += $"Flank: {(status.isLeftFlank ? "LEFT" : "RIGHT")}\n";
+            info += $"Assigned Wall: {(status.assignedWall != null ? status.assignedWall.name : "NULL")}\n";
+            info += $"Current Target: {(status.currentTarget != null ? status.currentTarget.name : "NULL")}\n";
+            info += $"Time: {timeStatus}\n";
+            info += $"Guard Mode: {guardStatus} (Enemies: {enemiesDetected})\n";
+            
+            Debug.Log(info);
+        }
+
+        [ContextMenu("Force State Update")]
+        public void ForceStateUpdate()
+        {
+            Debug.Log($"[Archer] Forcing state update for {gameObject.name}...");
+            
+            // Re-evaluate based on current conditions
+            if (guardManager != null && guardManager.isEnemyAttack)
+            {
+                TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
+            }
+            else if (timeManager != null)
+            {
+                if (timeManager.IsDaytime)
+                {
+                    TransitionToState(DenizenStatus.ArcherState.Hunting);
+                }
+                else
+                {
+                    TransitionToState(DenizenStatus.ArcherState.ReturningToBase); // Or HoldingWall depending on logic
+                }
+            }
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (isDebugAttackRange && status != null)
+            {
+                Gizmos.color = Color.magenta; // Pink
+                
+                // Determine facing direction based on localScale.x (1 = Right, -1 = Left)
+                float facingDir = transform.localScale.x > 0 ? 1f : -1f;
+                // Or check if sprite is flipped? Usually scale.x is the standard way here.
+                // Assuming default sprite faces Right.
+                
+                Vector3 startPos = transform.position + new Vector3(0, 0.1f, 0);
+                Vector3 endPos = startPos + new Vector3(facingDir * status.attackRange, 0, 0);
+                
+                // Draw Line (Ray)
+                Gizmos.DrawLine(startPos, endPos);
+                
+                // Draw small sphere at end to see the tip
+                Gizmos.DrawWireSphere(endPos, 0.2f);
+                
+                // Draw small vertical mark at end to mimic "End of range"
+                Gizmos.DrawLine(endPos + Vector3.up * 0.2f, endPos - Vector3.up * 0.2f);
+            }
+        }
 
         // --- IHealth Interface Properties ---
         public bool HasCoinShield => status.CurrentCoins > 0;
@@ -96,6 +166,8 @@ namespace Script.Game.Mobs.Subjects
         }
 
         public bool IsDead => CurrentHp <= 0;
+
+
 
         private void Awake()
         {
@@ -174,8 +246,9 @@ namespace Script.Game.Mobs.Subjects
             
             try
             {
-                timeManager.SubscribeToHourlyEvent(18, OnNightFalls);
-                timeManager.SubscribeToHourlyEvent(6, OnDayBreaks);
+                // Match Debug Time Manager: Morning (7), Night (19)
+                timeManager.SubscribeToHourlyEvent(19, OnNightFalls);
+                timeManager.SubscribeToHourlyEvent(7, OnDayBreaks);
                 isSubscribedToTimeEvents = true;
             }
             catch (System.Exception e)
@@ -197,8 +270,8 @@ namespace Script.Game.Mobs.Subjects
             {
                 try
                 {
-                    timeManager.UnsubscribeFromHourlyEvent(18, OnNightFalls);
-                    timeManager.UnsubscribeFromHourlyEvent(6, OnDayBreaks);
+                    timeManager.UnsubscribeFromHourlyEvent(19, OnNightFalls);
+                    timeManager.UnsubscribeFromHourlyEvent(7, OnDayBreaks);
                     isSubscribedToTimeEvents = false;
                 }
                 catch (System.Exception e)

@@ -6,7 +6,7 @@ using Script.Game.Mobs.Subjects;
 namespace Script.Data_Model.Status
 {
     [System.Serializable]
-    public class DenizenStatus : MonoBehaviour, INPCStatus
+    public class DenizenStatus : MonoBehaviour, INPCStatus, ICoinable
     {
         // Enums for distinct role states
         public enum VagrantState
@@ -36,8 +36,9 @@ namespace Script.Data_Model.Status
             ReturningToBase
         }
 
-        [Header("General Settings")]
+       
         [SerializeField] private NPCRole role = NPCRole.Vagrant;
+        [Header("General Settings")]
         [SerializeField] private int currentCoins = 0;
         [SerializeField] private int maxCoins = 6;
         [SerializeField] private int currentHp = 1;
@@ -71,7 +72,9 @@ namespace Script.Data_Model.Status
         [Header("Archer Data")]
         public ArcherState archerState = ArcherState.Idle;
         public ArcherState previousArcherState = ArcherState.Idle;
-        public float attackRange = 8f;
+        [Tooltip("Phạm vi tấn công của Archer (Dùng riêng cho Archer)")]
+        public float attackRange = 10f;
+        [Tooltip("Phạm vi phát hiện kẻ thù bằng RaycastHelper (Dùng chung)")]
         public float detectRange = 10f;
         public float attackCooldown = 2.0f;
         public float lastAttackTime = 0f;
@@ -136,6 +139,40 @@ namespace Script.Data_Model.Status
             // Archer Save Data
             public int archerState;
             public bool isLeftFlank;
+        }
+
+        // ICoinable Implementation
+        public int Coin
+        {
+            get => currentCoins;
+            set => currentCoins = Mathf.Clamp(value, 0, maxCoins);
+        }
+
+        public void AddCoin(int amount)
+        {
+            currentCoins = Mathf.Clamp(currentCoins + amount, 0, maxCoins);
+        }
+
+        public void SubtractCoin(int amount)
+        {
+            currentCoins = Mathf.Clamp(currentCoins - amount, 0, maxCoins);
+        }
+
+        public void PickUpCoin(GameObject coinGameObject)
+        {
+             // This is a fallback if CoinCollector is missing or Coin.cs triggers this directly
+             // We just add coin and destroy the object? 
+             // Ideally Coin.cs handles destruction if this returns true?
+             // Checking Coin.cs logic: it calls pickUpCoin, then it's done. 
+             // Actually Coin.cs does NOT destroy coin in HandlePlayerPickup/HandleDenizensPickup.
+             // It expects the receiver to handle it? 
+             // Wait, Coin.cs:208 calls coinable.PickUpCoin(gameObject).
+             // It does NOT destroy the coin itself in that method. 
+             // So DenizenStatus.PickUpCoin MUST destroy the coin.
+             
+             AddCoin(1);
+             // Destroy is handled by ProcessCoinPickup utility usually, but if called directly:
+             if(coinGameObject != null) Destroy(coinGameObject);
         }
 
         public DenizenSaveData CaptureData(Transform t)

@@ -201,13 +201,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rayColor: {r: 1, g: 0, b: 0, a: 1}
   raycastDistance: 5
-  raycastOffsetY: 0.7
+  raycastOffsetY: 0.25
   isDrawRay: 1
   showDebugLog: 0
   tagsToDetect:
   - Player
   - Coin
   - Enemy
+  - Animal
   hitObjects: []
 --- !u!114 &3979009691190339230
 MonoBehaviour:
@@ -222,6 +223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CurrentRole: 0
+  previousRole: 0
 --- !u!114 &6225672696307269319
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -237,6 +239,8 @@ MonoBehaviour:
   role: 0
   currentCoins: 0
   maxCoins: 6
+  currentHp: 1
+  maxHp: 1
   walkSpeed: 1
   runSpeed: 3.5
   huntingMoveSpeed: 1.2
@@ -253,7 +257,7 @@ MonoBehaviour:
   fearTimer: 0
   archerState: 0
   previousArcherState: 0
-  attackRange: 8
+  attackRange: 10
   detectRange: 10
   attackCooldown: 2
   lastAttackTime: 0
@@ -286,10 +290,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b35f9a4dcda5864da06b55f8d18cb68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 50
-  currentHp: 50
-  maxCoins: 5
-  isBehaviorActive: 0
+  isDebugMovePos: 0
+  isDebugAttackRange: 1
 --- !u!114 &6996326795921770314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -302,6 +304,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b78f2f9c9101ffd438429b0f153dba41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isDebugGoPlace: 0
 --- !u!114 &3218344427349539648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -319,4 +322,5 @@ MonoBehaviour:
   isInDanger: 0
   fearTimer: 0
   currentTool: {fileID: 0}
+  isDebugGoPlace: 0
   COIN_DROP_COOLDOWN: 0.7

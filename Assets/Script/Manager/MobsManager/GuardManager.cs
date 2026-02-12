@@ -29,14 +29,15 @@ namespace Script.Game.Mobs.MobsManager
         public bool isEnemyAttack = false;
         
         [Header("Debug")]
-        public bool isDebugHuntingRange = false;
-        public float archerHuntingRange = 50f;
+        public bool isDebugHuntingRange = true;
+        public float archerHuntingRange = 25f;
         public List<GameObject> detectedEnemies = new List<GameObject>();
         
         [Tooltip("Thời gian chờ trước khi tắt báo động (seconds)")]
         private const float ALARM_COOLDOWN_DURATION = 30f;
         
-        [Tooltip("Thời gian còn lại trước khi tắt báo động(visual only)")]
+        [Header("Alarm Status")]
+        [Tooltip("Thời gian còn lại trước khi tắt báo động (Chỉ đếm ngược khi KHÔNG còn kẻ thù)")]
         public float alarmTimer = 0f;
         
         [Header("Debug Settings")]
@@ -356,6 +357,8 @@ namespace Script.Game.Mobs.MobsManager
                 StopCoroutine(alertCooldownCoroutine);
                 alertCooldownCoroutine = null;
             }
+            // Always reset timer to max when enemy is present (Combat Mode)
+            alarmTimer = ALARM_COOLDOWN_DURATION;
 
             // ACTIVATE ALARM immediately
             if (!isEnemyAttack)
@@ -522,6 +525,37 @@ namespace Script.Game.Mobs.MobsManager
         #region Statistics & Debug
 
        
+
+        [ContextMenu("Debug Clear Enemies")]
+        public void DebugClearEnemies()
+        {
+            if (detectedEnemies.Count > 0)
+            {
+                DebugLog("[GuardManager] 🛠️ Debug Clear ALL Enemies");
+                // Create copy to iterate safely
+                var enemies = new List<GameObject>(detectedEnemies);
+                foreach (var enemy in enemies)
+                {
+                    if (enemy != null)
+                    {
+                        var behavior = enemy.GetComponent<Script.Game.Enemy.EnemyBehavior>();
+                        if (behavior != null)
+                        {
+                            // Trigger despawn logic manually or just simulate it
+                            // Better to just clear list and trigger logic as if they all died
+                             behavior.OnDespawn -= HandleEnemyDespawn; // Unsub manually
+                        }
+                    }
+                }
+                detectedEnemies.Clear();
+                
+                // Trigger Cooldown Routine
+                if (alertCooldownCoroutine == null)
+                {
+                    alertCooldownCoroutine = StartCoroutine(AlertCooldownRoutine());
+                }
+            }
+        }
 
         private void DebugLog(string message)
         {

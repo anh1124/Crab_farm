@@ -4,6 +4,7 @@ using Script.Data_Model.Interfaces;
 using Script.Game.Mobs.MobsManager;
 using Script.Data_Model.Status;
 using UnityEngine.Serialization;
+using Script.Game.Mobs.Components;
 
 namespace Script.Game.Mobs.Subjects
 {
@@ -92,6 +93,12 @@ namespace Script.Game.Mobs.Subjects
             villagerBehavior = GetComponent<VillagerBehavior>() ?? gameObject.AddComponent<VillagerBehavior>();
             archerBehavior = GetComponent<ArcherBehavior>() ?? gameObject.AddComponent<ArcherBehavior>();
 
+            // Setup CoinCollector
+            if (GetComponent<CoinCollector>() == null)
+            {
+                gameObject.AddComponent<CoinCollector>();
+            }
+
             previousRole = CurrentRole;
 
             // Initially disable all behaviors to prevent auto-updates if they have Update()
@@ -108,6 +115,12 @@ namespace Script.Game.Mobs.Subjects
         {
             ApplyRole(CurrentRole);
             RegisterWithManager();
+
+            // Set RayCast distance based on Status
+            if (rayCastHelper != null && denizenStatus != null)
+            {
+                rayCastHelper.SetRayLength(denizenStatus.detectRange);
+            }
         }
 
         private void Update()

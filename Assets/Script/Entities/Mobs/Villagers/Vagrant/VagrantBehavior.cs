@@ -9,10 +9,13 @@ using Script.Game.Other;
 using Script.Manager.WorldManager;
 using Script.Manager.GamePlayManager;
 
+using Script.Game.Mobs.Interfaces;
+using Script.Game.Item.Coin;
+
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VagrantController to VagrantBehavior to reflect Behavior + Status architecture
-    public class VagrantBehavior : MonoBehaviour, INPCBehavior, ICoinable
+    public class VagrantBehavior : MonoBehaviour, INPCBehavior, ICoinReactor
     {
         private DenizenStatus status;
         
@@ -22,6 +25,9 @@ namespace Script.Game.Mobs.Subjects
         private Coroutine flipRoutine;
         private Coroutine idleWalkRoutine;
         private RayCastHelper rayCastHelper;
+
+        [Header("Debug")]
+        public bool isDebugGoPlace;
 
         private void Awake()
         {
@@ -89,6 +95,19 @@ namespace Script.Game.Mobs.Subjects
         public void UpdateBehavior()
         {
             UpdateStateHandler();
+
+            // Debug Visualization
+            if (isDebugGoPlace)
+            {
+                if (status.vagrantState == DenizenStatus.VagrantState.Idle && status.isWalking)
+                {
+                    Debug.DrawLine(transform.position, status.currentIdleWalkTarget, Color.yellow);
+                }
+                else if (status.vagrantState == DenizenStatus.VagrantState.GetCoin && status.coinTarget != null)
+                {
+                     Debug.DrawLine(transform.position, status.coinTarget.transform.position, Color.yellow);
+                }
+            }
         }
 
         private void UpdateStateHandler()
@@ -191,33 +210,8 @@ namespace Script.Game.Mobs.Subjects
 
         #region Trigger and Pickup
 
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-             // Only active if enabled
-             if (!this.enabled) return;
-
-             if (other.CompareTag("Coin"))
-            {
-                PickUpCoinInternal(other.gameObject);
-            }
-        }
-
-        private void PickUpCoinInternal(GameObject coinObject)
-        {
-           // Debug.Log($"[VagrantBehavior] PickUpCoin called for {coinObject.name}");
-            
-            Script.Utility.ProcessCoinPickup(coinObject,
-                condition: () => 
-                {
-                    return true; // Vagrant always picks up coin
-                },
-                onPickupSuccess: () =>
-                {
-                   // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
-                    StartCoroutine(TransformToVillagerNextFrame());
-                }
-            );
-        }
+        // OnTriggerEnter2D handled by CoinCollector component
+        // PickUpCoinInternal moved to OnCoinPickedUp
 
         private IEnumerator TransformToVillagerNextFrame()
         {
@@ -417,27 +411,16 @@ namespace Script.Game.Mobs.Subjects
 
         #endregion
         
-        #region ICoinable Implementation
+        #region ICoinReactor Implementation
 
-        public int Coin 
-        { 
-            get => status.CurrentCoins; 
-            set => status.CurrentCoins = value; 
-        }
-
-        public void AddCoin(int amount)
+        public void OnCoinPickedUp(Coin coin)
         {
-            status.CurrentCoins += amount;
-        }
-
-        public void SubtractCoin(int amount)
-        {
-            status.CurrentCoins -= amount;
-        }
-
-        public void PickUpCoin(GameObject coinGameObject)
-        {
-            PickUpCoinInternal(coinGameObject);
+            // Only transform if enabled (double check, though CoinCollector checks this usually)
+            if (!this.enabled) return;
+            
+            // Logic for Vagrant: Pick up coin -> Transform to Villager
+            // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
+            StartCoroutine(TransformToVillagerNextFrame());
         }
 
         #endregion

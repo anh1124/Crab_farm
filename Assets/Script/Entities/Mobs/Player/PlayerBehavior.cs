@@ -131,6 +131,7 @@ namespace Script.Game.Player
         public bool IsDead { get; }
         public int CurrentHp { get => status.currentHp; set => status.currentHp = value; }
         public int Coin { get => status.coin; set => status.coin = value; }
+        public int MaxCoins { get => status.maxCoins; set => status.maxCoins = value; }
         public void SubtractCoin(int amount)
         {
             if (amount <= 0) return;
@@ -186,7 +187,7 @@ namespace Script.Game.Player
             gameObject.SetActive(false);
         }
 
-        public int CurrentCoin { get; set; }
+        public int CurrentCoin { get => status.coin; set => status.coin = value; }
         public bool HasCoinShield => Coin > 0;
 
         public bool ConsumeCoinShield()

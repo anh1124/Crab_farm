@@ -532,6 +532,14 @@ PrefabInstance:
       propertyPath: inspectorMonth
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4067834079159621169, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: archerHuntingRange
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 4067834079159621169, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: isDebugHuntingRange
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5652501071760087765, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: archerAnimatorController
       value: 

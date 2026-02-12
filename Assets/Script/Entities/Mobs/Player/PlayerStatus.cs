@@ -11,6 +11,7 @@ namespace Script.Data_Model.Status
         public int maxHp;
         public int currentHp;
         public int coin;
+        public int maxCoins;
         public float moveSpeed;
         public float positionX;
         public float positionY;
@@ -49,6 +50,7 @@ namespace Script.Data_Model.Status
                 moveSpeed = 10f;
                 attackDame = 1;
                 attackSpeed = 1f;
+                maxCoins = 100;
             }
         }
         
@@ -58,6 +60,7 @@ namespace Script.Data_Model.Status
             maxHp = 100;
             currentHp = 100;
             coin = 0;
+            maxCoins = 100;
             moveSpeed = 12f;
             positionX = 0f;
             positionY = 0f;

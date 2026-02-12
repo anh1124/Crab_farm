@@ -53,11 +53,37 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             AddEventTriggers(useCoin, PlayerController.PlayerController.Instance.UseCoinDownAction, PlayerController.PlayerController.Instance.UseCoinUpAction);
             
             // Add listeners for skill buttons
-            skill1.onClick.AddListener(OnSkill1Pressed);
-            skill2.onClick.AddListener(OnSkill2Pressed);
-            skill3.onClick.AddListener(OnSkill3Pressed);
+            if(skill1 != null) skill1.onClick.AddListener(OnSkill1Pressed);
+            if(skill2 != null) skill2.onClick.AddListener(OnSkill2Pressed);
+            if(skill3 != null) skill3.onClick.AddListener(OnSkill3Pressed);
+            
+            // Add listeners for item buttons (Debug Time)
+            if(itemSlot1 != null) itemSlot1.onClick.AddListener(OnItem1Pressed);
+            if(itemSlot2 != null) itemSlot2.onClick.AddListener(OnItem2Pressed);
         }
         
+        // --- DEBUG TIME CONTROLS ---
+        
+        // Item Slot 1 -> Night (19:00)
+        private void OnItem1Pressed()
+        {
+            Debug.Log("[PlayerGui] Item 1 Pressed -> Set Time to NIGHT");
+            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
+            {
+                Script.Manager.WorldManager.GameTimeManager.Instance.SetTimeToNight();
+            }
+        }
+
+        // Item Slot 2 -> Morning (07:00)
+        private void OnItem2Pressed()
+        {
+            Debug.Log("[PlayerGui] Item 2 Pressed -> Set Time to MORNING");
+            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
+            {
+                Script.Manager.WorldManager.GameTimeManager.Instance.SetTimeToMorning();
+            }
+        }
+
         // Hàm được gọi khi skill2 được nhấn - DEBUG: SPAWN VAGRANT
         private void OnSkill2Pressed()
         {

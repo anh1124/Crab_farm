@@ -8,7 +8,7 @@ public class RayCastHelper : MonoBehaviour
     public Color rayColor = Color.red;
     
     public float raycastDistance = 5f;
-    public float raycastOffsetY = 2f;
+    public float raycastOffsetY = 0.25f;
     
     // Cờ để bật/tắt vẽ ray trong Debug
     public bool isDrawRay = true;
@@ -16,7 +16,7 @@ public class RayCastHelper : MonoBehaviour
     
     // Thay LayerMask bằng List<string> để chứa các tag cần kiểm tra
     [Header("Tag Settings")]
-    public List<string> tagsToDetect = new List<string> { "Player", "Coin", "Enemy" };
+    public List<string> tagsToDetect = new List<string> { "Player", "Coin", "Enemy", "Animal" };
     public List<GameObject> hitObjects = new List<GameObject>();
 
     private void Update()
