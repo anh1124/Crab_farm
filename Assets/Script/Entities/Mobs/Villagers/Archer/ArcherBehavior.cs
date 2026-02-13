@@ -18,33 +18,30 @@ using Script.Manager; // For GuardManager access via GuardManager.Instance if ne
 
 namespace Script.Game.Mobs.Subjects
 {
-    // Renamed from ArcherController to ArcherBehavior to reflect Behavior + Status architecture
     [RequireComponent(typeof(DenizenStatus))]
-    [RequireComponent(typeof(RayCastHelper))]
+    [RequireComponent(typeof(RayCastHelper))] // Vẫn giữ require vì RoleController có thể add
+    [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     public class ArcherBehavior : MonoBehaviour, IHealth, ICoinShield, INPCBehavior
     {
         #region Constants
         
-        // Wall Defense Thresholds
+        // Ngưỡng phòng thủ và rút lui
         private const float WALL_ARRIVAL_DISTANCE = 0.5f;
-        
-        // Retreat Thresholds
         private const float RETREAT_COMPLETE_DISTANCE = 2.0f;
         
-        // Combat Timing
+        // Thời gian chiến đấu
         private const float ATTACK_READY_BUFFER = 0.1f;
         private const float TARGET_CHECK_INTERVAL = 0.2f;
 
-        // Hunting
-        // HUNTING_RANGE is now fetched from PrefabData
+        // Dữ liệu Săn bắn (được lấy từ PrefabData)
         private const float HUNTING_PATROL_INTERVAL = 5.0f;
         
         #endregion
 
         // References
         private DenizenStatus status;
-        private RayCastHelper rayHelper;
+        private Script.Game.Other.CircleDetectHelper circleDetectHelper;
         private Animator animator;
         
         // Managers
@@ -57,16 +54,52 @@ namespace Script.Game.Mobs.Subjects
         private GameObject pendingTarget = null;
         private float lastTargetCheckTime = 0f;
 
-        // Hunting specific
+        // Dữ liệu săn bắn
         private Vector3? currentHuntingTargetPos = null;
         private float lastHuntingMoveTime = 0f;
+
+        private void OnEnable()
+        {
+            // Disable all detectives first
+            var controller = GetComponent<DenizenRoleController>();
+            if (controller != null)
+            {
+                controller.DisableAllDetectives();
+            }
+
+            // Enable CircleDetectHelper
+            if (circleDetectHelper == null) circleDetectHelper = GetComponent<Script.Game.Other.CircleDetectHelper>();
+            if (circleDetectHelper != null)
+            {
+                circleDetectHelper.enabled = true;
+                circleDetectHelper.isShowGizmo = true; // System control
+            }
+            
+            // Re-subscribe logic from old OnEnable
+            if (guardManager == null) guardManager = GuardManager.Instance;
+            SubscribeToTimeEvents();
+        }
+
+        private void OnDisable()
+        {
+             // Cleanup if needed
+             if (circleDetectHelper != null)
+             {
+                 circleDetectHelper.enabled = false;
+                 circleDetectHelper.isShowGizmo = false;
+             }
+             
+             UnsubscribeFromTimeEvents();
+        }
         
-        // Caching
+        // Bộ nhớ đệm (Cache)
         private GameObject cachedRetreatTarget = null;
         
         [Header("Debug")]
+        [SerializeField] private float attackCooldownTimer; // Hiển thị trong Inspector
         [SerializeField] private bool isDebugMovePos = false;
         [SerializeField] private bool isDebugAttackRange = true;
+
 
 
 
@@ -94,7 +127,7 @@ namespace Script.Game.Mobs.Subjects
         {
             Debug.Log($"[Archer] Forcing state update for {gameObject.name}...");
             
-            // Re-evaluate based on current conditions
+            // Đánh giá lại trạng thái dựa trên điều kiện hiện tại
             if (guardManager != null && guardManager.isEnemyAttack)
             {
                 TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
@@ -107,34 +140,15 @@ namespace Script.Game.Mobs.Subjects
                 }
                 else
                 {
-                    TransitionToState(DenizenStatus.ArcherState.ReturningToBase); // Or HoldingWall depending on logic
+                    TransitionToState(DenizenStatus.ArcherState.ReturningToBase); // Hoặc HoldingWall tùy logic
                 }
             }
         }
 
         private void OnDrawGizmos()
         {
-            if (isDebugAttackRange && status != null)
-            {
-                Gizmos.color = Color.magenta; // Pink
-                
-                // Determine facing direction based on localScale.x (1 = Right, -1 = Left)
-                float facingDir = transform.localScale.x > 0 ? 1f : -1f;
-                // Or check if sprite is flipped? Usually scale.x is the standard way here.
-                // Assuming default sprite faces Right.
-                
-                Vector3 startPos = transform.position + new Vector3(0, 0.1f, 0);
-                Vector3 endPos = startPos + new Vector3(facingDir * status.attackRange, 0, 0);
-                
-                // Draw Line (Ray)
-                Gizmos.DrawLine(startPos, endPos);
-                
-                // Draw small sphere at end to see the tip
-                Gizmos.DrawWireSphere(endPos, 0.2f);
-                
-                // Draw small vertical mark at end to mimic "End of range"
-                Gizmos.DrawLine(endPos + Vector3.up * 0.2f, endPos - Vector3.up * 0.2f);
-            }
+            // Gizmo range đã được vẽ bởi CircleDetectHelper hoặc RayCastHelper
+            // Chỉ giữ lại các gizmo debug khác nếu có
         }
 
         // --- IHealth Interface Properties ---
@@ -178,67 +192,48 @@ namespace Script.Game.Mobs.Subjects
                 status = gameObject.AddComponent<DenizenStatus>();
             }
 
-            rayHelper = GetComponent<RayCastHelper>();
-            if (rayHelper == null)
-            {
-               rayHelper = gameObject.AddComponent<RayCastHelper>();
-            }
+            circleDetectHelper = GetComponent<Script.Game.Other.CircleDetectHelper>();
+            // Note: CircleDetectHelper is managed by DenizenRoleController usually, but we get reference here.
             
             animator = GetComponent<Animator>();
             
-            InitializeRayCast();
+            InitializeDetector();
+        }
+        
+        private void InitializeDetector()
+        {
+            if (circleDetectHelper == null) return;
+            circleDetectHelper.SetDetectRadius(status.archerDetectRange);
         }
         
 
 
         private void Start()
         {
-            // Get managers
+            // Lấy các Manager
             timeManager = GameTimeManager.Instance;
             wallManager = WallAndStumpManager.Instance;
             guardManager = GuardManager.Instance;
             
-            // Check alarm state
+            // Kiểm tra trạng thái báo động
             if (guardManager != null && guardManager.isEnemyAttack)
             {
                 status.archerState = (DenizenStatus.ArcherState)DenizenStatus.ArcherState.ReturningToBase;
             }
             
-            // Subscribe to time events
+            // Đăng ký sự kiện thời gian
             SubscribeToTimeEvents();
             
-            // Initial state check (only if not already set by logic above)
+            // Kiểm tra trạng thái ban đầu (nếu chưa được thiết lập)
             if (timeManager != null && !guardManager.isEnemyAttack)
             {
                 status.archerState = timeManager.IsDaytime ? DenizenStatus.ArcherState.Hunting : DenizenStatus.ArcherState.HoldingWall;
             }
         }
         
-        private void OnEnable() // Re-subscribe when enabled (active behavior)
-        {
 
-             
-             if (guardManager == null) guardManager = GuardManager.Instance;
-             // Registration handled by DenizenRoleController
-             
-             SubscribeToTimeEvents();
-        }
-        
-        private void OnDisable()
-        {
 
-             
-             UnsubscribeFromTimeEvents();
-             // Unregistration handled by DenizenRoleController
-        }
 
-        private void InitializeRayCast()
-        {
-            if (rayHelper == null) return;
-            
-            // Allow status references to be used, assuming they are set defaults in DenizenStatus or Inspector
-            rayHelper.SetRayLength(status.detectRange + 1.5f);
-        }
         
         private void SubscribeToTimeEvents()
         {
@@ -246,7 +241,7 @@ namespace Script.Game.Mobs.Subjects
             
             try
             {
-                // Match Debug Time Manager: Morning (7), Night (19)
+                // Thời gian Debug: Sáng (7), Tối (19)
                 timeManager.SubscribeToHourlyEvent(19, OnNightFalls);
                 timeManager.SubscribeToHourlyEvent(7, OnDayBreaks);
                 isSubscribedToTimeEvents = true;
@@ -260,7 +255,7 @@ namespace Script.Game.Mobs.Subjects
         private void OnDestroy()
         {
             UnsubscribeFromTimeEvents();
-            // Unregistration handled by Controller
+            // Việc hủy đăng ký được xử lý bởi Controller
             CleanupReferences();
         }
 
@@ -298,6 +293,16 @@ namespace Script.Game.Mobs.Subjects
         // --- INPCBehavior implementation ---
         public void UpdateBehavior()
         {
+            //tính toán thời gian tấn công
+            if (status.attackSpeed > 0)
+            {
+                attackCooldownTimer -= Time.deltaTime;
+                if (attackCooldownTimer < 0)
+                {
+                    attackCooldownTimer = 0; // Giữ ở 0 khi sẵn sàng tấn công
+                }
+            }
+
             if (IsDead || status == null || animator == null)
             {
                 if (!IsDead && status == null)
@@ -305,22 +310,15 @@ namespace Script.Game.Mobs.Subjects
                 return;
             }
 
-            if (rayHelper != null) 
-            {
-                try
-                {
-                    rayHelper.DrawRay();
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"[Archer] RayCast error: {e.Message}");
-                }
-            }
+            // CircleDetectHelper tự handle việc vẽ Gizmo trong OnDrawGizmos của nó.
+            
+            // Luôn kiểm tra mục tiêu xung quanh và đăng ký với GuardManager
+            CheckForTargets();
             
             try
             {
-                // Check GuardManager Alarm State each frame or trust event? 
-                // Better to have explicit priority: If alarm -> Returning/Holding
+                // Kiểm tra trạng thái báo động từ GuardManager
+                // Ưu tiên rõ ràng: Nếu báo động -> Returning/Holding
                 if (guardManager != null && guardManager.isEnemyAttack && 
                     status.archerState == DenizenStatus.ArcherState.Hunting)
                 {
@@ -364,22 +362,22 @@ namespace Script.Game.Mobs.Subjects
 
         #region State Handlers
         
-        // --- PUBLIC METHODS for GuardManager interaction ---
+        // --- PHƯƠNG THỨC CÔNG KHAI để GuardManager gọi ---
         public void OnGuardManagerStatusChanged(bool isEnemyAttack)
         {
             if (isEnemyAttack)
             {
-                // Alarm raised
+                // Bật báo động
                 TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
             }
             else
             {
-                // Alarm cleared
-                 if (timeManager != null && timeManager.IsDaytime)
-                 {
-                     TransitionToState(DenizenStatus.ArcherState.Hunting);
-                 }
-                 // If night, stay in HoldingWall (implied)
+                // Tắt báo động
+                if (timeManager != null && timeManager.IsDaytime)
+                {
+                    TransitionToState(DenizenStatus.ArcherState.Hunting);
+                }
+                // Nếu ban đêm, giữ trạng thái Phòng thủ (ngầm định)
             }
         }
 
@@ -405,34 +403,18 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleHuntingState()
         {
-            // Scan for targets using RayCast
-            if (CheckForTargets()) 
+            
+
+             // LOGIC DEBUG: Nếu có target từ SelectTargetAndLog, dừng và quay mặt về phía đó.
+            if (status.currentTarget != null)
             {
-                // If target is Enemy -> Report and Retreat
-                if (pendingTarget != null && pendingTarget.CompareTag("Enemy"))
-                {
-                    if (guardManager != null) guardManager.RegisterEnemy(pendingTarget);
-                    TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
-                    pendingTarget = null;
-                    return;
-                }
-                
-                // If target is Animal -> Stop and Hunt
-                if (pendingTarget != null)
-                {
-                    status.currentTarget = pendingTarget;
-                    status.currentSpeed = 0f; // Stop moving
-                    FaceTarget(status.currentTarget.transform.position);
-                    
-                    if (Time.time - status.lastAttackTime >= status.attackCooldown + ATTACK_READY_BUFFER)
-                    {
-                        PerformAttack();
-                    }
-                    return;
-                }
+                status.currentSpeed = 0f;
+                FaceTarget(status.currentTarget.transform.position);
+                // Tấn công được xử lý bởi timer trong SelectTargetAndLog
+                return;
             }
 
-            // No target found -> Wander logic
+            // Không tìm thấy mục tiêu -> Đi tuần
             status.currentTarget = null;
             pendingTarget = null;
 
@@ -440,86 +422,74 @@ namespace Script.Game.Mobs.Subjects
                 Vector3.Distance(transform.position, currentHuntingTargetPos.Value) < 0.5f ||
                 Time.time - lastHuntingMoveTime > HUNTING_PATROL_INTERVAL)
             {
-                // Pick new random point within HUNTING_RANGE of the FARTHEST wall
-                GameObject baseWall = status.assignedWall;
-                
-                // If no wall assigned yet, ask GuardManager for current defensive line
-                if (baseWall == null && guardManager != null)
-                {
-                    baseWall = guardManager.GetCurrentDefensiveWall(status.isLeftFlank);
-                    status.assignedWall = baseWall;
-                }
-                
-                Vector3 origin = baseWall != null ? baseWall.transform.position : transform.position;
-                
                 if (guardManager == null) guardManager = GuardManager.Instance;
-                float huntingRange = guardManager.archerHuntingRange;
-                    
-                float randomX = UnityEngine.Random.Range(10f, huntingRange); 
-                // Left Flank (Negative X) -> Direction -1 (Outward Left)
-                // Right Flank (Positive X) -> Direction +1 (Outward Right)
-                float direction = status.isLeftFlank ? -1f : 1f;
-                
-                currentHuntingTargetPos = new Vector3(
-                    origin.x + (direction * randomX), 
-                    origin.y, 
-                    origin.z
-                );
+
+                // Hỏi GuardManager vị trí bắt đầu săn bắn
+                Vector3? huntingStartPos = guardManager.GetHuntingRangeStartPosition(status.isLeftFlank);
+
+                if (huntingStartPos.HasValue)
+                {
+                    // Có điểm xuất phát (Wall hoặc TownCenter) -> Đi săn trong bãi săn
+                    CalculateHuntingPatrolPosition(huntingStartPos.Value, true);
+                }
+                else
+                {
+                    // Không có điểm xuất phát -> Random xung quanh vị trí hiện tại
+                    currentHuntingTargetPos = Script.Utils.WorldUtility.GetRandomPositionNearby(transform.position, 10f);
+                }
                 
                 lastHuntingMoveTime = Time.time;
             }
 
-            MoveTowardsPosition(currentHuntingTargetPos.Value, status.walkSpeed); // Use WalkSpeed for hunting patrol
+            MoveTowardsPosition(currentHuntingTargetPos.Value, status.walkSpeed); // Dùng tốc độ đi bộ khi tuần tra
             if (animator != null) animator.Play("archerMove");
+        }
+
+        private void CalculateHuntingPatrolPosition(Vector3 origin, bool directional)
+        {
+            if (guardManager == null) guardManager = GuardManager.Instance;
+            float huntingRange = guardManager.archerHuntingRange;
+
+            // Logic đi săn có hướng (khi có base)
+            float randomX = UnityEngine.Random.Range(10f, huntingRange); 
+            // Cánh trái (X âm) -> Hướng -1 (Ra ngoài trái)
+            // Cánh phải (X dương) -> Hướng +1 (Ra ngoài phải)
+            float direction = status.isLeftFlank ? -1f : 1f;
+            
+            currentHuntingTargetPos = new Vector3(
+                origin.x + (direction * randomX), 
+                origin.y, 
+                origin.z
+            );
         }
         
         private void HandleHoldingWallState()
         {
-            // Note: NO Checking Wall Info here. GuardManager handles critical alerts.
-            // Note: Combat logic is integrated here.
+            // Note: KHÔNG kiểm tra thông tin Wall ở đây. GuardManager xử lý cảnh báo.
+            // Note: Logic chiến đấu được tích hợp ở đây.
             
-            // 1. Check for Enemies
-            if (CheckForTargets() && pendingTarget != null)
+            // 1. Kiểm tra kẻ thù 
+            
+            // LOGIC DEBUG: Nếu có target từ SelectTargetAndLog, dừng và quay mặt về phía đó.
+            if (status.currentTarget != null)
             {
-                if (pendingTarget.activeInHierarchy && pendingTarget.CompareTag("Enemy"))
-                {
-                    status.currentTarget = pendingTarget;
-                    // Report presence to keep alarm alive
-                    if (guardManager != null) guardManager.RegisterEnemy(pendingTarget); 
-                    
-                    // Attack Logic
-                    FaceTarget(status.currentTarget.transform.position);
-                    status.currentSpeed = 0f;
-                    
-                    if (Time.time - status.lastAttackTime >= status.attackCooldown + ATTACK_READY_BUFFER)
-                    {
-                        PerformAttack();
-                    }
-                    else
-                    {
-                        // Cooldown idle
-                        if (animator != null) animator.Play("archerIdle");
-                    }
-                    pendingTarget = null;
-                    return;
-                }
-                // Ignore animals while Holding Wall (defensive duty)
-                pendingTarget = null; 
+                status.currentSpeed = 0f;
+                FaceTarget(status.currentTarget.transform.position);
+                 // Tấn công được xử lý bởi timer trong SelectTargetAndLog
+                return;
             }
             
-            // 2. No enemies -> Guard Posture
-            // Ensure we are at the assigned post if valid
-            if (status.assignedWall != null)
-            {
-                 Vector3 targetPosition = GetWallDefensePosition(status.assignedWall);
-                 float distanceToWall = Vector2.Distance(transform.position, targetPosition);
+            // 2. Không có kẻ thù -> Tư thế phòng thủ
+            // Luôn lấy vị trí phòng thủ từ GuardManager (bao gồm cả fallback về TownCenter)
+            Vector3 targetPosition = GetDefensivePosition(status.assignedWall);
+            float distanceToTarget = Vector2.Distance(transform.position, targetPosition);
             
-                 if (distanceToWall > WALL_ARRIVAL_DISTANCE)
-                 {
-                     MoveTowardsPosition(targetPosition, status.runSpeed);
-                     if (animator != null) animator.Play("archerMove");
-                     return;
-                 }
+            // Nếu vị trí đích khác vị trí hiện tại -> Di chuyển
+            if (distanceToTarget > WALL_ARRIVAL_DISTANCE)
+            {
+                 MoveTowardsPosition(targetPosition, status.runSpeed);
+                 if (animator != null) animator.Play("archerMove");
+                 return;
             }
             
             // Idling at post
@@ -531,20 +501,20 @@ namespace Script.Game.Mobs.Subjects
         
         private void HandleRetreatingToInnerWallState()
         {
-            // Triggered via ForceRetreat or Wall Critical
+            // Được kích hoạt thông qua ForceRetreat hoặc khi Wall sắp sập
             if (cachedRetreatTarget == null)
             {
-                 // Fallback if target lost
+                 // Dự phòng nếu mất mục tiêu
                  TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
                  return;
             }
 
-            Vector3 retreatPos = GetWallDefensePosition(cachedRetreatTarget);
+            Vector3 retreatPos = GetDefensivePosition(cachedRetreatTarget);
             float distanceToWall = Vector2.Distance(transform.position, retreatPos);
             
             if (distanceToWall <= RETREAT_COMPLETE_DISTANCE)
             {
-                // Debug.Log($"[Archer] Retreat complete, now defending {cachedRetreatTarget.name}");
+                // Debug.Log($"[Archer] Rút lui hoàn tất, giờ bảo vệ {cachedRetreatTarget.name}");
                 status.previousWall = status.assignedWall;
                 status.assignedWall = cachedRetreatTarget;
                 cachedRetreatTarget = null;
@@ -559,25 +529,22 @@ namespace Script.Game.Mobs.Subjects
         
         private void HandleReturningToBaseState()
         {
-            // 1. Update/Get Wall Objective from GuardManager
+            // 1. Cập nhật/Lấy mục tiêu tường phòng thủ từ GuardManager
             if (guardManager == null) guardManager = GuardManager.Instance;
             
-            // Re-fetch assigned wall if null or just to update
+            // Lấy lại tường được gán nếu null hoặc để cập nhật
             if (guardManager != null)
             {
                 GameObject targetWall = guardManager.GetCurrentDefensiveWall(status.isLeftFlank);
                 status.assignedWall = targetWall; 
             }
             
-            // 2. If no wall exists (total destruction), stand ground / fallback to Town logic?
-            if (status.assignedWall == null)
-            {
-                 TransitionToState(DenizenStatus.ArcherState.HoldingWall);
-                 return;
-            }
+            // 2. Nếu không có tường (phá hủy hoàn toàn), vẫn lấy vị trí fallback từ GuardManager
+            // Không return sớm nữa
+            // if (status.assignedWall == null) ...
             
-            // 3. Move to Wall
-            Vector3 targetPosition = GetWallDefensePosition(status.assignedWall);
+            // 3. Di chuyển về tường
+            Vector3 targetPosition = GetDefensivePosition(status.assignedWall);
             float distance = Vector2.Distance(transform.position, targetPosition);
             
             if (distance > WALL_ARRIVAL_DISTANCE)
@@ -587,7 +554,7 @@ namespace Script.Game.Mobs.Subjects
             }
             else
             {
-                // Arrived
+                // Đã đến nơi
                 TransitionToState(DenizenStatus.ArcherState.HoldingWall);
             }
         }
@@ -598,32 +565,47 @@ namespace Script.Game.Mobs.Subjects
         
         private bool CheckForTargets()
         {
-            // Throttle checks
+            // Giới hạn kiểm tra
             if (Time.time - lastTargetCheckTime < TARGET_CHECK_INTERVAL) return false;
             lastTargetCheckTime = Time.time;
 
             if (TryAcquireTarget(out GameObject newTarget))
             {
                 pendingTarget = newTarget;
+                
+                // Register with GuardManager if it is an Enemy
+                if (guardManager != null && newTarget.CompareTag("Enemy"))
+                {
+                    guardManager.RegisterEnemy(newTarget);
+                }
+                
                 return true;
             }
             pendingTarget = null;
             return false;
         }
 
+
+
         private bool TryAcquireTarget(out GameObject target)
         {
             target = null;
-            if (rayHelper == null || rayHelper.GetHitObjects() == null) return false;
+            if (circleDetectHelper == null) return false;
+
+            // Sync debug state
+            circleDetectHelper.isShowGizmo = isDebugAttackRange;
+
+            // Sử dụng Helper để quét
+            List<GameObject> detected = circleDetectHelper.ScanAndGetDetectedObjects(status.archerDetectRange);
             
-            List<GameObject> detected = rayHelper.GetHitObjects(); // Use built-in getter to be safe
             if (detected.Count == 0) return false;
 
             GameObject priorityTarget = GetPriorityTarget(detected);
             if (priorityTarget == null || !priorityTarget.activeInHierarchy) return false;
 
+            // Kiểm tra khoảng cách lần nữa (để chắc chắn)
             float distance = Vector3.Distance(transform.position, priorityTarget.transform.position);
-            if (distance > status.attackRange) return false;
+            if (distance > status.archerDetectRange) return false;
 
             target = priorityTarget;
             return true;
@@ -642,7 +624,7 @@ namespace Script.Game.Mobs.Subjects
                     enemyInfo = obj;
                     break;
                 }
-                // Check hunting tags
+                // Kiểm tra thẻ săn bắn (hunting tags)
                 if (PrefabData.Instance != null && PrefabData.Instance.huntingTargetTags != null)
                 {
                     foreach(var tag in PrefabData.Instance.huntingTargetTags)
@@ -655,7 +637,7 @@ namespace Script.Game.Mobs.Subjects
                     }
                 }
             }
-            // Prioritize Enemy over Animal
+            // Ưu tiên Enemy hơn Animal
             return enemyInfo ?? animalInfo;
         }
 
@@ -666,8 +648,8 @@ namespace Script.Game.Mobs.Subjects
                  // Debug.Log($"[Archer] Attack {status.currentTarget.name}");
             }
                  
-            // Start Animation Sequence: archerDraw -> Event(OnDrawComplete) -> archerRelease -> Event(OnArrowRelease)
-            // Note: If target is Animal, animation is same.
+            // Bắt đầu chuỗi animation: archerDraw -> Event(OnDrawComplete) -> archerRelease -> Event(OnArrowRelease)
+            // Lưu ý: Nếu mục tiêu là Animal, animation cũng tương tự.
             if (animator != null) animator.Play("archerDraw");
             status.lastAttackTime = Time.time;
         }
@@ -679,7 +661,7 @@ namespace Script.Game.Mobs.Subjects
         
         public void OnArrowRelease()
         {
-            // Placeholder arrow release
+            // Bắn tên (Placeholder)
             // Debug.Log("[Archer] Arrow Released");
         }
 
@@ -717,16 +699,17 @@ namespace Script.Game.Mobs.Subjects
 
         #region Wall & Logic Helpers
         
-        private Vector3 GetWallDefensePosition(GameObject wall)
+        private Vector3 GetDefensivePosition(GameObject wall)
         {
-            if (wall == null) return transform.position;
-            
-            float direction = status.isLeftFlank ? 1f : -1f; 
-            return new Vector3(
-                wall.transform.position.x + direction * status.standBehindWallOffset,
-                wall.transform.position.y,
-                transform.position.z
-            );
+            if (guardManager == null)
+                guardManager = GuardManager.Instance;
+
+            if (guardManager != null)
+            {
+                return guardManager.GetDefensePositionForArcher(gameObject);
+            }
+
+            return transform.position;
         }
 
         private void TransitionToState(DenizenStatus.ArcherState newState)
@@ -786,7 +769,7 @@ namespace Script.Game.Mobs.Subjects
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[Archer] Error caching retreat target: {e.Message}");
+                Debug.LogError($"[Archer] Lỗi cache mục tiêu rút lui: {e.Message}");
                 cachedRetreatTarget = null;
             }
         }
@@ -798,6 +781,201 @@ namespace Script.Game.Mobs.Subjects
             {
                 TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
             }
+        }
+
+        private void SelectTargetAndLog()
+        {
+            // 1. Thu thập & Sắp xếp Mục tiêu (dùng OverlapCircle thay vì Raycast)
+            List<GameObject> allHits = DetectTargetsInRadius();
+            List<GameObject> enemies = new List<GameObject>();
+            List<GameObject> animals = new List<GameObject>();
+
+            foreach(var obj in allHits)
+            {
+                if (obj == null || !obj.activeInHierarchy) continue;
+                if (obj.CompareTag("Enemy")) enemies.Add(obj);
+                else 
+                {
+                    // Kiểm tra tag Animal từ PrefabData hoặc fallback
+                    // Kiểm tra an toàn: dùng tag rõ ràng
+                     if (PrefabData.Instance != null && PrefabData.Instance.huntingTargetTags != null)
+                     {
+                         foreach(var tag in PrefabData.Instance.huntingTargetTags)
+                         {
+                             if(obj.CompareTag(tag)) { animals.Add(obj); break; }
+                         }
+                     }
+                     else if (obj.CompareTag("Animal") || obj.CompareTag("Rabbit")) // Fallback
+                     {
+                         animals.Add(obj);
+                     }
+                }
+            }
+
+            // Sắp xếp theo khoảng cách
+            enemies.Sort((a, b) => Vector3.Distance(transform.position, a.transform.position)
+                .CompareTo(Vector3.Distance(transform.position, b.transform.position)));
+            animals.Sort((a, b) => Vector3.Distance(transform.position, a.transform.position)
+                .CompareTo(Vector3.Distance(transform.position, b.transform.position)));
+
+            GameObject target = null;
+            string action = "IDLE";
+            string reason = "";
+
+
+            // 2. Quyết định Mục tiêu & Hành động
+
+            // --- Ưu tiên 1: Kẻ thù ---
+            if (enemies.Count > 0)
+            {
+                target = enemies[0];
+
+                // Đăng ký kẻ thù vào GuardManager
+                if (guardManager != null)
+                {
+                    guardManager.RegisterEnemy(target);
+                }
+                
+                bool isAtWall = IsAtDefensivePosition();
+                
+                // Kiểm tra nếu TẤT CẢ tường bị phá (Tử chiến)
+                GameObject currentWall = status.assignedWall;
+                if (currentWall == null && guardManager != null)
+                {
+                    currentWall = guardManager.GetCurrentDefensiveWall(status.isLeftFlank);
+                    if (currentWall != null) status.assignedWall = currentWall; // Gán nếu tìm thấy
+                }
+
+                bool noWallsRemain = (currentWall == null);
+
+                if (isAtWall || noWallsRemain)
+                {
+                    // Chỉ tấn công nếu cooldown sẵn sàng
+                    if (attackCooldownTimer <= 0)
+                    {
+                        action = "ATTACKING";
+                        status.currentTarget = target; // KHÓA MỤC TIÊU
+                        PerformAttack();
+                        attackCooldownTimer = status.attackSpeed; // Reset cooldown sau khi bắn
+                        if (noWallsRemain) reason = "(Tử chiến)";
+                        
+                        // Log chỉ khi thực sự tấn công
+                        string targetInfo = $"{target.name} [{target.tag}] Pos:{target.transform.position}";
+                        string candidatesLog = "";
+                        foreach(var e in enemies) candidatesLog += $"[E]{e.name}({Math.Round(Vector3.Distance(transform.position, e.transform.position),1)}) ";
+                        foreach(var a in animals) candidatesLog += $"[A]{a.name}({Math.Round(Vector3.Distance(transform.position, a.transform.position),1)}) ";
+                        Debug.Log($"[Archer {transform.position}] ACTION: {action} {reason} | TARGET: {targetInfo} | CANDIDATES: {candidatesLog}");
+                    }
+                    else
+                    {
+                        action = "COOLDOWN";
+                        status.currentTarget = target; // Vẫn khóa mục tiêu
+                        reason = $"({attackCooldownTimer:F1}s)";
+                    }
+                }
+                else
+                {
+                    action = "RETREATING";
+                    status.currentTarget = null; // Xóa mục tiêu khi rút lui
+                    reason = "(Không ở Wall)";
+                    if (status.archerState != DenizenStatus.ArcherState.ReturningToBase 
+                        && status.archerState != DenizenStatus.ArcherState.RetreatingToInnerWall)
+                    {
+                        TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
+                    }
+                }
+            }
+            // --- Ưu tiên 2: Động vật ---
+            else if (animals.Count > 0)
+            {
+                target = animals[0];
+
+                bool isDay = timeManager != null && timeManager.IsDaytime;
+                bool isHunting = status.archerState == DenizenStatus.ArcherState.Hunting;
+
+                // Chỉ tấn công động vật nếu Ban ngày VÀ Săn bắn
+                if (isDay && isHunting)
+                {
+                    // Chỉ tấn công nếu cooldown sẵn sàng
+                    if (attackCooldownTimer <= 0)
+                    {
+                        action = "ATTACKING";
+                        status.currentTarget = target; // KHÓA MỤC TIÊU
+                        status.currentSpeed = 0f; // Dừng để bắn
+                        PerformAttack();
+                        attackCooldownTimer = status.attackSpeed; // Reset cooldown sau khi bắn
+                        
+                        // Log chỉ khi thực sự tấn công
+                        string targetInfo = $"{target.name} [{target.tag}] Pos:{target.transform.position}";
+                        string candidatesLog = "";
+                        foreach(var e in enemies) candidatesLog += $"[E]{e.name}({Math.Round(Vector3.Distance(transform.position, e.transform.position),1)}) ";
+                        foreach(var a in animals) candidatesLog += $"[A]{a.name}({Math.Round(Vector3.Distance(transform.position, a.transform.position),1)}) ";
+                        Debug.Log($"[Archer {transform.position}] ACTION: {action} | TARGET: {targetInfo} | CANDIDATES: {candidatesLog}");
+                    }
+                    else
+                    {
+                        action = "COOLDOWN";
+                        status.currentTarget = target; // Vẫn khóa mục tiêu
+                        reason = $"({attackCooldownTimer:F1}s)";
+                    }
+                }
+                else
+                {
+                    action = "IGNORING";
+                    status.currentTarget = null; // Bỏ qua
+                    reason = $"(Ngày:{isDay}, Trạng thái:{status.archerState})";
+                }
+            }
+            else
+            {
+                status.currentTarget = null; // Không có mục tiêu
+            }
+        }
+
+        // Phát hiện mục tiêu trong bán kính (hình tròn) - hỗ trợ cả mục tiêu bay
+        private List<GameObject> DetectTargetsInRadius()
+        {
+            List<GameObject> detectedTargets = new List<GameObject>();
+            
+            // Sử dụng OverlapCircleAll để phát hiện tất cả collider trong bán kính
+            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, status.archerDetectRange);
+            
+            foreach (Collider2D hit in hits)
+            {
+                GameObject obj = hit.gameObject;
+                
+                // Bỏ qua chính mình
+                if (obj == gameObject) continue;
+                
+                // Chỉ lấy Enemy hoặc Animal
+                if (obj.CompareTag("Enemy"))
+                {
+                    detectedTargets.Add(obj);
+                }
+                else if (PrefabData.Instance != null && PrefabData.Instance.huntingTargetTags != null)
+                {
+                    foreach (var tag in PrefabData.Instance.huntingTargetTags)
+                    {
+                        if (obj.CompareTag(tag))
+                        {
+                            detectedTargets.Add(obj);
+                            break;
+                        }
+                    }
+                }
+                else if (obj.CompareTag("Animal") || obj.CompareTag("Rabbit"))
+                {
+                    detectedTargets.Add(obj);
+                }
+            }
+            
+            return detectedTargets;
+        }
+
+        private bool IsAtDefensivePosition()
+        {
+            Vector3 targetPos = GetDefensivePosition(status.assignedWall);
+            return Vector2.Distance(transform.position, targetPos) <= WALL_ARRIVAL_DISTANCE + 0.5f; // Slight buffer
         }
 
         private void OnDayBreaks()
@@ -814,7 +992,7 @@ namespace Script.Game.Mobs.Subjects
 
         // --- Interface implementations ---
         
-        // Removed explicit ISaveable impl as done by DenizenRoleController through DenizenStatus
+        // Đã xóa impl ISaveable rõ ràng vì được DenizenRoleController thực hiện qua DenizenStatus
 
         public bool ConsumeCoinShield()
         {

@@ -8,7 +8,7 @@ namespace Script.Game.Item
     /// <summary>
     /// Unified tool system that replaces ToolStats + ToolRegistration.
     /// Each tool has a type that maps to a specific NPCRole.
-    /// Auto-registers with VillagerManager on spawn/enable.
+    /// Auto-registers with ToolManager on spawn/enable.
     /// </summary>
     public class ToolItem : MonoBehaviour
     {

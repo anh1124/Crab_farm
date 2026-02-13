@@ -34,8 +34,9 @@ namespace Script.Utils
         {
             if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
             {
-                Debug.LogError("BuildingManager or TownCenter not found!");
-                return 0f;
+                Debug.LogWarning("[WorldUtility] TownCenter not found! Returning random position near origin.");
+                // Fallback: Random position trong phạm vi 10f từ (0,0)
+                return Random.Range(-10f, 10f);
             }
 
             var townCenter = BuildingManager.instance.currentTownCenter;
@@ -55,6 +56,15 @@ namespace Script.Utils
             }
 
             return Random.Range(townCenterX - radius, townCenterX + radius);
+        }
+
+        /// <summary>
+        /// Trả về vị trí random trong phạm vi radius từ điểm center (chỉ trục X)
+        /// </summary>
+        public static Vector3 GetRandomPositionNearby(Vector3 center, float radius)
+        {
+            float randomX = Random.Range(center.x - radius, center.x + radius);
+            return new Vector3(randomX, center.y, center.z);
         }
 
         public static float GetRandomKingdomSafePos()

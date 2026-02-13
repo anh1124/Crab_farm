@@ -44,7 +44,6 @@ namespace Script.Game.Mobs.Subjects
         private Animator animator;
         private RayCastHelper rayCastHelper;
         private Coroutine fearRoutine;
-        private Coroutine checkRoutine;
 
         [Header("Coin Drop Settings")]
         [Tooltip("Thời gian tối thiểu giữa các lần drop coin khi gặp player (giây)")]
@@ -110,7 +109,21 @@ namespace Script.Game.Mobs.Subjects
     
         private void OnEnable()
         {
+            // Disable all detectives first
+            var controller = GetComponent<DenizenRoleController>();
+            if (controller != null)
+            {
+                controller.DisableAllDetectives();
+            }
+
             InitializeVillager();
+
+            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.enabled = true;
+                rayCastHelper.isDrawRay = true; // System control
+            }
 
             // Subscribe to time events
             if (GameTimeManager.Instance != null)
@@ -120,7 +133,16 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
-
+        /// <summary>
+        /// Start is called after all Awake methods have completed.
+        /// This ensures ToolManager and other managers are initialized before we check for tools.
+        /// </summary>
+        private void Start()
+        {
+            // Check for available tools after all managers are initialized
+            // This happens AFTER OnEnable, ensuring ToolManager.Instance is ready
+            CheckForToolsOnSpawn();
+        }
 
         private void OnDisable()
         {
@@ -130,9 +152,11 @@ namespace Script.Game.Mobs.Subjects
                 GameTimeManager.Instance.UnsubscribeFromHourlyEvent(19, HandleNightTime);
                 GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, HandleDayTime);
             }
-            StopCheckRoutine();
+            // StopCheckRoutine(); // Removed
             
-            // Note: VillagerManager removal means no central tool tracking via Manager cleanup here.
+            if (rayCastHelper != null) rayCastHelper.enabled = false;
+            
+            // Note: Tool tracking is handled by ToolManager.
             // Tools should be handled by the DroppedItem system or WorldManager if needed.
             if (currentTool != null && !currentTool.picked)
             {
@@ -155,6 +179,24 @@ namespace Script.Game.Mobs.Subjects
             if (isDebugGoPlace && isMoving)
             {
                 Debug.DrawLine(transform.position, targetPosition, Color.yellow);
+            }
+
+            // Perform Detection every frame (drawing and checking)
+            if (rayCastHelper != null)
+            {
+                List<GameObject> detectedObjects = rayCastHelper.DrawRayAndReturnListHitObjects(status.detectRangeRaycast);
+                
+                // Check for enemies
+                foreach (var hitObject in detectedObjects)
+                {
+                    if (hitObject != null && hitObject.CompareTag("Enemy"))
+                    {
+                        isInDanger = true;
+                        fearTimer = FEAR_DURATION;
+                        status.villagerState = DenizenStatus.VillagerState.Fear;
+                        break; // Found danger, prioritize it
+                    }
+                }
             }
 
             // Update fear timer
@@ -199,6 +241,8 @@ namespace Script.Game.Mobs.Subjects
                 // Debug.Log($"[VillagerBehavior] Tool assigned by Manager: {tool.name}");
             }
         }
+
+
         #endregion
 
         #region Initialization
@@ -231,30 +275,39 @@ namespace Script.Game.Mobs.Subjects
             
             isMoving = false;
             fearTimer = 0f;
-            // Immediate tool check on initialization
-            // Allow check if Idle OR MovingBackToTownCenter (just spawned/loaded)
-            if (currentTool == null && !isInDanger && 
-                (status.villagerState == DenizenStatus.VillagerState.Idle || 
-                 status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter))
+        }
+
+        /// <summary>
+        /// Check for available tools when Villager spawns.
+        /// Called from Start() to ensure ToolManager is initialized.
+        /// </summary>
+        private void CheckForToolsOnSpawn()
+        {
+            // Only check if we don't have a tool and aren't in danger
+            if (currentTool != null || isInDanger) return;
+
+            // Allow tool check for Idle or MoveBackToTownCenter states
+            if (status.villagerState != DenizenStatus.VillagerState.Idle && 
+                status.villagerState != DenizenStatus.VillagerState.MoveBackToTownCenter)
             {
-                 if (Script.Manager.MobsManager.ToolManager.Instance != null)
-                 {
-                     var tool = Script.Manager.MobsManager.ToolManager.Instance.GetNearestTool(transform.position);
-                     Debug.Log($"[VillagerBehavior] Initialize Check: {gameObject.name} at {transform.position}. Found tool: {(tool != null ? tool.name : "null")}");
-                     
-                     if (tool != null)
-                     {
-                         Debug.Log($"[VillagerBehavior] Assigning tool {tool.name} to {gameObject.name}");
-                         AssignTool(tool);
-                     }
-                 }
-                 else
-                 {
-                     Debug.LogError("[VillagerBehavior] ToolManager Instance is null!");
-                 }
+                return;
             }
 
-            StartCheckRoutine();
+            if (Script.Manager.MobsManager.ToolManager.Instance != null)
+            {
+                var tool = Script.Manager.MobsManager.ToolManager.Instance.GetNearestTool(transform.position);
+                //Debug.Log($"[VillagerBehavior] CheckForToolsOnSpawn: {gameObject.name} at {transform.position}. Found tool: {(tool != null ? tool.name : "null")}");
+                
+                if (tool != null)
+                {
+                    Debug.Log($"[VillagerBehavior] Assigning tool {tool.name} to {gameObject.name}");
+                    AssignTool(tool);
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[VillagerBehavior] ToolManager Instance is null during CheckForToolsOnSpawn!");
+            }
         }
         #endregion
 
@@ -643,7 +696,7 @@ namespace Script.Game.Mobs.Subjects
         #region Save System
         // Removed explicit ISaveable implementation as DenizenRoleController handles it via DenizenStatus
         // However, if there are transient fields like currentTool that need saving, they should be moved to DenizenStatus.
-        // For now, assuming currentTool is not persisted or handled elsewhere (VillagerManager handles tool assignment).
+        // For now, assuming currentTool is not persisted or handled elsewhere (ToolManager handles tool assignment).
         #endregion
 
         #region Trigger and Pickup
@@ -750,91 +803,6 @@ namespace Script.Game.Mobs.Subjects
         }
         #endregion
 
-        #region Coroutine Management
-        private void StartCheckRoutine()
-        {
-            StopCheckRoutine();
-            checkRoutine = StartCoroutine(CheckRoutine());
-        }
 
-        private void StopCheckRoutine()
-        {
-            if (checkRoutine != null)
-            {
-                StopCoroutine(checkRoutine);
-                checkRoutine = null;
-            }
-        }
-
-        /// <summary>
-        /// [QUAN TRỌNG] Vòng lặp kiểm tra môi trường mỗi 0.5s.
-        /// - Quét xung quanh để tìm Kẻ Thù (Enemy) -> Kích hoạt trạng thái Sợ Hãi (Fear).
-        /// - Cập nhật timer sợ hãi: Nếu hết giờ và an toàn -> Quay lại Idle hoặc về nhà.
-        /// </summary>
-        private IEnumerator CheckRoutine()
-        {
-            while (true)
-            {
-                // 1. Quét tìm mối nguy hiểm
-                foreach (var hitObject in rayCastHelper.DrawRayAndReturnListHitObjects())
-                {
-                    if (hitObject != null)
-                    {
-                        if (hitObject.CompareTag("Enemy"))
-                        {
-                            isInDanger = true;
-                            fearTimer = FEAR_DURATION;
-                            status.villagerState = DenizenStatus.VillagerState.Fear;
-                            break;
-                        }
-                    }
-                }
-
-                // 2. Đếm ngược thời gian sợ hãi
-                if (fearTimer > 0)
-                {
-                    fearTimer -= Time.deltaTime;
-                    // Hết sợ -> Quay lại trạng thái bình thường tùy theo giờ giấc
-                    if (fearTimer <= 0)
-                    {
-                        isInDanger = false;
-                        if (GameTimeManager.Instance != null)
-                        {
-                            int currentHour = GameTimeManager.Instance.GameHour;
-                            // Đêm (19h-6h): Về nhà
-                            if (currentHour >= 19 || currentHour < 6)
-                            {
-                                status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
-                            }
-                            // Ngày: Đi lang thang
-                            else
-                            {
-                                status.villagerState = DenizenStatus.VillagerState.Idle;
-                            }
-                        }
-                    }
-                }
-
-                // 3. Tìm kiếm Tool nếu đang rảnh (Idle hoặc đang về nhà) và chưa có tool
-                if (!isInDanger && currentTool == null && 
-                    (status.villagerState == DenizenStatus.VillagerState.Idle || 
-                     status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter))
-                {
-                    if (Script.Manager.MobsManager.ToolManager.Instance != null)
-                    {
-                        var nearestTool = Script.Manager.MobsManager.ToolManager.Instance.GetNearestTool(transform.position);
-                        if (nearestTool != null)
-                        {
-                            currentTool = nearestTool;
-                            status.villagerState = DenizenStatus.VillagerState.RunToGetTool;
-                            // Debug.Log($"[VillagerBehavior] {gameObject.name} found tool {nearestTool.name} via ToolManager");
-                        }
-                    }
-                }
-
-                yield return new WaitForSeconds(0.5f);
-            }
-        }
-        #endregion
     }
 }

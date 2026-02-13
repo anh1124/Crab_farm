@@ -78,6 +78,10 @@ namespace Script.Game.Mobs.MobsManager
             }
             return filtered;
         }
+        /// <summary>
+        /// Find the nearest Villager that can be assigned a tool.
+        /// Accepts Villagers in Idle OR MoveBackToTownCenter states (e.g., spawned at night).
+        /// </summary>
         public Script.Game.Mobs.Subjects.VillagerBehavior GetNearestIdleVillager(Vector3 position)
         {
             Script.Game.Mobs.Subjects.VillagerBehavior nearestVillager = null;
@@ -99,9 +103,13 @@ namespace Script.Game.Mobs.MobsManager
                          bool hasNoTool = behavior.currentTool == null;
                          bool notInDanger = !behavior.isInDanger;
                          var status = denizen.GetComponent<Script.Data_Model.Status.DenizenStatus>();
-                         bool isIdle = status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.Idle;
+                         
+                         // Accept both Idle and MoveBackToTownCenter states
+                         // This allows tool assignment even if Villager spawned at night
+                         bool isAvailable = status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.Idle ||
+                                           status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.MoveBackToTownCenter;
 
-                         if (hasNoTool && notInDanger && isIdle)
+                         if (hasNoTool && notInDanger && isAvailable)
                          {
                             float dist = Vector3.Distance(position, denizen.transform.position);
                             if (dist < minDistance)
@@ -112,7 +120,7 @@ namespace Script.Game.Mobs.MobsManager
                          }
                          else
                          {
-                             // Debug.Log($"[DenizenManager] Skip {denizen.name}: NoTool={hasNoTool}, Danger={!notInDanger}, Idle={isIdle} (State: {status.villagerState})");
+                             // Debug.Log($"[DenizenManager] Skip {denizen.name}: NoTool={hasNoTool}, Danger={!notInDanger}, Available={isAvailable} (State: {status.villagerState})");
                          }
                     }
                 }

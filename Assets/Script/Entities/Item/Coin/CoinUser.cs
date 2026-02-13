@@ -336,7 +336,7 @@ namespace Script.Game.Item.Coin
         private void ReleaseCoins()
         {   
             
-                Debug.LogWarning("đã gọi hàm ReleaseCoins");
+            //    Debug.LogWarning("đã gọi hàm ReleaseCoins");
             
             
             foreach (GameObject coin in coinsInTransit)

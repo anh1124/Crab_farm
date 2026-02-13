@@ -37,9 +37,12 @@ namespace Script.Data_Model
         public int currentCreatChunk = 21;
         #endregion
         
-        [Header("Wall and Stump ")] [Space(5)]
+        [Header("Wall ")] [Space(5)]
         
         public GameObject prefabWall;//prefab wall bình thường ,khi chạy sẽ tự lắp data vào
+
+        [Space(15)] [Header("Arrow ")] [Space(5)]
+        public GameObject arrow;
         
         [Space(15)] 
         [Header("Coin ")]

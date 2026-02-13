@@ -72,16 +72,17 @@ namespace Script.Data_Model.Status
         [Header("Archer Data")]
         public ArcherState archerState = ArcherState.Idle;
         public ArcherState previousArcherState = ArcherState.Idle;
-        [Tooltip("Phạm vi tấn công của Archer (Dùng riêng cho Archer)")]
-        public float attackRange = 10f;
-        [Tooltip("Phạm vi phát hiện kẻ thù bằng RaycastHelper (Dùng chung)")]
-        public float detectRange = 10f;
-        public float attackCooldown = 2.0f;
+        [Tooltip("Phạm vi phát hiện kẻ thù bằng RaycastHelper (Dùng cho Villager/Vagrant)")]
+        public float detectRangeRaycast = 10f; // Was detectRange
+
+        [Tooltip("Phạm vi tấn công/phát hiện của Archer (Dùng Circular Check)")]
+        public float archerDetectRange = 18f; // Was attackRange & huntingRange
+
+        public float attackSpeed = 2.0f; // Control attack frequency / debug log frequency
         public float lastAttackTime = 0f;
         public bool isLeftFlank;
         public GameObject assignedWall;
         public GameObject previousWall;
-        public float standBehindWallOffset = 0.8f;
         public GameObject currentTarget;
 
         // Properties for INPCStatus / Interfaces

@@ -24,7 +24,6 @@ namespace Script.Game.Mobs.Subjects
         public NPCRole CurrentRole = NPCRole.Vagrant;
 
         private Animator animator;
-        private RayCastHelper rayCastHelper;
 
         // Centralized Status
         private DenizenStatus denizenStatus;
@@ -39,26 +38,72 @@ namespace Script.Game.Mobs.Subjects
 
         [HideInInspector] [SerializeField] private NPCRole previousRole = NPCRole.Vagrant;
 
+        // Detection Helpers
+        private RayCastHelper rayCastHelper;
+
 #if UNITY_EDITOR
+        /// <summary>
+        /// OnValidate is called when Inspector values change in the Unity Editor.
+        /// This method handles role switching when CurrentRole is changed via Inspector.
+        /// 
+        /// CRITICAL BUG FIX EXPLANATION:
+        /// When you change CurrentRole in the Inspector (e.g., Archer -> Vagrant), Unity updates
+        /// the CurrentRole field BEFORE calling OnValidate. This creates a problem:
+        /// 
+        /// 1. User changes Inspector: Archer -> Vagrant
+        /// 2. Unity sets CurrentRole = Vagrant (BEFORE OnValidate runs)
+        /// 3. OnValidate runs and tries to call ChangeRole(Vagrant)
+        /// 4. ChangeRole has this check: if (newRole == CurrentRole) return;
+        /// 5. Since CurrentRole is already Vagrant, it sees Vagrant == Vagrant and exits early
+        /// 6. Result: No role change logic executes! Archer stays registered, causing bugs.
+        /// 
+        /// THE FIX:
+        /// We temporarily revert CurrentRole back to the OLD role before calling ChangeRole.
+        /// This ensures ChangeRole sees oldRole != newRole and executes the full transition logic:
+        /// - Unregister from old manager (e.g., GuardManager for Archer)
+        /// - Apply new role behavior
+        /// - Register with new manager
+        /// </summary>
         private void OnValidate()
         {
-            // Avoid logic loops
-            if (CurrentRole == previousRole) return;
+           // Debug.Log($"[OnValidate] ENTRY: CurrentRole={CurrentRole}, previousRole={previousRole}");
+            
+            // Avoid logic loops - if no change detected, exit early
+            if (CurrentRole == previousRole)
+            {
+               // Debug.Log($"[OnValidate] EARLY EXIT: CurrentRole == previousRole ({CurrentRole})");
+                return;
+            }
 
-            // Fix SendMessage error by delaying execution
+          //  Debug.Log($"[OnValidate] Change detected: {previousRole} -> {CurrentRole}");
+            
+            // CRITICAL: Update previousRole IMMEDIATELY to prevent double-trigger on next OnValidate
+            NPCRole oldRole = previousRole;
+            previousRole = CurrentRole;
+
+            // Use delayCall to avoid Unity's "SendMessage cannot be called during Awake/OnValidate" error
             UnityEditor.EditorApplication.delayCall += () =>
             {
-                if (this == null) return; // Safety check if object destroyed
-
-                if (CurrentRole != previousRole)
+                if (this == null)
                 {
-                    if (Application.isPlaying)
-                    {
-                        NPCRole newRole = CurrentRole;
-                        CurrentRole = previousRole; // Revert to trick ChangeRole
-                        ChangeRole(newRole);
-                    }
-                    previousRole = CurrentRole;
+                   // Debug.Log("[OnValidate delayCall] Object destroyed, skipping");
+                    return; // Safety check if object destroyed
+                }
+
+              //  Debug.Log($"[OnValidate delayCall] EXECUTING: CurrentRole={CurrentRole}, oldRole={oldRole}");
+                
+                if (Application.isPlaying)
+                {
+                    // THE FIX: Temporarily revert CurrentRole to oldRole before calling ChangeRole
+                    // This bypasses the early exit check in ChangeRole (if newRole == CurrentRole)
+                    NPCRole newRole = CurrentRole;
+                    CurrentRole = oldRole; // Revert to old role temporarily
+                  //  Debug.Log($"[OnValidate delayCall] Calling ChangeRole: {oldRole} -> {newRole}");
+                    ChangeRole(newRole); // ChangeRole will now see oldRole != newRole and execute properly
+                }
+                else
+                {
+                   // Debug.Log($"[OnValidate delayCall] NOT in play mode, skipping ChangeRole");
                 }
             };
         }
@@ -74,11 +119,7 @@ namespace Script.Game.Mobs.Subjects
                 Debug.LogWarning($"[DenizenRoleController] Animator missing on {gameObject.name}. Auto-added.");
             }
 
-            rayCastHelper = GetComponent<RayCastHelper>();
-            if (rayCastHelper == null)
-            {
-                rayCastHelper = gameObject.AddComponent<RayCastHelper>();
-            }
+            // Get or Add Unified Status
 
             // Get or Add Unified Status
             denizenStatus = GetComponent<DenizenStatus>();
@@ -108,7 +149,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnDestroy()
         {
-            UnregisterFromManager();
+            UnregisterFromManager(CurrentRole);
         }
 
         private void Start()
@@ -116,11 +157,8 @@ namespace Script.Game.Mobs.Subjects
             ApplyRole(CurrentRole);
             RegisterWithManager();
 
-            // Set RayCast distance based on Status
-            if (rayCastHelper != null && denizenStatus != null)
-            {
-                rayCastHelper.SetRayLength(denizenStatus.detectRange);
-            }
+            // Set Detection Ranges based on Status
+            // Logic moved to specific Behaviors
         }
 
         private void Update()
@@ -136,7 +174,17 @@ namespace Script.Game.Mobs.Subjects
         {
             if (newRole == CurrentRole) return;
 
-            UnregisterFromManager();
+         //   Debug.Log($"[DenizenRoleController] ChangeRole called: {CurrentRole} -> {newRole}");
+            NPCRole oldRole = CurrentRole; // Save old role BEFORE changing
+
+            try
+            {
+                UnregisterFromManager(oldRole); // Pass old role explicitly
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[DenizenRoleController] Error unregistering role {oldRole}: {e.Message}");
+            }
 
             // Update Role FIRST so that ApplyRole and RegisterWithManager see the new role
             CurrentRole = newRole;
@@ -150,6 +198,9 @@ namespace Script.Game.Mobs.Subjects
 
             // Finally Register (DenizenManager will see new role via CurrentRole)
             RegisterWithManager();
+            
+            // Ensure previousRole is kept in sync for Inspector changes
+            previousRole = newRole;
         }
 
         private void ApplyRole(NPCRole role)
@@ -163,6 +214,9 @@ namespace Script.Game.Mobs.Subjects
             RuntimeAnimatorController targetController = null;
             DisableAllBehaviors();
 
+            // Tắt cả 2 detector trước, sau đó bật cái cần thiết
+            // Logic moved to specific Behaviors
+
             switch (role)
             {
                 case NPCRole.Vagrant:
@@ -172,7 +226,7 @@ namespace Script.Game.Mobs.Subjects
                         return;
                     }
                     gameObject.tag = "Vagrant";
-                    vagrantBehavior.enabled = true; // Use simple enabled toggle if behaviors use OnEnable/OnDisable
+                    vagrantBehavior.enabled = true;
                     currentActiveBehavior = vagrantBehavior;
                     targetController = DenizenManager.Instance.vagrantAnimatorController;
                     break;
@@ -237,14 +291,27 @@ namespace Script.Game.Mobs.Subjects
             DenizenManager.Instance?.RegisterDenizen(gameObject);
         }
 
-        private void UnregisterFromManager()
+        private void UnregisterFromManager(NPCRole oldRole)
         {
+          //  Debug.Log($"[DenizenRoleController] UnregisterFromManager called for {gameObject.name}, oldRole={oldRole}");
             DenizenManager.Instance?.UnregisterDenizen(gameObject);
 
-            // Handle specific manager unregistration based on role
-            if (CurrentRole == NPCRole.Archer)
+            // Handle specific manager unregistration based on OLD role
+            if (oldRole == NPCRole.Archer)
             {
-                GuardManager.Instance?.UnregisterArcher(gameObject);
+                if (GuardManager.Instance != null)
+                {
+                    //Debug.Log($"[DenizenRoleController] Calling GuardManager.UnregisterArcher for {gameObject.name}");
+                    GuardManager.Instance.UnregisterArcher(gameObject);
+                }
+                else
+                {
+                    Debug.LogWarning("[DenizenRoleController] GuardManager Instance is NULL during unregister!");
+                }
+            }
+            else
+            {
+               // Debug.Log($"[DenizenRoleController] oldRole is {oldRole}, NOT calling UnregisterArcher");
             }
         }
 
@@ -279,6 +346,24 @@ namespace Script.Game.Mobs.Subjects
             {
                 // Refresh components even if role is same (e.g. initial load)
                 ApplyRole(savedRole);
+            }
+        }
+        public void DisableAllDetectives()
+        {
+            // Disable CircleDetectHelper
+            var circleHelper = GetComponent<CircleDetectHelper>();
+            if (circleHelper != null)
+            {
+                circleHelper.enabled = false;
+                circleHelper.isShowGizmo = false;
+            }
+
+            // Disable RayCastHelper
+            var rayHelper = GetComponent<RayCastHelper>();
+            if (rayHelper != null)
+            {
+                rayHelper.enabled = false;
+                rayHelper.isDrawRay = false;
             }
         }
     }

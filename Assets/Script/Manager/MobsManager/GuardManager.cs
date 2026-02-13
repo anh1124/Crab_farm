@@ -5,6 +5,7 @@ using Script.Data_Model.Interfaces;
 using Script.Data_Model;
 using Script.Data_Model.Status;
 using Script.Manager.WorldManager;
+using Script.Manager.Building;
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -24,6 +25,12 @@ namespace Script.Game.Mobs.MobsManager
         [Header("Defensive Structures")]
         public GameObject currentLeftWall;
         public GameObject currentRightWall;
+
+        [Header("Defense Slot Settings")]
+        public int archerSlotCount = 7;
+        public float archerSlotSpacing = 1.2f;
+        [Tooltip("Khoảng cách từ tường đến slot đầu tiên")]
+        public float defaultSlotOffset = 3.0f;
 
         [Header("Runtime State")]
         public bool isEnemyAttack = false;
@@ -216,10 +223,13 @@ namespace Script.Game.Mobs.MobsManager
 
             if (leftFlankArchers.Contains(archer) || rightFlankArchers.Contains(archer))
             {
-                Debug.LogWarning($"[GuardManager] Archer {archer.name} already registered");
+               // Debug.LogWarning($"[GuardManager] Archer {archer.name} already registered");
                 return;
             }
 
+            // ... (rest of logic)
+            // ...
+            
             var archerStatus = archer.GetComponent<DenizenStatus>(); // Simplified using
             if (archerStatus == null)
             {
@@ -232,13 +242,13 @@ namespace Script.Game.Mobs.MobsManager
             {
                 leftFlankArchers.Add(archer);
                 archerStatus.isLeftFlank = true;
-                DebugLog($" Registered {archer.name} to LEFT flank");
+                DebugLog($"Registered {archer.name} to LEFT flank");
             }
             else
             {
                 rightFlankArchers.Add(archer);
                 archerStatus.isLeftFlank = false;
-                DebugLog($" Registered {archer.name} to RIGHT flank");
+                DebugLog($"Registered {archer.name} to RIGHT flank");
             }
 
             // Check if alarm active -> force ReturningToBase immediately
@@ -246,24 +256,34 @@ namespace Script.Game.Mobs.MobsManager
             {
                  archerStatus.archerState = DenizenStatus.ArcherState.ReturningToBase;
             }
-
-           
         }
 
         public void UnregisterArcher(GameObject archer)
         {
-            if (archer == null) return;
+            if (archer == null)
+            {
+                Debug.LogWarning("[GuardManager] UnregisterArcher called with NULL archer");
+                return;
+            }
 
+            //Debug.Log($"[GuardManager] UnregisterArcher called for {archer.name}, LEFT count={leftFlankArchers.Count}, RIGHT count={rightFlankArchers.Count}");
+            
             bool wasRemoved = false;
             if (leftFlankArchers.Contains(archer))
             {
                 leftFlankArchers.Remove(archer);
                 wasRemoved = true;
+               // Debug.Log($"[GuardManager] ✅ Unregistered {archer.name} from LEFT flank");
             }
             else if (rightFlankArchers.Contains(archer))
             {
                 rightFlankArchers.Remove(archer);
                 wasRemoved = true;
+              //  Debug.Log($"[GuardManager] ✅ Unregistered {archer.name} from RIGHT flank");
+            }
+            else
+            {
+                Debug.LogWarning($"[GuardManager] ⚠️ Attempted to unregister {archer.name} but it was NOT in any flank list!");
             }
 
             if (wasRemoved)
@@ -520,11 +540,140 @@ namespace Script.Game.Mobs.MobsManager
             return isLeft ? currentLeftWall : currentRightWall;
         }
 
+        /// <summary>
+        /// Tính toán vị trí phòng thủ cho archer dựa trên slot system
+        /// Mỗi flank có archerSlotCount slots, cách nhau archerSlotSpacing
+        /// </summary>
+        public Vector3 GetDefensePositionForArcher(GameObject archer)
+        {
+            if (archer == null) return Vector3.zero;
+
+            var status = archer.GetComponent<DenizenStatus>();
+            if (status == null) return archer.transform.position;
+
+            bool isLeft = status.isLeftFlank;
+            List<GameObject> flankList = isLeft ? leftFlankArchers : rightFlankArchers;
+            GameObject wall = isLeft ? currentLeftWall : currentRightWall;
+            
+            // Tìm index của archer trong danh sách flank
+            int index = flankList.IndexOf(archer);
+            // Tính slot index (tuần hoàn)
+            int slotIndex = (index >= 0) ? index % archerSlotCount : 0;
+
+            if (wall == null)
+            {
+                // Fallback: Use TownCenter position if available
+                if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
+                {
+                    var tc = BuildingManager.instance.currentTownCenter;
+                    Transform tcTransform = tc.transform;
+                    Vector3 tcPos = tcTransform.position;
+                    
+                    // Logic: Xếp hàng xung quanh TownCenter (Plaza)
+                    // Lấy bán kính Plaza thực tế
+                    float startDist = 5f; // Default fallback
+                    var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+                    if(tcBehavior != null)
+                    {
+                        startDist = tcBehavior.plazaDistance;
+                    }
+
+                    // Bên trái đứng bên trái TC, bên phải đứng bên phải TC
+                    float dir = isLeft ? -1f : 1f;
+                    
+                    // Khoảng cách an toàn từ TC (plazaDistance)
+                    // Archer sẽ xếp hàng từ rìa Plaza VỀ PHÍA TownCenter
+                    // Slot 0: plazaDistance
+                    // Slot 1: plazaDistance - spacing
+                    // Slot 2: plazaDistance - 2*spacing
+                    float totalOffset = startDist - (slotIndex * archerSlotSpacing);
+                    
+                    // Đảm bảo không đứng quá gần tâm (giữ khoảng cách tối thiểu 2f)
+                    if (totalOffset < 2f) totalOffset = 2f;
+                    
+                    return new Vector3(tcPos.x + (dir * totalOffset), tcPos.y, archer.transform.position.z);
+                }
+                
+                // No wall, no TC -> Stand still
+                return archer.transform.position;
+            }
+
+            // Tính hướng (left flank = +, right flank = -)
+            float direction = isLeft ? 1f : -1f; // Lưu ý: Wall logic direction có thể khác TC logic direction tùy vào pivot của Wall
+            // Kiểm tra lại logic direction của Wall:
+            // Wall bên trái (LeftFlank): Quái đến từ bên trái -> Archer đứng Hướng +1 (Bên phải của Wall - Phía trong) ??? 
+            // KHÔNG, logic cũ là: isLeft ? 1f : -1f.
+            // Nếu Wall trái, quái bên trái. Archer đứng sau wall (bên phải wall). -> +1. Đúng.
+            // Nếu Wall phải, quái bên phải. Archer đứng sau wall (bên trái wall). -> -1. Đúng.
+
+            // Tính offset: defaultSlotOffset + (slotIndex * spacing)
+            float offset = defaultSlotOffset + (slotIndex * archerSlotSpacing);
+
+            Vector3 basePos = wall.transform.position;
+
+            return new Vector3(
+                basePos.x + direction * offset,
+                basePos.y,
+                archer.transform.position.z
+            );
+        }
+
         #endregion
 
         #region Statistics & Debug
 
        
+
+        [ContextMenu("Debug Archer Positions")]
+        public void DebugArcherPositions()
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.AppendLine("=== ARCHER POSITION DEBUG INFO ===");
+            
+            if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
+            {
+                var tc = BuildingManager.instance.currentTownCenter;
+                sb.AppendLine($"TownCenter Pos: {tc.transform.position}");
+                
+                var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+                if (tcBehavior != null)
+                {
+                    sb.AppendLine($"Plaza Distance: {tcBehavior.plazaDistance}");
+                }
+                else
+                {
+                    sb.AppendLine("Plaza Distance: N/A (Behavior Missing)");
+                }
+            }
+            else
+            {
+                sb.AppendLine("TownCenter: NULL");
+            }
+            
+            sb.AppendLine($"--- LEFT FLANK ({leftFlankArchers.Count}) ---");
+            for(int i=0; i<leftFlankArchers.Count; i++)
+            {
+                var archer = leftFlankArchers[i];
+                if(archer != null)
+                {
+                    int slotIndex = i % archerSlotCount;
+                    sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {GetDefensePositionForArcher(archer)}");
+                }
+            }
+            
+            sb.AppendLine($"--- RIGHT FLANK ({rightFlankArchers.Count}) ---");
+            for(int i=0; i<rightFlankArchers.Count; i++)
+            {
+                var archer = rightFlankArchers[i];
+                if(archer != null)
+                {
+                    int slotIndex = i % archerSlotCount;
+                    sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {GetDefensePositionForArcher(archer)}");
+                }
+            }
+            
+            Debug.Log(sb.ToString());
+        }
 
         [ContextMenu("Debug Clear Enemies")]
         public void DebugClearEnemies()
@@ -589,15 +738,37 @@ namespace Script.Game.Mobs.MobsManager
         }
         
         /// <summary>
+        /// Xác định vị trí bắt đầu cho vùng săn bắn
+        /// Ưu tiên: Wall → TownCenter → null (không vẽ)
+        /// </summary>
+        public Vector3? GetHuntingRangeStartPosition(bool isLeft)
+        {
+            GameObject wall = isLeft ? currentLeftWall : currentRightWall;
+            
+            // Ưu tiên 1: Dùng tường nếu có
+            if (wall != null)
+                return wall.transform.position;
+            
+            // Ưu tiên 2: Fallback về TownCenter
+            if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
+                return BuildingManager.instance.currentTownCenter.transform.position;
+            
+            // Ưu tiên 3: Không có điểm tham chiếu - trả về null để không vẽ
+            return null;
+        }
+        
+        /// <summary>
         /// Update logic for visualization
         /// </summary>
         private void UpdateHuntingRangeVisualization()
         {
-             if (currentLeftWall != null)
-                 DrawHuntingRange(currentLeftWall.transform.position, true); // Left is Left
+             Vector3? leftStart = GetHuntingRangeStartPosition(true);
+             if (leftStart.HasValue)
+                 DrawHuntingRange(leftStart.Value, true); // Left is Left
                  
-             if (currentRightWall != null)
-                 DrawHuntingRange(currentRightWall.transform.position, false); // Right is Right
+             Vector3? rightStart = GetHuntingRangeStartPosition(false);
+             if (rightStart.HasValue)
+                 DrawHuntingRange(rightStart.Value, false); // Right is Right
         }
         
         /// <summary>

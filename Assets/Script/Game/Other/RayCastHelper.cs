@@ -10,8 +10,9 @@ public class RayCastHelper : MonoBehaviour
     public float raycastDistance = 5f;
     public float raycastOffsetY = 0.25f;
     
-    // Cờ để bật/tắt vẽ ray trong Debug
+    // Cờ để bật/tắt vẽ ray trong Debug (System control)
     public bool isDrawRay = true;
+    public bool isShowGizmoUser = true; // User control
     public bool showDebugLog = false;  // Thêm biến để bật/tắt debug log
     
     // Thay LayerMask bằng List<string> để chứa các tag cần kiểm tra
@@ -19,18 +20,20 @@ public class RayCastHelper : MonoBehaviour
     public List<string> tagsToDetect = new List<string> { "Player", "Coin", "Enemy", "Animal" };
     public List<GameObject> hitObjects = new List<GameObject>();
 
-    private void Update()
+    // Update removed to control drawing via behavior call
+    
+    public List<GameObject> DrawRayAndReturnListHitObjects(float? overrideDistance = null)
     {
-        DeBugDrawRay();
-    }
-
-    public List<GameObject> DrawRayAndReturnListHitObjects()
-    {
-        DrawRay();
+        float currentDistance = overrideDistance ?? raycastDistance;
+        DrawRay(currentDistance);
+        if (isDrawRay && isShowGizmoUser)
+        {
+            DeBugDrawRay(currentDistance);
+        }
         return new List<GameObject>(hitObjects);
     }
 
-    public void DrawRay()
+    public void DrawRay(float distance)
     {
         // Làm sạch danh sách các GameObject bị bắn trúng trước đó
         hitObjects.Clear();
@@ -43,7 +46,7 @@ public class RayCastHelper : MonoBehaviour
 
         
         // Thực hiện raycast với tất cả các layer (vì ta sẽ lọc bằng tag sau)
-        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, raycastDistance);
+        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, distance);
 
      
 
@@ -82,13 +85,13 @@ public class RayCastHelper : MonoBehaviour
      
     }
 
-    public void DeBugDrawRay()
+    public void DeBugDrawRay(float distance)
     {
-        if (isDrawRay)
+        if (isDrawRay && isShowGizmoUser)
         {
             Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
             Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
-            Debug.DrawRay(origin, direction * raycastDistance, rayColor);
+            Debug.DrawRay(origin, direction * distance, rayColor);
         }
     }
 

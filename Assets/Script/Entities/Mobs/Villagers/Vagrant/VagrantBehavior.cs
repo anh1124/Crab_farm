@@ -21,7 +21,7 @@ namespace Script.Game.Mobs.Subjects
         
         // Component References
         private Animator animator;
-        private Coroutine checkRoutine;
+        // private Coroutine checkRoutine; // Removed
         private Coroutine flipRoutine;
         private Coroutine idleWalkRoutine;
         private RayCastHelper rayCastHelper;
@@ -46,16 +46,32 @@ namespace Script.Game.Mobs.Subjects
     
         private void OnEnable()
         {
+            // Disable all detectives first
+            var controller = GetComponent<DenizenRoleController>();
+            if (controller != null)
+            {
+                controller.DisableAllDetectives();
+            }
+
             // Re-initialize when role switches back to Vagrant or upon creation
             InitializeVagrant();
+            
+            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.enabled = true;
+                rayCastHelper.isDrawRay = true; // System control
+            }
+            
             GameTimeManager.Instance?.SubscribeToHourlyEvent(6, HandleTimeChange);
         }
 
         private void OnDisable()
         {
              GameTimeManager.Instance?.UnsubscribeFromHourlyEvent(6, HandleTimeChange);
-             StopCheckRoutine();
              StopAllMovementRoutines();
+             
+             if (rayCastHelper != null) rayCastHelper.enabled = false;
         }
 
         private void Start()
@@ -78,6 +94,11 @@ namespace Script.Game.Mobs.Subjects
         {
             if (status == null) status = GetComponent<DenizenStatus>();
             
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.SetRayLength(status.detectRangeRaycast);
+            }
+
             status.roadToTarget = 0f;
             // Only reset state if it's undefined or we are restarting logic? 
             // Better to keep existing state if reloading, but for safety:
@@ -89,11 +110,41 @@ namespace Script.Game.Mobs.Subjects
             animator = GetComponent<Animator>();
             if (status.startPosition == Vector3.zero) status.startPosition = transform.position;
             
-            StartCheckRoutine();
+            // StartCheckRoutine(); // Removed
         }
 
         public void UpdateBehavior()
         {
+            // Detection Logic - check for Enemy and Coin
+            if (rayCastHelper != null)
+            {
+                var detectedObjects = rayCastHelper.DrawRayAndReturnListHitObjects(status.detectRangeRaycast);
+                
+                foreach (var obj in detectedObjects)
+                {
+                    if (obj.CompareTag("Enemy"))
+                    {
+                        status.vagrantState = DenizenStatus.VagrantState.Fear;
+                        break;
+                    }
+            
+                    if (obj.CompareTag("Coin"))
+                    {
+                       // Debug.Log($"[VagrantBehavior] Coin detected: {obj.name} at {obj.transform.position}, current state: {status.vagrantState}");
+                        
+                        if ((status.vagrantState == DenizenStatus.VagrantState.Idle || 
+                             status.vagrantState == DenizenStatus.VagrantState.GetCoin) && 
+                            status.vagrantState != DenizenStatus.VagrantState.Fear)
+                        {
+                           // Debug.Log($"[VagrantBehavior] Changing state to GetCoin for coin: {obj.name}");
+                            status.vagrantState = DenizenStatus.VagrantState.GetCoin;
+                            status.coinTarget = obj;
+                        }
+                        break;
+                    }
+                }
+            }
+
             UpdateStateHandler();
 
             // Debug Visualization
@@ -105,7 +156,7 @@ namespace Script.Game.Mobs.Subjects
                 }
                 else if (status.vagrantState == DenizenStatus.VagrantState.GetCoin && status.coinTarget != null)
                 {
-                     Debug.DrawLine(transform.position, status.coinTarget.transform.position, Color.yellow);
+                    Debug.DrawLine(transform.position, status.coinTarget.transform.position, Color.yellow);
                 }
             }
         }
@@ -126,32 +177,7 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
-        private void UpdateStateBasedOnDetection(List<GameObject> gameObjectsToCheck)
-        {
-            foreach (var obj in gameObjectsToCheck)
-            {
-                if (obj.CompareTag("Enemy"))
-                {
-                    status.vagrantState = DenizenStatus.VagrantState.Fear;
-                    break;
-                }
-        
-                if (obj.CompareTag("Coin"))
-                {
-                   // Debug.Log($"[VagrantBehavior] Coin detected: {obj.name} at {obj.transform.position}, current state: {status.vagrantState}");
-                    
-                    if ((status.vagrantState == DenizenStatus.VagrantState.Idle || 
-                         status.vagrantState == DenizenStatus.VagrantState.GetCoin) && 
-                        status.vagrantState != DenizenStatus.VagrantState.Fear)
-                    {
-                       // Debug.Log($"[VagrantBehavior] Changing state to GetCoin for coin: {obj.name}");
-                        status.vagrantState = DenizenStatus.VagrantState.GetCoin;
-                        status.coinTarget = obj;
-                    }
-                    break;
-                }
-            }
-        }
+
         
         #region Handle States
 
@@ -188,7 +214,7 @@ namespace Script.Game.Mobs.Subjects
         {
             animator.Play("fear");
             status.roadToTarget = 0;
-            StopCheckRoutine();
+    
             StopAllMovementRoutines();
         }
         
@@ -284,26 +310,7 @@ namespace Script.Game.Mobs.Subjects
 
         #region Routines
 
-        private void StopCheckRoutine()
-        {
-            if (checkRoutine != null)
-            {
-                StopCoroutine(checkRoutine);
-                checkRoutine = null;
-            }
-        }
 
-        private IEnumerator CheckRoutine()
-        {
-            while (true)
-            {
-                if (rayCastHelper != null)
-                {
-                    UpdateStateBasedOnDetection(rayCastHelper.DrawRayAndReturnListHitObjects());
-                }
-                yield return new WaitForSeconds(0.5f);
-            }
-        }
 
         private void HandleTimeChange()
         {
@@ -311,18 +318,9 @@ namespace Script.Game.Mobs.Subjects
 
             if (GameTimeManager.Instance.IsDaytime && EnemyWaveManager.Instance.EnemyRemaining() <= 0)
             {
-                StartCheckRoutine();
+                // Reset state to Idle when day starts and no enemies
                 status.vagrantState = DenizenStatus.VagrantState.Idle;
             }
-        }
-
-        private void StartCheckRoutine()
-        {
-            if (checkRoutine != null)
-            {
-                StopCoroutine(checkRoutine);
-            }
-            checkRoutine = StartCoroutine(CheckRoutine());
         }
 
         private IEnumerator RandomFlipRoutine()
