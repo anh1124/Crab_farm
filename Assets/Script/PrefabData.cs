@@ -239,6 +239,9 @@ namespace Script.Data_Model
         
         // Danh sách tag mục tiêu săn bắn cho Archer
         public List<string> huntingTargetTags = new List<string> { "Animal" };
+
+        [Header("Debug / Settings")]
+        public bool allowAllyDamage = false; // Toggle friendly fire logic
       
         public readonly Dictionary<string, int> productPrices = new Dictionary<string, int>();
 

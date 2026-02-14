@@ -5,7 +5,7 @@ namespace Script.Utils
 {
     public static class DebugUtility
     {
-        public static bool IsDebugEnabled = true;
+        public static readonly bool IsDebugEnabled = true;
 
         public static void LogCollidedObjects(string colliderName, Collider2D[] hits, int count)
         {
@@ -54,6 +54,27 @@ namespace Script.Utils
         }
 
      
+        public static void DrawTargetIndicator(Vector3 position, Color color, float size = 0.5f)
+        {
+            if (!IsDebugEnabled) return;
+
+            // Draw a cross (duration: 0.1s to persist across frames)
+            Debug.DrawLine(position + Vector3.up * size, position + Vector3.down * size, color, 0.1f);
+            Debug.DrawLine(position + Vector3.left * size, position + Vector3.right * size, color, 0.1f);
+
+            // Draw a circle (simplified)
+            int segments = 16;
+            float angleStep = 360f / segments;
+            Vector3 prevPoint = position + new Vector3(size, 0, 0);
+            
+            for (int i = 1; i <= segments; i++)
+            {
+                float angle = i * angleStep * Mathf.Deg2Rad;
+                Vector3 nextPoint = position + new Vector3(Mathf.Cos(angle) * size, Mathf.Sin(angle) * size, 0);
+                Debug.DrawLine(prevPoint, nextPoint, color, 0.1f);
+                prevPoint = nextPoint;
+            }
+        }
     }
 }
 

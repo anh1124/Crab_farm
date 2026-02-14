@@ -358,18 +358,23 @@ namespace Script.Game.Mobs.MobsManager
         {
             if (enemy == null) return;
 
+            // PREVENT BUG: Check for EnemyBehavior FIRST. 
+            // If missing, we cannot track its death, so do NOT add to list.
+            var enemyBehavior = enemy.GetComponent<Script.Game.Enemy.EnemyBehavior>();
+            if (enemyBehavior == null)
+            {
+                Debug.LogWarning($"[GuardManager] Rejected enemy {enemy.name}: Missing EnemyBehavior component!");
+                return;
+            }
+
             // Prevent duplicates
             if (detectedEnemies.Contains(enemy)) return;
 
             detectedEnemies.Add(enemy);
             //DebugLog($"[GuardManager] 🚨 Detected NEW Enemy: {enemy.name}");
 
-            // Subscribe to Despawn event
-            var enemyBehavior = enemy.GetComponent<Script.Game.Enemy.EnemyBehavior>();
-            if (enemyBehavior != null)
-            {
-                enemyBehavior.OnDespawn += HandleEnemyDespawn;
-            }
+            // Subscribe to Despawn event (Safe now because we checked above)
+            enemyBehavior.OnDespawn += HandleEnemyDespawn;
 
             // If we detect a new enemy, CANCEL any pending peacetime cooldown
             if (alertCooldownCoroutine != null)
@@ -398,6 +403,9 @@ namespace Script.Game.Mobs.MobsManager
             {
                 detectedEnemies.Remove(enemyBehavior.gameObject);
             }
+
+            // SAFETY: Prune any other nulls (ghost enemies) just in case
+            detectedEnemies.RemoveAll(x => x == null);
 
             // Check if threat is gone
             if (detectedEnemies.Count == 0)

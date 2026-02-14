@@ -115,17 +115,19 @@ namespace Script.Game.Player
 
         public void TakeDamage(int amount)
         {
-            throw new System.NotImplementedException();
+            TakeDamage(amount, null);
         }
 
         public void Die()
         {
-            throw new NotImplementedException();
+            Die(null);
         }
 
         public void Heal(int amount)
         {
-            throw new System.NotImplementedException();
+            if (IsDead) return;
+            CurrentHp += amount;
+            if (CurrentHp > MaxHp) CurrentHp = MaxHp;
         }
 
         public bool IsDead { get; }
@@ -253,7 +255,8 @@ namespace Script.Game.Player
 
         public void DropOnDeath()
         {
-            throw new System.NotImplementedException();
+            // [TODO] Implement drop logic (e.g. drop coins, items)
+            // For now, empty to prevent crash
         }
     }
 }

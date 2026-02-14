@@ -147,7 +147,31 @@ namespace Script.Game.Other
                 }
             }
 
-            
+            // 4) Initialize Arrow Pool
+            InitializeArrowPool();
+        }
+
+        private void InitializeArrowPool()
+        {
+            if (PrefabData.Instance == null || PrefabData.Instance.arrow == null)
+            {
+                Debug.LogError("[System] Missing Arrow Prefab in PrefabData!");
+                return;
+            }
+
+            // Check if pool already exists (singleton check is inside ArrowPool but good to check here too)
+            if (Script.Game.Combat.ArrowPool.Instance == null)
+            {
+                GameObject poolObj = new GameObject("ArrowPool");
+                var pool = poolObj.AddComponent<Script.Game.Combat.ArrowPool>();
+                pool.Initialize(PrefabData.Instance.arrow);
+                Debug.Log("✅ ArrowPool system initialized.");
+            }
+            else
+            {
+                // Ensure it's initialized if it existed but wasn't ready
+                Script.Game.Combat.ArrowPool.Instance.Initialize(PrefabData.Instance.arrow);
+            }
         }
 
         // ==================== VALIDATION METHODS ====================

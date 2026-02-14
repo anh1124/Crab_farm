@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3886413513261598691
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6217569585450810106}
+  m_Layer: 9
+  m_Name: Firepoin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6217569585450810106
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3886413513261598691}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.691, y: 0.631, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1373674655896027329}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5039406809920019329
 GameObject:
   m_ObjectHideFlags: 0
@@ -21,6 +52,7 @@ GameObject:
   - component: {fileID: 6996326795921770314}
   - component: {fileID: 3218344427349539648}
   - component: {fileID: 4705056387235239032}
+  - component: {fileID: 4524887816005871866}
   m_Layer: 9
   m_Name: Denizen
   m_TagString: Denizen
@@ -40,7 +72,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 6217569585450810106}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &8393409496004937706
@@ -84,7 +117,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -350864345, guid: 18eba37342cad1149850ac9a445b857f, type: 3}
+  m_Sprite: {fileID: -1268485019, guid: c60e6ac750db01140a543ddb7f2f584b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -152,7 +185,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
-    oldSize: {x: 4, y: 4}
+    oldSize: {x: 3.2, y: 3.2}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -204,6 +237,7 @@ MonoBehaviour:
   raycastDistance: 5
   raycastOffsetY: 0.25
   isDrawRay: 1
+  isShowGizmoUser: 1
   showDebugLog: 0
   tagsToDetect:
   - Player
@@ -291,6 +325,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackCooldownTimer: 0
+  isDebugShotTarget: 1
   isDebugMovePos: 0
   isDebugAttackRange: 0
 --- !u!114 &6996326795921770314
@@ -340,8 +375,34 @@ MonoBehaviour:
   gizmoColor: {r: 1, g: 0, b: 1, a: 1}
   detectRadius: 10
   isShowGizmo: 0
+  isShowGizmoUser: 1
   tagsToDetect:
   - Player
   - Coin
   - Enemy
   - Animal
+  detectedObjects: []
+--- !u!114 &4524887816005871866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3036c1635f66d248989f509214238fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  firePoint: {fileID: 6217569585450810106}
+  arrowPool: {fileID: 0}
+  projectileSpeed: 15
+  gravityScale: 2
+  minAngle: 30
+  maxAngle: 70
+  angleStep: 5
+  accuracy: 0.5
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 32768
+  showDebugInfo: 1

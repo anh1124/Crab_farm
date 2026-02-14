@@ -9,7 +9,7 @@ namespace Script
 
         static Utility()
         {
-            DebugUtility.IsDebugEnabled = isDebug;
+            // DebugUtility.IsDebugEnabled = isDebug; // Removed to prevent overwriting with false
         }
 
         public static bool IsAlly(GameObject obj)
