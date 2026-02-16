@@ -33,7 +33,6 @@ namespace Script.Controller.PlayerController
 
         // Coin-use related
         public CoinUser coinUser;
-        private TriggerCheckHelper triggerCheckHelper;
         private float coinPressStartTime = 0f;
         private bool coinButtonHeld = false;
         private float coinLogTimer = 0f;
@@ -59,7 +58,6 @@ namespace Script.Controller.PlayerController
         {
             rb = player.GetComponent<Rigidbody2D>();
             playerBehavior = player.GetComponent<PlayerBehavior>();
-            triggerCheckHelper = player.GetComponent<TriggerCheckHelper>();
             isActiveUpdate = true;
         }
 
@@ -71,9 +69,19 @@ namespace Script.Controller.PlayerController
                 moveSpeed = playerBehavior.status.moveSpeed;
                 // TODO: cập nhật grounded theo GroundCheck/physics nếu cần
                 isGrounded = playerBehavior != null && playerBehavior.HasHp;
-                if (triggerCheckHelper != null)
+                
+                // Lấy currentStructureShowCoinSlot từ currentInteractable của PlayerBehavior
+                if (playerBehavior != null && playerBehavior.currentInteractable != null)
                 {
-                    currentStructureShowCoinSlot = triggerCheckHelper.nowStructureCollider2D;
+                    // Cast về MonoBehaviour để lấy gameObject
+                    if (playerBehavior.currentInteractable is MonoBehaviour mb)
+                    {
+                        currentStructureShowCoinSlot = mb.gameObject;
+                    }
+                }
+                else
+                {
+                    currentStructureShowCoinSlot = null;
                 }
             }
         }

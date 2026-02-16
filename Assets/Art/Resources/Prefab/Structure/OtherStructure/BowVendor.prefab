@@ -168,7 +168,7 @@ GameObject:
   - component: {fileID: 3296988984198467744}
   - component: {fileID: 8344224514938006293}
   - component: {fileID: 4434624047219894162}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: BowVendor
   m_TagString: BowVendor
   m_Icon: {fileID: 0}

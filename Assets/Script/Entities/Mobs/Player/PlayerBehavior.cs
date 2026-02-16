@@ -88,6 +88,8 @@ namespace Script.Game.Player
                 status.currentMana += status.manaRegenRate * Time.deltaTime;
                 status.currentMana = Mathf.Min(status.currentMana, status.maxMana);
             }
+            
+            ValidateInteraction();
         }
         
         // === RESOURCE HELPERS ===
@@ -257,6 +259,113 @@ namespace Script.Game.Player
         {
             // [TODO] Implement drop logic (e.g. drop coins, items)
             // For now, empty to prevent crash
+        }
+        // === INTERACTION LOGIC ===
+        private System.Collections.Generic.List<IPlayerInteractable> interactablesInRange = new System.Collections.Generic.List<IPlayerInteractable>();
+        public IPlayerInteractable currentInteractable;
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            // Tránh va chạm với trigger của chính mình hoặc con cái của mình nếu cần
+            if (other.isTrigger && (other.CompareTag("Player") || other.transform.IsChildOf(transform))) return;
+
+            // Xử lý Coin pickup ngay lập tức
+            if (other.CompareTag("Coin"))
+            {
+                Script.Game.Item.Coin.Coin coin = other.GetComponent<Script.Game.Item.Coin.Coin>();
+                if (coin != null)
+                {
+                    coin.HandlePlayerPickup(gameObject);
+                }
+                return;
+            }
+
+            // Xử lý IPlayerInteractable
+            IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
+            if (interactable != null)
+            {
+                if (!interactablesInRange.Contains(interactable))
+                {
+                    interactablesInRange.Add(interactable);
+                    UpdateCurrentInteractable();
+                }
+            }
+        }
+
+        private void OnTriggerExit2D(Collider2D other)
+        {
+            // Xử lý IPlayerInteractable
+            IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
+            if (interactable != null)
+            {
+                if (interactablesInRange.Contains(interactable))
+                {
+                    interactablesInRange.Remove(interactable);
+                    
+                    // Nếu đang tương tác với đối tượng này thì tắt đi
+                    if (currentInteractable == interactable)
+                    {
+                        interactable.OnPlayerExit(this);
+                        currentInteractable = null;
+                    }
+                    
+                    UpdateCurrentInteractable();
+                }
+            }
+        }
+
+        private void UpdateCurrentInteractable()
+        {
+            // Nếu không còn ai trong tầm, hoặc biến current đang null
+            if (interactablesInRange.Count == 0)
+            {
+                if (currentInteractable != null)
+                {
+                    currentInteractable.OnPlayerExit(this);
+                    currentInteractable = null;
+                }
+                return;
+            }
+
+            // Đơn giản nhất: Lấy phần tử cuối cùng mới vào (Stack-like) hoặc gần nhất (cần tính toán)
+            // Hiện tại lấy phần tử cuối cùng thêm vào danh sách để ưu tiên đối tượng mới nhất
+            IPlayerInteractable candidate = interactablesInRange[interactablesInRange.Count - 1];
+
+            // Nếu candidate khác current, đổi sang cái mới
+            if (currentInteractable != candidate)
+            {
+                // Tắt cái cũ
+                if (currentInteractable != null)
+                {
+                    currentInteractable.OnPlayerExit(this);
+                }
+
+                // Bật cái mới
+                currentInteractable = candidate;
+                // Kiểm tra điều kiện trước khi bật (optional, vì OnPlayerEnter bên kia cũng check)
+                if (currentInteractable.CanInteract())
+                {
+                    currentInteractable.OnPlayerEnter(this);
+                }
+            }
+        }
+        
+        // Validate interactable periodically or in Update
+        private void ValidateInteraction()
+        {
+             if (currentInteractable != null)
+             {
+                 // Nếu không còn tương tác được nữa (ví dụ đã nâng cấp xong), refresh lại
+                 if (!currentInteractable.CanInteract())
+                 {
+                     // Có thể chọn visual tắt đi nhưng vẫn giữ trong list, hoặc remove khỏi active
+                     currentInteractable.OnPlayerExit(this);
+                     // Thử tìm cái khác trong list
+                     interactablesInRange.Remove(currentInteractable); // Tạm remove để tìm cái khác? Hoặc chỉ cần update
+                     currentInteractable = null;
+                     UpdateCurrentInteractable();
+                 }
+             }
         }
     }
 }

@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 753727371407242939}
   - component: {fileID: 9035074715423480370}
   - component: {fileID: 6307281304895230152}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: SwordVendor
   m_TagString: SwordVendor
   m_Icon: {fileID: 0}

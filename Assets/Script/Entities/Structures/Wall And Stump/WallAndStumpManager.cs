@@ -238,11 +238,11 @@ namespace Script.Game.Structures.Wall_And_Stump
                 // That means the LAST element in the list.
                 
                 GameObject farthest = walls[walls.Count - 1];
-                Debug.Log($"[WallAndStumpManager] GetFarthestDefendableWall({(isLeft ? "LEFT" : "RIGHT")}): {farthest.name}");
+               // Debug.Log($"[WallAndStumpManager] GetFarthestDefendableWall({(isLeft ? "LEFT" : "RIGHT")}): {farthest.name}");
                 return farthest;
             }
 
-            Debug.LogWarning($"[WallAndStumpManager] No defendable wall on {(isLeft ? "LEFT" : "RIGHT")} side!");
+          //  Debug.LogWarning($"[WallAndStumpManager] No defendable wall on {(isLeft ? "LEFT" : "RIGHT")} side!");
             return null;
         }
 

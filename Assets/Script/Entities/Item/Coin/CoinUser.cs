@@ -3,13 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using Script.Data_Model;
 using Script.Data_Model.Interfaces;
-using Script.Game.Other;
+using Script.Game.Player;
+using Script.Interfaces;
 using Script.Manager.Building;
+using Script.Game.Other;
 using UnityEngine;
 
 namespace Script.Game.Item.Coin
 {
-    public class CoinUser : MonoBehaviour
+    public class CoinUser : MonoBehaviour, IPlayerInteractable
     {
         /// <summary>
         /// khi player va chạm với collider của gameobject chứa coinUser thì se kiểm tra :
@@ -70,7 +72,20 @@ namespace Script.Game.Item.Coin
 
             if (coinSlotParent == null)
             {
-                coinSlotParent = transform.GetChild(0).gameObject;
+                // Prioritize finding "CoinSlotLocation" (standard for some prefabs)
+                var child = transform.Find("CoinSlotLocation");
+
+                if (child != null)
+                {
+                    coinSlotParent = child.gameObject;
+                }
+                else
+                {
+                    // Create new if not found -> Default to "CoinSlotLocation"
+                    var newObj = new GameObject("CoinSlotLocation");
+                    newObj.transform.SetParent(transform, false);
+                    coinSlotParent = newObj;
+                }
             }
             coinSlotParent.SetActive(false);
             
@@ -153,6 +168,8 @@ namespace Script.Game.Item.Coin
                 }
             }
 
+            // Debug.Log($"[CoinUser-Debug] {gameObject.name}: PlayerTriggerOn. CanAccept={canAcceptCoins}, Ready={isReadyToUpgrade}, Required={requiredCoins}, SlotParent={coinSlotParent?.name}, Active={coinSlotParent?.activeSelf}");
+
             if (shouldShowSlots)
             {
                 SetupCoinSlots();
@@ -169,12 +186,41 @@ namespace Script.Game.Item.Coin
 
         private void SetupCoinSlots()
         {
-            coinSlotParent.SetActive(true);
-            int currentSlotCount = coinSlotParent.transform.childCount;
-            if (currentSlotCount < requiredCoins)
+            if (coinSlotParent != null)
             {
-                ClearCoinSlots();
-                coinSlots = InstanceCoinSlot.Instance.CreateCoinSlot(requiredCoins, coinSlotParent);
+                // Debug.Log($"[CoinUser-Debug] {gameObject.name}: SetupCoinSlots. Parent={coinSlotParent.name}, ChildCount={coinSlotParent.transform.childCount}, Required={requiredCoins}");
+                coinSlotParent.SetActive(true);
+                
+                // Check existing slots
+                int currentSlotCount = coinSlotParent.transform.childCount;
+                
+                // If we have enough children, reuse them
+                if (currentSlotCount >= requiredCoins && requiredCoins > 0)
+                {
+                    // Ensure coinSlots list is populated with these children
+                    if (coinSlots.Count != currentSlotCount)
+                    {
+                        coinSlots.Clear();
+                        foreach (Transform child in coinSlotParent.transform)
+                        {
+                            coinSlots.Add(child.gameObject);
+                        }
+                    }
+                }
+                else
+                {
+                    // Not enough slots or none at all, recreate them
+                    // This handles the case where CoinSlotLocation exists but is empty
+                    ClearCoinSlots();
+                    if (InstanceCoinSlot.Instance != null)
+                    {
+                         coinSlots = InstanceCoinSlot.Instance.CreateCoinSlot(requiredCoins, coinSlotParent);
+                    }
+                    else
+                    {
+                        Debug.LogError("InstanceCoinSlot.Instance is null");
+                    }
+                }
             }
         }
 
@@ -379,6 +425,21 @@ namespace Script.Game.Item.Coin
         {
             coinsInTransit.Clear();
             collectedCoins = 0;
+        }
+
+        public void OnPlayerEnter(PlayerBehavior player)
+        {
+            PlayerTriggerOn();
+        }
+
+        public void OnPlayerExit(PlayerBehavior player)
+        {
+            PlayerTriggerOff();
+        }
+
+        public bool CanInteract()
+        {
+            return canAcceptCoins && !isReadyToUpgrade;
         }
 
     }
