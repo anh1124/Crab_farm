@@ -612,6 +612,22 @@ PrefabInstance:
       propertyPath: pauseMenuPanel
       value: 
       objectReference: {fileID: 5788159800298087749}
+    - target: {fileID: 7614116793088755009, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: growthRate
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7614116793088755009, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: portalSummond
+      value: 
+      objectReference: {fileID: 3762194079170508914, guid: 54b52dfe33a52d444a1295f2b1dd38e6, type: 3}
+    - target: {fileID: 8206099037918200606, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: greed
+      value: 
+      objectReference: {fileID: 8201064921831266735, guid: ccc1066c047304546bfc269021c6eca3, type: 3}
+    - target: {fileID: 8206099037918200606, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: circleHead
+      value: 
+      objectReference: {fileID: 2566319564475977895, guid: cf6cf8e554aa1d049b02741432c80862, type: 3}
     - target: {fileID: 8862165295465698764, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

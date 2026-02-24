@@ -65,6 +65,7 @@ public class EnemyWaveManager : MonoBehaviour
     
    
 
+    [ContextMenu("Test Generate Wave")]
     public void GenerateWave()
     {
         // Lấy số ngày đã trôi qua từ GameTimeManager
@@ -72,9 +73,29 @@ public class EnemyWaveManager : MonoBehaviour
         // Tính toán power cho wave hiện tại
         currentWavePower = CalculateWavePower(daysElapsed);
         
-        // Tạo danh sách enemy cho wave
-        EnemyData.Instance.SelectMonstersByPower(currentWavePower);
-        //truyền cái dòng trên vào các pỏtal để nó nhận lên spawn
+        Debug.Log($"Generating Wave for Day: {daysElapsed}, Power: {currentWavePower}");
+
+        // Tạo danh sách enemy cho wave từ TotalEnemyList
+        // Lưu ý: SelectMonstersByPower trả về List<(EnemyDataBase, int)>
+        var selectedMonsters = TotalEnemyList.Instance.SelectMonstersByPower(currentWavePower);
+        
+        // Xóa danh sách cũ trước khi thêm mới
+        currentWaveEnemies.Clear();
+
+        // Chuyển đổi sang EnemyWaveData để hiển thị trên Inspector
+        foreach (var monster in selectedMonsters)
+        {
+            EnemyWaveData waveData = new EnemyWaveData
+            {
+                enemyData = monster.Data,
+                count = monster.Quantity
+            };
+            currentWaveEnemies.Add(waveData);
+            Debug.Log($"Wave Enemy: {monster.Data.enemyName}, Count: {monster.Quantity}");
+        }
+
+        // Hiện tại chỉ debug danh sách, chưa spawn
+        // truyền cái dòng trên vào các pỏtal để nó nhận lên spawn (COMMENTED OUT FOR NOW)
     }
 
     private int CalculateWavePower(int daysElapsed)
@@ -93,7 +114,7 @@ public class EnemyWaveManager : MonoBehaviour
 [System.Serializable]
 public class EnemyWaveData
 {
-    public EnemyData.EnemyDataBase enemyData;
+    public TotalEnemyList.EnemyDataBase enemyData;
     public int count;
 }
 

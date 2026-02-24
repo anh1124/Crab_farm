@@ -36,7 +36,7 @@ public class SummondPortal : MonoBehaviour
         
        
     }
-    private void SpawnEnemy(EnemyData.EnemyDataBase enemyData)
+    private void SpawnEnemy(TotalEnemyList.EnemyDataBase enemyData)
     {
         // Spawn enemy
         GameObject enemy = Instantiate(enemyData.enemyPrefab, gameObject.transform.position, Quaternion.identity);

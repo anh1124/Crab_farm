@@ -28,7 +28,7 @@ namespace Script.Game.Enemy.Enemy_Type
         public void InitializeData()
         {
             name = "Greed";
-            EnemyData.EnemyDataBase data =EnemyData.Instance.GetEnemyDataByName(name);
+            TotalEnemyList.EnemyDataBase data =TotalEnemyList.Instance.GetEnemyDataByName(name);
             if (data != null)
             {
                 dame = data.dame;
