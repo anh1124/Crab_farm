@@ -1,121 +1,127 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using Script.Game.Enemy;
 using UnityEngine;
 using Script.Manager.WorldManager;
+using Script.Entities.Structures.SummondPortal;
 
 namespace Script.Manager.GamePlayManager
 {
-public class EnemyWaveManager : MonoBehaviour
-{
-    //ở đây,khi xây lửa trại thì xẽ hiện 2 cái cổng trái phải
-    //tạo hàm làm việc này 
-    /// <summary>
-    /// script này thực hiện việc tính toán số lượng enemy theo ngày ,sinh ra cổng khi lưa trại được thắp sáng
-    /// </summary>
-    public static EnemyWaveManager Instance { get; private set; }
-  
-    public int growthRate = 2;//tỉ lệ tăng số lượng quái 2%
-    private int currentWavePower;
-    
-    public GameObject portalSummond;//cánh cổng nguyên mẫu -spawm ra cái này
-    public GameObject portalL;//cánh cổng bên trái vương quốc
-    public GameObject portalR;//cánh cổng bên phải vương quốc
+    public class EnemyWaveManager : MonoBehaviour
+    {
+        public static EnemyWaveManager Instance { get; private set; }
 
-    public List<GameObject> portalLEnemyList;
-    public List<GameObject> portalREnemyList;
+        public int growthRate = 2; // Mỗi ngày tăng thêm 2 điểm power
+        private int currentWavePower;
     
-    // Lưu danh sách enemy được chọn cho wave hiện tại
-    public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
-    private void Awake()
-    {
-        AddSingleton();
-    }
-
-    public int EnemyRemaining()
-    {
-        return portalLEnemyList.Count + portalREnemyList.Count;
-    }
-    private void AddSingleton()
-    {
-        if (Instance == null)
+        private void Awake()
         {
-            Instance = this;
-          
+            AddSingleton();
         }
-        else
+
+        private void AddSingleton()
         {
-            Destroy(gameObject);
-        }
-    }
-    private void Start()
-    {
-        //GenerateWave();
-    }
-    //phải hoàn thành hàm build map mới có thể làm tiếp 
-    
-   //pỏtal thêm id LR
-    //
-    //tạo 1 danh sách lưu gameobejct cổng
-    //tạo hàm thêm cổng ở 2 bên vương quốc
-            //thêm player không thể đi xuyên qua cổng 
-    //thêm hàm xóa cổng ở list và kiểm tra ,nếu cổng trái bị xóa thì thêm 1 cổng bên trái vương quốc cách cổng hiện tại xa hơn 1 tí
-    //sau này thêm hàm gen map thì gen tiếp cái map
-    
-   
-
-    [ContextMenu("Test Generate Wave")]
-    public void GenerateWave()
-    {
-        // Lấy số ngày đã trôi qua từ GameTimeManager
-        int daysElapsed = GameTimeManager.Instance.GetElapsedDays();
-        // Tính toán power cho wave hiện tại
-        currentWavePower = CalculateWavePower(daysElapsed);
-        
-        Debug.Log($"Generating Wave for Day: {daysElapsed}, Power: {currentWavePower}");
-
-        // Tạo danh sách enemy cho wave từ TotalEnemyList
-        // Lưu ý: SelectMonstersByPower trả về List<(EnemyDataBase, int)>
-        var selectedMonsters = TotalEnemyList.Instance.SelectMonstersByPower(currentWavePower);
-        
-        // Xóa danh sách cũ trước khi thêm mới
-        currentWaveEnemies.Clear();
-
-        // Chuyển đổi sang EnemyWaveData để hiển thị trên Inspector
-        foreach (var monster in selectedMonsters)
-        {
-            EnemyWaveData waveData = new EnemyWaveData
+            if (Instance == null)
             {
-                enemyData = monster.Data,
-                count = monster.Quantity
-            };
-            currentWaveEnemies.Add(waveData);
-            Debug.Log($"Wave Enemy: {monster.Data.enemyName}, Count: {monster.Quantity}");
+                Instance = this;
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
-        // Hiện tại chỉ debug danh sách, chưa spawn
-        // truyền cái dòng trên vào các pỏtal để nó nhận lên spawn (COMMENTED OUT FOR NOW)
-    }
+        private void Start()
+        {
+            // Đăng ký kích hoạt Wave mỗi đêm (19:00 PM)
+            GameTimeManager.Instance.SubscribeToHourlyEvent(GameTimeManager.NIGHT_HOUR, TriggerNightWave);
+        }
 
-    private int CalculateWavePower(int daysElapsed)
-    {
-        // Công thức: power = basePower × (1 + growthRate/100)^daysElapsed
-        return (int)(100 * Math.Pow(1 + (growthRate / 100f), daysElapsed)-100);
-    }
-    // Hàm hiển thị danh sách quái vật đã chọn
-   
-   
+        private void TriggerNightWave()
+        {
+            // [TÍNH NĂNG MỚI] Ghi log kiểm tra trạng thái toàn bộ cổng hiện có trên Map trước khi đẻ quân
+            GameObject pL = EnemyPortalManager.Instance.portalL;
+            GameObject pR = EnemyPortalManager.Instance.portalR;
+            
+            string logL = pL != null ? $"[Cổng Trái Tồn Tại - Ready: {pL.GetComponent<EnemyPortalBehavior>().IsReadyToSpawn}]" : "[Cổng Trái NULL]";
+            string logR = pR != null ? $"[Cổng Phải Tồn Tại - Ready: {pR.GetComponent<EnemyPortalBehavior>().IsReadyToSpawn}]" : "[Cổng Phải NULL]";
+            Debug.Log($"[EnemyWaveManager] Kích hoạt Wave Đêm. Report Các Cổng: {logL} | {logR}");
+
+            // Hỏi EnemyPortalManager để lấy các cổng đã kích hoạt xong delay
+            var activePortals = EnemyPortalManager.Instance.GetActivePortals();
+            if (activePortals.Count == 0)
+            {
+                Debug.LogWarning("[EnemyWaveManager] Không có portal nào SẴN SÀNG đêm nay. Bỏ qua spawn wave.");
+                return;
+            }
+
+            // Tính toán power cho wave dựa theo ngày cấu hình
+            int daysElapsed = GameTimeManager.Instance.GetElapsedDays();
+            currentWavePower = CalculateWavePower(daysElapsed);
+            Debug.Log($"[EnemyWaveManager] Đêm ngày {daysElapsed} với tổng Power: {currentWavePower}");
+
+            // Tạo danh sách các enemy cho trận chiến
+            var selectedMonsters = TotalEnemyList.Instance.SelectMonstersByPower(currentWavePower);
+            
+            // Map danh sách tuples vừa bốc thành list Serialize chuyên dụng
+            List<EnemyWaveData> finalWaveEnemies = new List<EnemyWaveData>();
+            foreach (var monster in selectedMonsters)
+            {
+                finalWaveEnemies.Add(new EnemyWaveData
+                {
+                    enemyData = monster.Data,
+                    count = monster.Quantity
+                });
+            }
+
+            // Với mỗi môn đệ cổng, giao danh sách con và mồi nút Spawn cho nó chạy riêng rẽ
+            foreach (var behavior in activePortals)
+            {
+                if (behavior != null)
+                {
+                    // Copy list quái vào hệ thống global
+                    currentWaveEnemies = finalWaveEnemies;
+                    
+                    // Gọi hàm StartSpawning trực tiếp từ Entity Behavior (SummondPortal đã bị hợp nhất)
+                    behavior.StartSpawning();
+                    
+                    Debug.Log($"[EnemyWaveManager] Cổng tại {behavior.transform.position} đã kích hoạt bắt đầu xuất quân.");
+                }
+            }
+        }
+
+        private int CalculateWavePower(int daysElapsed)
+        {
+            // Công thức: power = basePower × (1 + growthRate/100)^daysElapsed
+            return (int)(100 * Math.Pow(1 + (growthRate / 100f), daysElapsed) - 100);
+        }
 
     
-}
+        
+        // ------------------ CODE ĐÃ DECRACHED (Nút bấm manual inspector) -------- //
+        
+        public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
 
-// Lớp lưu trữ thông tin enemy trong wave
-[System.Serializable]
-public class EnemyWaveData
-{
-    public TotalEnemyList.EnemyDataBase enemyData;
-    public int count;
-}
+        [ContextMenu("Test Trigger Night Wave (SPAWN THẬT)")]
+        public void TestTriggerNightWave()
+        {
+            Debug.Log("[EnemyWaveManager - DEV TEST] Bắt đầu gọi TriggerNightWave bằng tay...");
+            TriggerNightWave();
+        }
 
+        private void OnDestroy()
+        {
+            if (GameTimeManager.Instance != null && GameTimeManager.Instance.gameObject)
+            {
+                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.NIGHT_HOUR, TriggerNightWave);
+            }
+        }
+    }
+
+    [System.Serializable]
+    public class EnemyWaveData
+    {
+        public TotalEnemyList.EnemyDataBase enemyData;
+        public int count;
+    }
 }

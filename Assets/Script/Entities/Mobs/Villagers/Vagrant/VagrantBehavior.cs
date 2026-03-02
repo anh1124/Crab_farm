@@ -21,10 +21,11 @@ namespace Script.Game.Mobs.Subjects
         
         // Component References
         private Animator animator;
-        // private Coroutine checkRoutine; // Removed
         private Coroutine flipRoutine;
         private Coroutine idleWalkRoutine;
         private RayCastHelper rayCastHelper;
+
+        private float fearCooldownTimer = 0f;
 
         [Header("Debug")]
         public bool isDebugGoPlace;
@@ -62,15 +63,11 @@ namespace Script.Game.Mobs.Subjects
                 rayCastHelper.enabled = true;
                 rayCastHelper.isDrawRay = true; // System control
             }
-            
-            GameTimeManager.Instance?.SubscribeToHourlyEvent(6, HandleTimeChange);
         }
 
         private void OnDisable()
         {
-             GameTimeManager.Instance?.UnsubscribeFromHourlyEvent(6, HandleTimeChange);
              StopAllMovementRoutines();
-             
              if (rayCastHelper != null) rayCastHelper.enabled = false;
         }
 
@@ -124,19 +121,22 @@ namespace Script.Game.Mobs.Subjects
                 {
                     if (obj.CompareTag("Enemy"))
                     {
-                        status.vagrantState = DenizenStatus.VagrantState.Fear;
+                        if (status.vagrantState != DenizenStatus.VagrantState.Fear)
+                        {
+                            status.vagrantState = DenizenStatus.VagrantState.Fear;
+                        }
+                        // Reset timer mỗi khi quét trúng enemy
+                        fearCooldownTimer = 30f;
                         break;
                     }
             
                     if (obj.CompareTag("Coin"))
                     {
-                       // Debug.Log($"[VagrantBehavior] Coin detected: {obj.name} at {obj.transform.position}, current state: {status.vagrantState}");
-                        
+                        // Sửa logic: Không được chủ động đi lượm nếu đang sợ
                         if ((status.vagrantState == DenizenStatus.VagrantState.Idle || 
                              status.vagrantState == DenizenStatus.VagrantState.GetCoin) && 
                             status.vagrantState != DenizenStatus.VagrantState.Fear)
                         {
-                           // Debug.Log($"[VagrantBehavior] Changing state to GetCoin for coin: {obj.name}");
                             status.vagrantState = DenizenStatus.VagrantState.GetCoin;
                             status.coinTarget = obj;
                         }
@@ -163,6 +163,18 @@ namespace Script.Game.Mobs.Subjects
 
         private void UpdateStateHandler()
         {
+            if (status.vagrantState == DenizenStatus.VagrantState.Fear)
+            {
+                if (fearCooldownTimer > 0)
+                {
+                    fearCooldownTimer -= Time.deltaTime;
+                    if (fearCooldownTimer <= 0)
+                    {
+                        status.vagrantState = DenizenStatus.VagrantState.Idle; // Hết sợ, quay về Idle
+                    }
+                }
+            }
+
             switch (status.vagrantState)
             {
                 case DenizenStatus.VagrantState.Idle:
@@ -312,16 +324,8 @@ namespace Script.Game.Mobs.Subjects
 
 
 
-        private void HandleTimeChange()
-        {
-            if (GameTimeManager.Instance == null || EnemyWaveManager.Instance == null) return;
-
-            if (GameTimeManager.Instance.IsDaytime && EnemyWaveManager.Instance.EnemyRemaining() <= 0)
-            {
-                // Reset state to Idle when day starts and no enemies
-                status.vagrantState = DenizenStatus.VagrantState.Idle;
-            }
-        }
+        // Removed HandleTimeChange that checks EnemyRemaining
+        // Coroutine FearCooldownRoutine removed. Handled via fearCooldownTimer in UpdateStateHandler.
 
         private IEnumerator RandomFlipRoutine()
         {

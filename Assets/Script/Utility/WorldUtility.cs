@@ -100,6 +100,72 @@ namespace Script.Utils
             return Random.Range(farthestLeftWall, farthestRightWall);
         }
 
+        public static Vector3 GetRandomOutsideSafePos(bool isRight, float minDistance, float maxDistance, float noWallFallbackDistance = 30f)
+        {
+            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
+            {
+                Debug.LogError("BuildingManager or TownCenter not found! Returning zero. Cannot determine outside safe zone.");
+                return Vector3.zero;
+            }
+
+            Vector3 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+            float townCenterX = townCenterPos.x;
+            float townCenterY = townCenterPos.y; // Assuming ground level is Y of TownCenter
+            float townCenterZ = townCenterPos.z;
+
+            GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
+            
+            // Tìm bức tường xa nhất theo hướng được chọn
+            float farthestWallX = townCenterX;
+            bool wallFound = false;
+
+            foreach (GameObject wall in walls)
+            {
+                float wallX = wall.transform.position.x;
+                if (isRight)
+                {
+                    if (wallX > townCenterX && wallX > farthestWallX)
+                    {
+                        farthestWallX = wallX;
+                        wallFound = true;
+                    }
+                }
+                else
+                {
+                    if (wallX < townCenterX && wallX < farthestWallX)
+                    {
+                        farthestWallX = wallX;
+                        wallFound = true;
+                    }
+                }
+            }
+
+            // Nếu không tìm thấy tường nào ở hướng đó, dùng TownCenter làm mốc + fallback offset
+            float referenceX = farthestWallX;
+            if (!wallFound)
+            {
+                referenceX = isRight ? (townCenterX + noWallFallbackDistance) : (townCenterX - noWallFallbackDistance);
+            }
+
+            // Tính toán khoảng min, max thực tế dựa trên hướng
+            float randomX;
+            if (isRight)
+            {
+                float minX = referenceX + minDistance;
+                float maxX = referenceX + maxDistance;
+                randomX = Random.Range(minX, maxX);
+            }
+            else
+            {
+                // Khi bên trái, vị trí sẽ là trừ đi khoảng cách
+                float maxX = referenceX - minDistance;
+                float minX = referenceX - maxDistance;
+                randomX = Random.Range(minX, maxX); // Random.Range automatically handles min/max order if reversed, but good practice to keep it correct
+            }
+
+            return new Vector3(randomX, townCenterY, townCenterZ);
+        }
+
         public static Vector2 GetWallPosition(bool getLeftWall)
         {
             if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)

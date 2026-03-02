@@ -322,6 +322,7 @@ GameObject:
   - component: {fileID: 4391942637148100560}
   - component: {fileID: 7614116793088755009}
   - component: {fileID: 8206099037918200606}
+  - component: {fileID: 1182911642445597191}
   m_Layer: 0
   m_Name: EnemyWave
   m_TagString: Untagged
@@ -357,11 +358,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   growthRate: 2
-  portalSummond: {fileID: 0}
-  portalL: {fileID: 0}
-  portalR: {fileID: 0}
-  portalLEnemyList: []
-  portalREnemyList: []
   currentWaveEnemies: []
 --- !u!114 &8206099037918200606
 MonoBehaviour:
@@ -375,12 +371,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4411ee12f5266442bbc08211a711f6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  greed: {fileID: 0}
   circleHead: {fileID: 0}
   shieldBot: {fileID: 0}
   twoHeadBot: {fileID: 0}
   stormHead: {fileID: 0}
   toucher: {fileID: 0}
+  EnemyDataList: []
+--- !u!114 &1182911642445597191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2692076870354972573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90900b77e85941a488c7517a0f2bc027, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  portalL: {fileID: 0}
+  portalR: {fileID: 0}
+  minSpawnDistance: 40
+  maxSpawnDistance: 80
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0

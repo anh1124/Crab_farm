@@ -1,5 +1,4 @@
 using UnityEngine;
-using Script.Utils;
 
 namespace Script.Utils
 {

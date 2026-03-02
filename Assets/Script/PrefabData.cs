@@ -305,6 +305,7 @@ namespace Script.Data_Model
             prefabDict.Add("wall", prefabWall);
             prefabDict.Add("coin", coinPrefab);
             prefabDict.Add("denizen", denizen);
+            prefabDict.Add("EnemyPortalPrefab_ID", summoningPortal);
             
         }
         

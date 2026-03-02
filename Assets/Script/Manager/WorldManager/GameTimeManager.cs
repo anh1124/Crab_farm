@@ -190,6 +190,7 @@ public class GameTimeManager : MonoBehaviour
         _totalMinutes = Mathf.Max(totalMinutes, 0);
         UpdateInspectorFieldsFromTotalMinutes();
         UpdateTimeDisplay();
+        CheckForHourlyEvent(); // Force check sự kiện khi bị nhảy giờ bằng tay
     }
     
     public int GetTotalMinutes => _totalMinutes;
@@ -211,15 +212,15 @@ public class GameTimeManager : MonoBehaviour
         inspectorYear = GameYear;
     }
 
-    [ContextMenu("Set Time To Day (Morning - 07:00)")]
+    [ContextMenu("Set Time To Day (Morning - 06:00)")]
     public void SetTimeToMorning()
     {
-        // Set time to 07:00 of the CURRENT day
+        // Set time to 06:00 of the CURRENT day
         int currentDayStartMinutes = (GameYear - 1) * 172800 + (GameMonth - 1) * 43200 + (GameDay - 1) * 1440;
-        int morningMinutes = currentDayStartMinutes + (7 * 60); // 7:00 AM
+        int morningMinutes = currentDayStartMinutes + (MORNING_HOUR * 60); // 6:00 AM
         
         SetGameTime(morningMinutes);
-        Debug.Log("Time set to Morning (07:00)");
+        Debug.Log("Time set to Morning (06:00)");
     }
 
     [ContextMenu("Set Time To Night (Evening - 19:00)")]
@@ -227,7 +228,7 @@ public class GameTimeManager : MonoBehaviour
     {
         // Set time to 19:00 of the CURRENT day
         int currentDayStartMinutes = (GameYear - 1) * 172800 + (GameMonth - 1) * 43200 + (GameDay - 1) * 1440;
-        int nightMinutes = currentDayStartMinutes + (19 * 60); // 19:00 PM
+        int nightMinutes = currentDayStartMinutes + (NIGHT_HOUR * 60); // 19:00 PM
         
         SetGameTime(nightMinutes);
         Debug.Log("Time set to Night (19:00)");
