@@ -39,7 +39,7 @@ namespace Script.Manager.GamePlayManager
 
         private void TriggerNightWave()
         {
-            // [TÍNH NĂNG MỚI] Ghi log kiểm tra trạng thái toàn bộ cổng hiện có trên Map trước khi đẻ quân
+            // log kiểm tra trạng thái toàn bộ cổng hiện có trên Map trước khi đẻ quân
             GameObject pL = EnemyPortalManager.Instance.portalL;
             GameObject pR = EnemyPortalManager.Instance.portalR;
             

@@ -294,7 +294,7 @@ namespace Script.Game.Other
             // Tạo WorldInfo với thông tin cơ bản
             WorldInfo defaultInfo = new WorldInfo(
                 name: "DefaultWorld",
-                creationDate: System.DateTime.Now,
+                creationDate: System.DateTime.Now.ToString("O"),
                 seed: 0,
                 gameHour: 9,
                 gameMinute: 0,

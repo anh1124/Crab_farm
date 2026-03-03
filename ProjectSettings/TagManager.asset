@@ -34,6 +34,7 @@ TagManager:
   - Farmer
   - Animal
   - Arrow
+  - EnemyPortal
   layers:
   - Default
   - TransparentFX
@@ -56,7 +57,7 @@ TagManager:
   - Item
   - PreviewPlace
   - Arrow
-  - 
+  - font
   - 
   - 
   - 
@@ -83,17 +84,20 @@ TagManager:
   - name: Structure
     uniqueID: 2817326543
     locked: 0
+  - name: Default
+    uniqueID: 0
+    locked: 0
   - name: Player
     uniqueID: 1591732571
     locked: 0
   - name: Coin
     uniqueID: 1445729485
     locked: 0
-  - name: Default
-    uniqueID: 0
-    locked: 0
   - name: ForgeGround
     uniqueID: 1365292773
+    locked: 0
+  - name: font
+    uniqueID: 1292241617
     locked: 0
   - name: UI
     uniqueID: 2194541319

@@ -144,7 +144,7 @@ public class LoadFromSave : MonoBehaviour
                 worldInfo = JsonConvert.DeserializeObject<WorldInfo>(json);
                 
                 // Kiểm tra CreationDate
-                if (worldInfo.CreationDate == default(DateTime))
+                if (string.IsNullOrEmpty(worldInfo.CreationDate))
                 {
                     Debug.LogError("CreationDate not found in worldInfo.json.");
                 }

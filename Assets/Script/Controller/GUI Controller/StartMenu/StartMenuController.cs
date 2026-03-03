@@ -8,6 +8,10 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
+using Script.GUI_Controller.StartMenu;
+using Script.Data_Model;
+using Script.Manager.SaveManager;
+
 namespace Script.GUI_Controller.StartMenu
 {
     public class StartMenuController : MonoBehaviour
@@ -77,10 +81,18 @@ namespace Script.GUI_Controller.StartMenu
         
         private void Start()
         {
+            if (WorldSaveListManager.Instance == null)
+            {
+                Debug.LogError("[StartMenuController] WorldSaveListManager không tìm thấy trong scene! Hãy thêm nó vào MainMenuScene.");
+            }
+
             OpenHomeMenuPanel();
             AssignButtonActions();
             //chạy hàm kiểm tra và tạo thư mục lưu file saves
-            WorldFileManager.Instance.CreateSavesFolderIfNotExists();
+            if (WorldSaveListManager.Instance != null)
+            {
+                WorldSaveListManager.Instance.CreateSavesFolderIfNotExists();
+            }
             
             inputWorldSeed.characterLimit = 10;
             inputWorldSeed.contentType = TMP_InputField.ContentType.IntegerNumber;
@@ -127,11 +139,12 @@ namespace Script.GUI_Controller.StartMenu
 
         public void LoadSelectedWorldAndTransitionToGame(string worldName)
         {
-            string worldFolderPath = WorldFileManager.Instance.GetWorldFolderPath(worldName);
+            if (WorldSaveListManager.Instance == null) return;
+            string worldFolderPath = WorldSaveListManager.Instance.GetWorldFolderPath(worldName);
 
             if (worldFolderPath != null)
             {
-                WorldFileManager.Instance.SetActiveWorldPath(worldFolderPath);
+                WorldSaveListManager.Instance.SetActiveWorldPath(worldFolderPath);
                 SceneManager.LoadScene("GamePlayScene");
             }
            else Debug.LogError("StartMenuController: world folder path is not found");
@@ -139,12 +152,13 @@ namespace Script.GUI_Controller.StartMenu
         
         public void createNewWorldAction()
         {
+            if (WorldSaveListManager.Instance == null) return;
             bool createWorldDone = false;
             if (string.IsNullOrEmpty(inputWorldSeed.text))
             {
                 inputWorldSeed.text = GenerateRandomSeed();
             }
-            createWorldDone = WorldFileManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
+            createWorldDone = WorldSaveListManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
             //createWorldDone sẽ true nếu tạo thành công
             
             if (createWorldDone)
@@ -152,7 +166,7 @@ namespace Script.GUI_Controller.StartMenu
                 //mở thế giới vừa được tạo ra
                 LoadSelectedWorldAndTransitionToGame(inputWorldName.text);
             }
-            //ở hàm WorldFileManager.Instance.CreateWorldSave đã có sẵn debug khi sai rồi nên không cần tạo nữa
+            //ở hàm WorldSaveListManager.Instance.CreateWorldSave đã có sẵn debug khi sai rồi nên không cần tạo nữa
         }
         // Hàm tạo số ngẫu nhiên gồm 8 chữ số
         private string GenerateRandomSeed()
@@ -195,7 +209,8 @@ namespace Script.GUI_Controller.StartMenu
         
         public void DisplayWorldInfo()
         {
-            worldInfo = WorldFileManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
+            if (WorldSaveListManager.Instance == null) return;
+            worldInfo = WorldSaveListManager.Instance.GetWorldInfoByIndex(currentWorldIndex);
 
             if (worldInfo != null)
             {
@@ -293,9 +308,12 @@ namespace Script.GUI_Controller.StartMenu
             currentWorldIndex = 1;//đặt bộ đếm thế giới hiện tại
             SetActiveFalseAllPanel();
             chooseSavePanel.SetActive(true);
+            
+            if (WorldSaveListManager.Instance == null) return;
+            
             //cập nhật thế tổng số thế giới
-            WorldFileManager.Instance.LoadWorldInfosToChooseSavePanel();
-            UpdateTotalWorld(WorldFileManager.Instance.CountWorldArr());
+            WorldSaveListManager.Instance.LoadWorldInfosToChooseSavePanel();
+            UpdateTotalWorld(WorldSaveListManager.Instance.CountWorldArr());
             UpdateCurrentWorldIndex(currentWorldIndex);
             UpdateTotalWorldTmp();
             //hiện thị empty nếu không thấy file lưu thế giới
@@ -355,11 +373,13 @@ namespace Script.GUI_Controller.StartMenu
         
         private void PerformDelete(string nameOfChooseWorld)
         {
+            if (WorldSaveListManager.Instance == null) return;
+            
             // Thực hiện xóa thế giới ở đây
-            WorldFileManager.Instance.DeleteWorldSave(nameOfChooseWorld);
+            WorldSaveListManager.Instance.DeleteWorldSave(nameOfChooseWorld);
             // Cập nhật danh sách thế giới sau khi xóa
-            WorldFileManager.Instance.LoadWorldInfosToChooseSavePanel();
-            UpdateTotalWorld(WorldFileManager.Instance.CountWorldArr());
+            WorldSaveListManager.Instance.LoadWorldInfosToChooseSavePanel();
+            UpdateTotalWorld(WorldSaveListManager.Instance.CountWorldArr());
 
             if (totalWorld == 0)
             {

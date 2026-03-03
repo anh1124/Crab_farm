@@ -274,6 +274,11 @@ namespace Script.Data_Model
 
             // Load dynamic config JSON for vendor prices and ally tags
             LoadDynamicConfig();
+            
+            if (Save_Controller.WorldFileManager.Instance == null)
+            {
+                Debug.LogError("[PrefabData] WorldFileManager không tìm thấy trong scene! Hãy thêm nó vào GameplayScene.");
+            }
         }
         
         /// <summary>

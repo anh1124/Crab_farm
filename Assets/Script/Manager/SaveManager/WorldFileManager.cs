@@ -12,6 +12,7 @@ namespace Script.Save_Controller
 {
     public class WorldFileManager : MonoBehaviour
     {
+        // dùng trong gameplay scene
         public static WorldFileManager Instance { get; private set; }
         public string saveRootPath;
 
@@ -42,106 +43,7 @@ namespace Script.Save_Controller
             saveRootPath = Path.Combine(rootPath, "saves");
         }
         
-        //new new world list for chosse save
-        public List<WorldInfo> WorldInfos { get; private set; } // Danh sách lưu trữ các đối tượng WorldInfo
 
-        #region save file edit
-
-        //tạo thư mục saves
-        public void CreateSavesFolderIfNotExists()
-        {
-            // Tạo thư mục saves nếu chưa tồn tại
-            if (!Directory.Exists(saveRootPath))
-            {
-                Directory.CreateDirectory(saveRootPath);
-                // Debug.Log("Created saves directory at: " + saveRootPath);
-            }
-            else
-            {
-                // Debug.Log("Saves directory already exists at: " + saveRootPath);
-            }
-        }
-
-        // Hàm tạo thư mục lưu trữ mới cho một thế giới và tạo file JSON từ WorldInfo
-        public bool CreateWorldSave(string worldName, string seedValue)
-        {
-            //kiểm tra hợp lệ của thế giới
-
-            #region kiểm tra hợp lệ của input world
-
-            if (string.IsNullOrEmpty(worldName))
-            {
-                Debug.LogError("Tên thế giới để trống nên không thể tạo được");
-                return false;
-            }
-
-            int seed;
-            if (!int.TryParse(seedValue, out seed))
-            {
-                seed = 0; // Nếu không chuyển đổi được, gán seed là 0
-                Debug.LogWarning("seed nhập vào không thể chuyển đổi,được đặt mặc định là 0");
-            }
-
-            string worldPath = Path.Combine(saveRootPath, worldName);
-
-            // Kiểm tra và tạo tên mới nếu thư mục đã tồn tại
-            while (Directory.Exists(worldPath))
-            {
-                Debug.LogError("Tên thế giới đã tồn tại,không thể tạo được");
-                return false;
-            }
-
-            #endregion
-
-            
-
-            // Tạo thư mục world
-            Directory.CreateDirectory(worldPath);
-            // Ghi thông tin WorldInfo vào file JSON
-            this.worldInfo = SaveWorldInfoToJson(worldName, seed, worldPath);
-            
-            // Thông báo rằng worldInfo đã thay đổi
-            OnWorldInfoChanged?.Invoke(worldInfo);
-    
-            // Debug.Log($"Created new world save directories for: {worldName}");
-            
-            
-            //cái hàm này phải bỏ vào chỗ khác
-            // Tạo thư mục con 'map' bên trong world để lưu trữ dữ liệu bản đồ
-            Directory.CreateDirectory(Path.Combine(worldPath, "map"));
-            
-            return true;
-        }
-        
-        #endregion
-
-        // Hàm tạo file JSON từ đối tượng WorldInfo
-        private WorldInfo SaveWorldInfoToJson(string worldName, int seed, string worldPath)
-        {
-            WorldInfo newWorldInfo = new WorldInfo(
-                name: worldName,
-                creationDate: System.DateTime.Now,
-                seed: seed,
-                gameHour: 7,
-                gameMinute: 0,
-                gameDay: 0,
-                gameMonth: 0,
-                gameYear: 0,
-                techFireArrow: false,
-                techPenetrating: false,
-                techForge: false,
-                techAdhesive: false
-            );
-
-            string worldInfoPath = Path.Combine(worldPath, "worldInfo.json");
-
-            string worldInfoJson = JsonConvert.SerializeObject(newWorldInfo, Formatting.Indented);
-
-            File.WriteAllText(worldInfoPath, worldInfoJson);
-            // Debug.Log("World info saved to: " + worldInfoPath);
-            
-            return newWorldInfo;
-        }
 
         /// <summary>
         /// Lưu đối tượng WorldInfo hiện tại vào file worldInfo.json
@@ -185,6 +87,9 @@ namespace Script.Save_Controller
 
                 // Cập nhật lại tên trong worldInfo nếu cần
                 worldInfo.Name = nameToSave;
+                
+                // Cập nhật thời gian chơi cuối cùng (Iso 8601 string)
+                worldInfo.LastPlayedDate = System.DateTime.Now.ToString("O");
 
                 // Lưu vào file
                 string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
@@ -260,6 +165,9 @@ namespace Script.Save_Controller
             }
             string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
 
+            // Cập nhật last played date mỗi khi save
+            worldInfo.LastPlayedDate = System.DateTime.Now.ToString("O");
+
             // Serialize và ghi file JSON
             string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
             File.WriteAllText(worldInfoPath, json);
@@ -291,6 +199,9 @@ namespace Script.Save_Controller
                 return;
             }
             string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
+
+            // Cập nhật last played date mỗi khi save tech
+            worldInfo.LastPlayedDate = System.DateTime.Now.ToString("O");
 
             // Serialize and write JSON file
             string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
@@ -447,119 +358,7 @@ namespace Script.Save_Controller
                 return null; // Trả về null nếu không tìm thấy thư mục
             }
         }
-        // Hàm kiểm tra xem một save có tồn tại hay không
-        public void DeleteWorldSave(string worldName)
-        {
-            string worldPath = Path.Combine(saveRootPath, worldName);
 
-            if (Directory.Exists(worldPath))
-            {
-                Directory.Delete(worldPath, true); // Xóa thư mục và tất cả các tệp tin bên trong
-                // Debug.Log($"Deleted world save directory for: {worldName}");
-            }
-            else
-            {
-                Debug.LogError($"World save directory does not exist: {worldName}");
-            }
-        }
-        // Hàm lấy danh sách các thư mục trong root và chuyển đổi thành danh sách các đối tượng WorldInfo và hiển thị chúng lên
-        public void LoadWorldInfosToChooseSavePanel()
-        {
-            WorldInfos = new List<WorldInfo>();
-
-            if (Directory.Exists(saveRootPath))
-            {
-                string[] directories = Directory.GetDirectories(saveRootPath);
-
-                foreach (string dir in directories)
-                {
-                    string worldInfoPath = Path.Combine(dir, "worldInfo.json");
-
-                    // Kiểm tra xem file worldInfo.json có tồn tại trong thư mục không
-                    if (File.Exists(worldInfoPath))
-                    {
-                        try
-                        {
-                            // Đọc nội dung của file worldInfo.json
-                            string json = File.ReadAllText(worldInfoPath);
-
-                            // Parse JSON để tạo đối tượng WorldInfo
-                            WorldInfo worldInfo = JsonConvert.DeserializeObject<WorldInfo>(json);
-
-                            // Thêm đối tượng vào danh sách WorldInfos
-                            if (worldInfo != null)
-                            {
-                                WorldInfos.Add(worldInfo);
-                                // Debug.Log($"Loaded WorldInfo: {worldInfo.Name}");
-                            }
-                        }
-                        catch (System.Exception ex)
-                        {
-                            Debug.LogError($"Failed to load WorldInfo from {worldInfoPath}. Error: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"worldInfo.json not found in directory: {dir}");
-                    }
-                }
-
-                // Debug.Log($"Number of world saves loaded: {WorldInfos.Count}");
-            }
-            else
-            {
-                Debug.LogError("Save root path does not exist.");
-            }
-        }
-        public int CountWorldArr()
-        {
-            return WorldInfos.Count;
-        }
-        // Hàm trả về đối tượng WorldInfo theo chỉ số mảng
-        public WorldInfo GetWorldInfoByIndex(int index)
-        {
-            if (index >= 1 && index <= WorldInfos.Count)
-            {
-                WorldInfo selectedWorldInfo = WorldInfos[index - 1]; // index = 1 tương đương vị trí mảng = 0
-                
-                // Có thể chọn gán trực tiếp vào worldInfo nếu muốn
-                // worldInfo = selectedWorldInfo;  // Uncomment nếu muốn gán trực tiếp
-                
-                return selectedWorldInfo;
-            }
-            else
-            {
-                Debug.LogError("GetWorldInfoByIndex: Index out of range");
-                return null;
-            }
-        }
-        
-        /// <summary>
-        /// Hàm này kết hợp việc chọn một thế giới từ danh sách và load thông tin đầy đủ từ file.
-        /// Sau khi load, nó sẽ đồng bộ tech vào PrefabData để sẵn sàng cho gameplay.
-        /// </summary>
-        /// <param name="index">Chỉ số của thế giới trong danh sách</param>
-        /// <returns>True nếu thành công, False nếu thất bại</returns>
-        public bool SelectAndLoadWorldInfo(int index)
-        {
-            WorldInfo selectedInfo = GetWorldInfoByIndex(index);
-            if (selectedInfo != null)
-            {
-                // Load the full world info from file
-                WorldInfo loadedInfo = LoadWorldInfo(selectedInfo.Name);
-                if (loadedInfo != null)
-                {
-                    // Đồng bộ các thông tin tech vào PrefabData
-                    SyncTechToPrefabData();
-
-                    // Debug.Log($"Đã chọn và load thế giới: {loadedInfo.Name}");
-                    return true;
-                }
-            }
-
-            Debug.LogError("Không thể chọn và load thế giới với index: " + index);
-            return false;
-        }
 
         #region Active World Path Management
 

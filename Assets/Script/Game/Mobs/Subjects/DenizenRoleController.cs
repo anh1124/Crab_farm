@@ -304,7 +304,7 @@ namespace Script.Game.Mobs.Subjects
                     //Debug.Log($"[DenizenRoleController] Calling GuardManager.UnregisterArcher for {gameObject.name}");
                     GuardManager.Instance.UnregisterArcher(gameObject);
                 }
-                else
+                else if (Application.isPlaying)
                 {
                     Debug.LogWarning("[DenizenRoleController] GuardManager Instance is NULL during unregister!");
                 }
