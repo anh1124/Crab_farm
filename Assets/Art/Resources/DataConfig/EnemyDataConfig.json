@@ -1,7 +1,7 @@
 {
     "enemies": [
         {
-            "id": 2,
+            "id": 1,
             "enemyName": "circleHead",
             "attackSpeed": 1,
             "dame": 1,
@@ -9,6 +9,16 @@
             "speed": 1,
             "description": "Sạc không dây di động,giúp tăng tốc độ tích năng lượng cho shieldBot gần đó ",
             "power": 1
+        },
+        {
+            "id": 2,
+            "enemyName": "shieldbot",
+            "attackSpeed": 1,
+            "dame": 1,
+            "hp": 5,
+            "speed": 1,
+            "description": "khiên sốc điện",
+            "power": 3
         }
     ]
 }

@@ -223,6 +223,11 @@ namespace Script.Data_Model
 
         public GameObject summoningPortal;
         
+        [Space(5)]
+        [Header("Enemy Interaction")]
+        [Tooltip("Danh sách các Tag vật phẩm mà Enemy có thể nhặt, ví dụ Coin hoặc Tool")]
+        public List<string> enemyLootTags = new List<string> { "Coin", "Tool" };
+        
         #endregion
 
         [Space(15)] [Header("GUI ")] 
