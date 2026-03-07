@@ -53,6 +53,7 @@ GameObject:
   - component: {fileID: 3218344427349539648}
   - component: {fileID: 4705056387235239032}
   - component: {fileID: 4524887816005871866}
+  - component: {fileID: 953656452186265397}
   m_Layer: 9
   m_Name: Denizen
   m_TagString: Denizen
@@ -239,12 +240,14 @@ MonoBehaviour:
   isDrawRay: 1
   isShowGizmoUser: 1
   showDebugLog: 0
+  isActive: 1
+  scanFrequencyHz: 5
   tagsToDetect:
   - Player
   - Coin
   - Enemy
   - Animal
-  hitObjects: []
+  debugHitObjects: []
 --- !u!114 &3979009691190339230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -274,8 +277,6 @@ MonoBehaviour:
   role: 0
   currentCoins: 0
   maxCoins: 6
-  currentHp: 1
-  maxHp: 1
   walkSpeed: 1
   runSpeed: 3.5
   huntingMoveSpeed: 1.2
@@ -376,12 +377,15 @@ MonoBehaviour:
   detectRadius: 10
   isShowGizmo: 0
   isShowGizmoUser: 1
+  isActive: 1
+  scanFrequencyHz: 5
   tagsToDetect:
   - Player
   - Coin
   - Enemy
   - Animal
-  detectedObjects: []
+  showDebugLog: 0
+  debugDetectedObjects: []
 --- !u!114 &4524887816005871866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -406,3 +410,18 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 32768
   showDebugInfo: 1
+  stickImpactOffset: 0.4
+--- !u!114 &953656452186265397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 106f39c8cdd0857499f2b2e14dbf7ea7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  faction: 2
+  _ownerNpc: {fileID: 0}

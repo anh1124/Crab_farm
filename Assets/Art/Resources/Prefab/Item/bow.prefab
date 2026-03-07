@@ -140,9 +140,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 6363175895146240729}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 347dee65a0e4c354087fabc491e779de, type: 3}
+  m_Script: {fileID: 11500000, guid: f47ede33e442516419d1e4f2f2f648a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
+  itemCategory: 1
+  prefabID: bow
   picked: 0
   pickedBy: {fileID: 0}
+  floating: 0
+  rayLength: 0.6
+  fallSpeed: 10
+  throwGravity: 20
+  playerPickupAble: 0
+  denizensPickupAble: 1
+  enemyPickupAble: 1
+  pickupAbleCooldown: 3

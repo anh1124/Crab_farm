@@ -149,6 +149,32 @@ namespace Script.Game.Other
 
             // 4) Initialize Arrow Pool
             InitializeArrowPool();
+
+            // 5) Initialize Enemy Systems
+            InitializeEnemyBase();
+        }
+
+        private void InitializeEnemyBase()
+        {
+            // Load Enemy Data (Json Data & Map Prefab)
+            if (Script.Game.Enemy.TotalEnemyList.Instance != null)
+            {
+                Script.Game.Enemy.TotalEnemyList.Instance.InitializeEnemyData();
+            }
+            else
+            {
+                Debug.LogWarning("[StartGameScrene] TotalEnemyList.Instance is missing in scene!");
+            }
+
+            // Init Enemy Pool based on mapped Data
+            if (Script.Game.Enemy.EnemyPool.Instance != null)
+            {
+                Script.Game.Enemy.EnemyPool.Instance.InitializePools();
+            }
+            else
+            {
+                Debug.LogWarning("[StartGameScrene] EnemyPool.Instance is missing in scene! Make sure to put EnemyManagers in the scene.");
+            }
         }
 
         private void InitializeArrowPool()

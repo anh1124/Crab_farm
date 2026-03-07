@@ -4,7 +4,6 @@ using Script.Data_Model.Interfaces;
 using Script.Game.Mobs.MobsManager;
 using Script.Data_Model.Status;
 using UnityEngine.Serialization;
-using Script.Game.Mobs.Components;
 
 namespace Script.Game.Mobs.Subjects
 {
@@ -18,7 +17,7 @@ namespace Script.Game.Mobs.Subjects
         Farmer
     }
 
-    public class DenizenRoleController : MonoBehaviour, ISaveable
+    public class DenizenRoleController : MonoBehaviour, ISaveable, IItemHandle
     {
         // Script này quản lý chuyển nghề và thiết lập script cần thiết
         public NPCRole CurrentRole = NPCRole.Vagrant;
@@ -134,17 +133,55 @@ namespace Script.Game.Mobs.Subjects
             villagerBehavior = GetComponent<VillagerBehavior>() ?? gameObject.AddComponent<VillagerBehavior>();
             archerBehavior = GetComponent<ArcherBehavior>() ?? gameObject.AddComponent<ArcherBehavior>();
 
-            // Setup CoinCollector
-            if (GetComponent<CoinCollector>() == null)
-            {
-                gameObject.AddComponent<CoinCollector>();
-            }
+            // Setup Storage handled by DenizenStatus now
 
             previousRole = CurrentRole;
 
             // Initially disable all behaviors to prevent auto-updates if they have Update()
             // We will control them manually or via Enable/Disable
             DisableAllBehaviors();
+        }
+
+        private void OnEnable()
+        {
+            if (denizenStatus != null)
+            {
+                denizenStatus.OnCoinChanged += OnCoinChangedHandler;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (denizenStatus != null)
+            {
+                denizenStatus.OnCoinChanged -= OnCoinChangedHandler;
+            }
+        }
+
+        private void OnCoinChangedHandler(int newCoins)
+        {
+            if (!this.isActiveAndEnabled) return;
+
+            if (CurrentRole == NPCRole.Archer && newCoins <= 1)
+            {
+                // Drop Bow and become Villager
+                if (Script.Data_Model.PrefabData.Instance != null && Script.Data_Model.PrefabData.Instance.bow != null)
+                {
+                    Transform itemContainer = transform.parent; // Fallback
+                    if (Script.Manager.EntitySaveManager.Instance != null && Script.Manager.EntitySaveManager.Instance.otherContainer != null)
+                    {
+                        itemContainer = Script.Manager.EntitySaveManager.Instance.otherContainer.transform;
+                    }
+                    Vector3 dropPos = transform.position + new Vector3(UnityEngine.Random.Range(-1f, 1f), 1.5f, 0);
+                    Instantiate(Script.Data_Model.PrefabData.Instance.bow, dropPos, Quaternion.identity, itemContainer);
+                }
+                ChangeRole(NPCRole.Villager);
+            }
+            else if (CurrentRole == NPCRole.Villager && newCoins <= 0)
+            {
+                // Become Vagrant
+                ChangeRole(NPCRole.Vagrant);
+            }
         }
 
         private void OnDestroy()
@@ -174,7 +211,10 @@ namespace Script.Game.Mobs.Subjects
         {
             if (newRole == CurrentRole) return;
 
-         //   Debug.Log($"[DenizenRoleController] ChangeRole called: {CurrentRole} -> {newRole}");
+            // Xử lý unregister role cũ
+            // The original instruction's "Code Edit" snippet was syntactically incorrect.
+            // Reverting to the original correct code for this section.
+            // Debug.Log($"[DenizenRoleController] ChangeRole called: {CurrentRole} -> {newRole}");
             NPCRole oldRole = CurrentRole; // Save old role BEFORE changing
 
             try
@@ -354,17 +394,28 @@ namespace Script.Game.Mobs.Subjects
             var circleHelper = GetComponent<CircleDetectHelper>();
             if (circleHelper != null)
             {
-                circleHelper.enabled = false;
-                circleHelper.isShowGizmo = false;
+                circleHelper.isActive = false;
             }
 
             // Disable RayCastHelper
             var rayHelper = GetComponent<RayCastHelper>();
             if (rayHelper != null)
             {
-                rayHelper.enabled = false;
-                rayHelper.isDrawRay = false;
+                rayHelper.isActive = false;
             }
         }
+
+        #region IItemHandle Implementation
+        
+        public void HandleItem(GameObject item)
+        {
+            // Router: Pass item directly to the active behavior via Interface casting
+            if (currentActiveBehavior is IItemHandle itemHandler)
+            {
+                itemHandler.HandleItem(item);
+            }
+        }
+        
+        #endregion
     }
 }

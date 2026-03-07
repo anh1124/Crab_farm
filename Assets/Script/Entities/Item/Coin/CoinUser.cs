@@ -273,6 +273,7 @@ namespace Script.Game.Item.Coin
             ClearTransitCoins();
             if (coinSlotParent != null) coinSlotParent.SetActive(false);
             currentSlotIndex = 0;
+            isCollectingCoins = false;
             isReadyToUpgrade = true;
             onUpgradeComplete?.Invoke();
         }
@@ -281,11 +282,15 @@ namespace Script.Game.Item.Coin
         public void ResetUpgradeState()
         {
             isReadyToUpgrade = false;
+            isCollectingCoins = false;
             collectedCoins = 0;
             // Clear any coins in transit visual state if needed
             StopAllCoinCoroutines();
             ClearTransitCoins();
-            ClearCoinSlots();
+            // KHÔNG GỌI ClearCoinSlots() ở đây. Việc xoá và gọi ngay SetupCoinSlots() 
+            // trong cùng 1 frame khiến lệnh Destroy() của Unity bị lag 1 frame, sinh ra lỗi mất hình.
+            // Chỉ cần Reset lại trạng thái là đủ.
+            currentSlotIndex = 0;
             // Only show coin slots if player is still in trigger area and this object can accept coins
             if (playerTrigger && canAcceptCoins)
             {
@@ -343,7 +348,7 @@ namespace Script.Game.Item.Coin
 
         private void SetCoinProperties(GameObject coin)
         {
-            Coin coinScript = coin.GetComponent<Coin>();
+            PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
             if (coinScript != null)
             {
                 coinScript.playerPickupAble = false;
@@ -385,22 +390,31 @@ namespace Script.Game.Item.Coin
             //    Debug.LogWarning("đã gọi hàm ReleaseCoins");
             
             
-            foreach (GameObject coin in coinsInTransit)
+            foreach (GameObject transitCoin in coinsInTransit)
             {
-                if (coin != null)
+                if (transitCoin != null)
                 {
-                    ReleaseCoin(coin);
+                    ReleaseCoin(transitCoin);
                 }
             }
             StopAllCoinCoroutines();
             ClearTransitCoins();
             isCollectingCoins = false;
+            GameObject droppedCoin = Instantiate(PrefabData.Instance.coinPrefab, transform.position, Quaternion.identity, Script.Manager.EntitySaveManager.Instance.coinContainer.transform);
+            
+            PhysicalItem coinScript = droppedCoin.GetComponent<PhysicalItem>();
+            if (coinScript != null)
+            {
+                coinScript.floating = false;
+                coinScript.playerPickupAble = true;
+                coinScript.denizensPickupAble = true;
+            }
             currentSlotIndex = 0;
         }
         
         private void ReleaseCoin(GameObject coin)
         {
-            Coin coinScript = coin.GetComponent<Coin>();
+            PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
             if (coinScript != null)
             {
                 coinScript.floating = false;

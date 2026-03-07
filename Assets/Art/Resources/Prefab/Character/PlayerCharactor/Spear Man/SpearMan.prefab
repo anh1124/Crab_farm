@@ -95,6 +95,7 @@ GameObject:
   - component: {fileID: 8413050269500814157}
   - component: {fileID: 8516832215337478737}
   - component: {fileID: 3731640909503210370}
+  - component: {fileID: 955563581396219822}
   m_Layer: 13
   m_Name: SpearMan
   m_TagString: Player
@@ -222,7 +223,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1591732571
-  m_SortingLayer: -2
+  m_SortingLayer: 1
   m_SortingOrder: 10
   m_Sprite: {fileID: 175150952, guid: b211a6e344b1de14db6cf02dbb19c2b6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -349,6 +350,21 @@ MonoBehaviour:
     state: 0
     cooldownTimer: 0
   playerBehavior: {fileID: 0}
+--- !u!114 &955563581396219822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 106f39c8cdd0857499f2b2e14dbf7ea7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canPickupCoin: 1
+  canPickupTool: 0
+  _ownerNpc: {fileID: 0}
 --- !u!1 &6591141932145495929
 GameObject:
   m_ObjectHideFlags: 0

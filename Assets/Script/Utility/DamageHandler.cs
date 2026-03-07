@@ -12,21 +12,34 @@ namespace Script.Utils
         {
             if (target == null) return true;
 
-            // Use IHealth interface for damage handling
+            // 0. KIỂM TRA FLAG CHẾT TRƯỚC: Bỏ qua hoàn toàn nếu nó đã là xác chết
+            var dieInterface = target.GetComponent<IDie>();
+            if (dieInterface != null && dieInterface.IsDead)
+            {
+                return true; 
+            }
+
+            // 1. Xử lý khiên trước (Áp dụng cho cả Player lẫn Denizen)
+            var coinShield = target.GetComponent<ICoinShield>();
+            
+            if (coinShield != null)
+            {
+                Debug.Log($"[DamageHandler] Xử lý mục tiêu {target.name} (Có ICoinShield. HasShield = {coinShield.HasCoinShield})");
+            }
+            
+            if (coinShield != null && coinShield.HasCoinShield)
+            {
+                if (coinShield.ConsumeCoinShield()) // Nếu có coinshield thì nó sẽ văng coin và chặn sát thương
+                {
+                    Debug.Log($"[DamageHandler] Mục tiêu {target.name} đã dùng Khiên Xu để đỡ đòn!");
+                    return true; // đã hấp thụ sát thương
+                }
+            }
+            
+            // 2. Xử lý sát thương máu thường
             var health = target.GetComponent<IHealth>();
             if (health != null)
             {
-                // If target supports coin shield, try to consume first
-                var coinShield = target.GetComponent<ICoinShield>();
-                if (coinShield != null && coinShield.HasCoinShield)
-                {
-                    if (coinShield.ConsumeCoinShield())//nếu có coinshield thì chặn
-                    {
-                        return true; // absorbed
-                    }
-                }
-                
-                // Apply damage using IHealth
                 if (damage > 0)
                 {
                     health.TakeDamage(damage);
@@ -34,8 +47,11 @@ namespace Script.Utils
                 return health.CurrentHp > 0;
             }
 
-            // If no health interface present, treat as no-op
-            Debug.LogWarning($"[DamageHandler] Target {target.name} has no IHealth interface.");
+            // Nếu không có Health nhưng có CoinShield (như Denizen mất khiên), coi như quá trình đánh hoàn tất
+            if (coinShield != null) return true;
+
+            // Báo lỗi nếu đánh trúng 1 cục đá vô tri vô giác không thuộc thể loại nào
+            Debug.LogWarning($"[DamageHandler] Target {target.name} has no IHealth or ICoinShield interface.");
             return true;
         }
     }

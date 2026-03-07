@@ -78,18 +78,30 @@ public class BuildMenu : MonoBehaviour
     }
     public void OpenBuildMenu()
     {
-        // cập nhật danh sách công trình khả dụng trước
-        UpdateBuildableStructuresList();
-        
-        if (showBuildMenu)
+        // Kiểm tra trạng thái THỰC TẾ của UI hiện tại thay vì dùng cờ bool dễ bị lệch sync
+        bool isCurrentlyOpen = buildButtonContainer.gameObject.activeSelf;
+
+        if (isCurrentlyOpen)
         {
+            // Nếu đang mở -> ĐÓNG LẠI
             ClearBuildButtonContainer();
             buildButtonContainer.gameObject.SetActive(false);
             showBuildMenu = false;
-           
         }
         else
         {
+            // Nếu đang đóng -> CẬP NHẬT DATA & MỞ LÊN
+            // CHÚ Ý: Đưa hàm Update List xuống phần "Mở lên"
+            // Để chắc chắn lấy data TownCenter Level MỚI NHẤT
+            UpdateBuildableStructuresList();
+
+            // SỬA LỖI: Nếu không có gì để xây -> Không bật Background trống lên!
+            if (buildableStructures.Count == 0)
+            {
+                Debug.Log("[BuildMenu] Hiện không có công trình nào khả dụng để xây. Giữ menu đóng.");
+                return;
+            }
+
             ClearBuildButtonContainer();
             PopulateBuildButtons();
             buildButtonContainer.gameObject.SetActive(true);
@@ -322,6 +334,12 @@ public class BuildMenu : MonoBehaviour
     {
         isBuilding = false;
         ClearBuildButtonContainer();
+        
+        // ĐẢM BẢO ẨN LUÔN CÁI BẢNG TRỐNG NÀY ĐI SAU KHI XÂY XONG HOẶC HỦY:
+        if (buildButtonContainer != null && buildButtonContainer.gameObject != null)
+        {
+            buildButtonContainer.gameObject.SetActive(false);
+        }
     }
 
     private void OnDisable()

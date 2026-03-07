@@ -360,10 +360,10 @@ namespace Script.Game.Mobs.MobsManager
 
             // PREVENT BUG: Check for EnemyBehavior FIRST. 
             // If missing, we cannot track its death, so do NOT add to list.
-            var enemyBehavior = enemy.GetComponent<Script.Game.Enemy.EnemyBehavior>();
-            if (enemyBehavior == null)
+            var enemyStatus = enemy.GetComponent<Script.Game.Enemy.EnemyStatus>();
+            if (enemyStatus == null)
             {
-                Debug.LogWarning($"[GuardManager] Rejected enemy {enemy.name}: Missing EnemyBehavior component!");
+                Debug.LogWarning($"[GuardManager] Rejected enemy {enemy.name}: Missing EnemyStatus component!");
                 return;
             }
 
@@ -373,8 +373,12 @@ namespace Script.Game.Mobs.MobsManager
             detectedEnemies.Add(enemy);
             //DebugLog($"[GuardManager] 🚨 Detected NEW Enemy: {enemy.name}");
 
-            // Subscribe to Despawn event (Safe now because we checked above)
-            enemyBehavior.OnDespawn += HandleEnemyDespawn;
+            // Lấy controller hoặc một thành phần nào đó có chứa OnDeath/OnDespawn
+            var enemyController = enemy.GetComponent<Script.Game.Enemy.EnemyAIController>();
+            if (enemyController != null)
+            {
+                enemyController.OnDespawn += HandleEnemyDespawn;
+            }
 
             // If we detect a new enemy, CANCEL any pending peacetime cooldown
             if (alertCooldownCoroutine != null)
@@ -393,15 +397,15 @@ namespace Script.Game.Mobs.MobsManager
                 NotifyAllArchersValues(true);
             }
         }
-        private void HandleEnemyDespawn(Script.Game.Enemy.EnemyBehavior enemyBehavior)
+        private void HandleEnemyDespawn(Script.Game.Enemy.EnemyAIController enemyController)
         {
             // Unsubscribe to prevent memory leaks
-            enemyBehavior.OnDespawn -= HandleEnemyDespawn;
+            enemyController.OnDespawn -= HandleEnemyDespawn;
 
             // Remove from list
-            if (detectedEnemies.Contains(enemyBehavior.gameObject))
+            if (detectedEnemies.Contains(enemyController.gameObject))
             {
-                detectedEnemies.Remove(enemyBehavior.gameObject);
+                detectedEnemies.Remove(enemyController.gameObject);
             }
 
             // SAFETY: Prune any other nulls (ghost enemies) just in case
@@ -695,7 +699,7 @@ namespace Script.Game.Mobs.MobsManager
                 {
                     if (enemy != null)
                     {
-                        var behavior = enemy.GetComponent<Script.Game.Enemy.EnemyBehavior>();
+                        var behavior = enemy.GetComponent<Script.Game.Enemy.EnemyAIController>();
                         if (behavior != null)
                         {
                             // Trigger despawn logic manually or just simulate it

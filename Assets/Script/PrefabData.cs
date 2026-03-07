@@ -21,7 +21,8 @@ namespace Script.Data_Model
         public bool skipBuildingProcess = true; 
         
         public List<string> toolTag = new List<string> { "Hammer", "Bow" };
-        
+        public GameObject hammer;
+      public GameObject bow;
         [Header("Player Character")] [Space(5)]
         public List<GameObject> playerCharacterList = new List<GameObject>();
 
@@ -174,13 +175,7 @@ namespace Script.Data_Model
         
         public GameObject denizen;//base prefab for village,archer,vagrant,... 
         #endregion
-        [FormerlySerializedAs("Bow")] [Space(15)] [Header("ItemItem ")] [Space(5)]  
-        #region ItemItem
-        
-        public GameObject bow;
-        public GameObject hammer;
-       
-        #endregion
+      
         [Space(15)] [Header("Subjects ")] [Space(5)]  
         #region Nature
         public GameObject tree;//đây là tree nguyên bản,nhưng khi lấy tree thì phải dùng hàm get random tree
@@ -227,6 +222,9 @@ namespace Script.Data_Model
         [Header("Enemy Interaction")]
         [Tooltip("Danh sách các Tag vật phẩm mà Enemy có thể nhặt, ví dụ Coin hoặc Tool")]
         public List<string> enemyLootTags = new List<string> { "Coin", "Tool" };
+        
+        [Tooltip("Các tag mà enemy coi là vật cản cần phá khi di chuyển về TownCenter (Wall, Denizen, Player...)")]
+        public List<string> enemyObstacleTags = new List<string> { "Wall", "Player", "Archer", "Villager" };
         
         #endregion
 

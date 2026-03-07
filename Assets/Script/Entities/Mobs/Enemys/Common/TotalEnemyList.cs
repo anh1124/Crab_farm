@@ -28,9 +28,10 @@ namespace Script.Game.Enemy
             {
                 Destroy(gameObject);
             }
-
-            InitializeEnemyData();
+            // Việc khởi tạo data sẽ được gọi thống nhất từ StartGameScrene
         }
+
+        private bool _isInitialized = false;
 
         // Class cơ sở cho dữ liệu của mọi enemy
         [System.Serializable]
@@ -39,6 +40,7 @@ namespace Script.Game.Enemy
             public int id;
             public string enemyName;
             public float attackSpeed;
+            public float attackRange; // Được tự động parse từ file JSON
             public int dame;
             public int hp;
             public int speed;
@@ -55,8 +57,10 @@ namespace Script.Game.Enemy
 
         public List<EnemyDataBase> EnemyDataList = new List<EnemyDataBase>();
 
-        private void InitializeEnemyData()
+        public void InitializeEnemyData()
         {
+            if (_isInitialized) return;
+
             // Load JSON from Resources
             TextAsset jsonFile = Resources.Load<TextAsset>("DataConfig/EnemyDataConfig");
             if (jsonFile == null)
@@ -69,33 +73,52 @@ namespace Script.Game.Enemy
 
             if (config != null && config.enemies != null)
             {
+                List<string> jsonEnemies = new List<string>();
+                List<string> readyEnemies = new List<string>();
+
                 foreach (var data in config.enemies)
                 {
-                    // Map prefab based on name
-                    switch (data.enemyName)
+                    jsonEnemies.Add(data.enemyName);
+
+                    // Map prefab based on name (chống sai case nhầm hoa/thường)
+                    switch (data.enemyName.ToLower())
                     {
-                        case "circleHead":
+                        case "circlehead":
                             data.enemyPrefab = circleHead;
                             break;
-                        case "shieldBot":
+                        case "shieldbot":
                             data.enemyPrefab = shieldBot;
                             break;
-                        case "twoHeadBot":
+                        case "twoheadbot":
                             data.enemyPrefab = twoHeadBot;
                             break;
-                        case "stormHead":
+                        case "stormhead":
                             data.enemyPrefab = stormHead;
                             break;
                         case "toucher":
                             data.enemyPrefab = toucher;
                             break;
                         default:
-                            Debug.LogWarning($"Prefab not found for enemy: {data.enemyName}");
-                            break;
+                            break; // LogWarning is handled below if prefab is null
                     }
+
+                    if (data.enemyPrefab != null)
+                    {
+                        readyEnemies.Add(data.enemyName);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Prefab not found for enemy: {data.enemyName}");
+                    }
+
                     EnemyDataList.Add(data);
                 }
+
+                Debug.Log($"[EnemyData] Đã load {jsonEnemies.Count} enemy data từ JSON: {string.Join(", ", jsonEnemies)}");
+                Debug.Log($"[EnemyData] Đã sẵn sàng {readyEnemies.Count} enemy (có cả data + prefab): {string.Join(", ", readyEnemies)}");
             }
+            
+            _isInitialized = true;
         }
 
         // Phương thức lấy dữ liệu enemy theo tên
@@ -147,6 +170,43 @@ namespace Script.Game.Enemy
             {
                 Debug.Log($"Enemy: {monster.Data.enemyName}, Quantity: {monster.Quantity}");
             }
+        }
+
+        // ==========================================
+        // DEBUG CHO INSPECTOR
+        // ==========================================
+        [ContextMenu("Debug: In Tình Trạng Data & Prefab")]
+        public void DebugDataAndPrefabStatus()
+        {
+            if (EnemyDataList == null || EnemyDataList.Count == 0)
+            {
+                Debug.LogWarning("[TotalEnemyList] Danh sách Data trống! Hãy Play game để Initialize trước.");
+                return;
+            }
+
+            List<string> readyEnemies = new List<string>();    // Có Data + Có Prefab
+            List<string> missingEnemies = new List<string>();  // Có Data nhưng Thiếu Prefab
+
+            foreach (var data in EnemyDataList)
+            {
+                if (data.enemyPrefab != null)
+                {
+                    readyEnemies.Add(data.enemyName);
+                }
+                else
+                {
+                    missingEnemies.Add(data.enemyName);
+                }
+            }
+
+            // In ra Console
+            Debug.Log("<color=green>===================================</color>");
+            Debug.Log($"<color=green>1. ĐÃ SẴN SÀNG ({readyEnemies.Count} loại - Có Data + Có Prefab):</color>\n" + 
+                      (readyEnemies.Count > 0 ? string.Join(", ", readyEnemies) : "Không có quái nào"));
+            
+            Debug.Log($"<color=orange>2. THIẾU PREFAB ({missingEnemies.Count} loại - Có Data nhưng chửa gán Prefab):</color>\n" + 
+                      (missingEnemies.Count > 0 ? string.Join(", ", missingEnemies) : "Rất tốt, không thiếu quái nào!"));
+            Debug.Log("<color=green>===================================</color>");
         }
 
     }

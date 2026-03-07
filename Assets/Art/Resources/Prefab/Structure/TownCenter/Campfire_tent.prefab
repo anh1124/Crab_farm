@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 1186328156643503206}
   - component: {fileID: 1595055298338466532}
   - component: {fileID: 5159376728369349636}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Campfire_tent
   m_TagString: TownCenter
   m_Icon: {fileID: 0}
@@ -109,7 +109,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1477640753
-  m_SortingLayer: -3
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 8fbfd5b0bfc694b49ab24006bea1fa6f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -298,6 +298,10 @@ PrefabInstance:
     - target: {fileID: 1732423174781088413, guid: b32c92ea9af46e1419656fcdc4cb4e5a, type: 3}
       propertyPath: m_Name
       value: tent
+      objectReference: {fileID: 0}
+    - target: {fileID: 1732423174781088413, guid: b32c92ea9af46e1419656fcdc4cb4e5a, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

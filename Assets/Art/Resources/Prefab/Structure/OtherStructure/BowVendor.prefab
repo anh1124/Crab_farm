@@ -168,7 +168,7 @@ GameObject:
   - component: {fileID: 3296988984198467744}
   - component: {fileID: 8344224514938006293}
   - component: {fileID: 4434624047219894162}
-  m_Layer: 14
+  m_Layer: 0
   m_Name: BowVendor
   m_TagString: BowVendor
   m_Icon: {fileID: 0}
@@ -231,7 +231,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1477640753
-  m_SortingLayer: -3
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 711e4725247cdbc419cb80bede81d8ac, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

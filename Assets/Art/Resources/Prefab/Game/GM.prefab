@@ -91,6 +91,8 @@ MonoBehaviour:
   worldInfo:
     Name: 
     Seed: 0
+    CreationDate: 
+    LastPlayedDate: 
     GameHour: 0
     GameMinute: 0
     GameDay: 0
@@ -157,6 +159,8 @@ MonoBehaviour:
   worldInfo:
     Name: 
     Seed: 0
+    CreationDate: 
+    LastPlayedDate: 
     GameHour: 0
     GameMinute: 0
     GameDay: 0
@@ -323,6 +327,8 @@ GameObject:
   - component: {fileID: 7614116793088755009}
   - component: {fileID: 8206099037918200606}
   - component: {fileID: 1182911642445597191}
+  - component: {fileID: 3257729280555218338}
+  - component: {fileID: 6442943352986191126}
   m_Layer: 0
   m_Name: EnemyWave
   m_TagString: Untagged
@@ -372,7 +378,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   circleHead: {fileID: 0}
-  shieldBot: {fileID: 0}
+  shieldBot: {fileID: 132874606585159244, guid: 8ad3a1b72dca67244a4401e668c00af5, type: 3}
   twoHeadBot: {fileID: 0}
   stormHead: {fileID: 0}
   toucher: {fileID: 0}
@@ -393,6 +399,31 @@ MonoBehaviour:
   portalR: {fileID: 0}
   minSpawnDistance: 40
   maxSpawnDistance: 80
+--- !u!114 &3257729280555218338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2692076870354972573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33a2bb9fe60c74468c8aa6bd10ce90e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6442943352986191126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2692076870354972573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4c3629a5c182ca47a4a4e143464522c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _primaryTarget: {fileID: 0}
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -508,6 +539,14 @@ MonoBehaviour:
   rabbitSpeed: 1
   rabbitDieReward: 1
   summoningPortal: {fileID: 0}
+  enemyLootTags:
+  - Coin
+  - Tool
+  enemyObstacleTags:
+  - Wall
+  - Player
+  - Archer
+  - Villager
   gameObjectHaveCanvas: {fileID: 0}
   confirmationPanel: {fileID: 1899307974243404924, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
   playerCoinUserInteractable: []

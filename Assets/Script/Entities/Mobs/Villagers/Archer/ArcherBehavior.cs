@@ -23,7 +23,7 @@ namespace Script.Game.Mobs.Subjects
     [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(ArcherShooting))]
-    public class ArcherBehavior : MonoBehaviour, IHealth, ICoinShield, INPCBehavior
+    public class ArcherBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle
     {
         #region Constants
         
@@ -73,8 +73,7 @@ namespace Script.Game.Mobs.Subjects
             if (circleDetectHelper == null) circleDetectHelper = GetComponent<Script.Game.Other.CircleDetectHelper>();
             if (circleDetectHelper != null)
             {
-                circleDetectHelper.enabled = true;
-                circleDetectHelper.isShowGizmo = true; // System control
+                circleDetectHelper.isActive = true;
             }
             
             // Re-subscribe logic from old OnEnable
@@ -87,8 +86,7 @@ namespace Script.Game.Mobs.Subjects
              // Cleanup if needed
              if (circleDetectHelper != null)
              {
-                 circleDetectHelper.enabled = false;
-                 circleDetectHelper.isShowGizmo = false;
+                 circleDetectHelper.isActive = false;
              }
              
              UnsubscribeFromTimeEvents();
@@ -154,9 +152,8 @@ namespace Script.Game.Mobs.Subjects
             // Chỉ giữ lại các gizmo debug khác nếu có
         }
 
-        // --- IHealth Interface Properties ---
+        // --- ICoinShield Interface Properties ---
         public bool HasCoinShield => status.CurrentCoins > 0;
-        public bool HasHp => true;
         
         public int CurrentCoin
         {
@@ -169,22 +166,6 @@ namespace Script.Game.Mobs.Subjects
             get => status.MaxCoins;
             set => status.MaxCoins = value;
         }
-
-        public int CurrentHp
-        {
-            get => status.CurrentHp;
-            set => status.CurrentHp = value;
-        }
-
-        public int MaxHp
-        {
-            get => status.MaxHp;
-            set => status.MaxHp = value;
-        }
-
-        public bool IsDead => CurrentHp <= 0;
-
-
 
         private void Awake()
         {
@@ -210,8 +191,6 @@ namespace Script.Game.Mobs.Subjects
             circleDetectHelper.SetDetectRadius(status.archerDetectRange);
         }
         
-
-
         private void Start()
         {
             // Lấy các Manager
@@ -257,6 +236,10 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnDestroy()
         {
+            if (guardManager != null) 
+            {
+                guardManager.UnregisterArcher(gameObject);
+            }
             UnsubscribeFromTimeEvents();
             // Việc hủy đăng ký được xử lý bởi Controller
             CleanupReferences();
@@ -294,6 +277,31 @@ namespace Script.Game.Mobs.Subjects
         }
 
         // --- INPCBehavior implementation ---
+        public void HandleItem(GameObject item)
+        {
+            if (!this.enabled) return;
+
+            if (item.CompareTag("Coin") || item.GetComponent<PhysicalItem>()?.itemCategory == ItemCategory.Coin)
+            {
+                var coinScript = item.GetComponent<PhysicalItem>();
+                if (coinScript == null || coinScript.denizensPickupAble)
+                {
+                    PickUpCoinInternal(item);
+                }
+            }
+        }
+
+        private void PickUpCoinInternal(GameObject coinObject)
+        {
+            var coinStorage = GetComponent<ICoinable>();
+            if (coinStorage == null) return;
+            
+            Script.Utility.ProcessCoinPickup(coinObject,
+                condition: () => coinStorage.Coin < coinStorage.MaxCoins,
+                onPickupSuccess: () => coinStorage.AddCoin(1)
+            );
+        }
+
         public void UpdateBehavior()
         {
             //tính toán thời gian tấn công
@@ -305,9 +313,9 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
 
-            if (IsDead || status == null || animator == null)
+            if (status == null || animator == null)
             {
-                if (!IsDead && status == null)
+                if (status == null)
                     Debug.LogError("[Archer] UpdateBehavior called with null status!");
                 return;
             }
@@ -612,7 +620,7 @@ namespace Script.Game.Mobs.Subjects
         {
              // 1. Quét xung quanh
             List<GameObject> detectedList = circleDetectHelper != null ? 
-                circleDetectHelper.ScanAndGetDetectedObjects(status.archerDetectRange) : new List<GameObject>();
+                circleDetectHelper.GetListDetectedObjects(status.archerDetectRange) : new List<GameObject>();
 
             // 2. Chọn mục tiêu và Báo cáo Enemy
             GameObject target = SelectTargetAndReportThreats(detectedList);
@@ -811,7 +819,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnNightFalls()
         {
-            if (IsDead || status == null) return;
+            if (status == null) return;
             if (status.archerState == DenizenStatus.ArcherState.Hunting)
             {
                 TransitionToState(DenizenStatus.ArcherState.ReturningToBase);
@@ -885,7 +893,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnDayBreaks()
         {
-            if (IsDead || status == null) return;
+            if (status == null) return;
             if (status.archerState == DenizenStatus.ArcherState.HoldingWall ||
                 status.archerState == DenizenStatus.ArcherState.ReturningToBase)
             {
@@ -904,10 +912,6 @@ namespace Script.Game.Mobs.Subjects
             if (!HasCoinShield) return false;
             CurrentCoin -= 1;
             DropCoins(1);
-            if (CurrentCoin == 0)
-            {
-                Utility.TransformToVillager(gameObject, 0);
-            }
             return true;
         }
 
@@ -924,58 +928,18 @@ namespace Script.Game.Mobs.Subjects
                     {
                         GameObject coin = Instantiate(Spawner.Instance.coinPrefab, spawnPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
                         // Coin logic...
-                        Coin coinScript = coin.GetComponent<Coin>();
+                        PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
                         if (coinScript != null)
                         {
                             coinScript.playerPickupAble = true;
                             coinScript.denizensPickupAble = false;
                             coinScript.floating = false;
-                            coinScript.CallFunctionCoolDown("Denizen");
+                            coinScript.CallFunctionCoolDown("Denizens");
                             Spawner.Instance.InitializeCoinThrow(coin, dropDirection);
                         }
                     }
                 }
             }
-        }
-
-        public void TakeDamage(int damage) => TakeDamage(damage, null);
-
-        public bool TakeDamage(int damage, GameObject whoDoDame)
-        {
-            if (guardManager != null && whoDoDame != null)
-            {
-                if (whoDoDame.CompareTag("Enemy"))
-                {
-                    guardManager.RegisterEnemy(whoDoDame);
-                }
-            }
-            
-            if (HasCoinShield && ConsumeCoinShield())
-            {
-                return true; 
-            }
-
-            CurrentHp -= damage;
-            if (IsDead)
-            {
-                Die(whoDoDame);
-            }
-            return true;
-        }
-
-        public void Heal(int amount)
-        {
-            CurrentHp = Mathf.Min(CurrentHp + amount, MaxHp);
-        }
-
-        public void Die() => Die(null);
-        
-        public void Die(GameObject whoDoDame)
-        {
-            // Debug.Log($"[Archer] Died by {whoDoDame?.name ?? "unknown"}");
-            // Unregister from GuardManager
-            if (guardManager != null) guardManager.UnregisterArcher(gameObject);
-            Destroy(gameObject);
         }
     }
 }

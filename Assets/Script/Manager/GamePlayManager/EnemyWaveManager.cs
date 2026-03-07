@@ -39,6 +39,13 @@ namespace Script.Manager.GamePlayManager
 
         private void TriggerNightWave()
         {
+            // [FIX LỖI POOL]
+            // Khi spawn bằng Inspector Test, có thể EnemyPool chưa được Initialize
+            if (EnemyPool.Instance != null && TotalEnemyList.Instance != null && EnemyPool.Instance.GetPoolCount() == 0)
+            {
+                EnemyPool.Instance.InitializePools();
+            }
+
             // log kiểm tra trạng thái toàn bộ cổng hiện có trên Map trước khi đẻ quân
             GameObject pL = EnemyPortalManager.Instance.portalL;
             GameObject pR = EnemyPortalManager.Instance.portalR;
@@ -107,6 +114,39 @@ namespace Script.Manager.GamePlayManager
         {
             Debug.Log("[EnemyWaveManager - DEV TEST] Bắt đầu gọi TriggerNightWave bằng tay...");
             TriggerNightWave();
+        }
+
+        [ContextMenu("Test Spawn 1 ShieldBot")]
+        public void TestSpawnShieldBot()
+        {
+            var activePortals = EnemyPortalManager.Instance.GetActivePortals();
+            if (activePortals == null || activePortals.Count == 0)
+            {
+                Debug.LogError("[TestSpawnShieldBot] LỖI: Không tìm thấy Portal nào SẴN SÀNG trên bản đồ!");
+                return;
+            }
+
+            GameObject portalObj = activePortals[0].gameObject;
+            
+            // Yêu cầu Pool cấp ShieldBot
+            GameObject shieldBot = EnemyPool.Instance.GetEnemy("shieldBot");
+            if (shieldBot != null)
+            {
+                shieldBot.transform.position = portalObj.transform.position;
+                shieldBot.transform.rotation = Quaternion.identity;
+
+                // Reset state machine thông qua Controller
+                EnemyAIController controller = shieldBot.GetComponent<EnemyAIController>();
+                if (controller != null)
+                {
+                    controller.ResetEnemy(portalObj);
+                    Debug.Log($"[TestSpawnShieldBot] THÀNH CÔNG đẻ 1 ShieldBot từ pool tại cổng {portalObj.name}");
+                }
+                else
+                {
+                    Debug.LogError("[TestSpawnShieldBot] ShieldBot thiếu component EnemyAIController (hoặc ShieldBotAIController)!");
+                }
+            }
         }
 
         private void OnDestroy()

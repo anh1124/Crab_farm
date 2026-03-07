@@ -120,14 +120,8 @@ namespace Script.Manager.Building
 
         private void SetupWallPreview(GameObject preview, Script.Game.Structures.Wall_And_Stump.WallBehavior wallBehavior)
         {
-            // 1. Remove WallBehavior to prevent logic execution
-            Destroy(wallBehavior);
-
-            // 2. Remove CoinUser if present
-            var coinUser = preview.GetComponent<CoinUser>();
-            if (coinUser != null)
-                Destroy(coinUser);
-
+            StripAllScripts(preview);
+            
             // 3. Setup Root Collider for Overlap Checks
             previewCollider = preview.GetComponent<Collider2D>();
             if (previewCollider != null)
@@ -151,10 +145,7 @@ namespace Script.Manager.Building
 
         private void SetupGenericPreview(GameObject preview)
         {
-            // Generic CoinUser cleanup
-            var coinUser = preview.GetComponent<CoinUser>();
-            if (coinUser != null)
-                Destroy(coinUser);
+            StripAllScripts(preview);
 
             // Generic Collider setup
             previewCollider = preview.GetComponent<Collider2D>();
@@ -165,6 +156,35 @@ namespace Script.Manager.Building
 
             // Visuals
             ApplyPreviewVisuals(preview);
+        }
+
+        // --- Hàm tước sạch Script rác trên Preview ---
+        private void StripAllScripts(GameObject previewObj)
+        {
+            // Quét TẤT CẢ components (bao gồm cả object cha lẫn con)
+            Component[] allComponents = previewObj.GetComponentsInChildren<Component>(true);
+
+            foreach (var comp in allComponents)
+            {
+                // KHÔNG TƯỚC các thẻ cơ bản dùng để render và set tọa độ:
+                if (comp is Transform || comp is SpriteRenderer || comp is Collider2D)
+                {
+                    continue;
+                }
+
+                // Tiêu diệt sạch Behaviour (các script C#, Animator, Rigidbody2D, ParticleSystem...)
+                if (comp is Behaviour behaviour)
+                {
+                    // Lỗi: Can't remove script while placing... Để an toàn ta Disable nó + Destroy
+                    behaviour.enabled = false;
+                    Destroy(behaviour);
+                }
+                else if (comp is Rigidbody2D || comp is ParticleSystem)
+                {
+                    // Rigidbody thì không phải Behaviour nhưng vẫn phải xóa để rơi ngã
+                    Destroy(comp);
+                }
+            }
         }
 
         private void ApplyPreviewVisuals(GameObject preview)

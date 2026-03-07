@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 4723927770362981857}
   - component: {fileID: 6899957883843830173}
   - component: {fileID: 6957750594159534712}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Unlit campfire
   m_TagString: TownCenter
   m_Icon: {fileID: 0}
@@ -107,7 +107,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1477640753
-  m_SortingLayer: -3
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: ee020035bc850a347912656a80465f69, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

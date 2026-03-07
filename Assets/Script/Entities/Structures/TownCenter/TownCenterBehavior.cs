@@ -53,6 +53,12 @@ namespace Script.Game.Structures.TownCenter
 
             Ini();
             BuildingManager.instance.currentTownCenter = gameObject;//tự khai báo đến BuildingManager
+            
+            // Tự khai báo luôn cho EnemyTarget
+            if (Script.Game.Enemy.EnemyTargetManager.Instance != null)
+            {
+                Script.Game.Enemy.EnemyTargetManager.Instance.SetPrimaryTarget(gameObject);
+            }
 
 
 
@@ -340,6 +346,12 @@ namespace Script.Game.Structures.TownCenter
                 BuildingManager.instance.currentTownCenter = gameObject;
                 BuildingManager.instance.UpdateAvailableBuildings();
                 //Debug.Log("[TownCenterBehavior] Updated BuildingManager with current town center and available buildings");
+            }
+
+            // Tự khai báo lại cho EnemyTargetManager khi load save
+            if (Script.Game.Enemy.EnemyTargetManager.Instance != null)
+            {
+                Script.Game.Enemy.EnemyTargetManager.Instance.SetPrimaryTarget(gameObject);
             }
         }
 

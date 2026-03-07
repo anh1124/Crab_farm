@@ -172,7 +172,7 @@ GameObject:
   - component: {fileID: 8979053782143595466}
   - component: {fileID: 5577631807386491776}
   - component: {fileID: 6575017997877564678}
-  m_Layer: 14
+  m_Layer: 0
   m_Name: ScrytheVendor
   m_TagString: GameController
   m_Icon: {fileID: 0}
@@ -235,7 +235,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1477640753
-  m_SortingLayer: -3
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: c3794b7e399ef0b4fb633db8874526a7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

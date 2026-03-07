@@ -57,6 +57,14 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 transform.SetParent(EntitySaveManager.Instance.enemyContainer.transform, true);
             }
+
+            // [FIX LỖI PORTAL KHI LOAD TỪ SAVE]
+            // Khi load lại từ file Save, status.isReadyToSpawn đã có thể lưu = true
+            // Cần nói cho VisualAnimator bật đồ họa "Sáng đèn" ngay lập tức nếu đã ready
+            if (status != null && status.isReadyToSpawn)
+            {
+                if (visualAnimator) visualAnimator.SetActive();
+            }
         }
 
         /// <summary>
@@ -95,20 +103,28 @@ namespace Script.Entities.Structures.SummondPortal
             // Đã sống đủ ngưỡng delay
             if (currentDay >= status.spawnDay + status.activeDelay)
             {
-                status.isReadyToSpawn = true;
-                Debug.Log($"[EnemyPortalBehavior] Cổng tại {transform.position} đã kích hoạt và sẵn sàng sinh quái!");
-                
-                // Kích hoạt Visual Animator tăng frame rate lên bùng cháy
-                if (visualAnimator)
-                {
-                    visualAnimator.SetActive();
-                }
+                ForceActivate();
+            }
+        }
 
-                // Hủy đăng ký vì ngày nào sau đó cũng là Active rồi
-                if (GameTimeManager.Instance)
-                {
-                    GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.MORNING_HOUR, CheckActivation);
-                }
+        public void ForceActivate()
+        {
+            if (status == null) status = GetComponent<EnemyPortalStatus>();
+            if (status.isReadyToSpawn) return; // Đã active rồi thì thôi
+
+            status.isReadyToSpawn = true;
+            Debug.Log($"[EnemyPortalBehavior] Cổng tại {transform.position} đã kích hoạt và sẵn sàng sinh quái!");
+            
+            // Kích hoạt Visual Animator tăng frame rate lên bùng cháy
+            if (visualAnimator)
+            {
+                visualAnimator.SetActive();
+            }
+
+            // Hủy đăng ký vì ngày nào sau đó cũng là Active rồi
+            if (GameTimeManager.Instance)
+            {
+                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.MORNING_HOUR, CheckActivation);
             }
         }
 
@@ -174,8 +190,28 @@ namespace Script.Entities.Structures.SummondPortal
         {
             if (enemyData.enemyPrefab != null)
             {
-                // Spawn enemy
-                GameObject enemy = Instantiate(enemyData.enemyPrefab, gameObject.transform.position, Quaternion.identity);
+                // Gọi enemy từ Object Pool thay vì Instantiate
+                GameObject enemy = EnemyPool.Instance.GetEnemy(enemyData.enemyName);
+                if (enemy != null)
+                {
+                    enemy.transform.position = gameObject.transform.position;
+                    enemy.transform.rotation = Quaternion.identity;
+
+                    EnemyAIController controller = enemy.GetComponent<EnemyAIController>();
+                    if (controller != null)
+                    {
+                        // ResetState & thiết lập lại target
+                        controller.ResetEnemy(gameObject);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[EnemyPortalBehavior] {enemyData.enemyName} thiếu Component EnemyAIController!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[EnemyPortalBehavior] Pool không còn đủ {enemyData.enemyName} để spawn!");
+                }
             }
             else
             {

@@ -156,6 +156,14 @@ namespace Script.Game.Structures.SellingShop
             {
                 GameObject newItem = Instantiate(itemPrefab, emptySlot.position, Quaternion.identity);
                 newItem.transform.SetParent(emptySlot);
+                
+                // Vô hiệu hóa trọng lực để đồ vật nằm im trên kệ
+                PhysicalItem physItem = newItem.GetComponent<PhysicalItem>();
+                if (physItem != null)
+                {
+                    physItem.floating = true;
+                }
+                
                 currentItems.Add(newItem);
 
                 // Gắn thêm SellerItemNotifier và gán seller cho nó

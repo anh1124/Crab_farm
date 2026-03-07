@@ -72,7 +72,7 @@ public class Spawner : MonoBehaviour
 
     public void InitializeCoinThrow(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
     {
-        Coin coinScript = coin.GetComponent<Coin>();
+        PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
         if (coinScript != null)
         {
             // Add some random variation to throw distance and force
@@ -90,7 +90,7 @@ public class Spawner : MonoBehaviour
             Vector2 newPosition = new Vector2(position.x, position.y + yOffset + (i * 0.1f));
             GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
-            Coin coinScriptInstance = coin.GetComponent<Coin>();
+            PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)
             {
                 coinScriptInstance.playerPickupAble = true;
@@ -110,7 +110,7 @@ public class Spawner : MonoBehaviour
             Vector2 newPosition = new Vector2(position.x, position.y + yOffset);
             GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
-            Coin coinScriptInstance = coin.GetComponent<Coin>();
+            PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)
             {
                 coinScriptInstance.playerPickupAble = false;
@@ -131,7 +131,7 @@ public class Spawner : MonoBehaviour
             Vector2 newPosition = new Vector2(position.x, position.y);
             GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
 
-            Coin coinScriptInstance = coin.GetComponent<Coin>();
+            PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)
             {
                 coinScriptInstance.playerPickupAble = true;

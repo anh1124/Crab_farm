@@ -8,14 +8,12 @@ using Script.Data_Model;
 using Script.Game.Other;
 using Script.Manager.WorldManager;
 using Script.Manager.GamePlayManager;
-
-using Script.Game.Mobs.Interfaces;
 using Script.Game.Item.Coin;
 
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VagrantController to VagrantBehavior to reflect Behavior + Status architecture
-    public class VagrantBehavior : MonoBehaviour, INPCBehavior, ICoinReactor
+    public class VagrantBehavior : MonoBehaviour, INPCBehavior, IItemHandle
     {
         private DenizenStatus status;
         
@@ -60,15 +58,14 @@ namespace Script.Game.Mobs.Subjects
             if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
             if (rayCastHelper != null)
             {
-                rayCastHelper.enabled = true;
-                rayCastHelper.isDrawRay = true; // System control
+                rayCastHelper.isActive = true;
             }
         }
 
         private void OnDisable()
         {
              StopAllMovementRoutines();
-             if (rayCastHelper != null) rayCastHelper.enabled = false;
+             if (rayCastHelper != null) rayCastHelper.isActive = false;
         }
 
         private void Start()
@@ -115,7 +112,7 @@ namespace Script.Game.Mobs.Subjects
             // Detection Logic - check for Enemy and Coin
             if (rayCastHelper != null)
             {
-                var detectedObjects = rayCastHelper.DrawRayAndReturnListHitObjects(status.detectRangeRaycast);
+                var detectedObjects = rayCastHelper.GetListHitObjects(status.detectRangeRaycast);
                 
                 foreach (var obj in detectedObjects)
                 {
@@ -413,16 +410,22 @@ namespace Script.Game.Mobs.Subjects
 
         #endregion
         
-        #region ICoinReactor Implementation
+        #region INPCBehavior Implementation
 
-        public void OnCoinPickedUp(Coin coin)
+        public void HandleItem(GameObject item)
         {
-            // Only transform if enabled (double check, though CoinCollector checks this usually)
-            if (!this.enabled) return;
-            
-            // Logic for Vagrant: Pick up coin -> Transform to Villager
-            // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
-            StartCoroutine(TransformToVillagerNextFrame());
+            PhysicalItem coin = item.GetComponent<PhysicalItem>();
+            if (coin != null && (coin.prefabID == "coin" || coin.itemCategory == ItemCategory.Coin))
+            {
+                // Only transform if enabled (double check, though CoinCollector checks this usually)
+                if (!this.enabled) return;
+                
+                // Tiêu hủy coin ngay lập tức vì Vagrant đã sử dụng nó để đổi nghề
+                Destroy(item);
+                
+                // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
+                StartCoroutine(TransformToVillagerNextFrame());
+            }
         }
 
         #endregion

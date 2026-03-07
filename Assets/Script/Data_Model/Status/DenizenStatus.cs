@@ -41,8 +41,6 @@ namespace Script.Data_Model.Status
         [Header("General Settings")]
         [SerializeField] private int currentCoins = 0;
         [SerializeField] private int maxCoins = 6;
-        [SerializeField] private int currentHp = 1;
-        [SerializeField] private int maxHp = 1;
         
         // Unified Movement Settings
         [Header("Movement")]
@@ -85,6 +83,9 @@ namespace Script.Data_Model.Status
         public GameObject previousWall;
         public GameObject currentTarget;
 
+        // Events
+        public event Action<int> OnCoinChanged;
+
         // Properties for INPCStatus / Interfaces
         public NPCRole Role 
         { 
@@ -95,25 +96,21 @@ namespace Script.Data_Model.Status
         public int CurrentCoins 
         { 
             get => currentCoins; 
-            set => currentCoins = Mathf.Clamp(value, 0, maxCoins); 
+            set 
+            {
+                int oldVal = currentCoins;
+                currentCoins = Mathf.Clamp(value, 0, maxCoins); 
+                if (currentCoins != oldVal)
+                {
+                    OnCoinChanged?.Invoke(currentCoins);
+                }
+            }
         }
 
         public int MaxCoins
         {
              get => maxCoins;
              set => maxCoins = value;
-        }
-
-        public int CurrentHp 
-        { 
-            get => currentHp; 
-            set => currentHp = Mathf.Clamp(value, 0, maxHp); 
-        }
-
-        public int MaxHp 
-        { 
-            get => maxHp; 
-            set => maxHp = value; 
         }
 
         // Basic helper properties
@@ -146,17 +143,17 @@ namespace Script.Data_Model.Status
         public int Coin
         {
             get => currentCoins;
-            set => currentCoins = Mathf.Clamp(value, 0, maxCoins);
+            set => CurrentCoins = value;
         }
 
         public void AddCoin(int amount)
         {
-            currentCoins = Mathf.Clamp(currentCoins + amount, 0, maxCoins);
+            CurrentCoins += amount;
         }
 
         public void SubtractCoin(int amount)
         {
-            currentCoins = Mathf.Clamp(currentCoins - amount, 0, maxCoins);
+            CurrentCoins -= amount;
         }
 
         public void PickUpCoin(GameObject coinGameObject)

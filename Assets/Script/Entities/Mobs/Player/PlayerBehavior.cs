@@ -14,7 +14,7 @@ namespace Script.Game.Player
     
     //[TODO] thêm script kiểm tra script player đã đủ chưa
     
-    public class PlayerBehavior : MonoBehaviour, IAttacker, ICoinable, ICoinShield, IDeathDrop, IHealth, ISaveable
+    public class PlayerBehavior : MonoBehaviour, IAttacker, ICoinable, ICoinShield, IDeathDrop, IHealth, ISaveable, IDie, IItemHandle
     {
         [Header("Player Status Data")]
         public PlayerStatus status;
@@ -132,7 +132,7 @@ namespace Script.Game.Player
             if (CurrentHp > MaxHp) CurrentHp = MaxHp;
         }
 
-        public bool IsDead { get; }
+        public bool IsDead { get; private set; }
         public int CurrentHp { get => status.currentHp; set => status.currentHp = value; }
         public int Coin { get => status.coin; set => status.coin = value; }
         public int MaxCoins { get => status.maxCoins; set => status.maxCoins = value; }
@@ -187,6 +187,8 @@ namespace Script.Game.Player
 
         public void Die(GameObject whoDoDame)
         {
+            if (IsDead) return;
+            IsDead = true;
             Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
             gameObject.SetActive(false);
         }
@@ -269,17 +271,6 @@ namespace Script.Game.Player
             // Tránh va chạm với trigger của chính mình hoặc con cái của mình nếu cần
             if (other.isTrigger && (other.CompareTag("Player") || other.transform.IsChildOf(transform))) return;
 
-            // Xử lý Coin pickup ngay lập tức
-            if (other.CompareTag("Coin"))
-            {
-                Script.Game.Item.Coin.Coin coin = other.GetComponent<Script.Game.Item.Coin.Coin>();
-                if (coin != null)
-                {
-                    coin.HandlePlayerPickup(gameObject);
-                }
-                return;
-            }
-
             // Xử lý IPlayerInteractable
             IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
             if (interactable != null)
@@ -310,6 +301,20 @@ namespace Script.Game.Player
                     }
                     
                     UpdateCurrentInteractable();
+                }
+            }
+        }
+
+        // === IItemHandle LOGIC ===
+        public void HandleItem(GameObject item)
+        {
+            if (item.CompareTag("Coin"))
+            {
+                Script.Game.Item.Coin.PhysicalItem coin = item.GetComponent<Script.Game.Item.Coin.PhysicalItem>();
+                if (coin != null)
+                {
+                    // Call the logic directly via PhysicalItem or local PickUpCoin
+                    coin.HandlePlayerPickup(gameObject);
                 }
             }
         }

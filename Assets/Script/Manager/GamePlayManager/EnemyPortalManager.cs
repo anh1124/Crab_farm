@@ -45,41 +45,42 @@ namespace Script.Manager.GamePlayManager
                 return;
             }
 
-            // Sinh cổng ngẫu nhiên ở 1 trong 2 bên
-            bool spawnRight = UnityEngine.Random.value > 0.5f;
-
-            if (spawnRight)
-            {
-                if (!portalR) SpawnPortal(true);
-            }
-            else
-            {
-                if (!portalL) SpawnPortal(false);
-            }
+            SpawnAvailablePortal();
         }
 
         [ContextMenu("Test Spawn Random Portal")]
         public void TestSpawnRandomPortal()
         {
-            bool spawnRight = UnityEngine.Random.value > 0.5f;
-            
-            if (spawnRight)
+            Debug.Log("[EnemyPortalManager] ---> Nhận lệnh TestSpawnRandomPortal từ ContextMenu...");
+            SpawnAvailablePortal();
+        }
+
+        private void SpawnAvailablePortal()
+        {
+            if (portalL != null && portalR != null)
             {
-                if (portalR)
-                {
-                    Debug.LogWarning("[EnemyPortalManager] Chọn trúng Cổng Phải (Right) nhưng đã tồn tại!");
-                    return;
-                }
-                SpawnPortal(true);
+                Debug.Log("[EnemyPortalManager] Cả 2 cổng Trái và Phải đều đã tồn tại. Không thể sinh thêm.");
+                return;
             }
-            else
+
+            if (portalL == null && portalR == null)
             {
-                if (portalL)
-                {
-                    Debug.LogWarning("[EnemyPortalManager] Chọn trúng Cổng Trái (Left) nhưng đã tồn tại!");
-                    return;
-                }
+                // Chưa có cổng nào -> Random
+                bool spawnRight = UnityEngine.Random.value > 0.5f;
+                Debug.Log($"[EnemyPortalManager] Random chọn sinh cổng {(spawnRight ? "PHẢI" : "TRÁI")}");
+                SpawnPortal(spawnRight);
+            }
+            else if (portalL == null)
+            {
+                // Đã có cổng phải, thiếu cổng trái
+                Debug.Log("[EnemyPortalManager] Cổng Phải đã tồn tại -> Bắt buộc chuyển sang sinh Cổng Trái.");
                 SpawnPortal(false);
+            }
+            else 
+            {
+                // Đã có cổng trái, thiếu cổng phải
+                Debug.Log("[EnemyPortalManager] Cổng Trái đã tồn tại -> Bắt buộc chuyển sang sinh Cổng Phải.");
+                SpawnPortal(true);
             }
         }
 
@@ -135,6 +136,25 @@ namespace Script.Manager.GamePlayManager
         {
             if (portalL == portal.gameObject) portalL = null;
             if (portalR == portal.gameObject) portalR = null;
+        }
+
+        [ContextMenu("Set All Portals Active")]
+        public void SetAllPortalsActive()
+        {
+            if (portalL != null)
+            {
+                portalL.SetActive(true);
+                var behaviorL = portalL.GetComponent<EnemyPortalBehavior>();
+                if (behaviorL) behaviorL.ForceActivate();
+                Debug.Log("[EnemyPortalManager] Đã bật và Kích Hoạt Sẵn Sàng (Active) cổng Trái.");
+            }
+            if (portalR != null)
+            {
+                portalR.SetActive(true);
+                var behaviorR = portalR.GetComponent<EnemyPortalBehavior>();
+                if (behaviorR) behaviorR.ForceActivate();
+                Debug.Log("[EnemyPortalManager] Đã bật và Kích Hoạt Sẵn Sàng (Active) cổng Phải.");
+            }
         }
 
         /// <summary>

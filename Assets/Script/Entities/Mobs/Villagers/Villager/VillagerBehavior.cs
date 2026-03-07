@@ -7,7 +7,7 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using Script.Game.Other;
 using Script.Data_Model;
-using Script.Game.Enemy.Interfaces;
+using Script.Interfaces;
 using Script.Game.Item;
 using Script.Game.Item.Coin;
 using Script.Game.Mobs.MobsManager;
@@ -18,7 +18,7 @@ using Script.Utils; // For Utility helper
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
-    public class VillagerBehavior : MonoBehaviour, IHealth, INPCBehavior
+    public class VillagerBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle
     {
         #region Variables and Properties
         private DenizenStatus status;
@@ -35,7 +35,7 @@ namespace Script.Game.Mobs.Subjects
 
         [Header("Tool")]
         [Tooltip("Công cụ được giao để đi lấy")]
-        public ToolItem currentTool;//dùng để xác nhận công cụ này có còn không hoặc lấy tọa độ chạy đến
+        public PhysicalItem currentTool;//dùng để xác nhận công cụ này có còn không hoặc lấy tọa độ chạy đến
         
         [Header("Debug")]
         [SerializeField] private bool isDebugGoPlace = false;
@@ -52,39 +52,21 @@ namespace Script.Game.Mobs.Subjects
 
         // Properties
         public int CurrentCoins => status.CurrentCoins;
+        public int CurrentCoin { get => status.CurrentCoins; set => status.CurrentCoins = value; }
         public int MaxCoins => status.MaxCoins;
         
-        // --- IHealth Implementation ---
-        public int MaxHp 
-        { 
-            get => 1; 
-            set { /* Villagers don't have scalable HP yet, strictly coin-based */ } 
-        }
-        
-        public int CurrentHp 
-        { 
-            get => 1; 
-            set { /* Ignored */ } 
-        }
+        // --- ICoinShield Implementation ---
+        public bool HasCoinShield => status.CurrentCoins > 0;
 
-        public void TakeDamage(int damage)
+        public bool ConsumeCoinShield()
         {
-            OnCoinDamage(true);
+            if (HasCoinShield)
+            {
+                OnCoinDamage(true);
+                return true;
+            }
+            return false;
         }
-
-        public void Die()
-        {
-            ConvertToVagrant();
-        }
-
-        public void Heal(int amount)
-        {
-            // Villagers heal by getting coins? Check logic. For now, empty or add coin?
-            // Usually Heal() implies HP. Villagers don't use HP.
-        }
-
-
-
 
         #endregion
 
@@ -121,8 +103,7 @@ namespace Script.Game.Mobs.Subjects
             if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
             if (rayCastHelper != null)
             {
-                rayCastHelper.enabled = true;
-                rayCastHelper.isDrawRay = true; // System control
+                rayCastHelper.isActive = true;
             }
 
             // Subscribe to time events
@@ -133,14 +114,8 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
-        /// <summary>
-        /// Start is called after all Awake methods have completed.
-        /// This ensures ToolManager and other managers are initialized before we check for tools.
-        /// </summary>
         private void Start()
         {
-            // Check for available tools after all managers are initialized
-            // This happens AFTER OnEnable, ensuring ToolManager.Instance is ready
             CheckForToolsOnSpawn();
         }
 
@@ -154,7 +129,7 @@ namespace Script.Game.Mobs.Subjects
             }
             // StopCheckRoutine(); // Removed
             
-            if (rayCastHelper != null) rayCastHelper.enabled = false;
+            if (rayCastHelper != null) rayCastHelper.isActive = false;
             
             // Note: Tool tracking is handled by ToolManager.
             // Tools should be handled by the DroppedItem system or WorldManager if needed.
@@ -184,7 +159,7 @@ namespace Script.Game.Mobs.Subjects
             // Perform Detection every frame (drawing and checking)
             if (rayCastHelper != null)
             {
-                List<GameObject> detectedObjects = rayCastHelper.DrawRayAndReturnListHitObjects(status.detectRangeRaycast);
+                List<GameObject> detectedObjects = rayCastHelper.GetListHitObjects(status.detectRangeRaycast);
                 
                 // Check for enemies
                 foreach (var hitObject in detectedObjects)
@@ -229,7 +204,7 @@ namespace Script.Game.Mobs.Subjects
             UpdateStateHandler();
         }
 
-        public void AssignTool(ToolItem tool)
+        public void AssignTool(PhysicalItem tool)
         {
             if (tool == null || currentTool != null || isInDanger) return;
             
@@ -524,7 +499,7 @@ namespace Script.Game.Mobs.Subjects
 
             // Kiểm tra player còn trong vùng quét không
             bool playerInRange = false;
-            foreach (var hitObject in rayCastHelper.DrawRayAndReturnListHitObjects())
+            foreach (var hitObject in rayCastHelper.GetListHitObjects())
             {
                 if (hitObject != null && hitObject.CompareTag("Player"))
                 {
@@ -635,12 +610,7 @@ namespace Script.Game.Mobs.Subjects
             {
                 StartCoroutine(DropCoinsCoroutine(amount));
             }
-
-            // Chỉ chuyển thành vagrant khi bị tấn công và hết xu
-            if (isAttacked && status.CurrentCoins <= 0)
-            {
-                StartCoroutine(ConvertToVagrantAfterCoins());
-            }
+            // Việc mất role sẽ được event OnCoinChangedHandler đảm nhận.
         }
 
         private IEnumerator DropCoinsCoroutine(int amount)
@@ -652,13 +622,13 @@ namespace Script.Game.Mobs.Subjects
                 
                 GameObject coin = Instantiate(Spawner.Instance.coinPrefab, spawnPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
                 
-                Coin coinScript = coin.GetComponent<Coin>();
+                PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
                 if (coinScript != null)
                 {
                     coinScript.playerPickupAble = true;
                     coinScript.denizensPickupAble = false;
                     coinScript.floating = false;
-                    coinScript.CallFunctionCoolDown("Denizen");
+                    coinScript.CallFunctionCoolDown("Denizens");
                     
                     Spawner.Instance.InitializeCoinThrow(coin, dropDirection);
                 }
@@ -699,20 +669,16 @@ namespace Script.Game.Mobs.Subjects
         // For now, assuming currentTool is not persisted or handled elsewhere (ToolManager handles tool assignment).
         #endregion
 
-        #region Trigger and Pickup
-        /// <summary>
-        /// Xử lý va chạm:
-        /// 1. Nhặt Tool: Nếu gặp ToolItem -> Kiểm tra quyền sở hữu -> Đổi nghề (ChangeRole) -> Hủy tool.
-        /// 2. Nhặt Coin: Nếu gặp Coin -> Gọi hàm nhặt.
-        /// </summary>
-        private void OnTriggerEnter2D(Collider2D other)
+        #region INPCBehavior Implementation
+
+        public void HandleItem(GameObject other)
         {
              // Only active if enabled
              if (!this.enabled) return;
 
             // 1. Logic nhặt Tool để đổi nghề
-            var item = other.GetComponent<ToolItem>();
-            if (item != null)
+            var item = other.GetComponent<PhysicalItem>();
+            if (item != null && item.itemCategory != ItemCategory.Coin)
             {
                 // Kiểm tra xem tool này chưa ai nhặt (Atomic check)
                 if (!item.picked && item.pickedBy == null)
@@ -722,7 +688,7 @@ namespace Script.Game.Mobs.Subjects
                     item.picked = true;
 
                     // Đổi nghề dựa trên loại tool (Vd: Bow -> Archer)
-                    ChangeRoleByTool(item.type);
+                    ChangeRoleByTool(item.itemCategory);
 
                     // Xóa vật phẩm tool khỏi map
                     Destroy(other.gameObject);
@@ -740,40 +706,34 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
             // 2. Logic nhặt Coin
-            else if (other.CompareTag("Coin"))
+            else if (other.CompareTag("Coin") || (item != null && item.itemCategory == ItemCategory.Coin))
             {
                 // ... logic coin ...
-                var coinScript = other.GetComponent<Coin>();
+                var coinScript = other.GetComponent<PhysicalItem>();
                 if (coinScript == null || coinScript.denizensPickupAble)
                 {
                     PickUpCoinInternal(other.gameObject);
                 }
             }
         }
+        #endregion
         
         
         private void PickUpCoinInternal(GameObject coinObject)
         {
-            // Debug.Log($"[VillagerBehavior] PickUpCoinInternal called for {coinObject.name}");
+            var coinStorage = GetComponent<ICoinable>();
+            if (coinStorage == null) return;
             
             Script.Utility.ProcessCoinPickup(coinObject,
-                condition: () => 
-                {
-                    // Debug.Log($"[VillagerBehavior] ProcessCoinPickup condition check - CurrentCoins: {status.CurrentCoins}/{status.MaxCoins}");
-                    return status.CurrentCoins < status.MaxCoins;
-                },
-                onPickupSuccess: () =>
-                {
-                    // Debug.Log($"[VillagerBehavior] Coin pickup successful, adding coin");
-                    status.CurrentCoins++;
-                }
+                condition: () => coinStorage.Coin < coinStorage.MaxCoins,
+                onPickupSuccess: () => coinStorage.AddCoin(1)
             );
         }
 
         /// <summary>
         /// Change villager role based on picked tool type
         /// </summary>
-        private void ChangeRoleByTool(ToolType type)
+        private void ChangeRoleByTool(ItemCategory type)
         {
             var ctrl = GetComponent<DenizenRoleController>();
             if (ctrl == null)
@@ -784,15 +744,15 @@ namespace Script.Game.Mobs.Subjects
 
             switch (type)
             {
-                case ToolType.Bow:
+                case ItemCategory.Tool_Bow:
                     ctrl.ChangeRole(NPCRole.Archer);
                     break;
 
-                case ToolType.Hammer:
+                case ItemCategory.Tool_Hammer:
                     ctrl.ChangeRole(NPCRole.Worker);
                     break;
 
-                case ToolType.Scythe:
+                case ItemCategory.Tool_Scythe:
                     ctrl.ChangeRole(NPCRole.Farmer);
                     break;
 
@@ -801,8 +761,6 @@ namespace Script.Game.Mobs.Subjects
                     break;
             }
         }
-        #endregion
-
 
     }
 }
