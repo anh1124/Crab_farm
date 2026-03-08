@@ -12,6 +12,9 @@ namespace Script.Game.Enemy.States
     {
         protected float _attackTimer;
         protected bool _isWaitingForCooldown = false;
+        protected bool _isMoving = false;
+        protected bool _isAttacking = false;
+        protected GameObject _kingdomTarget;
 
         public override void Enter(EnemyContext ctx)
         {
@@ -25,10 +28,11 @@ namespace Script.Game.Enemy.States
         public override void Update(EnemyContext ctx)
         {
             // 1. Phân giải mục tiêu gốc của quốc gia (TownCenter / Vương Quốc)
-            GameObject kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
+            _kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
             
-            if (kingdomTarget == null || !kingdomTarget.activeSelf)
+            if (_kingdomTarget == null || !_kingdomTarget.activeSelf)
             {
+                _isMoving = false;
                 ctx.Controller.ChangeState(new IdleState());
                 return;
             }
@@ -36,6 +40,7 @@ namespace Script.Game.Enemy.States
             // 2. Greed mechanic (nếu có - với shieldbot GreedThreshold = 0)
             if (ctx.GreedIsFull)
             {
+                _isMoving = false;
                 ctx.Controller.ChangeState(new ReturnToPortalState());
                 return;
             }
@@ -44,10 +49,17 @@ namespace Script.Game.Enemy.States
             GameObject obstacle = ScanForObstacle(ctx);
             if (obstacle != null)
             {
+                if (_isAttacking)
+                {
+                    _isMoving = false;
+                    ctx.Controller.DebugAttackTimer = _attackTimer;
+                    return;
+                }
+
                 // Attack logic
                 if (_attackTimer >= ctx.Status.AttackCooldown)
                 {
-                    _attackTimer = 0;
+                    _isAttacking = true;
                     _isWaitingForCooldown = false;
                     PerformAttack(ctx, obstacle);
                     
@@ -59,8 +71,6 @@ namespace Script.Game.Enemy.States
                 }
                 else
                 {
-                    _attackTimer += Time.deltaTime;
-                    
                     if (!_isWaitingForCooldown)
                     {
                         _isWaitingForCooldown = true;
@@ -69,6 +79,7 @@ namespace Script.Game.Enemy.States
                 }
                 
                 // Khi có obstacle, enemy dừng lại để chờ cooldown đánh
+                _isMoving = false;
                 return; 
             }
 
@@ -78,15 +89,43 @@ namespace Script.Game.Enemy.States
                 _isWaitingForCooldown = false;
                 if (ctx.Animator != null) ctx.Animator.SetTrigger("Walk");
             }
-            MovementUtility.MoveTowardsTarget(ctx.Self, kingdomTarget.transform.position, ctx.Status.MoveSpeed);
+            
+            _isMoving = true;
 
             // Cập nhật ui debug cooldown
             ctx.Controller.DebugAttackTimer = _attackTimer;
         }
 
+        public override void PhysicsUpdate(EnemyContext ctx)
+        {
+            if (_isMoving && _kingdomTarget != null)
+            {
+                MovementUtility.MoveTowardsTarget(ctx.Self, _kingdomTarget.transform.position, ctx.Status.MoveSpeed);
+            }
+
+            if (_isWaitingForCooldown)
+            {
+                _attackTimer += Time.deltaTime;
+                ctx.Controller.DebugAttackTimer = _attackTimer;
+            }
+        }
+
         public override void Exit(EnemyContext ctx)
         {
             _attackTimer = 0;
+            _isAttacking = false;
+        }
+
+        public virtual void OnAttackAnimationComplete(EnemyContext ctx)
+        {
+            _attackTimer = 0;
+            _isAttacking = false;
+            
+            // Ép về Idle ngay sau khi đánh xong để chờ (nếu ở Update phát hiện hết quái nó sẽ tự chuyển thành Walk sau)
+            if (ctx.Animator != null)
+            {
+                ctx.Animator.SetTrigger("Idle");
+            }
         }
 
         protected GameObject ScanForObstacle(EnemyContext ctx)

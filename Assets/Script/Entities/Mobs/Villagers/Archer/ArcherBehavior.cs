@@ -23,8 +23,17 @@ namespace Script.Game.Mobs.Subjects
     [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(ArcherShooting))]
-    public class ArcherBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle
+    public class ArcherBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle, IAttacker
     {
+        // --- IAttacker Interface ---
+        public int AttackDame { get => status.attackDame; set => status.attackDame = value; }
+        public float AttackSpeed { get => status.attackSpeed; set => status.attackSpeed = value; }
+        
+        public void Attack()
+        {
+            PerformAttack();
+        }
+        
         #region Constants
         
         // Ngưỡng phòng thủ và rút lui
@@ -96,10 +105,15 @@ namespace Script.Game.Mobs.Subjects
         private GameObject cachedRetreatTarget = null;
         
         [Header("Debug")]
-        [SerializeField] private float attackCooldownTimer = 0; // Hiển thị trong Inspector
+        private float lastAttackTime = -100f; // -100 để cho phép bắn ngay lúc đầu
         [SerializeField] private bool isDebugShotTarget = true;
         [SerializeField] private bool isDebugMovePos = false;
         [SerializeField] private bool isDebugAttackRange = true;
+        
+        // Movement Smoothing Variables
+        private Vector3 _moveTarget;
+        private float _moveSpeed;
+        private bool _isMovingToTarget;
 
 
 
@@ -304,14 +318,6 @@ namespace Script.Game.Mobs.Subjects
 
         public void UpdateBehavior()
         {
-            //tính toán thời gian tấn công
-            if (status.attackSpeed > 0)
-            {
-                if (attackCooldownTimer > 0)
-                {
-                    attackCooldownTimer -= Time.deltaTime;
-                }
-            }
 
             if (status == null || animator == null)
             {
@@ -325,9 +331,6 @@ namespace Script.Game.Mobs.Subjects
             {
                 circleDetectHelper.isShowGizmo = isDebugAttackRange;
             }
-
-            // Luôn quét mục tiêu và cập nhật trạng thái
-            PerformTargetScan();
             
             try
             {
@@ -434,14 +437,10 @@ namespace Script.Game.Mobs.Subjects
                 FaceTarget(status.currentTarget.transform.position);
 
                 // Chỉ tấn công khi cooldown đã xong
-                // Logic check timer > 0 handled inside PerformAttack as safeguard
-               // Debug.Log($"[Archer-Hunting] Timer={attackCooldownTimer:F2}, AttackSpeed={status.attackSpeed}, CanAttack={attackCooldownTimer <= 0}");
-                if (attackCooldownTimer <= 0)
+                if (Time.time >= lastAttackTime + status.attackSpeed)
                 {
                     PerformAttack();
                 }
-                else
-                { }
                 return;
             }
 
@@ -514,8 +513,7 @@ namespace Script.Game.Mobs.Subjects
                 FaceTarget(status.currentTarget.transform.position);
                 
                 // FIX: Thêm logic tấn công vào đây (trước đó bị thiếu)
-              //  Debug.Log($"[Archer-HoldWall] Timer={attackCooldownTimer:F2}, AttackSpeed={status.attackSpeed}, CanAttack={attackCooldownTimer <= 0}");
-                if (attackCooldownTimer <= 0)
+                if (Time.time >= lastAttackTime + status.attackSpeed)
                 {
                     PerformAttack();
                 }
@@ -616,14 +614,10 @@ namespace Script.Game.Mobs.Subjects
 
         #region Combat & Movement Helpers
         
-        private void PerformTargetScan()
+        public void OnObjectsDetected(List<GameObject> detectedObjects)
         {
-             // 1. Quét xung quanh
-            List<GameObject> detectedList = circleDetectHelper != null ? 
-                circleDetectHelper.GetListDetectedObjects(status.archerDetectRange) : new List<GameObject>();
-
             // 2. Chọn mục tiêu và Báo cáo Enemy
-            GameObject target = SelectTargetAndReportThreats(detectedList);
+            GameObject target = SelectTargetAndReportThreats(detectedObjects);
             
             // 3. Cập nhật Target hiện tại
             status.currentTarget = target;
@@ -635,14 +629,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void PerformAttack()
         {
-           // Debug.Log($"[Archer-PerformAttack] ENTRY - Timer={attackCooldownTimer:F2}");
-            
-            // STRICT GUARD: Absolutely do not attack if cooldown is active
-            if (attackCooldownTimer > 0) 
-            {
-                 Debug.LogWarning($"[Archer] Attack BLOCKED by cooldown: {attackCooldownTimer}");
-                return;
-            }
+            if (Time.time < lastAttackTime + status.attackSpeed) return;
 
             if (status.currentTarget != null) 
             {
@@ -666,11 +653,7 @@ namespace Script.Game.Mobs.Subjects
                // Debug.Log("[Archer] >>> PLAYING archerDraw animation <<<");
             }
             
-            status.lastAttackTime = Time.time;
-            
-            // Reset Cooldown Timer HERE to ensure it always happens
-            attackCooldownTimer = status.attackSpeed;
-           // Debug.Log($"[Archer-PerformAttack] EXIT - Timer RESET to {attackCooldownTimer}");
+            lastAttackTime = Time.time;
         }
         
         public void HandleDrawComplete()
@@ -715,14 +698,30 @@ namespace Script.Game.Mobs.Subjects
                 Debug.DrawLine(transform.position, pos, Color.yellow);
             }
 
-            Vector3 direction = (pos - transform.position).normalized;
-            transform.position += direction * speed * Time.deltaTime;
-            status.currentSpeed = speed;
+            _moveTarget = pos;
+            _moveSpeed = speed;
+            _isMovingToTarget = true;
             
+            Vector3 direction = (pos - transform.position).normalized;
             if (direction.x != 0)
             {
                 float scaleX = direction.x > 0 ? 1f : -1f;
                 transform.localScale = new Vector3(scaleX, transform.localScale.y, transform.localScale.z);
+            }
+        }
+        
+        private void Update()
+        {
+            if (!_isMovingToTarget) return;
+
+            Vector3 direction = (_moveTarget - transform.position).normalized;
+            transform.position += direction * _moveSpeed * Time.deltaTime;
+            status.currentSpeed = _moveSpeed;
+
+            if (Vector2.Distance(transform.position, _moveTarget) < 0.1f)
+            {
+                _isMovingToTarget = false;
+                status.currentSpeed = 0f;
             }
         }
 

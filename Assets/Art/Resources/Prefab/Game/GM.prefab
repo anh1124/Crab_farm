@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 3345430047266833447}
   - component: {fileID: 4067834079159621169}
   - component: {fileID: 3305680291845755050}
+  - component: {fileID: 6112153921068883486}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -265,6 +266,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   availableTools: []
+--- !u!114 &6112153921068883486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 067bcce47d44a6140a2a6e7b7ed82f3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tickInterval: 0.2
 --- !u!1 &1595070778010574993
 GameObject:
   m_ObjectHideFlags: 0
@@ -365,6 +379,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   growthRate: 2
   currentWaveEnemies: []
+  customWavePower: 100
 --- !u!114 &8206099037918200606
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -488,6 +503,8 @@ MonoBehaviour:
   toolTag:
   - Hammer
   - Bow
+  hammer: {fileID: 0}
+  bow: {fileID: 0}
   playerCharacterList: []
   currentCreatChunk: 21
   prefabWall: {fileID: 0}
@@ -516,8 +533,6 @@ MonoBehaviour:
   oilBarrelVendor: {fileID: 0}
   catapult: {fileID: 0}
   denizen: {fileID: 0}
-  bow: {fileID: 0}
-  hammer: {fileID: 0}
   tree: {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
   treePrefabsList:
   - {fileID: 3987282262224497692, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}

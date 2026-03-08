@@ -1,11 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace Script.Game.Other
 {
     public class CircleDetectHelper : MonoBehaviour
     {
+        public event Action<List<GameObject>> OnDetectedObjectsChanged;
+
         private Collider2D[] _overlapResults = new Collider2D[200]; // Rổ chứa tái sử dụng, tối đa 200 kết quả 1 lần quét
 
         public Color gizmoColor = Color.magenta;
@@ -129,9 +132,12 @@ namespace Script.Game.Other
             // Đồng bộ List an toàn cho Inspector nếu đang bật Debug
             if (showDebugLog)
             {
-                // Thay vi Clear va Add, ta tao thuc the List moi de Inspector khong bi loi Index
+                // Thay vi Clear va Add, ta tao thuc thi List moi de Inspector khong bi loi Index
                 debugDetectedObjects = new List<GameObject>(detectedObjects);
             }
+
+            // Emit event with the newly detected objects
+            OnDetectedObjectsChanged?.Invoke(detectedObjects);
         }
 
         private void DrawDebugCircle(float radius)

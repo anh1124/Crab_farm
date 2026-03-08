@@ -109,6 +109,51 @@ namespace Script.Manager.GamePlayManager
         
         public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
 
+        [Header("Debug Settings")]
+        [SerializeField] private int customWavePower = 10;
+
+        [ContextMenu("Test Trigger Wave With Custom Power")]
+        public void TestTriggerWaveWithCustomPower()
+        {
+            Debug.Log($"[EnemyWaveManager - DEV TEST] Bắt đầu gọi Wave với power {customWavePower}...");
+            
+            if (EnemyPool.Instance != null && TotalEnemyList.Instance != null && EnemyPool.Instance.GetPoolCount() == 0)
+            {
+                EnemyPool.Instance.InitializePools();
+            }
+
+            var activePortals = EnemyPortalManager.Instance.GetActivePortals();
+            if (activePortals == null || activePortals.Count == 0)
+            {
+                Debug.LogWarning("[EnemyWaveManager] Không có portal nào SẴN SÀNG. Bỏ qua spawn wave.");
+                return;
+            }
+
+            currentWavePower = customWavePower;
+
+            var selectedMonsters = TotalEnemyList.Instance.SelectMonstersByPower(currentWavePower);
+            
+            List<EnemyWaveData> finalWaveEnemies = new List<EnemyWaveData>();
+            foreach (var monster in selectedMonsters)
+            {
+                finalWaveEnemies.Add(new EnemyWaveData
+                {
+                    enemyData = monster.Data,
+                    count = monster.Quantity
+                });
+            }
+
+            foreach (var behavior in activePortals)
+            {
+                if (behavior != null)
+                {
+                    currentWaveEnemies = finalWaveEnemies;
+                    behavior.StartSpawning();
+                    Debug.Log($"[EnemyWaveManager] Cổng tại {behavior.transform.position} đã kích hoạt bắt đầu xuất quân (Custom Power: {customWavePower}).");
+                }
+            }
+        }
+
         [ContextMenu("Test Trigger Night Wave (SPAWN THẬT)")]
         public void TestTriggerNightWave()
         {

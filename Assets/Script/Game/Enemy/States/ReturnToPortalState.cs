@@ -7,6 +7,8 @@ namespace Script.Game.Enemy.States
     {
         protected float _attackTimer;
         protected bool _isWaitingForCooldown = false;
+        protected bool _isMoving = false;
+        protected bool _isAttacking = false;
 
         public override void Enter(EnemyContext ctx)
         {
@@ -21,6 +23,7 @@ namespace Script.Game.Enemy.States
             // 1. Kiểm tra Portal 
             if (ctx.HomePortal == null || !ctx.HomePortal.activeSelf)
             {
+                _isMoving = false;
                 ctx.Controller.ChangeState(new IdleState());
                 return;
             }
@@ -29,10 +32,17 @@ namespace Script.Game.Enemy.States
             GameObject obstacle = ScanForWallObstacle(ctx);
             if (obstacle != null)
             {
+                if (_isAttacking)
+                {
+                    _isMoving = false;
+                    ctx.Controller.DebugAttackTimer = _attackTimer;
+                    return;
+                }
+
                 // Hành vi Tấn công tương tự MoveToTarget
                 if (_attackTimer >= ctx.Status.AttackCooldown)
                 {
-                    _attackTimer = 0;
+                    _isAttacking = true;
                     _isWaitingForCooldown = false;
                     PerformAttack(ctx, obstacle);
                     
@@ -40,13 +50,13 @@ namespace Script.Game.Enemy.States
                 }
                 else
                 {
-                    _attackTimer += Time.deltaTime;
                     if (!_isWaitingForCooldown)
                     {
                         _isWaitingForCooldown = true;
                         if (ctx.Animator != null) ctx.Animator.SetTrigger("Idle");
                     }
                 }
+                _isMoving = false;
                 return; 
             }
 
@@ -56,14 +66,41 @@ namespace Script.Game.Enemy.States
                 _isWaitingForCooldown = false;
                 if (ctx.Animator != null) ctx.Animator.SetTrigger("Walk");
             }
-            Script.Utils.MovementUtility.MoveTowardsTarget(ctx.Self, ctx.HomePortal.transform.position, ctx.Status.MoveSpeed);
 
+            _isMoving = true;
             ctx.Controller.DebugAttackTimer = _attackTimer;
+        }
+
+        public override void PhysicsUpdate(EnemyContext ctx)
+        {
+            if (_isMoving && ctx.HomePortal != null)
+            {
+                Script.Utils.MovementUtility.MoveTowardsTarget(ctx.Self, ctx.HomePortal.transform.position, ctx.Status.MoveSpeed);
+            }
+
+            if (_isWaitingForCooldown)
+            {
+                _attackTimer += Time.deltaTime;
+                ctx.Controller.DebugAttackTimer = _attackTimer;
+            }
         }
 
         public override void Exit(EnemyContext ctx)
         {
             _attackTimer = 0;
+            _isAttacking = false;
+        }
+
+        public virtual void OnAttackAnimationComplete(EnemyContext ctx)
+        {
+            _attackTimer = 0;
+            _isAttacking = false;
+            
+            // Ép về Idle sau khi đánh xong để chờ (nếu ở Update phát hiện hết quái nó sẽ tự chuyển thành Walk sau)
+            if (ctx.Animator != null)
+            {
+                ctx.Animator.SetTrigger("Idle");
+            }
         }
 
         private GameObject ScanForWallObstacle(EnemyContext ctx)

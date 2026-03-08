@@ -5,6 +5,9 @@ using Script.Game.Mobs.MobsManager;
 using Script.Data_Model.Status;
 using UnityEngine.Serialization;
 
+using Script.Game.Mobs.Subjects;
+using Script.Manager.GamePlayManager;
+
 namespace Script.Game.Mobs.Subjects
 {
     // NPCRole is intentionally kept here per your decision.
@@ -39,6 +42,7 @@ namespace Script.Game.Mobs.Subjects
 
         // Detection Helpers
         private RayCastHelper rayCastHelper;
+        private CircleDetectHelper circleDetectHelper;
 
 #if UNITY_EDITOR
         /// <summary>
@@ -133,6 +137,9 @@ namespace Script.Game.Mobs.Subjects
             villagerBehavior = GetComponent<VillagerBehavior>() ?? gameObject.AddComponent<VillagerBehavior>();
             archerBehavior = GetComponent<ArcherBehavior>() ?? gameObject.AddComponent<ArcherBehavior>();
 
+            rayCastHelper = GetComponent<RayCastHelper>();
+            circleDetectHelper = GetComponent<CircleDetectHelper>();
+
             // Setup Storage handled by DenizenStatus now
 
             previousRole = CurrentRole;
@@ -148,6 +155,14 @@ namespace Script.Game.Mobs.Subjects
             {
                 denizenStatus.OnCoinChanged += OnCoinChangedHandler;
             }
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.OnDetectedObjectsChanged += HandleDetectedObjectsChanged;
+            }
+            if (circleDetectHelper != null)
+            {
+                circleDetectHelper.OnDetectedObjectsChanged += HandleDetectedObjectsChanged;
+            }
         }
 
         private void OnDisable()
@@ -155,6 +170,22 @@ namespace Script.Game.Mobs.Subjects
             if (denizenStatus != null)
             {
                 denizenStatus.OnCoinChanged -= OnCoinChangedHandler;
+            }
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.OnDetectedObjectsChanged -= HandleDetectedObjectsChanged;
+            }
+            if (circleDetectHelper != null)
+            {
+                circleDetectHelper.OnDetectedObjectsChanged -= HandleDetectedObjectsChanged;
+            }
+        }
+
+        private void HandleDetectedObjectsChanged(System.Collections.Generic.List<GameObject> detectedObjects)
+        {
+            if (currentActiveBehavior != null)
+            {
+                currentActiveBehavior.OnObjectsDetected(detectedObjects);
             }
         }
 
@@ -198,14 +229,7 @@ namespace Script.Game.Mobs.Subjects
             // Logic moved to specific Behaviors
         }
 
-        private void Update()
-        {
-            // Centralized Update Loop
-            if (currentActiveBehavior != null)
-            {
-                currentActiveBehavior.UpdateBehavior();
-            }
-        }
+        // Update loop has been removed, replaced by NPCUpdateManager
 
         public void ChangeRole(NPCRole newRole)
         {
@@ -254,8 +278,8 @@ namespace Script.Game.Mobs.Subjects
             RuntimeAnimatorController targetController = null;
             DisableAllBehaviors();
 
-            // Tắt cả 2 detector trước, sau đó bật cái cần thiết
-            // Logic moved to specific Behaviors
+            // Tắt cả 2 detector trước, sau đó bật cái cần thiết dựa theo Role
+            DisableAllDetectives();
 
             switch (role)
             {
@@ -268,7 +292,10 @@ namespace Script.Game.Mobs.Subjects
                     gameObject.tag = "Vagrant";
                     vagrantBehavior.enabled = true;
                     currentActiveBehavior = vagrantBehavior;
+                    NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.vagrantAnimatorController;
+                    
+                    if (rayCastHelper != null) rayCastHelper.isActive = true;
                     break;
 
                 case NPCRole.Villager:
@@ -280,7 +307,10 @@ namespace Script.Game.Mobs.Subjects
                     gameObject.tag = "Villager";
                     villagerBehavior.enabled = true;
                     currentActiveBehavior = villagerBehavior;
+                    NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.villagerAnimatorController;
+                    
+                    if (rayCastHelper != null) rayCastHelper.isActive = true;
                     break;
 
                 case NPCRole.Archer:
@@ -292,7 +322,11 @@ namespace Script.Game.Mobs.Subjects
                     gameObject.tag = "Archer";
                     archerBehavior.enabled = true;
                     currentActiveBehavior = archerBehavior;
+                    NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.archerAnimatorController;
+                    
+                    // Bật Circle detector cho Archer
+                    if (circleDetectHelper != null) circleDetectHelper.isActive = true;
                     
                     // Register to GuardManager centrally
                     GuardManager.Instance?.RegisterArcher(gameObject);
@@ -320,6 +354,11 @@ namespace Script.Game.Mobs.Subjects
 
         private void DisableAllBehaviors()
         {
+            if (currentActiveBehavior != null)
+            {
+                NPCUpdateManager.Instance?.Unregister(currentActiveBehavior);
+            }
+            
             if (vagrantBehavior != null) vagrantBehavior.enabled = false;
             if (villagerBehavior != null) villagerBehavior.enabled = false;
             if (archerBehavior != null) archerBehavior.enabled = false;
@@ -391,17 +430,15 @@ namespace Script.Game.Mobs.Subjects
         public void DisableAllDetectives()
         {
             // Disable CircleDetectHelper
-            var circleHelper = GetComponent<CircleDetectHelper>();
-            if (circleHelper != null)
+            if (circleDetectHelper != null)
             {
-                circleHelper.isActive = false;
+                circleDetectHelper.isActive = false;
             }
 
             // Disable RayCastHelper
-            var rayHelper = GetComponent<RayCastHelper>();
-            if (rayHelper != null)
+            if (rayCastHelper != null)
             {
-                rayHelper.isActive = false;
+                rayCastHelper.isActive = false;
             }
         }
 

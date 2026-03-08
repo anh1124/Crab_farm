@@ -4,11 +4,13 @@ using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using UnityEngine;
 
+using Script.Game.Item;
+
 namespace Script.Game.Item.Coin
 {
     public enum ItemCategory { Coin, Tool_Bow, Tool_Hammer, Tool_Scythe }
 
-    public class PhysicalItem : MonoBehaviour, ISaveable
+    public class PhysicalItem : MonoBehaviour, ISaveable, IPickingUpMyItem
     {
         [Header("Item Config")]
         public ItemCategory itemCategory = ItemCategory.Coin;
@@ -18,7 +20,24 @@ namespace Script.Game.Item.Coin
         [Tooltip("True when a villager has picked up this tool")]
         public bool picked = false;
         [Tooltip("Reference to the villager who picked up this tool")]
-        public GameObject pickedBy;
+        public GameObject pickedBy = null;
+
+        // IPickingUpMyItem implementation
+        public GameObject AssignedCarrier { get; set; }
+
+        public void OnPickedByStranger(GameObject stranger)
+        {
+            // Người lạ vừa nhặt item này → báo ToolManager
+            Script.Manager.MobsManager.ToolManager.Instance?.OnUnexpectedPickup(this, stranger);
+        }
+
+        // Gọi khi Villager được giao nhưng "đào ngũ" (nhặt đồ khác dọc đường)
+        public void OnAssigneeAbandoned()
+        {
+            if (picked) return; // Đã báo hoặc đã nhặt rồi
+            AssignedCarrier = null;
+            Script.Manager.MobsManager.ToolManager.Instance?.OnToolAbandoned(this);
+        }
 
         [Header("Physics State")]
         public bool floating;

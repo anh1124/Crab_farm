@@ -76,13 +76,28 @@ namespace Script.Game.Enemy
                 return null;
             }
 
+            GameObject enemy;
             if (queue.Count == 0)
             {
-                Debug.LogWarning($"[EnemyPool] Pool for '{enemyName}' is empty!");
-                return null;
+                // Dynamic pool expansion
+                Debug.LogWarning($"[EnemyPool] Pool '{enemyName}' is empty! Creating a new one dynamically...");
+                
+                var data = TotalEnemyList.Instance.EnemyDataList.Find(d => d.enemyName == enemyName);
+                if (data == null || data.enemyPrefab == null) 
+                {
+                    Debug.LogError($"[EnemyPool] Data missing for expanding '{enemyName}'");
+                    return null;
+                }
+                
+                Transform parentTransform = _poolParent.Find($"Pool_{enemyName}");
+                if (parentTransform == null) parentTransform = _poolParent;
+                enemy = _CreateEnemy(data, parentTransform);
+            }
+            else
+            {
+                enemy = queue.Dequeue();
             }
 
-            GameObject enemy = queue.Dequeue();
             enemy.SetActive(true);
             
             // Note: EnemyAIController.ResetEnemy(portal) needs to be called by the spawner

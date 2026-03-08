@@ -20,6 +20,7 @@ namespace Script.Game.Enemy.Variants.ShieldBot
         {
             if (ctx.GreedIsFull)
             {
+                _isMoving = false;
                 ctx.Controller.ChangeState(new ReturnToPortalState());
                 return;
             }
@@ -28,13 +29,15 @@ namespace Script.Game.Enemy.Variants.ShieldBot
             // LƯU Ý: Phải đặt trên cả check Target null để tay đang vung thì bắt buộc vung nốt.
             if (_isAttacking)
             {
+                _isMoving = false;
                 ctx.Controller.DebugAttackTimer = _attackTimer;
                 return;
             }
 
-            GameObject kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
-            if (kingdomTarget == null || !kingdomTarget.activeSelf)
+            _kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
+            if (_kingdomTarget == null || !_kingdomTarget.activeSelf)
             {
+                _isMoving = false;
                 ctx.Controller.ChangeState(new IdleState());
                 return;
             }
@@ -45,7 +48,6 @@ namespace Script.Game.Enemy.Variants.ShieldBot
             {
                 if (_attackTimer >= ctx.Status.AttackCooldown)
                 {
-                    _attackTimer = 0;
                     _isAttacking = true;
                     _isWaitingForCooldown = false;
                     
@@ -57,8 +59,6 @@ namespace Script.Game.Enemy.Variants.ShieldBot
                 }
                 else
                 {
-                    _attackTimer += Time.deltaTime;
-                    
                     if (!_isWaitingForCooldown)
                     {
                         _isWaitingForCooldown = true;
@@ -67,6 +67,7 @@ namespace Script.Game.Enemy.Variants.ShieldBot
                 }
                 
                 // Khi chạm mục tiêu, dừng lại đứng yên để chờ tung đòn
+                _isMoving = false;
                 return; 
             }
 
@@ -76,7 +77,7 @@ namespace Script.Game.Enemy.Variants.ShieldBot
                 _isWaitingForCooldown = false;
                 if (ctx.Animator != null) ctx.Animator.SetTrigger("walk");
             }
-            MovementUtility.MoveTowardsTarget(ctx.Self, kingdomTarget.transform.position, ctx.Status.MoveSpeed);
+            _isMoving = true;
 
             // Update debug timer
             ctx.Controller.DebugAttackTimer = _attackTimer;
@@ -169,12 +170,13 @@ namespace Script.Game.Enemy.Variants.ShieldBot
 
         public void EndAttackEvent(EnemyContext ctx)
         {
+            _attackTimer = 0;
             _isAttacking = false;
             
-            // Tiếp tục đi bộ do đánh xong
+            // Ép về Idle sau khi đánh xong chờ cooldown
             if (ctx.Animator != null)
             {
-                ctx.Animator.SetTrigger("walk"); 
+                ctx.Animator.SetTrigger("Idle"); 
             }
         }
     }

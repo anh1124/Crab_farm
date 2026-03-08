@@ -131,14 +131,11 @@ namespace Script.Game.Mobs.Subjects
             
             if (rayCastHelper != null) rayCastHelper.isActive = false;
             
-            // Note: Tool tracking is handled by ToolManager.
-            // Tools should be handled by the DroppedItem system or WorldManager if needed.
             if (currentTool != null && !currentTool.picked)
             {
-                // Logic to handle unpicked tool if needed, or just let it stay in world.
-                // Releasing reference.
-                currentTool = null;
+                currentTool.AssignedCarrier = null;
             }
+            currentTool = null;
         }
 
         private void OnDestroy()
@@ -148,30 +145,27 @@ namespace Script.Game.Mobs.Subjects
 
 
 
+        public void OnObjectsDetected(List<GameObject> detectedObjects)
+        {
+            // Check for enemies
+            foreach (var hitObject in detectedObjects)
+            {
+                if (hitObject != null && hitObject.CompareTag("Enemy"))
+                {
+                    isInDanger = true;
+                    fearTimer = FEAR_DURATION;
+                    status.villagerState = DenizenStatus.VillagerState.Fear;
+                    break; // Found danger, prioritize it
+                }
+            }
+        }
+
         public void UpdateBehavior()
         {
             // Debug Visualization
             if (isDebugGoPlace && isMoving)
             {
                 Debug.DrawLine(transform.position, targetPosition, Color.yellow);
-            }
-
-            // Perform Detection every frame (drawing and checking)
-            if (rayCastHelper != null)
-            {
-                List<GameObject> detectedObjects = rayCastHelper.GetListHitObjects(status.detectRangeRaycast);
-                
-                // Check for enemies
-                foreach (var hitObject in detectedObjects)
-                {
-                    if (hitObject != null && hitObject.CompareTag("Enemy"))
-                    {
-                        isInDanger = true;
-                        fearTimer = FEAR_DURATION;
-                        status.villagerState = DenizenStatus.VillagerState.Fear;
-                        break; // Found danger, prioritize it
-                    }
-                }
             }
 
             // Update fear timer
@@ -426,20 +420,17 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleRunToGetToolState()
         {
-            // Kiểm tra nếu không còn tool cần lấy nữa
-            // hoặc tool đã bị hủy thì chuyển về trạng thái Idle
             if (currentTool == null)
             {
-                status.villagerState = DenizenStatus.VillagerState.Idle;
+                TransitionToIdle();
                 return;
             }
 
             // Kiểm tra xem tool có bị picked trước không
             if (currentTool.picked)
             {
-                // Debug.Log($"[VillagerBehavior] {gameObject.name}: Tool đã bị nhặt trước, hủy nhiệm vụ");
                 currentTool = null;
-                status.villagerState = DenizenStatus.VillagerState.Idle;
+                TransitionToIdle();
                 return;
             }
 
@@ -455,6 +446,12 @@ namespace Script.Game.Mobs.Subjects
                 isMoving = true; 
                 MoveTowardsTarget(currentTool.transform.position, "run");
             }
+        }
+
+        public void TransitionToIdle()
+        {
+            status.villagerState = DenizenStatus.VillagerState.Idle;
+            Script.Manager.MobsManager.ToolManager.Instance?.OnVillagerBecameIdle(this);
         }
 
         private void HandleFearState()
@@ -487,12 +484,12 @@ namespace Script.Game.Mobs.Subjects
                     }
                     else
                     {
-                        status.villagerState = DenizenStatus.VillagerState.Idle;
+                        TransitionToIdle();
                     }
                 }
                 else
                 {
-                    status.villagerState = DenizenStatus.VillagerState.Idle;
+                    TransitionToIdle();
                 }
                 return;
             }
@@ -535,29 +532,41 @@ namespace Script.Game.Mobs.Subjects
                 }
                 else
                 {
-                    status.villagerState = DenizenStatus.VillagerState.Idle;
+                    TransitionToIdle();
                 }
             }
             else
             {
-                status.villagerState = DenizenStatus.VillagerState.Idle;
+                TransitionToIdle();
             }
         }
         #endregion
 
         #region Movement
+        private float _currentMoveSpeed = 0f;
+
         private void MoveTowardsTarget(Vector3 target, string animationName)
         {
-            float speed = animationName == "run" ? status.RunSpeed : status.WalkSpeed;
+            _currentMoveSpeed = animationName == "run" ? status.RunSpeed : status.WalkSpeed;
+            targetPosition = target;
+            isMoving = true;
             
-            bool hasReachedTarget = Utility.MoveTowardsTarget(gameObject, target, speed);
-            
-            animator.Play(animationName);
+            if (animator != null)
+            {
+                animator.Play(animationName);
+            }
+        }
+
+        private void Update()
+        {
+            if (!isMoving) return;
+
+            bool hasReachedTarget = Utility.MoveTowardsTarget(gameObject, targetPosition, _currentMoveSpeed);
 
             if (hasReachedTarget)
             {
                 isMoving = false;
-                animator.Play("idle");
+                if (animator != null) animator.Play("idle");
             }
         }
         #endregion
@@ -683,26 +692,40 @@ namespace Script.Game.Mobs.Subjects
                 // Kiểm tra xem tool này chưa ai nhặt (Atomic check)
                 if (!item.picked && item.pickedBy == null)
                 {
-                    // Đánh dấu đã nhặt ngay lập tức
+                    // BƯỚC 1: Đánh dấu chủ quyền ngay lập tức (Atomic)
                     item.pickedBy = gameObject;
                     item.picked = true;
 
-                    // Đổi nghề dựa trên loại tool (Vd: Bow -> Archer)
-                    ChangeRoleByTool(item.itemCategory);
+                    if (item.AssignedCarrier != null && item.AssignedCarrier != gameObject)
+                    {
+                        item.OnPickedByStranger(gameObject);
+                    }
 
-                    // Xóa vật phẩm tool khỏi map
+                    // BƯỚC 2: Xử lý tool bị bỏ rơi TRƯỚC KHI đổi nghề
+                    if (currentTool != null && currentTool != item)
+                    {
+                        var abandonedTool = currentTool;
+                        currentTool = null;
+                        abandonedTool.AssignedCarrier = null;
+                        abandonedTool.OnAssigneeAbandoned(); 
+                    }
+                    else
+                    {
+                        currentTool = null;
+                    }
+                    
+                    // BƯỚC 3: Xóa vật phẩm khỏi map
                     Destroy(other.gameObject);
 
-                    // Reset trạng thái
-                    currentTool = null;
-                    status.villagerState = DenizenStatus.VillagerState.Idle;
+                    // BƯỚC 4: Đổi nghề
+                    ChangeRoleByTool(item.itemCategory);
                 }
                 else
                 {
                     // Tool đã bị người khác nhanh tay nhặt trước
                     Debug.Log($"[VillagerBehavior] {gameObject.name} không thể nhặt tool (đã bị nhặt bởi {item.pickedBy?.name ?? "unknown"})");
                     currentTool = null;
-                    status.villagerState = DenizenStatus.VillagerState.Idle;
+                    TransitionToIdle();
                 }
             }
             // 2. Logic nhặt Coin

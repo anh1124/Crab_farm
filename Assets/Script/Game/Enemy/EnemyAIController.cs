@@ -2,11 +2,13 @@ using System.Linq;
 using UnityEngine;
 using Script.Game.Enemy.Core;
 using Script.Game.Enemy.States;
+using Script.Data_Model.Interfaces;
+using Script.Manager.GamePlayManager;
 
 namespace Script.Game.Enemy
 {
     [RequireComponent(typeof(EnemyStatus), typeof(Animator))]
-    public class EnemyAIController : MonoBehaviour
+    public class EnemyAIController : MonoBehaviour, INPCBehavior
     {
         protected EnemyState _currentState;
         protected EnemyContext _ctx;
@@ -65,6 +67,16 @@ namespace Script.Game.Enemy
             }
         }
 
+        private void OnEnable()
+        {
+            NPCUpdateManager.Instance?.Register(this);
+        }
+
+        private void OnDisable()
+        {
+            NPCUpdateManager.Instance?.Unregister(this);
+        }
+
         private void Start()
         {
             // Bắt đầu bằng Idle state
@@ -74,7 +86,7 @@ namespace Script.Game.Enemy
             var rch = GetComponent<RayCastHelper>();
             if (rch != null)
             {
-                rch.OnDetectedObjectsChanged += HandleDetectedObjectsChanged;
+                rch.OnDetectedObjectsChanged += OnObjectsDetected;
             }
         }
 
@@ -83,7 +95,7 @@ namespace Script.Game.Enemy
             var rch = GetComponent<RayCastHelper>();
             if (rch != null)
             {
-                rch.OnDetectedObjectsChanged -= HandleDetectedObjectsChanged;
+                rch.OnDetectedObjectsChanged -= OnObjectsDetected;
             }
             
             if (_ctx != null && _ctx.Status != null)
@@ -93,7 +105,7 @@ namespace Script.Game.Enemy
         }
 
         // Event Receiver: Được gọi tự động mỗi khi máy dò RayCast quét được đồ
-        protected virtual void HandleDetectedObjectsChanged(System.Collections.Generic.List<GameObject> detectedObjects)
+        public virtual void OnObjectsDetected(System.Collections.Generic.List<GameObject> detectedObjects)
         {
             if (!_ctx.IsAlive || detectedObjects == null || detectedObjects.Count == 0) return;
 
@@ -111,7 +123,7 @@ namespace Script.Game.Enemy
             }
         }
 
-        protected virtual void Update()
+        public virtual void UpdateBehavior()
         {
             // Flag bảo vệ đơn giản: Không chạy AI khi đã chết
             if (!_ctx.IsAlive) return;
@@ -123,6 +135,14 @@ namespace Script.Game.Enemy
             currentPortal = _ctx.HomePortal;
 
             _currentState?.Update(_ctx);
+        }
+
+        private void Update()
+        {
+            if (!_ctx.IsAlive) return;
+
+            // Interpolation movement liên tục ở cấp độ Frame (60Hz) thay vì Tick (5Hz)
+            _currentState?.PhysicsUpdate(_ctx);
         }
 
         public void ChangeState(EnemyState newState)
@@ -188,6 +208,23 @@ namespace Script.Game.Enemy
             else
             {
                 gameObject.SetActive(false);
+            }
+        }
+
+        public void AnimEvent_EndAttack()
+        {
+            if (_currentState is MoveToTargetState moveState)
+            {
+                moveState.OnAttackAnimationComplete(_ctx);
+            }
+            // For other attack states if they arise in the base AI
+        }
+
+        public void AnimEvent_EndAttack_Return()
+        {
+            if (_currentState is ReturnToPortalState returnState)
+            {
+                returnState.OnAttackAnimationComplete(_ctx);
             }
         }
     }
