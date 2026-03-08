@@ -197,7 +197,7 @@ namespace Script.Game.Structures.SellingShop
             return null;
         }
 
-        private void CheckInventory()
+        public void CheckInventory()
         {
             // Loại bỏ các item bị null (đã bị destroy)
             currentItems.RemoveAll(item => item == null);
@@ -205,6 +205,12 @@ namespace Script.Game.Structures.SellingShop
             isFull = currentItems.Count >= itemSlot.Count;
             canAcceptCoins = !isFull; // Nếu kệ đầy, không nhận xu
             coinUser.canAcceptCoins = canAcceptCoins; // Cập nhật CoinUser
+            
+            // Cập nhật lại UI hiển thị coin (nếu player đang đứng trong trigger)
+            if (coinUser != null)
+            {
+                coinUser.RefreshActiveState();
+            }
         }
 
         // Phương thức để loại bỏ item khi nó bị destroy

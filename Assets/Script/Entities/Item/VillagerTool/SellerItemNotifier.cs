@@ -17,7 +17,9 @@ namespace Script.Game.Item
             // Khi item bị destroy (ví dụ: bị village lấy), thông báo cho seller loại bỏ nó khỏi danh sách
             if (!isRemoved && seller != null)
             {
+                seller.CheckInventory();
                 seller.RemoveItem(gameObject);
+
             }
         }
 

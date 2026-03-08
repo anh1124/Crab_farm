@@ -41,6 +41,11 @@ namespace Script.Game.Combat
         private float lifeTimer = 0f;           
         private float timeSinceSpawn = 0f;      
         private float deactivateThreshold = 0.5f;
+
+        // Stick tracking (parentless)
+        private Transform stuckTarget;
+        private Vector3 stuckLocalPosition;
+        private float stuckLocalRotationDelta;
         #endregion
         
         private void Awake()
@@ -55,6 +60,7 @@ namespace Script.Game.Combat
             hasDealtDamage = false;
             isActive = true;
             isStuck = false;
+            stuckTarget = null;
             lifeTimer = 0f;          
             timeSinceSpawn = 0f;     
             
@@ -92,6 +98,15 @@ namespace Script.Game.Combat
             
             if (isStuck)
             {
+                if (stuckTarget == null || !stuckTarget.gameObject.activeInHierarchy)
+                {
+                    ReturnToPool();
+                    return;
+                }
+
+                transform.position = stuckTarget.TransformPoint(stuckLocalPosition);
+                transform.rotation = Quaternion.Euler(0, 0, stuckTarget.eulerAngles.z + stuckLocalRotationDelta);
+
                 lifeTimer -= Time.deltaTime;
                 if (lifeTimer <= 0f)
                 {
@@ -167,7 +182,9 @@ namespace Script.Game.Combat
             // Disable collider
             if (col != null) col.enabled = false;
 
-            transform.SetParent(collision.transform);
+            stuckTarget = collision.transform;
+            stuckLocalPosition = stuckTarget.InverseTransformPoint(transform.position);
+            stuckLocalRotationDelta = transform.eulerAngles.z - stuckTarget.eulerAngles.z;
             
             // ... (Position adjustment logic)
             if (collision.contactCount > 0)
@@ -243,11 +260,8 @@ namespace Script.Game.Combat
         
         private void ReturnToPool()
         {
-            if (isStuck && transform.parent != null)
-            {
-                transform.SetParent(null);
-                isStuck = false;
-            }
+            isStuck = false;
+            stuckTarget = null;
             
             if (col != null) col.enabled = true; // Ensure collider is enabled before return (redundant safe)
 

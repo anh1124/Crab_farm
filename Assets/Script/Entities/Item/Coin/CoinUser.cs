@@ -182,6 +182,40 @@ namespace Script.Game.Item.Coin
             ClearCoinSlots();
             playerTrigger = false;
         }
+        
+        public void RefreshActiveState()
+        {
+            if (!playerTrigger) return;
+            
+            bool shouldShowSlots = false;
+
+            if (upgradeableComponent != null)
+            {
+                if (canAcceptCoins && !isReadyToUpgrade)
+                {
+                    shouldShowSlots = true;
+                }
+            }
+            else
+            {
+                if (canAcceptCoins && !isReadyToUpgrade)
+                {
+                    shouldShowSlots = true;
+                }
+            }
+
+            if (shouldShowSlots)
+            {
+                SetupCoinSlots();
+            }
+            else
+            {
+                if (coinSlotParent != null)
+                {
+                    coinSlotParent.SetActive(false);
+                }
+            }
+        }
       
 
         private void SetupCoinSlots()

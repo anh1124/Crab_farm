@@ -6,8 +6,6 @@ namespace Script.Game.Enemy.Variants.ShieldBot
 {
     public class ShieldBotAttackState : MoveToTargetState
     {
-        private bool _isAttacking = false;
-
         public override void Enter(EnemyContext ctx)
         {
             if (ctx.Animator != null)
