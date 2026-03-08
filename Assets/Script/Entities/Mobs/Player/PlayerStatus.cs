@@ -50,7 +50,11 @@ namespace Script.Data_Model.Status
                 moveSpeed = 10f;
                 attackDame = 1;
                 attackSpeed = 1f;
-                maxCoins = 100;
+            }
+            
+            if (maxCoins < 100)
+            {
+                maxCoins = 100; // Hoặc 999 tùy thuộc vào cân bằng game, tạm set 100 giống mặc định cũ
             }
         }
         

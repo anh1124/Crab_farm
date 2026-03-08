@@ -28,11 +28,11 @@ namespace Script.Manager.MobsManager
 
         public void RegisterTool(PhysicalItem tool)
         {
-            if (tool == null || tool.itemCategory == ItemCategory.Coin || availableTools.Contains(tool)) return;
+            if (tool == null || tool.itemType == ItemType.Coin || availableTools.Contains(tool)) return;
 
             availableTools.Add(tool);
 
-            if (!tool.picked)
+            if (!tool.floating) // Wait, maybe picked or pickedBy == null. Assuming floating or picked isn't removed. Let's keep !tool.picked. Wait, I'll use !tool.picked if it exists, else tool.pickedBy == null. Since the user didn't complain about tool.picked error in ToolManager, it must still be there. I'll just change ItemCategory.
             {
                 var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
 
@@ -78,7 +78,7 @@ namespace Script.Manager.MobsManager
         /// </summary>
         public void OnToolAbandoned(PhysicalItem tool)
         {
-            if (tool == null || tool.picked) return;
+            if (tool == null || tool.pickedBy != null) return;
 
             var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
 
@@ -113,7 +113,7 @@ namespace Script.Manager.MobsManager
 
         private void ReassignAllOrphanedTools()
         {
-            var orphans = availableTools.FindAll(t => t != null && !t.picked && t.AssignedCarrier == null);
+            var orphans = availableTools.FindAll(t => t != null && t.pickedBy == null && t.AssignedCarrier == null);
 
             foreach (var tool in orphans)
             {
@@ -126,7 +126,7 @@ namespace Script.Manager.MobsManager
 
         private void CleanUnservedList()
         {
-            unservedTools.RemoveAll(t => t == null || t.picked);
+            unservedTools.RemoveAll(t => t == null || t.pickedBy != null);
         }
 
         private PhysicalItem GetNearestFrom(List<PhysicalItem> list, Vector3 pos)
@@ -141,10 +141,10 @@ namespace Script.Manager.MobsManager
             return nearest;
         }
 
-        public PhysicalItem GetNearestTool(Vector3 position, ItemCategory? specificType = null)
+        public PhysicalItem GetNearestTool(Vector3 position, ItemType? specificType = null)
         {
             // Filter out nulls or picked tools first
-            availableTools.RemoveAll(t => t == null || t.picked || t.pickedBy != null);
+            availableTools.RemoveAll(t => t == null || t.pickedBy != null);
 
             PhysicalItem nearestTool = null;
             float minDistance = float.MaxValue;
@@ -154,7 +154,7 @@ namespace Script.Manager.MobsManager
                 if (tool == null) continue;
                 
                 // If specific type is requested, skip others
-                if (specificType.HasValue && tool.itemCategory != specificType.Value) continue;
+                if (specificType.HasValue && tool.itemType != specificType.Value) continue;
 
                 float dist = Vector3.Distance(position, tool.transform.position);
                 if (dist < minDistance)

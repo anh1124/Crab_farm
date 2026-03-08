@@ -385,20 +385,21 @@ namespace Script.Game.Mobs.Subjects
         
         #region INPCBehavior Implementation
 
-        public void HandleItem(GameObject item)
+        public bool HandleItem(GameObject item)
         {
             PhysicalItem coin = item.GetComponent<PhysicalItem>();
-            if (coin != null && (coin.prefabID == "coin" || coin.itemCategory == ItemCategory.Coin))
+            if (coin != null && coin.itemType == ItemType.Coin)
             {
                 // Only transform if enabled (double check, though CoinCollector checks this usually)
-                if (!this.enabled) return;
+                if (!this.enabled) return false;
                 
-                // Tiêu hủy coin ngay lập tức vì Vagrant đã sử dụng nó để đổi nghề
-                Destroy(item);
+                // Tiêu hủy coin được dời sang cho LootPickupTrigger xử lý, chỉ cần return true
                 
                 // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
                 StartCoroutine(TransformToVillagerNextFrame());
+                return true;
             }
+            return false;
         }
 
         #endregion

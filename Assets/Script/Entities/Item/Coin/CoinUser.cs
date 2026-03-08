@@ -170,10 +170,10 @@ namespace Script.Game.Item.Coin
 
             // Debug.Log($"[CoinUser-Debug] {gameObject.name}: PlayerTriggerOn. CanAccept={canAcceptCoins}, Ready={isReadyToUpgrade}, Required={requiredCoins}, SlotParent={coinSlotParent?.name}, Active={coinSlotParent?.activeSelf}");
 
+            playerTrigger = true;
             if (shouldShowSlots)
             {
                 SetupCoinSlots();
-                playerTrigger = true;
             }
         }
         

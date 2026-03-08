@@ -314,7 +314,7 @@ MonoBehaviour:
   maxHp: 10
   currentHp: 10
   coin: 0
-  maxCoins: 0
+  maxCoins: 28
   moveSpeed: 12
   positionX: 0
   positionY: 0
@@ -364,7 +364,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canPickupCoin: 1
   canPickupTool: 0
-  _ownerNpc: {fileID: 0}
 --- !u!1 &6591141932145495929
 GameObject:
   m_ObjectHideFlags: 0

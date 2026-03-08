@@ -157,22 +157,6 @@ namespace Script.Data_Model.Status
             CurrentCoins -= amount;
         }
 
-        public void PickUpCoin(GameObject coinGameObject)
-        {
-             // This is a fallback if CoinCollector is missing or Coin.cs triggers this directly
-             // We just add coin and destroy the object? 
-             // Ideally Coin.cs handles destruction if this returns true?
-             // Checking Coin.cs logic: it calls pickUpCoin, then it's done. 
-             // Actually Coin.cs does NOT destroy coin in HandlePlayerPickup/HandleDenizensPickup.
-             // It expects the receiver to handle it? 
-             // Wait, Coin.cs:208 calls coinable.PickUpCoin(gameObject).
-             // It does NOT destroy the coin itself in that method. 
-             // So DenizenStatus.PickUpCoin MUST destroy the coin.
-             
-             AddCoin(1);
-             // Destroy is handled by ProcessCoinPickup utility usually, but if called directly:
-             if(coinGameObject != null) Destroy(coinGameObject);
-        }
 
         public DenizenSaveData CaptureData(Transform t)
         {

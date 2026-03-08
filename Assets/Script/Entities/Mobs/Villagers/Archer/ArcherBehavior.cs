@@ -291,29 +291,23 @@ namespace Script.Game.Mobs.Subjects
         }
 
         // --- INPCBehavior implementation ---
-        public void HandleItem(GameObject item)
+        public bool HandleItem(GameObject item)
         {
-            if (!this.enabled) return;
+            if (!this.enabled) return false;
 
-            if (item.CompareTag("Coin") || item.GetComponent<PhysicalItem>()?.itemCategory == ItemCategory.Coin)
+            var coinScript = item.GetComponent<PhysicalItem>();
+            if (coinScript == null) return false;
+
+            if (coinScript.itemType == ItemType.Coin && coinScript.denizensPickupAble)
             {
-                var coinScript = item.GetComponent<PhysicalItem>();
-                if (coinScript == null || coinScript.denizensPickupAble)
+                var coinStorage = GetComponent<ICoinable>();
+                if (coinStorage != null && coinStorage.Coin < coinStorage.MaxCoins)
                 {
-                    PickUpCoinInternal(item);
+                    coinStorage.AddCoin(1);
+                    return true;
                 }
             }
-        }
-
-        private void PickUpCoinInternal(GameObject coinObject)
-        {
-            var coinStorage = GetComponent<ICoinable>();
-            if (coinStorage == null) return;
-            
-            Script.Utility.ProcessCoinPickup(coinObject,
-                condition: () => coinStorage.Coin < coinStorage.MaxCoins,
-                onPickupSuccess: () => coinStorage.AddCoin(1)
-            );
+            return false;
         }
 
         public void UpdateBehavior()

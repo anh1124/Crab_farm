@@ -7,6 +7,7 @@ using UnityEngine;
 using Script.Game.PlayerCharacter;
 using Script.Controller.PlayerController; // For PlayerController.Instance
 using Art.Resources.Character.PlayerCharactor.Spear_Man; // Namespace cho AnimController
+using Script.Game.Item.Coin;
 
 namespace Script.Game.Player
 {
@@ -148,12 +149,26 @@ namespace Script.Game.Player
             status.coin += amount;
         }
 
-        public void PickUpCoin(GameObject coinGameObject)
+        // PickUpCoin was removed as HandleItem directly performs this logic now.
+
+        public bool HandleItem(GameObject item)
         {
-            Script.Utility.ProcessCoinPickup(coinGameObject,
-                condition: () => true,
-                onPickupSuccess: () => AddCoin(1)
-            );
+            var physicalItem = item.GetComponent<PhysicalItem>();
+            Debug.Log($"[PlayerBehavior] HandleItem triggered for {item.name}. physicalItem: {physicalItem != null}");
+            
+            if (physicalItem == null) return false;
+
+            if (physicalItem.itemType == ItemType.Coin)
+            {
+                Debug.Log($"[PlayerBehavior] HandleItem: Coin={Coin}, MaxCoins={MaxCoins}");
+                if (Coin < MaxCoins)
+                {
+                    AddCoin(1);
+                    Debug.Log($"[PlayerBehavior] HandleItem: Picked up coin successfully!");
+                    return true;
+                }
+            }
+            return false;
         }
 
         // Implement các interface khác nếu cần
@@ -305,23 +320,12 @@ namespace Script.Game.Player
             }
         }
 
-        // === IItemHandle LOGIC ===
-        public void HandleItem(GameObject item)
-        {
-            if (item.CompareTag("Coin"))
-            {
-                Script.Game.Item.Coin.PhysicalItem coin = item.GetComponent<Script.Game.Item.Coin.PhysicalItem>();
-                if (coin != null)
-                {
-                    // Call the logic directly via PhysicalItem or local PickUpCoin
-                    coin.HandlePlayerPickup(gameObject);
-                }
-            }
-        }
 
         private void UpdateCurrentInteractable()
         {
-            // Nếu không còn ai trong tầm, hoặc biến current đang null
+            // Clean up destroyed interactables just in case
+            interactablesInRange.RemoveAll(i => i == null || (i is MonoBehaviour mb && mb == null));
+
             if (interactablesInRange.Count == 0)
             {
                 if (currentInteractable != null)
@@ -332,23 +336,28 @@ namespace Script.Game.Player
                 return;
             }
 
-            // Đơn giản nhất: Lấy phần tử cuối cùng mới vào (Stack-like) hoặc gần nhất (cần tính toán)
-            // Hiện tại lấy phần tử cuối cùng thêm vào danh sách để ưu tiên đối tượng mới nhất
-            IPlayerInteractable candidate = interactablesInRange[interactablesInRange.Count - 1];
+            // Find the most recent valid interactable
+            IPlayerInteractable candidate = null;
+            for (int i = interactablesInRange.Count - 1; i >= 0; i--)
+            {
+                if (interactablesInRange[i].CanInteract())
+                {
+                    candidate = interactablesInRange[i];
+                    break;
+                }
+            }
 
-            // Nếu candidate khác current, đổi sang cái mới
+            // Switch to the new candidate if it's different
             if (currentInteractable != candidate)
             {
-                // Tắt cái cũ
                 if (currentInteractable != null)
                 {
                     currentInteractable.OnPlayerExit(this);
                 }
 
-                // Bật cái mới
                 currentInteractable = candidate;
-                // Kiểm tra điều kiện trước khi bật (optional, vì OnPlayerEnter bên kia cũng check)
-                if (currentInteractable.CanInteract())
+                
+                if (currentInteractable != null)
                 {
                     currentInteractable.OnPlayerEnter(this);
                 }
@@ -358,19 +367,9 @@ namespace Script.Game.Player
         // Validate interactable periodically or in Update
         private void ValidateInteraction()
         {
-             if (currentInteractable != null)
-             {
-                 // Nếu không còn tương tác được nữa (ví dụ đã nâng cấp xong), refresh lại
-                 if (!currentInteractable.CanInteract())
-                 {
-                     // Có thể chọn visual tắt đi nhưng vẫn giữ trong list, hoặc remove khỏi active
-                     currentInteractable.OnPlayerExit(this);
-                     // Thử tìm cái khác trong list
-                     interactablesInRange.Remove(currentInteractable); // Tạm remove để tìm cái khác? Hoặc chỉ cần update
-                     currentInteractable = null;
-                     UpdateCurrentInteractable();
-                 }
-             }
+             // Continuously check if we need to switch or drop the current interactable
+             // without permanently removing it from the physically-in-range list.
+             UpdateCurrentInteractable();
         }
     }
 }

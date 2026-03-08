@@ -12,14 +12,13 @@ namespace Script.Game.Item
 
         private bool isRemoved = false; // Để đảm bảo chỉ thông báo một lần
 
-        private void OnDestroy()
+        private void OnDisable()
         {
-            // Khi item bị destroy (ví dụ: bị village lấy), thông báo cho seller loại bỏ nó khỏi danh sách
+            // Khi item bị disable (ví dụ: bị village lấy hoặc set inactive), thông báo cho seller loại bỏ nó khỏi danh sách
             if (!isRemoved && seller != null)
             {
-                seller.CheckInventory();
                 seller.RemoveItem(gameObject);
-
+                isRemoved = true;
             }
         }
 

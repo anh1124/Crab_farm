@@ -76,11 +76,7 @@ namespace Script.Game.Enemy
             if (Coin > MaxCoins) Coin = MaxCoins;
         }
 
-        public void PickUpCoin(GameObject coinGameObject)
-        {
-            AddCoin(1);
-            if (coinGameObject != null) Destroy(coinGameObject);
-        }
+
 
         public void TakeDamage(int amount)
         {

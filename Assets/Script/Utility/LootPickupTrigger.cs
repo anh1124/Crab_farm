@@ -8,88 +8,72 @@ namespace Script.Utils
 {
     public class LootPickupTrigger : MonoBehaviour
     {
+        [Header("owner có thể nhặt loại item nào")]
         public bool canPickupCoin = true;
         public bool canPickupTool = true;
 
-        [Tooltip("NPC sở hữu logic pickup này. Tự động lấy ở GetComponentInParent nếu để trống")]
-        [SerializeField] private MonoBehaviour _ownerNpc;
-
+        //NPC sở hữu logic pickup này. Tự động lấy ở GetComponentInParent nếu để trống
+        private MonoBehaviour _ownerNpc;
+        private IItemHandle _itemReceiver;
+        
         private void Awake()
         {
-            if (_ownerNpc == null)
+            // Tự động lấy script có chức năng xử lý item trong gameobject này hoặc parent cha
+            _itemReceiver = GetComponentInParent<IItemHandle>();
+            if (_itemReceiver != null)
             {
-                // Fallback to searching component if left unassigned
-                var receiver = GetComponentInParent<IItemHandle>();
-                if (receiver != null)
-                {
-                    _ownerNpc = receiver as MonoBehaviour;
-                }
-                else
-                {
-                    _ownerNpc = GetComponentInParent<ICoinable>() as MonoBehaviour;
-                }
+                _ownerNpc = _itemReceiver as MonoBehaviour;
             }
         }
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // Kiểm tra quyền nhặt Item theo loại
+            if (_ownerNpc == null || _itemReceiver == null) return;
+            
             PhysicalItem drop = other.GetComponent<PhysicalItem>();
-            if (drop != null)
-            {
-                if (drop.itemCategory == ItemCategory.Coin && !canPickupCoin) return;
-                if (drop.itemCategory != ItemCategory.Coin && !canPickupTool) return;
+            if (drop == null) return;
 
-                // Suy luận Phe từ Tag để áp dụng Cooldown nhặt
-                bool isPlayer = CompareTag("Player") || (_ownerNpc != null && _ownerNpc.CompareTag("Player"));
-                bool isEnemy = CompareTag("Enemy") || (_ownerNpc != null && _ownerNpc.CompareTag("Enemy"));
-                
-                if (isPlayer && !drop.playerPickupAble) return;
-                else if (isEnemy && !drop.enemyPickupAble) return;
-                else if (!isPlayer && !isEnemy && !drop.denizensPickupAble) return;
-            }
+          //  Debug.Log($"[LootPickupTrigger] TriggerEnter for {_ownerNpc.name}. Item: {drop.gameObject.name}, type: {drop.itemType}");
 
-            // Kiểm tra list loot tag
-            bool isEnemyLoot = CompareTag("Enemy") || (_ownerNpc != null && _ownerNpc.CompareTag("Enemy"));
-            if (isEnemyLoot && PrefabData.Instance != null && PrefabData.Instance.enemyLootTags != null)
+            // 1. Kiểm tra trạng thái item xem có được nhặt không (FaceID, Cooldown, Thể Loại)
+            if (!CheckItemRule(drop)) 
             {
-                if (!PrefabData.Instance.enemyLootTags.Contains(other.tag)) return;
-            }
-
-            // Ưu tiên check IItemHandle mới (DenizenRoleController/PlayerBehavior)
-            IItemHandle itemReceiver = _ownerNpc as IItemHandle;
-            if (itemReceiver != null)
-            {
-                if (drop != null) drop.StopAllCoroutines();
-                itemReceiver.HandleItem(other.gameObject);
+              //  Debug.Log($"[LootPickupTrigger] {_ownerNpc.name} check rule failed for {drop.gameObject.name}");
                 return;
             }
 
-            // Kiểm tra NPC có hỗ trợ ICoinable không
-            ICoinable coinReceiver = _ownerNpc as ICoinable;
-            if (coinReceiver == null)
-            {
-                Debug.LogWarning($"[LootPickupTrigger] {gameObject.name}: Owner NPC does not implement ICoinable!");
-                return;
-            }
+            // 2. Trao quyền Quyết Định (Decision Making) cho Não bộ NPC
+            bool canPick = _itemReceiver.HandleItem(other.gameObject);
+          //  Debug.Log($"[LootPickupTrigger] {_ownerNpc.name} HandleItem returned: {canPick}");
 
-            // [Tùy enemy context] Nếu gắn lên enemy, verify greed>0
-            EnemyAIController controller = _ownerNpc.GetComponent<EnemyAIController>();
-            if (controller != null)
+            // 3. Nếu Não bộ đồng ý nhận: Tiến hành đánh dấu chủ quyền & Hủy vật phẩm
+            if (canPick)
             {
-                // Shieldbot ví dụ Greed=0, vậy không loot
-                // lấy GreedThreshold từ EnemyStatus / Context nếu cần
-                // Hiện tại controller.ResetEnemy setup context, nhưng ta chưa public ctx ra.
-                // Thêm public cho GreedThreshold trong Status hoặc public GetCtx() nếu shieldbot cần.
-                // Dưới đây chỉ giả định check sơ bộ qua Status nếu thêm public:
-                EnemyStatus status = _ownerNpc.GetComponent<EnemyStatus>();
-                // tạm thời bỏ qua bước check GreedThreshold từ status. 
-                // ShieldBot không được gắn script này ở prefab là được.
+                drop.pickedBy = _ownerNpc.gameObject;
+                drop.StopAllCoroutines();
+                other.gameObject.SetActive(false); // Hoặc Destroy(other.gameObject);
+                Destroy(other.gameObject, 0.1f);
             }
+        }
+        
+        private bool CheckItemRule(PhysicalItem drop)
+        {
+            // Xác thực xem có ai đã đặt trước item này trong pickerby chưa
+            if (drop.pickedBy != null) return false;
 
-            // Thực hiện PickUpCoin logic
-            if (drop != null) drop.StopAllCoroutines();
-            coinReceiver.PickUpCoin(other.gameObject);
+            // Kiểm tra thể loại và Cho phép
+            if (drop.itemType == ItemType.Coin && !canPickupCoin) return false;
+            if (drop.itemType != ItemType.Coin && !canPickupTool) return false;
+
+            // Suy luận Phe từ Tag để áp dụng Cooldown nhặt
+            bool isPlayer = CompareTag("Player") || (_ownerNpc != null && _ownerNpc.CompareTag("Player"));
+            bool isEnemy = CompareTag("Enemy") || (_ownerNpc != null && _ownerNpc.CompareTag("Enemy"));
+            
+            if (isPlayer && !drop.playerPickupAble) return false;
+            if (isEnemy && !drop.enemyPickupAble) return false;
+            if (!isPlayer && !isEnemy && !drop.denizensPickupAble) return false;
+
+            return true;
         }
     }
 }

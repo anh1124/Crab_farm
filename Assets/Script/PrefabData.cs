@@ -218,11 +218,7 @@ namespace Script.Data_Model
 
         public GameObject summoningPortal;
         
-        [Space(5)]
-        [Header("Enemy Interaction")]
-        [Tooltip("Danh sách các Tag vật phẩm mà Enemy có thể nhặt, ví dụ Coin hoặc Tool")]
-        public List<string> enemyLootTags = new List<string> { "Coin", "Tool" };
-        
+    
         [Tooltip("Các tag mà enemy coi là vật cản cần phá khi di chuyển về TownCenter (Wall, Denizen, Player...)")]
         public List<string> enemyObstacleTags = new List<string> { "Wall", "Player", "Archer", "Villager" };
         

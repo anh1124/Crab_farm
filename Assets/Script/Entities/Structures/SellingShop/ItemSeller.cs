@@ -197,14 +197,25 @@ namespace Script.Game.Structures.SellingShop
             return null;
         }
 
+        [ContextMenu("CheckInventory")]
         public void CheckInventory()
         {
-            // Loại bỏ các item bị null (đã bị destroy)
-            currentItems.RemoveAll(item => item == null);
+            // Loại bỏ các item bị null (đã bị destroy) một cách an toàn cho Inspector
+            for (int i = currentItems.Count - 1; i >= 0; i--)
+            {
+                if (currentItems[i] == null)
+                {
+                    currentItems.RemoveAt(i);
+                }
+            }
 
             isFull = currentItems.Count >= itemSlot.Count;
             canAcceptCoins = !isFull; // Nếu kệ đầy, không nhận xu
             coinUser.canAcceptCoins = canAcceptCoins; // Cập nhật CoinUser
+            
+            // Log trạng thái của ItemSeller và CoinUser
+            Debug.Log($"[CheckInventory] ItemSeller: {itemType} | Items: {currentItems.Count}/{itemSlot.Count} | isFull: {isFull} | canAcceptCoins: {canAcceptCoins}\n" +
+                      $"[CheckInventory] CoinUser: {coinUser.gameObject.name} | canAcceptCoins: {coinUser.canAcceptCoins} | playerTrigger: {coinUser.playerTrigger} | isReadyToUpgrade: {coinUser.isReadyToUpgrade} | requiredCoins: {coinUser.requiredCoins}");
             
             // Cập nhật lại UI hiển thị coin (nếu player đang đứng trong trigger)
             if (coinUser != null)

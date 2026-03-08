@@ -2,8 +2,9 @@ using UnityEngine;
 
 namespace Script.Data_Model.Interfaces
 {
-    public interface IItemHandle
+    //script này được gắn trên behavior 
+    public interface IItemHandle 
     {
-        void HandleItem(GameObject item);
+        bool HandleItem(GameObject item);
     }
 }

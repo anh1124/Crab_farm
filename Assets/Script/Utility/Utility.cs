@@ -79,7 +79,8 @@ namespace Script
             // Check condition if provided
             if (condition != null && !condition.Invoke()) return;
 
-            // Destroy coin
+            // Destroy coin (Deactivate first to let LootPickupTrigger know it was successfully consumed)
+            coinObj.SetActive(false);
             UnityEngine.Object.Destroy(coinObj);
 
             // Success callback

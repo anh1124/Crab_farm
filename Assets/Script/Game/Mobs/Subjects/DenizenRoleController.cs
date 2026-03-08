@@ -444,13 +444,14 @@ namespace Script.Game.Mobs.Subjects
 
         #region IItemHandle Implementation
         
-        public void HandleItem(GameObject item)
+        public bool HandleItem(GameObject item)
         {
             // Router: Pass item directly to the active behavior via Interface casting
             if (currentActiveBehavior is IItemHandle itemHandler)
             {
-                itemHandler.HandleItem(item);
+                return itemHandler.HandleItem(item);
             }
+            return false;
         }
         
         #endregion

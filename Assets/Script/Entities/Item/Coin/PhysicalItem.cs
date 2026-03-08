@@ -8,37 +8,40 @@ using Script.Game.Item;
 
 namespace Script.Game.Item.Coin
 {
-    public enum ItemCategory { Coin, Tool_Bow, Tool_Hammer, Tool_Scythe }
+    public enum ItemType { Coin, Tool_Bow, Tool_Hammer, Tool_Scythe }
 
     public class PhysicalItem : MonoBehaviour, ISaveable, IPickingUpMyItem
     {
-        [Header("Item Config")]
-        public ItemCategory itemCategory = ItemCategory.Coin;
-        public string prefabID = "coin";
-
-        [Header("Tool State (Only if Category != Coin)")]
-        [Tooltip("True when a villager has picked up this tool")]
-        public bool picked = false;
-        [Tooltip("Reference to the villager who picked up this tool")]
+        public ItemType itemType = ItemType.Coin;
         public GameObject pickedBy = null;
+        private string prefabID = "coin";
+        public bool playerPickupAble = true;
+        public bool denizensPickupAble  = true;
+        public bool enemyPickupAble = false;
+        public float pickupAbleCooldown = 3f;
+
 
         // IPickingUpMyItem implementation
-        public GameObject AssignedCarrier { get; set; }
+        #region IPickingUpMyItem implementation
 
+
+        public GameObject AssignedCarrier { get; set; }
         public void OnPickedByStranger(GameObject stranger)
         {
             // Người lạ vừa nhặt item này → báo ToolManager
             Script.Manager.MobsManager.ToolManager.Instance?.OnUnexpectedPickup(this, stranger);
         }
 
-        // Gọi khi Villager được giao nhưng "đào ngũ" (nhặt đồ khác dọc đường)
+        // Gọi khi Villager được giao nhưng (nhặt đồ khác dọc đường)
         public void OnAssigneeAbandoned()
         {
-            if (picked) return; // Đã báo hoặc đã nhặt rồi
+            if (pickedBy != null) return; // Đã báo hoặc đã nhặt rồi
             AssignedCarrier = null;
             Script.Manager.MobsManager.ToolManager.Instance?.OnToolAbandoned(this);
         }
-
+        #endregion
+        
+        #region physics
         [Header("Physics State")]
         public bool floating;
         public float rayLength = 0.6f;  // Độ dài của raycast
@@ -56,22 +59,17 @@ namespace Script.Game.Item.Coin
         private Animator _animator;
         //private float groundCheckRadius = 0.1f; // Bán kính kiểm tra mặt đất
         // // Pickup abilities
-        public bool playerPickupAble = true;
-        public bool denizensPickupAble  = true;
-        public bool enemyPickupAble = false;
-        public float pickupAbleCooldown = 3f;
+       
         private Coroutine _cooldownCoroutine;
-    
-   
-    
+
     
         void Start()
         {
             fallSpeed = PrefabData.Instance.fallSpeed;
             pickupAbleCooldown = PrefabData.Instance.timeMaxFloatCoin;
             
-            // Chỉ lấy animator nếu category là Coin, vì các Tool hiện tại không có Animator
-            if (itemCategory == ItemCategory.Coin)
+            // Chỉ lấy animator nếu type là Coin, vì các Tool hiện tại không có Animator
+            if (itemType == ItemType.Coin)
             {
                 _animator = GetComponent<Animator>();
             }
@@ -82,7 +80,11 @@ namespace Script.Game.Item.Coin
 
         private void OnEnable()
         {
-            if (itemCategory != ItemCategory.Coin && Script.Manager.MobsManager.ToolManager.Instance != null)
+            // Reset người nhặt mỗi khi object được bật (chống lỗi object pooling)
+            pickedBy = null;
+
+            
+            if (itemType != ItemType.Coin && Script.Manager.MobsManager.ToolManager.Instance != null)
             {
                 Script.Manager.MobsManager.ToolManager.Instance.RegisterTool(this);
             }
@@ -90,7 +92,7 @@ namespace Script.Game.Item.Coin
 
         private void OnDisable()
         {
-            if (itemCategory != ItemCategory.Coin && Script.Manager.MobsManager.ToolManager.Instance != null)
+            if (itemType != ItemType.Coin && Script.Manager.MobsManager.ToolManager.Instance != null)
             {
                 Script.Manager.MobsManager.ToolManager.Instance.UnregisterTool(this);
             }
@@ -209,9 +211,9 @@ namespace Script.Game.Item.Coin
                 StartRotate();
             }
         }
-
+        #endregion
     
-        //cái này phải sửa lại,nhỡ đâu player drop xong detizen nhặt rồi player lại drop 
+       
 
         public void CallFunctionCoolDown(string characterType)
         {
@@ -235,66 +237,7 @@ namespace Script.Game.Item.Coin
             }
         }
         
-
-        // Removed OnTriggerEnter2D so LootPickupTrigger strictly manages pick up interactions.
-
-        public void HandlePlayerPickup(GameObject player)
-        {
-            //Debug.Log($"[Coin] HandlePlayerPickup called for {player.name}, playerPickupAble: {playerPickupAble}");
-            
-            if (!playerPickupAble)
-            {
-                //Debug.Log($"[Coin] Player pickup blocked - playerPickupAble is false");
-                return;
-            }
-            
-            StopAllCoroutines();
-            var coinable = player.GetComponent<ICoinable>();
-            if (coinable != null)
-            {
-                //Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on player {player.name}");
-                coinable.PickUpCoin(gameObject);
-            }
-            else
-            {
-                Debug.LogError($"[Coin] Player {player.name} does not implement ICoinable.");
-            }
-        }
-
-        private void HandleDenizensPickup(Collider2D denizens)
-        {
-           // Debug.Log($"[Coin] HandleDenizensPickup called for {denizens.name}, denizensPickupAble: {denizensPickupAble}");
-            
-            if (!denizensPickupAble)
-            {
-                //Debug.Log($"[Coin] Pickup blocked - denizensPickupAble is false");
-                return;
-            }
-            
-            StopAllCoroutines();
-            var coinable = denizens.GetComponent<ICoinable>();
-            if (coinable != null)
-            {
-                //Debug.Log($"[Coin] Calling ICoinable.PickUpCoin on {denizens.name}");
-                coinable.PickUpCoin(gameObject);
-            }
-            else
-            {
-                Debug.LogWarning($"[PhysicalItem] Denizen {denizens.name} does not implement ICoinable.");
-            }
-        }
-
-        private void HandleEnemyPickup(GameObject enemy)
-        {
-            if (!enemyPickupAble) return;
-            
-            StopAllCoroutines();
-            var coinable = enemy.GetComponent<ICoinable>();
-            if (coinable != null)
-            {
-                coinable.PickUpCoin(gameObject);
-            }
-        }
+        //loại bỏ handpickup cũ vì không dùng
         
         #region Saveable Implementation
         [System.Serializable]
@@ -304,7 +247,6 @@ namespace Script.Game.Item.Coin
             public float positionY;
             public bool floating;
             public string itemCategory; // Save enum type
-            public bool picked;
         }
         
         public string GetPrefabID()
@@ -319,8 +261,7 @@ namespace Script.Game.Item.Coin
                 positionX = transform.position.x,
                 positionY = transform.position.y,
                 floating = floating,
-                itemCategory = itemCategory.ToString(), // Save enum type
-                picked = picked
+                itemCategory = itemType.ToString() // Save enum type
             };
         }
 
@@ -331,11 +272,10 @@ namespace Script.Game.Item.Coin
             floating = itemData.floating;
 
             // Retrieve enum type
-            if (System.Enum.TryParse(itemData.itemCategory, out ItemCategory parsedType))
+            if (System.Enum.TryParse(itemData.itemCategory, out ItemType parsedType))
             {
-                itemCategory = parsedType;
+                itemType = parsedType;
             }
-            picked = itemData.picked;
 
             // Khôi phục animation trạng thái
             if (floating)

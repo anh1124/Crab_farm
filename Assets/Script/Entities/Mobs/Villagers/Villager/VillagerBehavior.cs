@@ -131,7 +131,7 @@ namespace Script.Game.Mobs.Subjects
             
             if (rayCastHelper != null) rayCastHelper.isActive = false;
             
-            if (currentTool != null && !currentTool.picked)
+            if (currentTool != null && currentTool.pickedBy == null)
             {
                 currentTool.AssignedCarrier = null;
             }
@@ -427,7 +427,7 @@ namespace Script.Game.Mobs.Subjects
             }
 
             // Kiểm tra xem tool có bị picked trước không
-            if (currentTool.picked)
+            if (currentTool.pickedBy != null)
             {
                 currentTool = null;
                 TransitionToIdle();
@@ -680,83 +680,61 @@ namespace Script.Game.Mobs.Subjects
 
         #region INPCBehavior Implementation
 
-        public void HandleItem(GameObject other)
+        public bool HandleItem(GameObject other)
         {
-             // Only active if enabled
-             if (!this.enabled) return;
+            // Only active if enabled
+            if (!this.enabled) return false;
+
+            var item = other.GetComponent<PhysicalItem>();
+            if (item == null) return false;
 
             // 1. Logic nhặt Tool để đổi nghề
-            var item = other.GetComponent<PhysicalItem>();
-            if (item != null && item.itemCategory != ItemCategory.Coin)
+            if (item.itemType != ItemType.Coin)
             {
-                // Kiểm tra xem tool này chưa ai nhặt (Atomic check)
-                if (!item.picked && item.pickedBy == null)
+                // LootPickupTrigger đã đảm bảo an toàn cho pickedBy, ở đây ta chỉ cần check logic
+                if (item.AssignedCarrier != null && item.AssignedCarrier != gameObject)
                 {
-                    // BƯỚC 1: Đánh dấu chủ quyền ngay lập tức (Atomic)
-                    item.pickedBy = gameObject;
-                    item.picked = true;
+                    item.OnPickedByStranger(gameObject);
+                }
 
-                    if (item.AssignedCarrier != null && item.AssignedCarrier != gameObject)
-                    {
-                        item.OnPickedByStranger(gameObject);
-                    }
-
-                    // BƯỚC 2: Xử lý tool bị bỏ rơi TRƯỚC KHI đổi nghề
-                    if (currentTool != null && currentTool != item)
-                    {
-                        var abandonedTool = currentTool;
-                        currentTool = null;
-                        abandonedTool.AssignedCarrier = null;
-                        abandonedTool.OnAssigneeAbandoned(); 
-                    }
-                    else
-                    {
-                        currentTool = null;
-                    }
-                    
-                    // BƯỚC 3: Xóa vật phẩm khỏi map
-                    Destroy(other.gameObject);
-
-                    // BƯỚC 4: Đổi nghề
-                    ChangeRoleByTool(item.itemCategory);
+                // Xử lý tool bị bỏ rơi TRƯỚC KHI đổi nghề
+                if (currentTool != null && currentTool != item)
+                {
+                    var abandonedTool = currentTool;
+                    currentTool = null;
+                    abandonedTool.AssignedCarrier = null;
+                    abandonedTool.OnAssigneeAbandoned(); 
                 }
                 else
                 {
-                    // Tool đã bị người khác nhanh tay nhặt trước
-                    Debug.Log($"[VillagerBehavior] {gameObject.name} không thể nhặt tool (đã bị nhặt bởi {item.pickedBy?.name ?? "unknown"})");
                     currentTool = null;
-                    TransitionToIdle();
                 }
+                
+                // Đổi nghề
+                ChangeRoleByTool(item.itemType);
+                return true;
             }
             // 2. Logic nhặt Coin
-            else if (other.CompareTag("Coin") || (item != null && item.itemCategory == ItemCategory.Coin))
+            else
             {
-                // ... logic coin ...
-                var coinScript = other.GetComponent<PhysicalItem>();
-                if (coinScript == null || coinScript.denizensPickupAble)
+                if (!item.denizensPickupAble) return false;
+
+                var coinStorage = GetComponent<ICoinable>();
+                if (coinStorage != null && coinStorage.Coin < coinStorage.MaxCoins)
                 {
-                    PickUpCoinInternal(other.gameObject);
+                    coinStorage.AddCoin(1);
+                    return true;
                 }
+                return false;
             }
         }
         #endregion
         
         
-        private void PickUpCoinInternal(GameObject coinObject)
-        {
-            var coinStorage = GetComponent<ICoinable>();
-            if (coinStorage == null) return;
-            
-            Script.Utility.ProcessCoinPickup(coinObject,
-                condition: () => coinStorage.Coin < coinStorage.MaxCoins,
-                onPickupSuccess: () => coinStorage.AddCoin(1)
-            );
-        }
+        // Đã xóa PickUpCoinInternal vì logic cộng tiền đã được gộp trực tiếp vào HandleItem.
+        // Hủy bỏ việc sử dụng ProcessCoinPickup vì LootPickupTrigger sẽ lo phần tiêu hủy.
 
-        /// <summary>
-        /// Change villager role based on picked tool type
-        /// </summary>
-        private void ChangeRoleByTool(ItemCategory type)
+        private void ChangeRoleByTool(ItemType type)
         {
             var ctrl = GetComponent<DenizenRoleController>();
             if (ctrl == null)
@@ -767,15 +745,15 @@ namespace Script.Game.Mobs.Subjects
 
             switch (type)
             {
-                case ItemCategory.Tool_Bow:
+                case ItemType.Tool_Bow:
                     ctrl.ChangeRole(NPCRole.Archer);
                     break;
 
-                case ItemCategory.Tool_Hammer:
+                case ItemType.Tool_Hammer:
                     ctrl.ChangeRole(NPCRole.Worker);
                     break;
 
-                case ItemCategory.Tool_Scythe:
+                case ItemType.Tool_Scythe:
                     ctrl.ChangeRole(NPCRole.Farmer);
                     break;
 
