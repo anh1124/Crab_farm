@@ -80,24 +80,25 @@ namespace Script.Game.Combat
             Vector2 velocity = direction * speed;
             Vector2 pos = shootPos;
 
-            // Increase steps slightly to ensure we cover full arc to target
-            int steps = 50; 
+            // 20 bước × 0.12s = bao quát 2.4s flight time
+            // Linecast MỖI bước để không bỏ sót tường hẹp
+            // (20 raycast thay vì 50 cũ - vẫn giảm ~60% nhưng đáng tin cậy hơn)
+            const int STEPS = 20;
+            const float TIME_STEP = 0.12f;
 
-            for (int step = 0; step < steps; step++)
+            for (int step = 0; step < STEPS; step++)
             {
                 Vector2 prevPos = pos;
-                velocity.y += gravity * DEFAULT_TIME_STEP; // Gravity is negative
-                pos += velocity * DEFAULT_TIME_STEP;
+                velocity.y += gravity * TIME_STEP;
+                pos += velocity * TIME_STEP;
 
+                // Linecast từng đoạn nhỏ – không skip, không bỏ sót tường
                 RaycastHit2D hit = Physics2D.Linecast(prevPos, pos, wallLayer);
-                if (hit.collider != null)
-                {
-                    return false; // Hit wall
-                }
+                if (hit.collider != null) return false;
                 
-                // Break if we reach or pass target (simplified check)
-                if (Vector2.Distance(pos, targetPos) < 1f) break;
-                if (pos.y < Mathf.Min(shootPos.y, targetPos.y) - 5f) break; // Dropped below interest
+                // Dừng nếu đã tới gần đích hoặc rơi quá thấp
+                if (Vector2.Distance(pos, targetPos) < 1.2f) break;
+                if (pos.y < Mathf.Min(shootPos.y, targetPos.y) - 4f) break;
             }
 
             return true;

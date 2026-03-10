@@ -81,7 +81,7 @@ namespace Script.Game.Combat
             }
             
             // Debug initialization
-            Debug.Log($"[Arrow Init] Vel: {velocity.magnitude:F2} | Angle: {launchAngle:F1}° | Gravity: {gravityScaleValue} | Pos: {transform.position}");
+            // Debug.Log($"[Arrow Init] Vel: {velocity.magnitude:F2} | Angle: {launchAngle:F1}° | Gravity: {gravityScaleValue} | Pos: {transform.position}");
             
             SetInitialRotation(velocity);
         }
@@ -117,7 +117,7 @@ namespace Script.Game.Combat
             
             if (!isActive) return;
             
-            if (rb.velocity.sqrMagnitude > minVelocityToRotate * minVelocityToRotate)
+            if (!isStuck && Time.frameCount % 2 == 0 && rb.velocity.sqrMagnitude > minVelocityToRotate * minVelocityToRotate)
             {
                 UpdateRotation();
             }
@@ -138,7 +138,7 @@ namespace Script.Game.Combat
             if (!isActive) return;
             
             // Debug collision
-            Debug.Log($"[Arrow] Hit: {collision.gameObject.name} | Tag: {collision.gameObject.tag} | Layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+            // Debug.Log($"[Arrow] Hit: {collision.gameObject.name} | Tag: {collision.gameObject.tag} | Layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
 
             // Stop immediately to prevent bounce/rotation
             rb.velocity = Vector2.zero; 
@@ -198,11 +198,13 @@ namespace Script.Game.Combat
             // Debug Position AFTER Parenting
             Vector3 afterPos = transform.position;
             
+            /*
             Debug.Log($"[Arrow Stick Debug] \n" +
                       $"- Hit Object: {collision.gameObject.name} (Pos: {targetPos})\n" +
                       $"- Arrow Pos BEFORE: {beforePos}\n" +
                       $"- Arrow Pos AFTER: {afterPos}\n" +
                       $"- Shift Delta: {Vector3.Distance(beforePos, afterPos)}");
+            */
 
             DeactivatePhysics();
         }
@@ -254,7 +256,7 @@ namespace Script.Game.Combat
             {
                 health.TakeDamage(damage);
                 hasDealtDamage = true;
-                Debug.Log($"[Arrow] Dealt {damage} damage to {target.name} (Tag: {target.tag})");
+                // Debug.Log($"[Arrow] Dealt {damage} damage to {target.name} (Tag: {target.tag})");
             }
         }
         
