@@ -21,8 +21,8 @@ namespace Script.Data_Model
         public bool skipBuildingProcess = true; 
         
         public List<string> toolTag = new List<string> { "Hammer", "Bow" };
-        public GameObject hammer;
-      public GameObject bow;
+        public GameObject hammer; 
+        public GameObject bow;
         [Header("Player Character")] [Space(5)]
         public List<GameObject> playerCharacterList = new List<GameObject>();
 

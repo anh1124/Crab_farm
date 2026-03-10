@@ -72,11 +72,11 @@ TagManager:
   - name: BackGround
     uniqueID: 2851097927
     locked: 0
+  - name: back
+    uniqueID: 225356565
+    locked: 0
   - name: Ground
     uniqueID: 1887296005
-    locked: 0
-  - name: Enemy
-    uniqueID: 135369569
     locked: 0
   - name: structure prop
     uniqueID: 275455829
@@ -87,14 +87,14 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Enemy
+    uniqueID: 135369569
+    locked: 0
   - name: Player
     uniqueID: 1591732571
     locked: 0
   - name: Coin
     uniqueID: 1445729485
-    locked: 0
-  - name: ForgeGround
-    uniqueID: 1365292773
     locked: 0
   - name: font
     uniqueID: 1292241617

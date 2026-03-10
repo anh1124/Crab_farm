@@ -50,6 +50,12 @@ namespace Script.Game.Mobs.Subjects
         public float COIN_DROP_COOLDOWN = 0.7f;
         private float lastCoinDropTime = 0f;
 
+        // Kiểm tra tool định kỳ khi Idle
+        
+        [Header("Idle tool check")]
+        public float _lastToolCheckTime = -999f;
+        private const float TOOL_CHECK_INTERVAL = 2f;
+
         // Properties
         public int CurrentCoins => status.CurrentCoins;
         public int CurrentCoin { get => status.CurrentCoins; set => status.CurrentCoins = value; }
@@ -66,6 +72,13 @@ namespace Script.Game.Mobs.Subjects
                 return true;
             }
             return false;
+        }
+
+        [ContextMenu("Debug / Simulate Damage")]
+        private void SimulateDamage()
+        {
+            Debug.Log($"<color=orange>[VillagerBehavior] Simulating 1 damage on {gameObject.name}. coins={status?.CurrentCoins}</color>");
+            Script.Utils.DamageHandler.ApplyDamage(gameObject, 1, gameObject);
         }
 
         #endregion
@@ -162,6 +175,15 @@ namespace Script.Game.Mobs.Subjects
 
         public void UpdateBehavior()
         {
+            // Kiểm tra tool định kỳ khi đang Idle (mỗi 2 giây)
+            if (currentTool == null &&
+                status.villagerState == DenizenStatus.VillagerState.Idle &&
+                Time.time - _lastToolCheckTime >= TOOL_CHECK_INTERVAL)
+            {
+                _lastToolCheckTime = Time.time;
+                CheckForToolsOnSpawn();
+            }
+
             // Debug Visualization
             if (isDebugGoPlace && isMoving)
             {

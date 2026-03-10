@@ -640,6 +640,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 9100000, guid: c6ad815e1a9aa014b839538879eda4db, type: 2}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: bow
+      value: 
+      objectReference: {fileID: 6363175895146240729, guid: db77ba8ecbf66844c8a1e8b8f7c2fbd1, type: 3}
+    - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: tent
       value: 
       objectReference: {fileID: 1732423174781088413, guid: b32c92ea9af46e1419656fcdc4cb4e5a, type: 3}
@@ -647,6 +651,10 @@ PrefabInstance:
       propertyPath: arrow
       value: 
       objectReference: {fileID: 8129226867493365096, guid: c1eb463edbdedcd4abd70a936c9e66c4, type: 3}
+    - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: hammer
+      value: 
+      objectReference: {fileID: 4558516452142004041, guid: caa40c4be29482b44b10153bb8eda3e0, type: 3}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: denizen
       value: 
@@ -710,6 +718,10 @@ PrefabInstance:
     - target: {fileID: 8206099037918200606, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: circleHead
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8651940488345645102, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: showDebugLogs
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8862165295465698764, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: m_LocalPosition.x

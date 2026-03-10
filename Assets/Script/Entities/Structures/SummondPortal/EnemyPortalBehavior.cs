@@ -40,27 +40,30 @@ namespace Script.Entities.Structures.SummondPortal
 
         private void Start()
         {
-            // Tự động đăng ký lại với Manager nếu nó được tải lên từ Save game
+            // Đăng ký vào EnemyPortalManager trong Start() vì đây là nơi đảm bảo rằng
+            // tất cả Awake() đã chạy xong (kể cả EnemyPortalManager.Awake() set Instance).
             if (EnemyPortalManager.Instance != null)
             {
                 GameObject townCenter = Utility.GetTownCenter();
                 float centerPosX = townCenter != null ? townCenter.transform.position.x : 0f;
-                
+
                 if (transform.position.x > centerPosX)
+                {
                     EnemyPortalManager.Instance.portalR = gameObject;
+                    Debug.Log($"[EnemyPortalBehavior] Start: Tự đăng ký vào portalR tại {transform.position}");
+                }
                 else
+                {
                     EnemyPortalManager.Instance.portalL = gameObject;
+                    Debug.Log($"[EnemyPortalBehavior] Start: Tự đăng ký vào portalL tại {transform.position}");
+                }
             }
-
-            // Tự động đẩy bản thân vào EnemyContainer để được Save Game lưu lại
-            if (EntitySaveManager.Instance != null && EntitySaveManager.Instance.enemyContainer != null)
+            else
             {
-                transform.SetParent(EntitySaveManager.Instance.enemyContainer.transform, true);
+                Debug.LogWarning("[EnemyPortalBehavior] EnemyPortalManager.Instance là NULL khi Start()! Portal sẽ không được đăng ký.");
             }
 
-            // [FIX LỖI PORTAL KHI LOAD TỪ SAVE]
-            // Khi load lại từ file Save, status.isReadyToSpawn đã có thể lưu = true
-            // Cần nói cho VisualAnimator bật đồ họa "Sáng đèn" ngay lập tức nếu đã ready
+            // Khi load từ Save, nếu isReadyToSpawn đã = true → bật đồ họa sáng luôn
             if (status != null && status.isReadyToSpawn)
             {
                 if (visualAnimator) visualAnimator.SetActive();
@@ -151,7 +154,12 @@ namespace Script.Entities.Structures.SummondPortal
                 GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.MORNING_HOUR, CheckActivation);
             }
 
-            Debug.Log($"[EnemyPortalBehavior] Cổng tại {transform.position} đã bị phá hủy.");
+            // Chỉ log khi đây là phá hủy thật trong game,
+            // không log khi hệ thống save đang dọn container để load lại (RemoveAllChildObjects).
+            if (!EntitySaveManager.IsLoading)
+            {
+                Debug.Log($"[EnemyPortalBehavior] Cổng tại {transform.position} đã bị phá hủy.");
+            }
         }
 
         #region Spawning Logic (Hợp nhất từ SummondPortal)

@@ -23,7 +23,7 @@ namespace Script.Game.Mobs.Subjects
     [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(ArcherShooting))]
-    public class ArcherBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle, IAttacker
+    public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker
     {
         // --- IAttacker Interface ---
         public int AttackDame { get => status.attackDame; set => status.attackDame = value; }
@@ -166,8 +166,32 @@ namespace Script.Game.Mobs.Subjects
             // Chỉ giữ lại các gizmo debug khác nếu có
         }
 
+        [ContextMenu("Debug / Simulate Damage")]
+        private void SimulateDamage()
+        {
+            Debug.Log($"<color=orange>[ArcherBehavior] Simulating 1 damage on {gameObject.name}. coins={status?.CurrentCoins}</color>");
+            Script.Utils.DamageHandler.ApplyDamage(gameObject, 1, gameObject);
+        }
+
+        // --- IToolShield Interface Properties ---
+        public bool HasToolShield => status.CurrentCoins <= 1 && status.CurrentCoins > 0;
+        
+        public bool ConsumeToolShield()
+        {
+            if (!HasToolShield) return false;
+
+            //Debug.Log($"<color=orange>[ToolShield] {gameObject.name} dùng vũ khí chặn dame thành công!</color>");
+            Spawner.Instance?.DropItem(Data_Model.PrefabData.Instance?.bow, transform.position,
+                playerPickupAble: false, denizensPickupAble: true);
+
+            var ctrl = GetComponent<DenizenRoleController>();
+            if (ctrl != null) ctrl.ChangeRole(NPCRole.Villager);
+
+            return true;
+        }
+
         // --- ICoinShield Interface Properties ---
-        public bool HasCoinShield => status.CurrentCoins > 0;
+        public bool HasCoinShield => status.CurrentCoins > 1; // Wait! ICoinShield expects normal behavior, but we restrict it so that ToolShield is checked or Coin>1
         
         public int CurrentCoin
         {
@@ -250,12 +274,12 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnDestroy()
         {
-            if (guardManager != null) 
-            {
-                guardManager.UnregisterArcher(gameObject);
-            }
+            // if (guardManager != null) 
+            // {
+            //     guardManager.UnregisterArcher(gameObject);
+            // }
             UnsubscribeFromTimeEvents();
-            // Việc hủy đăng ký được xử lý bởi Controller
+            // Việc hủy đăng ký được xử lý bởi Controller, gọi 2 lần sẽ bị double call sinh ra Warning
             CleanupReferences();
         }
 

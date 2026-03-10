@@ -48,7 +48,7 @@ namespace Script.Game.Mobs.MobsManager
         public float alarmTimer = 0f;
         
         [Header("Debug Settings")]
-        public bool showDebugLogs = true;
+        public bool showDebugLogs = false;
 
         // Cached references
         private WallAndStumpManager wallManager;
@@ -367,6 +367,9 @@ namespace Script.Game.Mobs.MobsManager
                 return;
             }
 
+            // Cleanup inactive/dead before checking
+            detectedEnemies.RemoveAll(x => x == null || !x.activeInHierarchy);
+
             // Prevent duplicates
             if (detectedEnemies.Contains(enemy)) return;
 
@@ -399,22 +402,24 @@ namespace Script.Game.Mobs.MobsManager
         }
         private void HandleEnemyDespawn(Script.Game.Enemy.EnemyAIController enemyController)
         {
-            // Unsubscribe to prevent memory leaks
+            if (enemyController == null) return;
+
+            // Hủy đăng ký để tránh leak memory
             enemyController.OnDespawn -= HandleEnemyDespawn;
 
-            // Remove from list
+            // Xóa enemy này khỏi danh sách đang theo dõi
             if (detectedEnemies.Contains(enemyController.gameObject))
             {
                 detectedEnemies.Remove(enemyController.gameObject);
             }
 
-            // SAFETY: Prune any other nulls (ghost enemies) just in case
-            detectedEnemies.RemoveAll(x => x == null);
+            // Dọn dẹp kỹ hơn: Xóa tất cả các đối tượng null hoặc đã bị tắt (về pool)
+            detectedEnemies.RemoveAll(x => x == null || !x.activeInHierarchy);
 
-            // Check if threat is gone
+            // Kiểm tra xem còn mối đe dọa nào không
             if (detectedEnemies.Count == 0)
             {
-                // Start cooldown to ensure it's safe
+                // Bắt đầu đếm ngược tắt báo động
                 if (alertCooldownCoroutine == null)
                 {
                     alertCooldownCoroutine = StartCoroutine(AlertCooldownRoutine());
@@ -424,9 +429,9 @@ namespace Script.Game.Mobs.MobsManager
 
         private System.Collections.IEnumerator AlertCooldownRoutine()
         {
-            DebugLog($"[GuardManager] Enemy list cleared. Waiting {ALARM_COOLDOWN_DURATION}s...");
+            // DebugLog($"[GuardManager] Enemy list cleared. Waiting {ALARM_COOLDOWN_DURATION}s...");
             
-            // Set timer and count down visually
+            // Set timer và đếm ngược
             alarmTimer = ALARM_COOLDOWN_DURATION;
             while (alarmTimer > 0)
             {
@@ -464,6 +469,17 @@ namespace Script.Game.Mobs.MobsManager
 
         public void ClearAlarm()
         {
+            // Trước khi Clear, cần hủy đăng ký tất cả các event báo tử đang lắng nghe
+            foreach (var enemy in detectedEnemies)
+            {
+                if (enemy == null) continue;
+                var controller = enemy.GetComponent<Script.Game.Enemy.EnemyAIController>();
+                if (controller != null)
+                {
+                    controller.OnDespawn -= HandleEnemyDespawn;
+                }
+            }
+
             isEnemyAttack = false;
             detectedEnemies.Clear();
             alarmTimer = 0f;

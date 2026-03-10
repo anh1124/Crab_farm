@@ -235,6 +235,18 @@ namespace Script.Game.Item.Coin
             {
                 enemyPickupAble = true;
             }
+
+            // Tắt rồi bật lại Collider để Unity re-fire OnTriggerEnter2D
+            // cho tất cả các denizen đang đứng trong vùng trigger.
+            // Nếu không làm điều này, denizen đã vào trigger trước khi cooldown xong
+            // sẽ không bao giờ nhặt được item.
+            var col = GetComponent<Collider2D>();
+            if (col != null)
+            {
+                col.enabled = false;
+                yield return null; // Chờ 1 frame để Unity process OnTriggerExit2D
+                col.enabled = true; // → Ngay lập tức Unity fire OnTriggerEnter2D lại
+            }
         }
         
         //loại bỏ handpickup cũ vì không dùng

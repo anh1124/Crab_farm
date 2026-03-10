@@ -19,7 +19,18 @@ namespace Script.Utils
                 return true; 
             }
 
-            // 1. Xử lý khiên trước (Áp dụng cho cả Player lẫn Denizen)
+            // 1. Xử lý Tool Shield (Cung, Giáo, Kiếm... dùng làm khiên thay cho coin cuối cùng)
+            var toolShield = target.GetComponent<IToolShield>();
+            if (toolShield != null && toolShield.HasToolShield)
+            {
+                if (toolShield.ConsumeToolShield())
+                {
+                    Debug.Log($"[DamageHandler] Mục tiêu {target.name} đã rơi Vũ Khí để chặn sát thương cuối cùng!");
+                    return true;
+                }
+            }
+
+            // 1.5. Xử lý khiên thường (Coin Shield)
             var coinShield = target.GetComponent<ICoinShield>();
             
             if (coinShield != null)

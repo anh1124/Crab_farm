@@ -214,8 +214,8 @@ namespace Script.Game.Structures.SellingShop
             coinUser.canAcceptCoins = canAcceptCoins; // Cập nhật CoinUser
             
             // Log trạng thái của ItemSeller và CoinUser
-            Debug.Log($"[CheckInventory] ItemSeller: {itemType} | Items: {currentItems.Count}/{itemSlot.Count} | isFull: {isFull} | canAcceptCoins: {canAcceptCoins}\n" +
-                      $"[CheckInventory] CoinUser: {coinUser.gameObject.name} | canAcceptCoins: {coinUser.canAcceptCoins} | playerTrigger: {coinUser.playerTrigger} | isReadyToUpgrade: {coinUser.isReadyToUpgrade} | requiredCoins: {coinUser.requiredCoins}");
+            //Debug.Log($"[CheckInventory] ItemSeller: {itemType} | Items: {currentItems.Count}/{itemSlot.Count} | isFull: {isFull} | canAcceptCoins: {canAcceptCoins}\n" +
+             //         $"[CheckInventory] CoinUser: {coinUser.gameObject.name} | canAcceptCoins: {coinUser.canAcceptCoins} | playerTrigger: {coinUser.playerTrigger} | isReadyToUpgrade: {coinUser.isReadyToUpgrade} | requiredCoins: {coinUser.requiredCoins}");
             
             // Cập nhật lại UI hiển thị coin (nếu player đang đứng trong trigger)
             if (coinUser != null)

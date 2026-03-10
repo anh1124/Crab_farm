@@ -288,7 +288,7 @@ namespace Script.Game.PlayerCharacter
             if (PlayerController.Instance != null)
             {
                 PlayerController.Instance.canMove = true;
-                Debug.Log("[PlayerSkillManager] Movement UNLOCKED");
+               // Debug.Log("[PlayerSkillManager] Movement UNLOCKED");
             }
             else
             {

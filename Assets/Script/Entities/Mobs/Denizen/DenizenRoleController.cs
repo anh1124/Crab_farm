@@ -193,9 +193,11 @@ namespace Script.Game.Mobs.Subjects
         {
             if (!this.isActiveAndEnabled) return;
 
-            if (CurrentRole == NPCRole.Archer && newCoins <= 1)
+            // Damage system normally drops the tool and changes role at coin == 1 via IToolShield.
+            // This is a safety fallback if coins directly drop to 0 via other means.
+            if (CurrentRole == NPCRole.Archer && newCoins <= 0)
             {
-                // Drop Bow and become Villager
+                // Drop Bow and become Vagrant directly
                 if (Script.Data_Model.PrefabData.Instance != null && Script.Data_Model.PrefabData.Instance.bow != null)
                 {
                     Transform itemContainer = transform.parent; // Fallback
@@ -206,9 +208,9 @@ namespace Script.Game.Mobs.Subjects
                     Vector3 dropPos = transform.position + new Vector3(UnityEngine.Random.Range(-1f, 1f), 1.5f, 0);
                     Instantiate(Script.Data_Model.PrefabData.Instance.bow, dropPos, Quaternion.identity, itemContainer);
                 }
-                ChangeRole(NPCRole.Villager);
+                ChangeRole(NPCRole.Vagrant);
             }
-            else if (CurrentRole == NPCRole.Villager && newCoins <= 0)
+            else if (CurrentRole != NPCRole.Vagrant && newCoins <= 0)
             {
                 // Become Vagrant
                 ChangeRole(NPCRole.Vagrant);
@@ -441,6 +443,61 @@ namespace Script.Game.Mobs.Subjects
                 rayCastHelper.isActive = false;
             }
         }
+
+        #region Context Debug
+        
+        [ContextMenu("Debug Village State")]
+        public void DebugVillageState()
+        {
+            if (denizenStatus == null) denizenStatus = GetComponent<DenizenStatus>();
+            if (denizenStatus == null)
+            {
+                Debug.LogWarning("[DenizenRoleController] DenizenStatus missing!");
+                return;
+            }
+
+            var timeManager = Script.Manager.WorldManager.GameTimeManager.Instance;
+            string timeStr = timeManager != null 
+                ? $"{timeManager.GameHour:D2}:{timeManager.GameMinute:D2} (Daytime: {timeManager.IsDaytime})" 
+                : "TimeManager NULL";
+
+            string stateStr = "Unknown";
+            string archerInfo = "";
+
+            switch (CurrentRole)
+            {
+                case NPCRole.Vagrant:
+                    stateStr = denizenStatus.vagrantState.ToString();
+                    break;
+                case NPCRole.Villager:
+                    stateStr = denizenStatus.villagerState.ToString();
+                    break;
+                case NPCRole.Archer:
+                    stateStr = denizenStatus.archerState.ToString();
+                    
+                    if (GuardManager.Instance != null)
+                    {
+                        bool isLeft = denizenStatus.isLeftFlank;
+                        var flankList = isLeft ? GuardManager.Instance.leftFlankArchers : GuardManager.Instance.rightFlankArchers;
+                        int index = flankList.IndexOf(gameObject);
+                        
+                        archerInfo = $"\nArcher Flank: {(isLeft ? "LEFT" : "RIGHT")}\nPosition in Line: {index}";
+                    }
+                    else
+                    {
+                        archerInfo = "\nArcher Info: GuardManager instance is NULL.";
+                    }
+                    break;
+            }
+
+            Debug.Log($"[{gameObject.name}] DEBUG STATE\n" +
+                      $"Job: {CurrentRole}\n" +
+                      $"Coin: {denizenStatus.CurrentCoins}\n" +
+                      $"Job State: {stateStr}\n" +
+                      $"Time: {timeStr}{archerInfo}");
+        }
+        
+        #endregion
 
         #region IItemHandle Implementation
         

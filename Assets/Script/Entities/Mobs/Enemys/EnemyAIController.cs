@@ -75,6 +75,8 @@ namespace Script.Game.Enemy
         private void OnDisable()
         {
             NPCUpdateManager.Instance?.Unregister(this);
+            // Khi bị tắt (vào pool) hoặc bị hủy, báo cho GuardManager gỡ khỏi danh sách theo dõi
+            OnDespawn?.Invoke(this); 
         }
 
         private void Start()

@@ -20,6 +20,12 @@ namespace Script.Manager
         public static EntitySaveManager Instance { get; private set; } 
         
         public static bool isDebug = false;
+
+        /// <summary>
+        /// True khi đang trong quá trình load dữ liệu từ save.
+        /// Dùng để các script khác phân biệt Destroy do hệ thống save và Destroy thật trong gameplay.
+        /// </summary>
+        public static bool IsLoading { get; private set; } = false;
         
         public List<GameObject> allContainers; 
         
@@ -486,6 +492,7 @@ namespace Script.Manager
         
         public void LoadAllContainer()
         {
+            IsLoading = true;
             try
             {
                 // Refresh danh sách container trước khi load
@@ -531,6 +538,11 @@ namespace Script.Manager
             catch (Exception e)
             {
                 Debug.LogError($"Lỗi khi load tất cả container: {e.Message}\n{e.StackTrace}");
+            }
+            finally
+            {
+                // Đảm bảo IsLoading luôn được reset dù có Exception
+                IsLoading = false;
             }
         }
         

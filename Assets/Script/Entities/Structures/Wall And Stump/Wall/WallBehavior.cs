@@ -95,7 +95,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             // Load cấp 1 (base tier)
             WallTierData baseTierData = wallDataList.GetBaseTier();
             InitializeFromTier(baseTierData, WallState.Wall);//helper khởi tạo data 
-            Debug.Log($"[Wall] Initialized. Tier: {status.tier}, MaxHP: {status.maxHp}, State: {status.state}");
+           // Debug.Log($"[Wall] Initialized. Tier: {status.tier}, MaxHP: {status.maxHp}, State: {status.state}");
         }
         private void Start()
         {
@@ -175,7 +175,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             // Cập nhật coinUser nếu cần
             UpdateCoinUserData();
 
-            Debug.Log($"[WallBehavior] Applied status from input. New tier: {status.tier}, State: {status.state}");
+         //   Debug.Log($"[WallBehavior] Applied status from input. New tier: {status.tier}, State: {status.state}");
 
             // Sau khi load xong data, cập nhật lại trạng thái defendable trên manager
             if (WallAndStumpManager.Instance != null)
@@ -254,7 +254,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         /// Theo logic mới: xóa collider cũ -> setup trigger -> setup blocker (nếu tier > 0)
         private void ChangeColliders(WallTierData tierData, WallState currentState)
         {
-            Debug.Log($"[Wall-Debug] Bắt đầu ChangeColliders cho {gameObject.name}. State: {currentState}, Tier: {tierData.tier}");
+           // Debug.Log($"[Wall-Debug] Bắt đầu ChangeColliders cho {gameObject.name}. State: {currentState}, Tier: {tierData.tier}");
 
             // Bước 1: Lấy data từ tier hiện tại
             WallTierData currentTierData = GetCurrentTier();
@@ -287,7 +287,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 // Tier 0: không có blocker collider
                 blockerCollider2D = null;
-                Debug.Log($"[Wall-Debug] Tier {status.tier} không cần blocker collider");
+             //   Debug.Log($"[Wall-Debug] Tier {status.tier} không cần blocker collider");
             }
 
             // Đảm bảo childBlocker được setup đúng
@@ -297,22 +297,22 @@ namespace Script.Game.Structures.Wall_And_Stump
                 childBlocker.transform.localRotation = Quaternion.identity;
                 childBlocker.transform.localScale = Vector3.one;
             }
-            Debug.Log($"[Wall-Debug] Hoàn tất ChangeColliders cho {gameObject.name}.");
+            //Debug.Log($"[Wall-Debug] Hoàn tất ChangeColliders cho {gameObject.name}.");
         }
 
         /// Xóa tất cả Collider2D trong gameObject chính và tất cả children
         private void RemoveAllColliders()
         {
-            Debug.Log($"[Wall-Debug] Bắt đầu RemoveAllColliders cho {gameObject.name}");
+            //Debug.Log($"[Wall-Debug] Bắt đầu RemoveAllColliders cho {gameObject.name}");
             
             // Xóa collider trong gameObject chính
             Collider2D[] mainColliders = GetComponents<Collider2D>();
-            Debug.Log($"[Wall-Debug] Tìm thấy {mainColliders.Length} colliders trên Main Object ({gameObject.name})");
+            //Debug.Log($"[Wall-Debug] Tìm thấy {mainColliders.Length} colliders trên Main Object ({gameObject.name})");
             foreach (var collider in mainColliders)
             {
                 if (collider != null)
                 {
-                    Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {gameObject.name}");
+                    //Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {gameObject.name}");
                     Destroy(collider); // Sử dụng Destroy thay vì DestroyImmediate để tránh lỗi trong physics callback
                 }
             }
@@ -321,12 +321,12 @@ namespace Script.Game.Structures.Wall_And_Stump
             if (childBlocker != null)
             {
                 Collider2D[] blockerColliders = childBlocker.GetComponents<Collider2D>();
-                Debug.Log($"[Wall-Debug] Tìm thấy {blockerColliders.Length} colliders trên ChildBlocker ({childBlocker.name})");
+               // Debug.Log($"[Wall-Debug] Tìm thấy {blockerColliders.Length} colliders trên ChildBlocker ({childBlocker.name})");
                 foreach (var collider in blockerColliders)
                 {
                     if (collider != null)
                     {
-                        Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {childBlocker.name}");
+                        //Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {childBlocker.name}");
                         Destroy(collider);
                     }
                 }
@@ -345,12 +345,12 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Collider2D[] childColliders = child.GetComponents<Collider2D>();
                 if (childColliders.Length > 0)
                 {
-                    Debug.Log($"[Wall-Debug] Tìm thấy {childColliders.Length} colliders trên Child khác ({child.name})");
+                   // Debug.Log($"[Wall-Debug] Tìm thấy {childColliders.Length} colliders trên Child khác ({child.name})");
                     foreach (var collider in childColliders)
                     {
                         if (collider != null)
                         {
-                            Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {child.name}");
+                            //Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {child.name}");
                             Destroy(collider);
                         }
                     }
@@ -363,7 +363,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             
             // Verify sau khi xóa
             int remainingColliders = GetComponentsInChildren<Collider2D>(true).Length;
-            Debug.Log($"[Wall-Debug] Kết thúc RemoveAllColliders. Tổng số collider còn active (lưu ý: Destroy sẽ thực hiện cuối frame nên số lượng chưa giảm ngay): {remainingColliders}");
+          //  Debug.Log($"[Wall-Debug] Kết thúc RemoveAllColliders. Tổng số collider còn active (lưu ý: Destroy sẽ thực hiện cuối frame nên số lượng chưa giảm ngay): {remainingColliders}");
         }
 
         /// Lấy trigger collider từ prefab
@@ -390,7 +390,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 CopyColliderProperties(sourceCollider, triggerCollider2D);
                 triggerCollider2D.isTrigger = true;
-                Debug.Log($"[Wall-Debug] Đã tạo mới Trigger Collider ({triggerCollider2D.GetType().Name}) trên {gameObject.name}");
+               // Debug.Log($"[Wall-Debug] Đã tạo mới Trigger Collider ({triggerCollider2D.GetType().Name}) trên {gameObject.name}");
             }
             else
             {
@@ -412,7 +412,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 CopyColliderProperties(sourceCollider, blockerCollider2D);
                 blockerCollider2D.isTrigger = false;
-                Debug.Log($"[Wall-Debug] Đã tạo mới Blocker Collider ({blockerCollider2D.GetType().Name}) trên {childBlocker.name}");
+               // Debug.Log($"[Wall-Debug] Đã tạo mới Blocker Collider ({blockerCollider2D.GetType().Name}) trên {childBlocker.name}");
             }
             else
             {
@@ -535,7 +535,7 @@ namespace Script.Game.Structures.Wall_And_Stump
              UpdateCoinUserData();
              
              
-             Debug.Log($"[Wall] Đã chuyển thành stump tại tier {status.tier}");
+           //  Debug.Log($"[Wall] Đã chuyển thành stump tại tier {status.tier}");
              
         }
         
@@ -579,7 +579,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             if (childBlocker != null)
             {
                 childBlocker.SetActive(true);
-                Debug.Log($"[Wall-Debug] RepairStump: Reactivated childBlocker for {gameObject.name}");
+              //  Debug.Log($"[Wall-Debug] RepairStump: Reactivated childBlocker for {gameObject.name}");
             }
             else
             {

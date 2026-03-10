@@ -137,7 +137,7 @@ public class Spawner : MonoBehaviour
                 coinScriptInstance.playerPickupAble = true;
                 coinScriptInstance.denizensPickupAble = false;
                 coinScriptInstance.floating = false;
-                coinScriptInstance.CallFunctionCoolDown("Denizen");
+                coinScriptInstance.CallFunctionCoolDown("Denizens");
                 InitializeCoinThrow(coin, direction);
             }
 
@@ -145,6 +145,62 @@ public class Spawner : MonoBehaviour
         }
     }
 
+
+    #endregion
+
+    #region Item Drop
+
+    /// <summary>
+    /// Drop 1 item prefab ra ngoài với throw animation giống coin.
+    /// </summary>
+    /// <param name="prefab">Prefab cần drop</param>
+    /// <param name="position">Vị trí spawn (thường là transform.position của người drop)</param>
+    /// <param name="playerPickupAble">Player có nhặt được không</param>
+    /// <param name="denizensPickupAble">Denizen khác có nhặt được không</param>
+    public GameObject DropItem(GameObject prefab, Vector2 position, bool playerPickupAble, bool denizensPickupAble = true)
+    {
+        if (prefab == null)
+        {
+            Debug.LogError("[Spawner.DropItem] prefab là NULL! Kiểm tra PrefabData đã gán đúng chưa.");
+            return null;
+        }
+        if (EntitySaveManager.Instance == null)
+        {
+            Debug.LogError("[Spawner.DropItem] EntitySaveManager.Instance là NULL! Không thể drop item.");
+            return null;
+        }
+
+        Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
+        Vector2 spawnPos = new Vector2(position.x, position.y + 1.5f);
+
+        Transform container = EntitySaveManager.Instance.otherContainer != null
+            ? EntitySaveManager.Instance.otherContainer.transform
+            : null;
+
+        GameObject item = Instantiate(prefab, spawnPos, Quaternion.identity, container);
+
+        PhysicalItem itemScript = item.GetComponent<PhysicalItem>();
+        if (itemScript == null)
+        {
+            Debug.LogError($"[Spawner.DropItem] {item.name} không có component PhysicalItem! Throw sẽ không hoạt động.");
+            return item;
+        }
+
+        itemScript.playerPickupAble = playerPickupAble;
+        // Luôn bắt đầu với denizensPickupAble = false để tránh race condition:
+        // Item vừa spawn đã bị LootPickupTrigger của chính người drop kích hoạt ngay lập tức.
+        // CallFunctionCoolDown("Denizens") sẽ bật denizensPickupAble lại sau một khoảng delay.
+        itemScript.denizensPickupAble = false;
+        itemScript.floating = false;
+        itemScript.InitializeThrow(dropDirection, coinThrowForce, coinThrowDistance);
+
+        if (denizensPickupAble)
+        {
+            itemScript.CallFunctionCoolDown("Denizens");
+        }
+
+        return item;
+    }
 
     #endregion
    
