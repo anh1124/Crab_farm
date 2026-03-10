@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using Script.Game.Enemy.Core;
 using Script.Game.Enemy.States;
@@ -13,6 +14,17 @@ namespace Script.Game.Enemy
         protected EnemyState _currentState;
         protected EnemyContext _ctx;
         protected string[] _animatorTriggers;
+
+        // Pre-allocated states
+        private Script.Game.Enemy.States.IdleState _idleState;
+        private Script.Game.Enemy.States.MoveToTargetState _moveState;
+        private Script.Game.Enemy.States.ReturnToPortalState _returnState;
+        private Script.Game.Enemy.States.DeadState _deadState;
+
+        public Script.Game.Enemy.States.IdleState IdleStateInstance => _idleState;
+        public Script.Game.Enemy.States.MoveToTargetState MoveStateInstance => _moveState;
+        public Script.Game.Enemy.States.ReturnToPortalState ReturnStateInstance => _returnState;
+        public Script.Game.Enemy.States.DeadState DeadStateInstance => _deadState;
 
         [Header("Debug Info")]
         [SerializeField] private string currentStateName = "None";
@@ -35,6 +47,7 @@ namespace Script.Game.Enemy
         {
             EnemyStatus status = GetComponent<EnemyStatus>();
             Animator animator = GetComponent<Animator>();
+            RayCastHelper rch = GetComponent<RayCastHelper>();
             
             _ctx = new EnemyContext
             {
@@ -44,8 +57,15 @@ namespace Script.Game.Enemy
                 Status         = status,
                 TargetManager  = EnemyTargetManager.Instance,
                 Pool           = EnemyPool.Instance,
+                RaycastHelper  = rch,
                 IsAlive        = true
             };
+
+            // Pre-allocate instances
+            _idleState   = new Script.Game.Enemy.States.IdleState();
+            _moveState   = GetMoveState() as Script.Game.Enemy.States.MoveToTargetState;
+            _returnState = new Script.Game.Enemy.States.ReturnToPortalState();
+            _deadState   = new Script.Game.Enemy.States.DeadState();
 
             // Cache Trigger names để tránh memory allocation lặp lại trong ChangeState
             if (animator != null && animator.runtimeAnimatorController != null)
@@ -82,12 +102,19 @@ namespace Script.Game.Enemy
         private void Start()
         {
             // Bắt đầu bằng Idle state
-            ChangeState(new IdleState());
+            ChangeState(_idleState);
 
             // Đăng ký Event Scanner nếu Enemy này có mang công cụ quét RayCastHelper (như ShieldBot)
             var rch = GetComponent<RayCastHelper>();
             if (rch != null)
             {
+                // [SYNC TAGS] Đồng bộ danh sách Tag cần phát hiện từ TargetManager
+                if (EnemyTargetManager.Instance != null)
+                {
+                    rch.tagsToDetect = new List<string>(EnemyTargetManager.Instance.advanceTags);
+                    rch.targetLayer = EnemyTargetManager.Instance.detectionLayer;
+                }
+                
                 rch.OnDetectedObjectsChanged += OnObjectsDetected;
             }
         }
@@ -125,10 +152,20 @@ namespace Script.Game.Enemy
             }
         }
 
+        private void FixedUpdate()
+        {
+            _currentState?.PhysicsUpdate(_ctx);
+        }
+
         public virtual void UpdateBehavior()
         {
-            // Flag bảo vệ đơn giản: Không chạy AI khi đã chết
             if (!_ctx.IsAlive) return;
+
+            // [SCAN] Chủ động quét tia để cập nhật danh sách vật cản (do Helper đã gỡ Update loop)
+            _ctx.RaycastHelper?.DrawRay();
+
+            if (_ctx.Status != null && _ctx.Status.debugEnemy) 
+                Debug.Log($"[EnemyAI] {gameObject.name} ticking in state: {(_currentState != null ? _currentState.GetType().Name : "NULL")}");
 
             // Cập nhật giá trị hiển thị Debug
             if (_currentState != null)
@@ -171,7 +208,7 @@ namespace Script.Game.Enemy
 
             _ctx.IsAlive = false;
             OnDespawn?.Invoke(this); // Gọi event báo tử
-            ChangeState(new DeadState());
+            ChangeState(_deadState);
         }
 
         // Gọi từ pool khi lấy enemy ra để tái sử dụng
@@ -187,7 +224,7 @@ namespace Script.Game.Enemy
 
             // Xem trong EnemyStatus component, currentHp sẽ được gán lại thông qua Setup
 
-            ChangeState(new IdleState());
+            ChangeState(_idleState);
         }
 
         // Factory Method để các Enemy đặc thù (như ShieldBot) có thể ghi đè (Override)

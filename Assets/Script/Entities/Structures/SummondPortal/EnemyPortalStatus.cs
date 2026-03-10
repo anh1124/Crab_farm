@@ -2,10 +2,11 @@ using System;
 using UnityEngine;
 using Script.Game.Enemy.Interfaces;
 using Script.Data_Model.Interfaces;
+using Script.Interfaces;
 
 namespace Script.Entities.Structures.SummondPortal
 {
-    public class EnemyPortalStatus : MonoBehaviour, IHealth, ISaveable
+    public class EnemyPortalStatus : MonoBehaviour, ISaveable, IHealth
     {
         [Header("Portal States")]
         public bool isReadyToSpawn = false;
@@ -32,37 +33,34 @@ namespace Script.Entities.Structures.SummondPortal
             set => maxHp = Mathf.Max(1, value); 
         }
 
-        private void Awake()
-        {
-            CurrentHp = MaxHp;
-        }
+        // Events for Behavior to subscribe to
+        public Action<int> OnDamaged;
+        public Action<int> OnHealed;
+        public Action OnDeath;
 
-        #region IHealth Implementation
-
+        // --- IHealth Implementation ---
         public void TakeDamage(int amount)
         {
-            if (CurrentHp <= 0) return;
-
-            CurrentHp -= amount;
-            Debug.Log($"[EnemyPortalStatus] {gameObject.name} took {amount} damage. HP: {CurrentHp}/{MaxHp}");
-
-            if (CurrentHp <= 0)
+            if (currentHp <= 0) return;
+            currentHp -= amount;
+            OnDamaged?.Invoke(amount);
+            if (currentHp <= 0)
             {
+                currentHp = 0;
                 Die();
             }
         }
 
         public void Heal(int amount)
         {
-            CurrentHp += amount;
+            currentHp = Mathf.Min(currentHp + amount, maxHp);
+            OnHealed?.Invoke(amount);
         }
 
         public void Die()
         {
-            Destroy(gameObject);
+            OnDeath?.Invoke();
         }
-
-        #endregion
 
         #region ISaveable Implementation
 

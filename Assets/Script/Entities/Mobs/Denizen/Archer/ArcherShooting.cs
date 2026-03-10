@@ -41,7 +41,6 @@ namespace Script.Game.Mobs.Subjects
         private Vector2 lastTargetPos;
         private float cachedAngle;
         private float cachedSpeed;
-        private bool cachedIsHighArc;
         
         public void ShootAt(Vector2 targetPosition)
         {
@@ -126,8 +125,6 @@ namespace Script.Game.Mobs.Subjects
                 cachedSpeed = TrajectoryPredictor.CalculateLaunchSpeed(
                     firePoint.position, targetPosition, cachedAngle, actualGravity
                 );
-                cachedIsHighArc = false;
-
                 if (showDebugInfo)
                     Debug.Log($"[ArcherShooting] LOW ARC {cachedAngle}° | speed={cachedSpeed:F1}");
                 
@@ -154,7 +151,6 @@ namespace Script.Game.Mobs.Subjects
                 cachedSpeed = TrajectoryPredictor.CalculateLaunchSpeed(
                     firePoint.position, targetPosition, cachedAngle, actualGravity
                 );
-                cachedIsHighArc = true;
 
                 if (showDebugInfo)
                     Debug.Log($"[ArcherShooting] HIGH ARC {cachedAngle}° (low blocked by wall) | speed={cachedSpeed:F1}");
@@ -168,7 +164,6 @@ namespace Script.Game.Mobs.Subjects
                 Debug.LogWarning("[ArcherShooting] No valid angle found! Using fallback 60°.");
             cachedAngle = 60f;
             cachedSpeed = projectileSpeed;
-            cachedIsHighArc = true;
         }
         
         private Vector2 CalculateDirection(float angle, Vector2 targetPos)

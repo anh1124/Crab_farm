@@ -50,28 +50,30 @@ namespace Script.Game.Mobs.Subjects
     
         private void OnEnable()
         {
-            // Disable all detectives first
-            var controller = GetComponent<DenizenRoleController>();
-            if (controller != null)
-            {
-                controller.DisableAllDetectives();
-            }
-
             // Re-initialize when role switches back to Vagrant or upon creation
             InitializeVagrant();
             
-            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
+            // Register event after initialization ensures helper is found
             if (rayCastHelper != null)
             {
                 rayCastHelper.isActive = true;
+                rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected; // Prev double sub
+                rayCastHelper.OnDetectedObjectsChanged += OnObjectsDetected;
             }
         }
 
         private void OnDisable()
         {
-             StopAllCoroutines();
+            StopAllCoroutines();
             status.isWalking = false;
             _isMovingToTarget = false;
+
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected;
+                rayCastHelper.isActive = false;
+            }
+
             if (animator != null)
             {
                 animator.Play("idle"); // Reset animation
@@ -98,10 +100,13 @@ namespace Script.Game.Mobs.Subjects
         public void InitializeVagrant()
         {
             if (status == null) status = GetComponent<DenizenStatus>();
+            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
             
             if (rayCastHelper != null)
             {
                 rayCastHelper.SetRayLength(status.detectRangeRaycast);
+                // [SYNC SCAN SETTINGS] Đảm bảo Detector quét đúng Tag quan tâm
+                rayCastHelper.tagsToDetect = new List<string> { "Enemy", "Coin" };
             }
 
             status.roadToTarget = 0f;
@@ -122,13 +127,15 @@ namespace Script.Game.Mobs.Subjects
         {
             foreach (var obj in detectedObjects)
             {
+                if (obj == null) continue;
+
                 if (obj.CompareTag("Enemy"))
                 {
                     if (status.vagrantState != DenizenStatus.VagrantState.Fear)
                     {
+                        Debug.Log($"[Vagrant:{gameObject.name}] Phát hiện ENEMY: {obj.name}. Bỏ mọi việc để CHẠY!");
                         status.vagrantState = DenizenStatus.VagrantState.Fear;
                     }
-                    // Reset timer mỗi khi quét trúng enemy
                     fearEndTime = Time.time + 30f;
                     break;
                 }
@@ -136,12 +143,14 @@ namespace Script.Game.Mobs.Subjects
                 if (obj.CompareTag("Coin"))
                 {
                     // Sửa logic: Không được chủ động đi lượm nếu đang sợ
-                    if ((status.vagrantState == DenizenStatus.VagrantState.Idle || 
-                         status.vagrantState == DenizenStatus.VagrantState.GetCoin) && 
-                        status.vagrantState != DenizenStatus.VagrantState.Fear)
+                    if (status.vagrantState != DenizenStatus.VagrantState.Fear)
                     {
-                        status.vagrantState = DenizenStatus.VagrantState.GetCoin;
-                        status.coinTarget = obj;
+                        if (status.vagrantState != DenizenStatus.VagrantState.GetCoin || status.coinTarget != obj)
+                        {
+                            Debug.Log($"[Vagrant:{gameObject.name}] Phát hiện COIN: {obj.name}. Chuyển sang tráng thái GetCoin.");
+                            status.vagrantState = DenizenStatus.VagrantState.GetCoin;
+                            status.coinTarget = obj;
+                        }
                     }
                     break;
                 }
@@ -150,6 +159,12 @@ namespace Script.Game.Mobs.Subjects
 
         public void UpdateBehavior()
         {
+            // Chủ động quét vì Helper không còn tự Update
+            if (rayCastHelper != null && rayCastHelper.isActive)
+            {
+                rayCastHelper.DrawRay();
+            }
+
             UpdateStateHandler();
 
             // Debug Visualization
@@ -248,14 +263,26 @@ namespace Script.Game.Mobs.Subjects
         {
             if (status.coinTarget == null || status.coinTarget.Equals(null))
             {
-                status.vagrantState = DenizenStatus.VagrantState.Idle;
-                _isMovingToTarget = false;
+                if (status.vagrantState == DenizenStatus.VagrantState.GetCoin)
+                {
+                    Debug.Log($"[Vagrant:{gameObject.name}] Mất dấu COIN hoặc Coin đã bị nhặt. Quay lại Idle.");
+                    status.vagrantState = DenizenStatus.VagrantState.Idle;
+                    _isMovingToTarget = false;
+                    status.isWalking = false;
+                }
                 return;
             }
 
+            // Cập nhật liên tục vị trí Coin (tránh trường hợp coin đang văng)
             _moveTarget = status.coinTarget.transform.position;
             _moveSpeed = status.RunSpeed;
-            _isMovingToTarget = true;
+            
+            if (!_isMovingToTarget)
+            {
+                Debug.Log($"[Vagrant:{gameObject.name}] Bắt đầu CHẠY tới nhặt Coin tại: {_moveTarget}");
+                _isMovingToTarget = true;
+                status.isWalking = true;
+            }
 
             if (animator != null)
             {

@@ -6,6 +6,7 @@ using Script.Data_Model.Status;
 using Script.Game.Item.Coin;
 using Script.Manager.Building;
 using UnityEngine.Serialization;
+using Script.Interfaces;
 
 namespace Script.Game.Structures.TownCenter
 {
@@ -14,7 +15,7 @@ namespace Script.Game.Structures.TownCenter
     /*
      hiện tại,dùng tạm data trong TownCenterDataList,chưa táoave như bên  wall vì bên wall cần collider
      */
-    public class TownCenterBehavior : MonoBehaviour, IUpgradeable, ISaveable
+    public class TownCenterBehavior : MonoBehaviour, IUpgradeable, ISaveable, IDamageable
     {
         
         public TownCenterStatus status ;
@@ -53,6 +54,7 @@ namespace Script.Game.Structures.TownCenter
 
             Ini();
             BuildingManager.instance.currentTownCenter = gameObject;//tự khai báo đến BuildingManager
+            BuildingManager.instance.UpdateAvailableBuildings(); // Cập nhật giới hạn công trình ngay khi TownCenter xuất hiện
             
             // Tự khai báo luôn cho EnemyTarget
             if (Script.Game.Enemy.EnemyTargetManager.Instance != null)
@@ -281,6 +283,28 @@ namespace Script.Game.Structures.TownCenter
         }
 
         public int GetUpgradeCost() => status.upgradeCost;
+
+        // --- IDamageable Implementation ---
+        public void ReceiveDamage(int damage, GameObject instigator)
+        {
+            if (damage <= 0) return;
+            
+            status.currentHp -= damage;
+            Debug.Log($"[TownCenter] Received {damage} damage from {instigator?.name ?? "unknown"}. HP: {status.currentHp}/{status.maxHp}");
+            
+            if (status.currentHp <= 0)
+            {
+                status.currentHp = 0;
+                OnTownCenterDestroyed();
+            }
+        }
+
+        private void OnTownCenterDestroyed()
+        {
+            Debug.LogError("[TownCenter] GAME OVER - Town Center has been destroyed!");
+            // Thêm logic Game Over hoặc phá hủy tại đây
+            // Destroy(gameObject); // Thường thì Game Over thay vì biến mất hoàn toàn
+        }
   
         public void AddWorkingProcess(int amount)
         {

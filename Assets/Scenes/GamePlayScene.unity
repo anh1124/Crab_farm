@@ -615,6 +615,54 @@ PrefabInstance:
       propertyPath: isDebugHuntingRange
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayerMask.m_Bits
+      value: 119169
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[1]
+      value: Wall
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[2]
+      value: TownCenter
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: placementLayers.Array.data[3]
+      value: Stump
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.size
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[0]
+      value: Structure
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[1]
+      value: Wall
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[2]
+      value: TriggerLayer
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[3]
+      value: Stump
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[4]
+      value: TownCenter
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[5]
+      value: EnemyPortal
+      objectReference: {fileID: 0}
+    - target: {fileID: 4135602050412416964, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: invalidPlacementTags.Array.data[6]
+      value: Tree
+      objectReference: {fileID: 0}
     - target: {fileID: 4391942637148100560, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -639,6 +687,22 @@ PrefabInstance:
       propertyPath: villagerAnimatorController
       value: 
       objectReference: {fileID: 9100000, guid: c6ad815e1a9aa014b839538879eda4db, type: 2}
+    - target: {fileID: 6442943352986191126, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: advanceTags.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6442943352986191126, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: advanceTags.Array.data[2]
+      value: Archer
+      objectReference: {fileID: 0}
+    - target: {fileID: 6442943352986191126, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: advanceTags.Array.data[3]
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 6442943352986191126, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: advanceTags.Array.data[4]
+      value: Denizen
+      objectReference: {fileID: 0}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: bow
       value: 
@@ -765,7 +829,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 0}
-    - {fileID: 8165894474658827718, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+    - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

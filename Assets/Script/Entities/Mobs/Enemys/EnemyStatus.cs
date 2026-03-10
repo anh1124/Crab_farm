@@ -29,6 +29,7 @@ namespace Script.Game.Enemy
         [field: SerializeField] public float AttackRange { get; private set; } = 0.8f; // Mặc định cận chiến
         [field: SerializeField] public float AttackCooldown { get; private set; }
         [field: SerializeField] public int AttackDamage { get; private set; }
+        public bool debugEnemy; // Biến kiểm soát debug cho Enemy
 
         public event System.Action<GameObject> OnDieEvent;
 

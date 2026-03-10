@@ -40,9 +40,6 @@ namespace Script.Game.Mobs.Subjects
 
         [HideInInspector] [SerializeField] private NPCRole previousRole = NPCRole.Vagrant;
 
-        // Detection Helpers
-        private RayCastHelper rayCastHelper;
-        private CircleDetectHelper circleDetectHelper;
 
 #if UNITY_EDITOR
         /// <summary>
@@ -137,8 +134,6 @@ namespace Script.Game.Mobs.Subjects
             villagerBehavior = GetComponent<VillagerBehavior>() ?? gameObject.AddComponent<VillagerBehavior>();
             archerBehavior = GetComponent<ArcherBehavior>() ?? gameObject.AddComponent<ArcherBehavior>();
 
-            rayCastHelper = GetComponent<RayCastHelper>();
-            circleDetectHelper = GetComponent<CircleDetectHelper>();
 
             // Setup Storage handled by DenizenStatus now
 
@@ -155,14 +150,6 @@ namespace Script.Game.Mobs.Subjects
             {
                 denizenStatus.OnCoinChanged += OnCoinChangedHandler;
             }
-            if (rayCastHelper != null)
-            {
-                rayCastHelper.OnDetectedObjectsChanged += HandleDetectedObjectsChanged;
-            }
-            if (circleDetectHelper != null)
-            {
-                circleDetectHelper.OnDetectedObjectsChanged += HandleDetectedObjectsChanged;
-            }
         }
 
         private void OnDisable()
@@ -171,23 +158,8 @@ namespace Script.Game.Mobs.Subjects
             {
                 denizenStatus.OnCoinChanged -= OnCoinChangedHandler;
             }
-            if (rayCastHelper != null)
-            {
-                rayCastHelper.OnDetectedObjectsChanged -= HandleDetectedObjectsChanged;
-            }
-            if (circleDetectHelper != null)
-            {
-                circleDetectHelper.OnDetectedObjectsChanged -= HandleDetectedObjectsChanged;
-            }
         }
 
-        private void HandleDetectedObjectsChanged(System.Collections.Generic.List<GameObject> detectedObjects)
-        {
-            if (currentActiveBehavior != null)
-            {
-                currentActiveBehavior.OnObjectsDetected(detectedObjects);
-            }
-        }
 
         private void OnCoinChangedHandler(int newCoins)
         {
@@ -280,9 +252,6 @@ namespace Script.Game.Mobs.Subjects
             RuntimeAnimatorController targetController = null;
             DisableAllBehaviors();
 
-            // Tắt cả 2 detector trước, sau đó bật cái cần thiết dựa theo Role
-            DisableAllDetectives();
-
             switch (role)
             {
                 case NPCRole.Vagrant:
@@ -296,8 +265,6 @@ namespace Script.Game.Mobs.Subjects
                     currentActiveBehavior = vagrantBehavior;
                     NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.vagrantAnimatorController;
-                    
-                    if (rayCastHelper != null) rayCastHelper.isActive = true;
                     break;
 
                 case NPCRole.Villager:
@@ -311,8 +278,6 @@ namespace Script.Game.Mobs.Subjects
                     currentActiveBehavior = villagerBehavior;
                     NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.villagerAnimatorController;
-                    
-                    if (rayCastHelper != null) rayCastHelper.isActive = true;
                     break;
 
                 case NPCRole.Archer:
@@ -326,9 +291,6 @@ namespace Script.Game.Mobs.Subjects
                     currentActiveBehavior = archerBehavior;
                     NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.archerAnimatorController;
-                    
-                    // Bật Circle detector cho Archer
-                    if (circleDetectHelper != null) circleDetectHelper.isActive = true;
                     
                     // Register to GuardManager centrally
                     GuardManager.Instance?.RegisterArcher(gameObject);
@@ -427,20 +389,6 @@ namespace Script.Game.Mobs.Subjects
             {
                 // Refresh components even if role is same (e.g. initial load)
                 ApplyRole(savedRole);
-            }
-        }
-        public void DisableAllDetectives()
-        {
-            // Disable CircleDetectHelper
-            if (circleDetectHelper != null)
-            {
-                circleDetectHelper.isActive = false;
-            }
-
-            // Disable RayCastHelper
-            if (rayCastHelper != null)
-            {
-                rayCastHelper.isActive = false;
             }
         }
 

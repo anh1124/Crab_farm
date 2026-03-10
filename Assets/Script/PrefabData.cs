@@ -44,6 +44,7 @@ namespace Script.Data_Model
 
         [Space(15)] [Header("Arrow ")] [Space(5)]
         public GameObject arrow;
+        public bool debugArrow = false; // Biến kiểm soát debug cho mũi tên
         
         [Space(15)] 
         [Header("Coin ")]

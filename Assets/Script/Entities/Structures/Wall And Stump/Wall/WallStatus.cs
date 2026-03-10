@@ -1,23 +1,55 @@
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
+using Script.Game.Enemy.Interfaces;
 
 namespace Script.Data_Model.Status
 {
     // Chỉ chứa data và state của Wall, không có logic behavior
     
-    public class WallStatus : MonoBehaviour
+    public class WallStatus : MonoBehaviour, IHealth
     {
         [Header("Basic Info")]
         public int tier;
         public WallState state;
         
         [Header("Health System")]
-        public int maxHp;//máu tối đa hiện tại
-        public int currentHp;//máu hiện tại
+        public int maxHp;
+        public int currentHp;
         //2 biến dưới dùng để làm cột mộc khi reset maxhp
         public int normalMaxHp;//máu tối đa chưa ban phước
         public int blessedMaxHp;//máu tối đa đã ban phước
+
+        // Events để Behavior lắng nghe
+        public Action<int> OnDamaged;
+        public Action<int> OnHealed;
+        public Action OnDeath;
+
+        // --- IHealth Implementation ---
+        public int CurrentHp { get => currentHp; set => currentHp = Mathf.Clamp(value, 0, MaxHp); }
+        public int MaxHp { get => maxHp; set => maxHp = value; }
+
+        public void TakeDamage(int amount)
+        {
+            if (currentHp <= 0) return;
+            currentHp -= amount;
+            OnDamaged?.Invoke(amount);
+            if (currentHp <= 0)
+            {
+                currentHp = 0;
+                Die();
+            }
+        }
+
+        public void Heal(int amount)
+        {
+            currentHp = Mathf.Min(currentHp + amount, maxHp);
+            OnHealed?.Invoke(amount);
+        }
+
+        public void Die()
+        {
+            OnDeath?.Invoke();
+        }
         
         [Header("OnUpgradeComplete System")]
         public int upgradeCost;//số tiền cần cho level tiếp theo
@@ -38,4 +70,4 @@ namespace Script.Data_Model.Status
         Stump
     }
 
-} 
+}

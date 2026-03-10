@@ -13,6 +13,10 @@ namespace Script.Data_Model.Status
         public int buildProgress;
         public int buildProgressMax;
 
+        [Header("Health")]
+        public int maxHp = 500;
+        public int currentHp = 500;
+
     }
 }
 

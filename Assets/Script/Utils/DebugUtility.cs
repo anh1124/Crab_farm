@@ -75,6 +75,51 @@ namespace Script.Utils
                 prevPoint = nextPoint;
             }
         }
+        /// <summary>
+        /// Log kết quả quét vật lý (Raycast/Circle/Box) ra console để debug.
+        /// </summary>
+        public static void LogPhysicsResults(string ownerName, string scanType, Vector2 origin, int hitCount, RaycastHit2D[] results, System.Collections.Generic.List<string> tagsToDetect)
+        {
+            if (!IsDebugEnabled) return;
+
+            string color = scanType.Contains("Circle") ? "magenta" : "cyan";
+            Debug.Log($"<color={color}>--- [{scanType} Detect: {ownerName}] ---</color>");
+            Debug.Log($"Origin: {origin} | Actual Hits: {hitCount}");
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (results[i].collider != null)
+                {
+                    LogSingleHit(i, results[i].collider.gameObject, tagsToDetect);
+                }
+            }
+            Debug.Log($"<color={color}>----------------------------------------------------</color>");
+        }
+
+        public static void LogPhysicsResults(string ownerName, string scanType, Vector2 origin, int hitCount, Collider2D[] results, System.Collections.Generic.List<string> tagsToDetect)
+        {
+            if (!IsDebugEnabled) return;
+
+            string color = scanType.Contains("Circle") ? "magenta" : "cyan";
+            Debug.Log($"<color={color}>--- [{scanType} Detect: {ownerName}] ---</color>");
+            Debug.Log($"Origin: {origin} | Actual Hits: {hitCount}");
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (results[i] != null)
+                {
+                    LogSingleHit(i, results[i].gameObject, tagsToDetect);
+                }
+            }
+            Debug.Log($"<color={color}>----------------------------------------------------</color>");
+        }
+
+        private static void LogSingleHit(int index, GameObject obj, System.Collections.Generic.List<string> tagsToDetect)
+        {
+            bool isTarget = tagsToDetect != null && (tagsToDetect.Contains(obj.tag) || (obj.transform.parent != null && tagsToDetect.Contains(obj.transform.parent.tag)));
+            string highlight = isTarget ? "<b><color=lime>[MATCH]</color></b>" : "<color=white>[IGNORE]</color>";
+            Debug.Log($"{highlight} [{index}] Name: {obj.name} | Tag: {obj.tag} | Layer: {LayerMask.LayerToName(obj.layer)}");
+        }
     }
 }
 

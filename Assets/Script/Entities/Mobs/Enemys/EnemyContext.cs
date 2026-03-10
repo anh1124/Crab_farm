@@ -21,6 +21,8 @@ namespace Script.Game.Enemy
         
         public float GreedThreshold;
         public float CurrentGreed;
+        
+        public RayCastHelper RaycastHelper; // Cache helper để tránh GetComponent mỗi frame
 
         public bool IsAlive = true;
         public bool PendingRecycle = false;

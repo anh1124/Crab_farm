@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Script.Game.Enemy
@@ -8,6 +9,18 @@ namespace Script.Game.Enemy
 
         [Header("Debug Info")]
         [SerializeField] private GameObject _primaryTarget;
+
+        [Header("Tag Whitelist - Tiến công (MoveToTarget)")]
+        [Tooltip("Enemy chỉ tấn công/chặn target có tag này khi đang ở State tiến công (MoveToTarget/ShieldBotAttack)")]
+        public List<string> advanceTags = new List<string> { "Wall", "TownCenter","Archer","Player","Denizen" };
+
+        [Header("Tag Whitelist - Rút lui (ReturnToPortal)")]
+        [Tooltip("Enemy chỉ tấn công/chặn target có tag này khi đang rút về Portal")]
+        public List<string> retreatTags = new List<string> { "Wall" };
+
+        [Header("Layer Settings")]
+        [Tooltip("Layer mà Enemy sẽ quét tia phát hiện vật thể")]
+        public LayerMask detectionLayer = ~0;
 
         public bool HasTarget => _primaryTarget != null;
 
@@ -35,6 +48,28 @@ namespace Script.Game.Enemy
                 return _primaryTarget;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Kiểm tra xem một GameObject có tag hợp lệ để tấn công khi đang tiến công không
+        /// </summary>
+        public bool IsValidAdvanceTarget(GameObject target)
+        {
+            if (target == null) return false;
+            if (advanceTags == null || advanceTags.Count == 0) return true; // Không filter nếu list trống
+            return advanceTags.Contains(target.tag) ||
+                   (target.transform.parent != null && advanceTags.Contains(target.transform.parent.tag));
+        }
+
+        /// <summary>
+        /// Kiểm tra xem một GameObject có tag hợp lệ để tấn công khi đang rút lui không
+        /// </summary>
+        public bool IsValidRetreatTarget(GameObject target)
+        {
+            if (target == null) return false;
+            if (retreatTags == null || retreatTags.Count == 0) return true;
+            return retreatTags.Contains(target.tag) ||
+                   (target.transform.parent != null && retreatTags.Contains(target.transform.parent.tag));
         }
     }
 }

@@ -13,12 +13,13 @@ using Script.Game.Item.Coin;
 using Script.Game.Mobs.MobsManager;
 using Script.Manager;
 using Script.Manager.WorldManager;
+using Script.Manager.GamePlayManager;
 using Script.Utils; // For Utility helper
 
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
-    public class VillagerBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle
+    public class VillagerBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle, IDamageable
     {
         #region Variables and Properties
         private DenizenStatus status;
@@ -68,10 +69,25 @@ namespace Script.Game.Mobs.Subjects
         {
             if (HasCoinShield)
             {
-                OnCoinDamage(true);
+                OnCoinDamage(true); // Drop coin
                 return true;
             }
             return false;
+        }
+
+        // --- IDamageable Interface Implementation ---
+        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        {
+            if (damage <= 0) return;
+
+            // Dân làng dùng Coin đở đòn trước
+            if (HasCoinShield)
+            {
+                if (ConsumeCoinShield()) return;
+            }
+
+            // Hết xu thì để DenizenRoleController.OnCoinChangedHandler xử lý (đổi về Vagrant)
+            status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - damage);
         }
 
         [ContextMenu("Debug / Simulate Damage")]
@@ -104,19 +120,16 @@ namespace Script.Game.Mobs.Subjects
     
         private void OnEnable()
         {
-            // Disable all detectives first
-            var controller = GetComponent<DenizenRoleController>();
-            if (controller != null)
-            {
-                controller.DisableAllDetectives();
-            }
-
             InitializeVillager();
+            
+            if (NPCUpdateManager.Instance != null)
+                NPCUpdateManager.Instance.Register(this);
 
-            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
             if (rayCastHelper != null)
             {
                 rayCastHelper.isActive = true;
+                rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected; // Prev double sub
+                rayCastHelper.OnDetectedObjectsChanged += OnObjectsDetected;
             }
 
             // Subscribe to time events
@@ -134,6 +147,15 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnDisable()
         {
+            if (NPCUpdateManager.Instance != null)
+                NPCUpdateManager.Instance.Unregister(this);
+            
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected;
+                rayCastHelper.isActive = false;
+            }
+
             // Unsubscribe from time events
             if (GameTimeManager.Instance != null)
             {
@@ -160,7 +182,7 @@ namespace Script.Game.Mobs.Subjects
 
         public void OnObjectsDetected(List<GameObject> detectedObjects)
         {
-            // Check for enemies
+            // Check for enemies (Priority 1)
             foreach (var hitObject in detectedObjects)
             {
                 if (hitObject != null && hitObject.CompareTag("Enemy"))
@@ -168,13 +190,33 @@ namespace Script.Game.Mobs.Subjects
                     isInDanger = true;
                     fearTimer = FEAR_DURATION;
                     status.villagerState = DenizenStatus.VillagerState.Fear;
-                    break; // Found danger, prioritize it
+                    return; // Found danger, prioritize it over anything else
+                }
+            }
+
+            // Check for Player (Priority 2 - Drop Coin if rich)
+            foreach (var hitObject in detectedObjects)
+            {
+                if (hitObject != null && hitObject.CompareTag("Player"))
+                {
+                    // Nếu gặp player và có trên 1 coin, đứng lại xin tiền
+                    if (!isInDanger && status.CurrentCoins > 1 && status.villagerState == DenizenStatus.VillagerState.Idle)
+                    {
+                        status.villagerState = DenizenStatus.VillagerState.DropCoinToPlayer;
+                    }
+                    return;
                 }
             }
         }
 
         public void UpdateBehavior()
         {
+            // [SCAN] Chủ động quét
+            if (rayCastHelper != null && rayCastHelper.isActive)
+            {
+                rayCastHelper.DrawRay();
+            }
+
             // Kiểm tra tool định kỳ khi đang Idle (mỗi 2 giây)
             if (currentTool == null &&
                 status.villagerState == DenizenStatus.VillagerState.Idle &&
@@ -241,6 +283,15 @@ namespace Script.Game.Mobs.Subjects
         private void InitializeVillager()
         {
             if (status == null) status = GetComponent<DenizenStatus>();
+            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
+            
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.SetRayLength(status.detectRangeRaycast);
+                // [SYNC SCAN SETTINGS]
+                rayCastHelper.tagsToDetect = new List<string> { "Enemy", "Player" };
+            }
+
             animator = GetComponent<Animator>();
 
             // Kiểm tra thời gian ngay khi khởi tạo

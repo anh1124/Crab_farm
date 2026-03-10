@@ -18,8 +18,8 @@ namespace Script.Manager.Building
 
         [Header("Placement Settings")]
         
-        //những layer sẽ được scanf,giảm số lượng layer sẽ giúp tăng performance
-        [SerializeField] private List<string> placementLayers = new List<string> { "Structure" };
+        // Layer sẽ được quét để kiểm tra vị trí đặt công trình
+        [SerializeField] private LayerMask placementLayerMask;
         
         //những tag sẽ quét, không cho đè lên nhau
         [SerializeField] private List<string> invalidPlacementTags 
@@ -33,7 +33,6 @@ namespace Script.Manager.Building
         [SerializeField] private bool showDebugLog = false;
         private GameObject townCenter;
         
-        private LayerMask placementLayerMask;
         private GameObject structureToPlace;
         private GameObject previewInstance;
         private LineRenderer leftDistanceLine;
@@ -42,6 +41,9 @@ namespace Script.Manager.Building
         private bool isPlacing = false;
         private Collider2D previewCollider;
 
+        [Header("Runtime Debug Info")]
+        [SerializeField] private List<string> detectedObjects = new List<string>();
+
         private void Awake()
         {
             if (Instance == null)
@@ -49,8 +51,6 @@ namespace Script.Manager.Building
             else
                 Destroy(gameObject);
 
-            // Tạo LayerMask từ danh sách placementLayers để dùng cho Physics2D
-            placementLayerMask = LayerMask.GetMask(placementLayers.ToArray());
             InitializeVisualComponents();
         }
 
@@ -226,10 +226,13 @@ namespace Script.Manager.Building
 
             UpdateVisualFeedback(previewPos, overallValid);
 
+            // Sync detected objects names to list for Inspector visibility
+            SyncDetectedObjectsList(previewPos);
+
             if (minimumDistance is > 0)
             {
                 Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
-                UpdateDistanceLines(lineOrigin, minimumDistance.Value, leftValid, rightValid);
+                UpdateDistanceLines(lineOrigin, minimumDistance.Value, leftValid, rightValid, overallValid);
             }
             else
             {
@@ -242,10 +245,6 @@ namespace Script.Manager.Building
         private void UpdateVisualFeedback(Vector2 previewPos, bool overallValid)
         {
             Color feedbackColor = overallValid ? validPlacementColor : invalidPlacementColor;
-            if (showDebugLog)
-            {
-                Debug.Log($"[UpdateVisualFeedback] PreviewPos: {previewPos}, OverallValid: {overallValid}, Color: {feedbackColor}");
-            }
             
             var renderers = previewInstance.GetComponentsInChildren<SpriteRenderer>();
             foreach (var renderer in renderers)
@@ -256,17 +255,129 @@ namespace Script.Manager.Building
             }
         }
 
-        private void UpdateDistanceLines(Vector2 lineOrigin, float distance, bool leftValid, bool rightValid)
+        private void SyncDetectedObjectsList(Vector2 previewPos)
         {
+            detectedObjects.Clear();
+
+            // 1. Check Overlaps
+            if (previewCollider != null)
+            {
+                var overlaps = new List<Collider2D>();
+                ContactFilter2D filter = new ContactFilter2D() { useTriggers = true, useLayerMask = true, layerMask = placementLayerMask };
+                Physics2D.OverlapCollider(previewCollider, filter, overlaps);
+                foreach (var col in overlaps)
+                {
+                    if (col.gameObject != previewInstance && !col.transform.IsChildOf(previewInstance.transform))
+                        detectedObjects.Add($"[Overlap] {col.gameObject.name} (Tag: {col.gameObject.tag}, Layer: {LayerMask.LayerToName(col.gameObject.layer)})");
+                }
+            }
+
+            // 2. Check Sides if applicable
+            if (minimumDistance is > 0)
+            {
+                Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
+                AddSideHitsToList(lineOrigin, Vector2.left, minimumDistance.Value, "LeftRay");
+                AddSideHitsToList(lineOrigin, Vector2.right, minimumDistance.Value, "RightRay");
+            }
+        }
+
+        private void AddSideHitsToList(Vector2 origin, Vector2 direction, float distance, string prefix)
+        {
+            RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, distance, placementLayerMask);
+            foreach (var hit in hits)
+            {
+                if (hit.collider != null && hit.collider.gameObject != previewInstance && !hit.collider.transform.IsChildOf(previewInstance.transform))
+                {
+                    detectedObjects.Add($"[{prefix}] {hit.collider.gameObject.name} (Tag: {hit.collider.gameObject.tag}, Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)})");
+                }
+            }
+        }
+
+        [ContextMenu("Debug Log Placement Hits (ULTRASCAN)")]
+        public void DebugLogPlacementHits()
+        {
+            if (!isPlacing || previewInstance == null)
+            {
+                Debug.LogWarning("[BuildingPlacementManager] Không ở trạng thái đặt công trình, không có dữ liệu để Debug.");
+                return;
+            }
+
+            Vector2 previewPos = previewInstance.transform.position;
+            Vector2 lineOrigin = previewPos + new Vector2(0, raycastYOffset);
+
+            Debug.Log("<color=magenta>=== BUILDING PLACEMENT ULTRASCAN (ALL LAYERS) ===</color>");
+            Debug.Log($"Current Object: {previewInstance.name} | Active Placement LayerMask: {placementLayerMask.value}");
+
+            // Log Overlaps - Dùng ~0 để quét sạch mọi Layer
+            Debug.Log("<color=yellow>--- Overlap Hits (Universal) ---</color>");
+            if (previewCollider != null)
+            {
+                var overlaps = new List<Collider2D>();
+                // Bỏ qua filter layer để tìm mọi thứ
+                ContactFilter2D filter = new ContactFilter2D() { useTriggers = true, useLayerMask = false };
+                Physics2D.OverlapCollider(previewCollider, filter, overlaps);
+                foreach (var col in overlaps)
+                {
+                    if (col.gameObject != previewInstance && !col.transform.IsChildOf(previewInstance.transform))
+                    {
+                        bool isInvalidTag = invalidPlacementTags.Contains(col.gameObject.tag) || 
+                                         (col.transform.parent != null && invalidPlacementTags.Contains(col.transform.parent.gameObject.tag)) ||
+                                         invalidPlacementTags.Contains(col.transform.root.gameObject.tag);
+                        
+                        bool isInSelectionLayer = (placementLayerMask.value & (1 << col.gameObject.layer)) != 0;
+                        
+                        string status = (isInvalidTag && isInSelectionLayer) ? "<color=red>[BLOCKING]</color>" : "<color=gray>[Detected]</color>";
+                        Debug.Log($"{status} {col.gameObject.name} | Tag: {col.gameObject.tag} | Layer: {LayerMask.LayerToName(col.gameObject.layer)}");
+                    }
+                }
+            }
+
+            // Log Side Rays - Dùng ~0
+            if (minimumDistance is > 0)
+            {
+                Debug.Log("<color=yellow>--- Left Ray Hits (Universal) ---</color>");
+                PerformDetailedDebugRaycast(lineOrigin, Vector2.left, minimumDistance.Value);
+                Debug.Log("<color=yellow>--- Right Ray Hits (Universal) ---</color>");
+                PerformDetailedDebugRaycast(lineOrigin, Vector2.right, minimumDistance.Value);
+            }
+            Debug.Log("<color=magenta>==============================================</color>");
+        }
+
+        private void PerformDetailedDebugRaycast(Vector2 start, Vector2 direction, float distance)
+        {
+            // Quét Layer ~0 (mọi thứ)
+            RaycastHit2D[] hits = Physics2D.RaycastAll(start, direction, distance, ~0);
+            foreach (RaycastHit2D hit in hits)
+            {
+                if (hit.collider != null && hit.collider.gameObject != previewInstance && !hit.collider.transform.IsChildOf(previewInstance.transform))
+                {
+                    bool isInvalidTag = invalidPlacementTags.Contains(hit.collider.gameObject.tag) || 
+                                     (hit.collider.transform.parent != null && invalidPlacementTags.Contains(hit.collider.transform.parent.gameObject.tag)) ||
+                                     invalidPlacementTags.Contains(hit.collider.transform.root.gameObject.tag);
+
+                    bool isInSelectionLayer = (placementLayerMask.value & (1 << hit.collider.gameObject.layer)) != 0;
+
+                    string status = (isInvalidTag && isInSelectionLayer) ? "<color=red>[BLOCKING]</color>" : "<color=gray>[Detected]</color>";
+                    Debug.Log($"{status} {hit.collider.gameObject.name} | Tag: {hit.collider.gameObject.tag} | Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+                }
+            }
+        }
+
+        private void UpdateDistanceLines(Vector2 lineOrigin, float distance, bool leftValid, bool rightValid, bool overallValid)
+        {
+            // Nếu bản thân vị trí đặt bị sai (overlap), có thể ta muốn hiện cả 2 là đỏ hoặc giữ nguyên logic side
             Color leftColor = leftValid ? validPlacementColor : invalidPlacementColor;
             Color rightColor = rightValid ? validPlacementColor : invalidPlacementColor;
-            leftColor.a = 1f;
-            rightColor.a = 1f;
+            
+            // Tăng Alpha để dễ nhìn hơn trên LineRenderer
+            leftColor.a = 0.8f;
+            rightColor.a = 0.8f;
            
             leftDistanceLine.gameObject.SetActive(true);
             leftDistanceLine.SetPosition(0, lineOrigin);
             Vector2 leftEndPos = new Vector2(lineOrigin.x - distance, lineOrigin.y);
             leftDistanceLine.SetPosition(1, leftEndPos);
+            // Cập nhật cả start/end và dùng color property của material nếu cần (để chắc chắn)
             leftDistanceLine.startColor = leftDistanceLine.endColor = leftColor;
 
             rightDistanceLine.gameObject.SetActive(true);
@@ -318,22 +429,22 @@ namespace Script.Manager.Building
         
             foreach (Collider2D col in overlaps)
             {
-                if (showDebugLog)
-                {
-                    Debug.Log($"[CheckOverlapValidity] Overlapped with: {col.gameObject.name} (Tag: {col.gameObject.tag})");
-                }
-                
-                // Bỏ qua chính previewInstance
-                if (col.gameObject == previewInstance)
+                // Bỏ qua chính previewInstance và các con của nó
+                if (col.gameObject == previewInstance || col.transform.IsChildOf(previewInstance.transform))
                 {
                     continue;
                 }
-                
-                if (invalidPlacementTags.Contains(col.gameObject.tag))
+
+                // Kiểm tra tag của bản thân object hoặc root (phòng trường hợp va chạm vào Child Collider)
+                bool isInvalid = invalidPlacementTags.Contains(col.gameObject.tag) || 
+                                 (col.transform.parent != null && invalidPlacementTags.Contains(col.transform.parent.gameObject.tag)) ||
+                                 invalidPlacementTags.Contains(col.transform.root.gameObject.tag);
+
+                if (isInvalid)
                 {
-                    if(showDebugLog)
+                    if (showDebugLog)
                     {
-                        Debug.LogWarning($"[CheckOverlapValidity] Invalid overlap detected: {col.gameObject.name} with tag: {col.gameObject.tag}");
+                        Debug.LogWarning($"[CheckOverlapValidity] Invalid overlap detected: {col.gameObject.name} (Root: {col.transform.root.name}) with tag: {col.transform.root.tag}");
                     }
                     return false;
                 }
@@ -366,13 +477,18 @@ namespace Script.Manager.Building
             RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, distance, placementLayerMask);
             foreach (var hit in hits)
             {
-                if (hit.collider != null && hit.collider.gameObject != previewInstance)
+                if (hit.collider != null && hit.collider.gameObject != previewInstance && !hit.collider.transform.IsChildOf(previewInstance.transform))
                 {
-                    if (invalidPlacementTags.Contains(hit.collider.gameObject.tag))
+                    // Tương tự overlap, kiểm tra tag cả ở object và root
+                    bool isInvalid = invalidPlacementTags.Contains(hit.collider.gameObject.tag) || 
+                                     (hit.collider.transform.parent != null && invalidPlacementTags.Contains(hit.collider.transform.parent.gameObject.tag)) ||
+                                     invalidPlacementTags.Contains(hit.collider.transform.root.gameObject.tag);
+
+                    if (isInvalid)
                     {
                         if (showDebugLog)
                         {
-                            Debug.LogWarning($"[CheckSideValidity] Hit invalid object: {hit.collider.gameObject.name} (Tag: {hit.collider.gameObject.tag}) in direction {direction}");
+                            Debug.LogWarning($"[CheckSideValidity] Hit invalid object: {hit.collider.gameObject.name} in direction {direction}");
                         }
                         return false;
                     }

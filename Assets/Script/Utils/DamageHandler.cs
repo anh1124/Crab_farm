@@ -1,71 +1,39 @@
 using UnityEngine;
-using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 
 namespace Script.Utils
 {
-    // Centralized damage resolver supporting optional coin shield
+    /// <summary>
+    /// Trung tâm điều phối sát thương.
+    /// Bên tấn công chỉ cần gọi ApplyDamage() và không cần quan tâm
+    /// đến cơ chế của bên nhận (Coin, Vũ khí, Máu...).
+    /// </summary>
     public static class DamageHandler
     {
-        // Returns true if damage was applied (or absorbed), false if target died
+        /// <summary>
+        /// Áp dụng sát thương lên mục tiêu.
+        /// Yêu cầu mục tiêu phải implement IDamageable.
+        /// </summary>
+        /// <returns>True nếu đã giao sát thương thành công, False nếu mục tiêu không hợp lệ.</returns>
         public static bool ApplyDamage(GameObject target, int damage, GameObject instigator)
         {
-            if (target == null) return true;
+            if (target == null) return false;
 
-            // 0. KIỂM TRA FLAG CHẾT TRƯỚC: Bỏ qua hoàn toàn nếu nó đã là xác chết
+            // Kiểm tra cờ chết trước (tránh đánh vào xác chết)
             var dieInterface = target.GetComponent<IDie>();
-            if (dieInterface != null && dieInterface.IsDead)
+            if (dieInterface != null && dieInterface.IsDead) return false;
+
+            // Chỉ quan tâm một điều: Mục tiêu có thể nhận sát thương không?
+            var damageable = target.GetComponent<IDamageable>();
+            if (damageable != null)
             {
-                return true; 
+                damageable.ReceiveDamage(damage, instigator);
+                return true;
             }
 
-            // 1. Xử lý Tool Shield (Cung, Giáo, Kiếm... dùng làm khiên thay cho coin cuối cùng)
-            var toolShield = target.GetComponent<IToolShield>();
-            if (toolShield != null && toolShield.HasToolShield)
-            {
-                if (toolShield.ConsumeToolShield())
-                {
-                    Debug.Log($"[DamageHandler] Mục tiêu {target.name} đã rơi Vũ Khí để chặn sát thương cuối cùng!");
-                    return true;
-                }
-            }
-
-            // 1.5. Xử lý khiên thường (Coin Shield)
-            var coinShield = target.GetComponent<ICoinShield>();
-            
-            if (coinShield != null)
-            {
-                Debug.Log($"[DamageHandler] Xử lý mục tiêu {target.name} (Có ICoinShield. HasShield = {coinShield.HasCoinShield})");
-            }
-            
-            if (coinShield != null && coinShield.HasCoinShield)
-            {
-                if (coinShield.ConsumeCoinShield()) // Nếu có coinshield thì nó sẽ văng coin và chặn sát thương
-                {
-                    Debug.Log($"[DamageHandler] Mục tiêu {target.name} đã dùng Khiên Xu để đỡ đòn!");
-                    return true; // đã hấp thụ sát thương
-                }
-            }
-            
-            // 2. Xử lý sát thương máu thường
-            var health = target.GetComponent<IHealth>();
-            if (health != null)
-            {
-                if (damage > 0)
-                {
-                    health.TakeDamage(damage);
-                }
-                return health.CurrentHp > 0;
-            }
-
-            // Nếu không có Health nhưng có CoinShield (như Denizen mất khiên), coi như quá trình đánh hoàn tất
-            if (coinShield != null) return true;
-
-            // Báo lỗi nếu đánh trúng 1 cục đá vô tri vô giác không thuộc thể loại nào
-            Debug.LogWarning($"[DamageHandler] Target {target.name} has no IHealth or ICoinShield interface.");
-            return true;
+            // Fallback: Cảnh báo nếu tấn công đối tượng không thể nhận sát thương
+            Debug.LogWarning($"[DamageHandler] {target.name} không có IDamageable. Không thể gây sát thương.");
+            return false;
         }
     }
 }
-
-

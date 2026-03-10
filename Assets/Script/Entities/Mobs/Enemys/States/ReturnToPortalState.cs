@@ -10,12 +10,27 @@ namespace Script.Game.Enemy.States
         protected bool _isMoving = false;
         protected bool _isAttacking = false;
 
+        // Cache để giảm Physics Query
+        protected Vector2 _lastScanPosition;
+        protected GameObject _cachedObstacle;
+        protected const float RESCAN_DISTANCE = 0.2f;
+        protected float _lastScanTime;
+        protected const float MAX_SCAN_STALE_TIME = 0.3f;
+
         public override void Enter(EnemyContext ctx)
         {
             if (ctx.Animator != null)
                 ctx.Animator.SetTrigger("Walk");
 
             _attackTimer = ctx.Status.AttackCooldown;
+
+            // QUAN TRỌNG: Reset cache khi Enter để tránh dùng dữ liệu cũ
+            _cachedObstacle = null;
+            _lastScanPosition = Vector2.zero;
+            _lastScanTime = -999f;
+            _isMoving = false;
+            _isAttacking = false;
+            _isWaitingForCooldown = false;
         }
 
         public override void Update(EnemyContext ctx)
@@ -24,7 +39,7 @@ namespace Script.Game.Enemy.States
             if (ctx.HomePortal == null || !ctx.HomePortal.activeSelf)
             {
                 _isMoving = false;
-                ctx.Controller.ChangeState(new IdleState());
+                ctx.Controller.ChangeState(ctx.Controller.IdleStateInstance);
                 return;
             }
 
@@ -105,40 +120,38 @@ namespace Script.Game.Enemy.States
 
         private GameObject ScanForWallObstacle(EnemyContext ctx)
         {
-            // Quét tia ray hướng về phía cổng
-            Vector2 direction = (ctx.HomePortal.transform.position.x > ctx.Self.transform.position.x) ? Vector2.right : Vector2.left;
-
-            RaycastHit2D phit = Physics2D.Raycast(
-                ctx.Self.transform.position, 
-                direction, 
-                ctx.Status.AttackRange
-            );
-
-            if (phit.collider != null)
+            bool hasMoved = Vector2.Distance(ctx.Self.transform.position, _lastScanPosition) >= RESCAN_DISTANCE;
+            bool isCacheStale = (Time.time - _lastScanTime) >= MAX_SCAN_STALE_TIME;
+            if (!hasMoved && !isCacheStale)
             {
-                // Chỉ tấn công nếu vật cản là Wall
-                if (phit.collider.CompareTag("Wall"))
-                {
-                    return phit.collider.gameObject;
-                }
+                return _cachedObstacle;
             }
+            _lastScanPosition = ctx.Self.transform.position;
+            _lastScanTime = Time.time;
 
-            return null;
+            Vector2 direction = (ctx.HomePortal.transform.position.x > ctx.Self.transform.position.x) ? Vector2.right : Vector2.left;
+            RaycastHit2D phit = Physics2D.Raycast(ctx.Self.transform.position, direction, ctx.Status.AttackRange, 1 << LayerMask.NameToLayer("Wall"));
+
+            if (phit.collider != null && phit.collider.CompareTag("Wall"))
+            {
+                // Kiểm tra tag hợp lệ theo retreatTags
+                bool isValid = ctx.TargetManager != null
+                    ? ctx.TargetManager.IsValidRetreatTarget(phit.collider.gameObject)
+                    : true;
+                _cachedObstacle = isValid ? phit.collider.gameObject : null;
+            }
+            else
+            {
+                _cachedObstacle = null;
+            }
+            return _cachedObstacle;
         }
 
         private void PerformAttack(EnemyContext ctx, GameObject obstacle)
         {
-            Script.Interfaces.ICoinShield coinShield = obstacle.GetComponent<Script.Interfaces.ICoinShield>();
-            if (coinShield != null && coinShield.HasCoinShield)
-            {
-                if (coinShield.ConsumeCoinShield()) return; 
-            }
-
-            Script.Game.Enemy.Interfaces.IHealth health = obstacle.GetComponent<Script.Game.Enemy.Interfaces.IHealth>();
-            if (health != null)
-            {
-                health.TakeDamage(ctx.Status.AttackDamage);
-            }
+            if (obstacle == null) return;
+            // Sử dụng DamageHandler trung tâm để giải quyết sát thương đồng nhất
+            Script.Utils.DamageHandler.ApplyDamage(obstacle, ctx.Status.AttackDamage, ctx.Self);
         }
     }
 }

@@ -105,6 +105,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tickInterval: 0.2
+  showDebugLog: 0
 --- !u!1 &781692592766937310
 GameObject:
   m_ObjectHideFlags: 0
@@ -116,6 +117,7 @@ GameObject:
   - component: {fileID: 8193409864386471885}
   - component: {fileID: 8651940488345645102}
   - component: {fileID: 3080183978356143538}
+  - component: {fileID: 3102458789741671300}
   m_Layer: 0
   m_Name: ListManager
   m_TagString: Untagged
@@ -176,6 +178,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   availableTools: []
+--- !u!114 &3102458789741671300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 781692592766937310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 013b498618cd5c44d8501f7304bafd1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  townCenter: {fileID: 0}
+  leftWalls: []
+  rightWalls: []
+  stumps: []
+  criticalHPThreshold: 10
+  defendableLeftWalls: []
+  defendableRightWalls: []
 --- !u!1 &1595070778010574993
 GameObject:
   m_ObjectHideFlags: 0
@@ -337,6 +358,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _primaryTarget: {fileID: 0}
+  advanceTags:
+  - Wall
+  - TownCenter
+  retreatTags:
+  - Wall
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -407,6 +433,7 @@ MonoBehaviour:
   currentCreatChunk: 21
   prefabWall: {fileID: 0}
   arrow: {fileID: 0}
+  debugArrow: 0
   coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
   coinMoveSpeed: 0.5
   fallSpeed: 15
@@ -554,7 +581,6 @@ GameObject:
   - component: {fileID: 8680344821423139051}
   - component: {fileID: 5652501071760087765}
   - component: {fileID: 8848505126678873454}
-  - component: {fileID: 4707844484781350320}
   m_Layer: 0
   m_Name: Denizen
   m_TagString: Untagged
@@ -614,25 +640,6 @@ MonoBehaviour:
     minDailySpawnCount: 0
     maxDailySpawnCount: 11
     randomXRange: 2
---- !u!114 &4707844484781350320
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5848034847329386121}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 013b498618cd5c44d8501f7304bafd1a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  townCenter: {fileID: 0}
-  leftWalls: []
-  rightWalls: []
-  stumps: []
-  criticalHPThreshold: 10
-  defendableLeftWalls: []
-  defendableRightWalls: []
 --- !u!1 &6261044732328584789
 GameObject:
   m_ObjectHideFlags: 0

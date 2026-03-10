@@ -6,11 +6,13 @@ using Script.Manager.GamePlayManager;
 using System.Collections;
 using System.Collections.Generic;
 using Script.Game.Enemy;
+using Script.Interfaces;
+using Script.Game.Enemy.Interfaces;
 
 namespace Script.Entities.Structures.SummondPortal
 {
     [RequireComponent(typeof(EnemyPortalStatus))]
-    public class EnemyPortalBehavior : MonoBehaviour
+    public class EnemyPortalBehavior : MonoBehaviour, IDamageable
     {
         private EnemyPortalStatus status;
 
@@ -68,6 +70,9 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 if (visualAnimator) visualAnimator.SetActive();
             }
+
+            // Lắng nghe sự kiện chết từ Status
+            status.OnDeath += OnDeathHandler;
         }
 
         /// <summary>
@@ -131,14 +136,17 @@ namespace Script.Entities.Structures.SummondPortal
             }
         }
 
-        // Tạm thời Disable / Comment drop loot như ý User, để phần sau 
-        /*
-        public void TakeDamage(int dmg)
+        // --- IDamageable Implementation ---
+        public void ReceiveDamage(int damage, GameObject instigator)
         {
-            // hp -= dmg
-            // if hp <= 0: DestroyPortal()
+            status.TakeDamage(damage);
         }
-        */
+
+        private void OnDeathHandler()
+        {
+            // Destruction logic is handled in OnDestroy and via this method
+            Destroy(gameObject);
+        }
 
         private void OnDestroy()
         {

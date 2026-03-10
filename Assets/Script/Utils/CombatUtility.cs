@@ -30,7 +30,8 @@ namespace Script.Utils
             if (hitObject == null) return null;
 
             int triggerLayer = LayerMask.NameToLayer("TriggerLayer");
-            if (hitObject.layer == triggerLayer)
+            // Kiểm tra Layer "TriggerLayer" HOẶC Tag "Trigger" HOẶC Tag "TriggerLayer"
+            if (hitObject.layer == triggerLayer || hitObject.CompareTag("Trigger") || hitObject.CompareTag("TriggerLayer"))
             {
                 if (hitObject.transform.parent != null)
                 {
@@ -47,32 +48,20 @@ namespace Script.Utils
         {
             if (target == null) return false;
 
-            // KIỂM TRA FLAG CHẾT ĐẦU TIÊN: Nếu flag Die đã bật thì mặc kệ máu hay khiên, nó là một cái xác.
+            // Kiểm tra cờ chết
             var dieInterface = target.GetComponent<Script.Interfaces.IDie>();
-            if (dieInterface != null && dieInterface.IsDead)
+            if (dieInterface != null && dieInterface.IsDead) return false;
+
+            // Mục tiêu có thể nhận sát thương (IDamageable) => hợp lệ
+            if (target.GetComponent<Script.Interfaces.IDamageable>() != null)
             {
-                Debug.Log($"[CombatUtility] {target.name} bị loại vì mang cờ IDie.IsDead.");
-                return false; 
+                // Nếu có máu, phải còn > 0 mới tính là còn sống
+                var health = target.GetComponent<IHealth>();
+                if (health != null) return health.CurrentHp > 0;
+
+                return true; // Có IDamageable nhưng không dùng HP (Denizen dùng coin)
             }
 
-            // Nếu có Health, phải còn > 0 máu
-            var health = target.GetComponent<IHealth>();
-            if (health != null)
-            {
-                bool hasHp = health.CurrentHp > 0;
-                Debug.Log($"[CombatUtility] {target.name} có IHealth. CurentHp = {health.CurrentHp} -> Valid: {hasHp}");
-                return hasHp;
-            }
-
-            // Nếu KHÔNG CÓ Health nhưng có CoinShield (Ví dụ: Denizen), thì coi như "Còn sống" nếu còn khiên
-            var coinShield = target.GetComponent<ICoinShield>();
-            if (coinShield != null)
-            {
-                Debug.Log($"[CombatUtility] {target.name} KHÔNG CÓ MÁU, nhưng có ICoinShield. Valid: True");
-                return true; 
-            }
-
-            Debug.Log($"[CombatUtility] {target.name} bị loại vì không có cả Máu lẫn Khiên.");
             return false;
         }
 
@@ -99,58 +88,50 @@ namespace Script.Utils
                 hitObject = ResolveTargetFromTrigger(hitObject);
                 if (hitObject == null) continue;
                 
-                // Tránh chém trúng 1 enemy 2 lần (ví dụ trúng cả Body thật lẫn Body Trigger sau khi resolve)
+                // Tránh chém trúng 1 enemy 2 lần
                 if (processedTargets.Contains(hitObject)) continue;
                 processedTargets.Add(hitObject);
 
-                Debug.Log($"[Utility.ProcessAttackHits] Processing Hit[{i}]: {hitObject.name} (Tag: {hitObject.tag})");
+                // TÌM IDamageable: Kiểm tra chính nó hoặc cha của nó (cho trường hợp trúng Blocker con)
+                IDamageable damageable = hitObject.GetComponentInParent<IDamageable>();
 
-                IHealth target = hitObject.GetComponent<IHealth>();
-                ICoinShield coinTarget = hitObject.GetComponent<ICoinShield>();
-
-                if (target != null || coinTarget != null)
+                if (damageable != null)
                 {
-                    // ƯU TIÊN 1: Xử lý Wall trước (để tránh bị Ally check chặn)
-                    if (hitObject.CompareTag("Wall"))
+                    GameObject effectiveTarget = (damageable as MonoBehaviour).gameObject;
+
+                    // 1. Kiểm tra sống chết (Valid/Alive)
+                    if (!IsTargetValidAndAlive(effectiveTarget))
                     {
-                        WallStatus wall = hitObject.GetComponent<WallStatus>();
-                        if (wall != null)
-                        {
-                            // Bỏ qua wall tier 0 (stump/foundation chưa xây xong?)
-                            if (wall.tier == 0)
-                            {
-                                Debug.Log($"[Utility.ProcessAttackHits] SKIP Wall Tier 0: {hitObject.name}");
-                                continue;
-                            }
-                            else
-                            {
-                                Debug.Log($"[Utility.ProcessAttackHits] HIT Wall {hitObject.name} (Tier: {wall.tier}) -> Apply Damage {damageAmount}");
-                                Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
-                            }
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"[Utility.ProcessAttackHits] Object {hitObject.name} tag 'Wall' missing WallStatus script.");
-                        }
-                        // Wall đã xử lý xong, tiếp tục vòng lặp
+                        Debug.Log($"[Utility.ProcessAttackHits] SKIP {effectiveTarget.name} - Not valid or already dead.");
                         continue;
                     }
 
-                    // ƯU TIÊN 2: Ally Check
-                    bool isTargetAlly = IsAlly(hitObject);
+                    // 2. ƯU TIÊN: Xử lý Wall Tier 0 (không nhận dame khi là móng)
+                    if (effectiveTarget.CompareTag("Wall") || effectiveTarget.CompareTag("Stump"))
+                    {
+                        var wallStatus = effectiveTarget.GetComponent<WallStatus>();
+                        if (wallStatus != null && wallStatus.tier == 0)
+                        {
+                            Debug.Log($"[Utility.ProcessAttackHits] SKIP Wall Tier 0: {effectiveTarget.name}");
+                            continue;
+                        }
+                    }
+
+                    // 3. Ally Check
+                    bool isTargetAlly = IsAlly(effectiveTarget);
                     if (!allowDamageAlly && isTargetAlly)
                     {
-                        Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {hitObject.name} (Tag: {hitObject.tag}) - IsAlly: {isTargetAlly}");
+                        Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {effectiveTarget.name} - IsAlly: {isTargetAlly}");
                         continue;
                     }
 
-                    // ƯU TIÊN 3: Default Damage (Enemy, Object khác...)
-                    Debug.Log($"[Utility.ProcessAttackHits] HIT Object {hitObject.name} (Tag: {hitObject.tag}) -> Apply Damage {damageAmount}");
-                    Script.Utils.DamageHandler.ApplyDamage(hitObject, (int)damageAmount, instigator);
+                    // 4. Gây sát thương
+                    Debug.Log($"[Utility.ProcessAttackHits] HIT {effectiveTarget.name} (Tag: {effectiveTarget.tag}) -> Apply Damage {damageAmount}");
+                    DamageHandler.ApplyDamage(effectiveTarget, damageAmount, instigator);
                 }
                 else
                 {
-                    Debug.Log($"[Utility.ProcessAttackHits] SKIP Object {hitObject.name} - No IHealth or ICoinShield component");
+                    Debug.Log($"[Utility.ProcessAttackHits] SKIP {hitObject.name} - No IDamageable found in hierarchy.");
                 }
             }
         }

@@ -15,7 +15,7 @@ namespace Script.Game.Player
     
     //[TODO] thêm script kiểm tra script player đã đủ chưa
     
-    public class PlayerBehavior : MonoBehaviour, IAttacker, ICoinable, ICoinShield, IDeathDrop, IHealth, ISaveable, IDie, IItemHandle
+    public class PlayerBehavior : MonoBehaviour, IAttacker, ICoinable, ICoinShield, IDeathDrop, IHealth, ISaveable, IDie, IItemHandle, IDamageable
     {
         [Header("Player Status Data")]
         public PlayerStatus status;
@@ -223,6 +223,35 @@ namespace Script.Game.Player
         public void DropCoin(GameObject whoDoDame)
         {
             // Logic rơi coin khi bị tấn công
+        }
+
+        // --- IDamageable Interface Implementation ---
+        /// <summary>
+        /// Điểm nhận sát thương duy nhất cho Player.
+        /// Bên tấn công chỉ gọi hàm này và không cần biết gì thêm.
+        /// </summary>
+        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        {
+            if (damage <= 0 || IsDead) return;
+
+            // Ưu tiên dùng Coin đở đòn (giống cơ chế gốc)
+            if (HasCoinShield && Coin > 0)
+            {
+                Coin -= 1;
+                if (Coin < 0) Coin = 0;
+                DropCoin(instigator);
+                return;
+            }
+
+            // Hết Coin thì trừ máu
+            if (HasHp)
+            {
+                CurrentHp -= damage;
+                if (CurrentHp <= 0)
+                {
+                    Die(instigator);
+                }
+            }
         }
 
         // ISaveable

@@ -107,9 +107,13 @@ namespace Script.Game.Mobs.MobsManager
         public void UpdateDefensiveWalls()
         {
             if (wallManager == null) return;
-            // Lấy wall mới từ WallManager
-            GameObject newLeftWall = wallManager.GetFarthestDefendableWall(true);
-            GameObject newRightWall = wallManager.GetFarthestDefendableWall(false);
+            
+            // Nếu đang trong combat, không tự động đổi wall (tránh lính chạy lên)
+            if (isEnemyAttack) return;
+
+            // Bầu wall xa nhất mỗi bên từ danh sách của WallAndStumpManager
+            GameObject newLeftWall = FindBestDefensiveWall(wallManager.leftWalls);
+            GameObject newRightWall = FindBestDefensiveWall(wallManager.rightWalls);
             
             // === XỬ LÝ LEFT WALL ===
             UpdateSpecificWall(ref currentLeftWall, newLeftWall, true);
@@ -119,6 +123,34 @@ namespace Script.Game.Mobs.MobsManager
             
             // Thông báo cho tất cả Archer cập nhật vị trí phòng thủ
             NotifyArchersDefensivePositionChanged();
+        }
+
+        /// <summary>
+        /// Tìm wall xa nhất trong danh sách (cuối list) mà không bị Critical HP và vẫn là Wall (không phải Stump)
+        /// Nguồn dữ liệu lấy từ WallAndStumpManager để tránh lưu trư trùng lập
+        /// </summary>
+        private GameObject FindBestDefensiveWall(List<GameObject> walls)
+        {
+            if (walls == null || walls.Count == 0) return null;
+
+            int threshold = (wallManager != null) ? wallManager.criticalHPThreshold : 10;
+
+            // Duyệt từ xa nhất về gần (cuối list về đầu list)
+            for (int i = walls.Count - 1; i >= 0; i--)
+            {
+                GameObject wall = walls[i];
+                if (wall == null) continue;
+
+                // Kiểm tra tag: phải là Wall (không phải Stump)
+                if (!wall.CompareTag("Wall")) continue;
+
+                var behavior = wall.GetComponent<WallBehavior>();
+                if (behavior != null && behavior.Status.CurrentHp >= threshold)
+                {
+                    return wall;
+                }
+            }
+            return null;
         }
         
         private void UpdateSpecificWall(ref GameObject currentWall, GameObject newWall, bool isLeft)
@@ -486,6 +518,7 @@ namespace Script.Game.Mobs.MobsManager
             DebugLog("✅ Alarm cleared - Returning to peacetime duties");
             
             // CẬP NHẬT VỊ TRÍ PHÒNG THỦ TỐI ƯU SAU KHI HẾT CHIẾN ĐẤU
+            // Đảm bảo đồng bộ lại với WallAndStumpManager 1 lần cuối
             UpdateDefensiveWalls();
             
             //xếp lại đội hình 
@@ -494,10 +527,26 @@ namespace Script.Game.Mobs.MobsManager
             NotifyAllArchersValues(false);
         }
 
+        #region Wall List Updates (Called by WallAndStumpManager)
+
+        /// <summary>
+        /// Được gọi bởi WallAndStumpManager mỗi khi có wall mới được xây, sửa xong, hoặc bị phá hủy
+        /// </summary>
+        public void OnWallListUpdated()
+        {
+            // [LOGIC] Chỉ cập nhật wall phòng thủ nếu không có kẻ thù tấn công (tránh lính chạy lên)
+            // Nếu wall bị phá hủy trong lúc combat, NotifyWallCritical() sẽ xử lý việc lùi quân.
+            if (!isEnemyAttack)
+            {
+                UpdateDefensiveWalls();
+            }
+        }
+
+        #endregion
+
         private void NotifyAllArchersValues(bool isAttack)
         {
-            // Hàm helper này chỉ dùng để đổi trạng thái của tất cả cung thủ thành rút về phòng  thủ 
-            
+            // Hàm helper này chỉ dùng để đổi trạng thái của tất cả cung thủ thành rút về phòng thủ 
             List<GameObject> allArchers = new List<GameObject>();
             allArchers.AddRange(leftFlankArchers);
             allArchers.AddRange(rightFlankArchers);
@@ -516,47 +565,74 @@ namespace Script.Game.Mobs.MobsManager
 
         #endregion
 
-        #region Wall Management Integration
+        #region Wall Management Integration (Retreat Logic)
 
         /// <summary>
-        /// Logic Retreat khi wall sắp vỡ
+        /// Logic Retreat: Khi wall hiện tại đạt ngưỡng máu tử (Critical HP).
+        /// GuardManager sẽ tìm đệ quy về phía nhà chính để tìm bức tường 'khỏe' nhất gần đó.
         /// </summary>
         public void NotifyWallCritical(GameObject wall, bool isLeftSide)
         {
             if (wall == null || wallManager == null) return;
             
-            DebugLog($"[GuardManager] ⚠️ WALL CRITICAL: {wall.name} on {(isLeftSide ? "LEFT" : "RIGHT")}");
+            // [QUAN TRỌNG] Chỉ xử lý nếu wall bị đánh xuống máu tử CHÍNH LÀ wall đang phòng thủ hiện tại
+            if (wall != currentLeftWall && wall != currentRightWall) return;
 
-            // Ask WallManager for the wall behind
-            GameObject wallBehind = wallManager.GetDefendableWallBehind(wall);
+            Debug.Log($"[GuardManager] ⚠️ WALL CRITICAL: {wall.name} trên {(isLeftSide ? "LEFT" : "RIGHT")}. Tìm điểm lùi quân...");
+
+            // Sử dụng đệ quy để tìm wall an toàn phía sau
+            GameObject safeWall = FindSafeWallRecursively(wall);
             
-            // Update global wall reference for new incoming archers
+            // Cập nhật vị trí phòng thủ mới toàn cục
             if (isLeftSide)
-                currentLeftWall = wallBehind;
+                UpdateSpecificWall(ref currentLeftWall, safeWall, true);
             else
-                currentRightWall = wallBehind;
+                UpdateSpecificWall(ref currentRightWall, safeWall, false);
 
-            // Notify archers on that flank to retreat
+            // Ra lệnh cho toàn bộ lính ở cánh này rút lui về điểm mới (hoặc đứng im nếu safeWall là null)
             List<GameObject> flank = isLeftSide ? leftFlankArchers : rightFlankArchers;
             foreach (var archer in flank)
             {
                 if (archer == null) continue;
-                var status = archer.GetComponent<DenizenStatus>();
-                if (status != null && status.assignedWall == wall)
+                var behavior = archer.GetComponent<Script.Game.Mobs.Subjects.ArcherBehavior>();
+                if (behavior != null)
                 {
-                    // Force state change
-                    var behavior = archer.GetComponent<Script.Game.Mobs.Subjects.ArcherBehavior>();
-                    if (behavior != null && wallBehind != null)
+                    // Lệnh ForceRetreat sẽ khiến Archer bỏ qua AI Idle thông thường và chạy về base mới
+                    if (safeWall != null)
                     {
-                         behavior.ForceRetreat(wallBehind); // Helper method on behavior
+                        behavior.ForceRetreat(safeWall);
                     }
-                    else if (behavior != null && wallBehind == null)
+                    else
                     {
-                        // No wall -> HoldingWall (Stand Ground)
-                         // User req: "nếu ... null tức là không còn wall để lui nữa thù thôi" -> Keep holding current spot/state
+                        // Không còn wall để lính lùi nữa -> Có thể là nhà chính hoặc đứng tại chỗ tử thủ
+                        DebugLog($"[GuardManager] {archer.name} không còn nơi để lùi, đứng tại chỗ!");
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Hàm đệ quy: Tìm bức tường phía sau (gần nhà chính hơn) mà KHÔNG ở ngưỡng máu tử.
+        /// Việc sử dụng đệ quy giúp tránh trường hợp enemy phá xuyên 2 bức tường cùng lúc.
+        /// </summary>
+        private GameObject FindSafeWallRecursively(GameObject currentWall)
+        {
+            if (currentWall == null || wallManager == null) return null;
+
+            GameObject wallBehind = wallManager.GetWallBehind(currentWall);
+            
+            // 1. Nếu không còn wall nào phía sau -> Trả về null (Rút về nhà chính / Không còn điểm tựa)
+            if (wallBehind == null) return null;
+
+            // 2. Nếu wall phía sau 'khỏe' (không đạt ngưỡng máu tử) -> Đây là điểm lùi an toàn
+            if (wallManager.IsWallDefendable(wallBehind))
+            {
+                return wallBehind;
+            }
+
+            // 3. Nếu wall phía sau CŨNG ở ngưỡng máu tử -> Đệ quy tiếp
+            Debug.LogWarning($"[GuardManager] Bức tường {wallBehind.name} cũng đang ở trạng thái nguy hiểm (Máu tử). Tiếp tục tìm đệ quy lùi sâu hơn...");
+            return FindSafeWallRecursively(wallBehind);
         }
 
         public GameObject GetCurrentDefensiveWall(bool isLeft)

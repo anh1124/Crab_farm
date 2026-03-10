@@ -23,14 +23,13 @@ public class RayCastHelper : MonoBehaviour
     [Header("Behavior Settings")]
     public bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
     
-    [Header("Scan Settings")]
-    [Tooltip("Số lần quét raycast mỗi giây (VD: 5 tức là 5 lần/s ~ 0.2s một lần)")]
-    public float scanFrequencyHz = 5f;
-    private float scanTimer = 0f;
 
     // Thay LayerMask bằng List<string> để chứa các tag cần kiểm tra
     [Header("Tag Settings")]
     public List<string> tagsToDetect = new List<string>();
+    
+    [Header("Layer Settings")]
+    public LayerMask targetLayer = ~0;
     
     [Header("Debug Display")]
     [Tooltip("Danh sách hiển thị cho Inspector (chỉ update khi bật showDebugLog)")]
@@ -41,27 +40,18 @@ public class RayCastHelper : MonoBehaviour
 
     private void Update()
     {
-        if (!isActive) 
-        {
-            if (hitObjects.Count > 0) hitObjects.Clear();
-            return;
-        }
-
-        if (scanFrequencyHz > 0)
-        {
-            scanTimer += Time.deltaTime;
-            float interval = 1f / scanFrequencyHz;
-            
-            if (scanTimer >= interval)
-            {
-                scanTimer = 0f;
-                DrawRay();
-            }
-        }
+        // [REFECTOR] Logic Update đã được chuyển sang NPC Behavior (Vagrant, Archer, Enemy) chủ động gọi.
+        // Helper này giờ chỉ đóng vai trò là công cụ Scan thuần túy.
     }
 
+    /// <summary>
+    /// Hàm Scan chủ động: Vừa thực hiện quét tia, vừa trả về danh sách đối tượng.
+    /// Thường được gọi bởi các Behavior Script trong Update của chúng.
+    /// </summary>
     public List<GameObject> GetListHitObjects(float? overrideDistance = null)
     {
+        if (!isActive) return new List<GameObject>();
+
         if (overrideDistance.HasValue && overrideDistance.Value > 0)
         {
             float oldDist = raycastDistance;
@@ -71,7 +61,7 @@ public class RayCastHelper : MonoBehaviour
         }
         else
         {
-            DrawRay(); // Luôn quét fresh list khi có unit gọi hàm để tránh lấy list cũ do 5Hz không kịp
+            DrawRay();
         }
         return new List<GameObject>(hitObjects);
     }
@@ -93,9 +83,9 @@ public class RayCastHelper : MonoBehaviour
         filter.useTriggers = true; // Bắt buộc đọc cả các trigger ảo (VD: vùng nhận damage của Player)
         filter.useDepth = false;
         
-        // ~0 = tất cả layer, bỏ qua Layer Collision Matrix (ta tự lọc bằng tag bên dưới)
+        // ~0 = tất cả layer, bỏ qua Layer Matrix ảo (nhưng ta sẽ dùng field targetLayer để User cấu chỉnh)
         filter.useLayerMask = true;
-        filter.layerMask = ~0;
+        filter.layerMask = targetLayer;
 
         // Dùng BoxCast (cao 0.3f) thay Raycast 1 pixel để bắt mục tiêu lệch trục Y nhẹ (VD: ShieldBot cận chiến)
         // Tham số: origin, size box, góc, hướng, contactFilter, kết quả, khoảng cách
@@ -192,6 +182,23 @@ public class RayCastHelper : MonoBehaviour
         raycastDistance = length;
     }
 
+    [ContextMenu("Debug Log All Hits")]
+    public void DebugLogAllHits()
+    {
+        Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
+        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+        
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.useTriggers = true;
+        filter.useDepth = false;
+        filter.useLayerMask = true;
+        filter.layerMask = targetLayer;
+
+        RaycastHit2D[] results = new RaycastHit2D[500];
+        int hitCount = Physics2D.BoxCast(origin, new Vector2(0.05f, 0.3f), 0f, direction, filter, results, raycastDistance);
+
+        Script.Utils.DebugUtility.LogPhysicsResults(gameObject.name, "Raycast(Box)", origin, hitCount, results, tagsToDetect);
+    }
     private void OnDrawGizmos()
     {
         if (isDrawRay && isShowGizmoUser)

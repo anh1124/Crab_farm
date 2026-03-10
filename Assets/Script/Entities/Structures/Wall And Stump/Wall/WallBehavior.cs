@@ -12,12 +12,13 @@ using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Script.Utils.DebugUtility;
+using Script.Interfaces;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
     //wall tier 0 không nhận dame
     // Chứa logic behavior của Wall, sử dụng WallStatus để quản lý state
-    public class WallBehavior : MonoBehaviour, IHealth, IMinimumDistance, ISaveable, IUpgradeable
+    public class WallBehavior : MonoBehaviour, IMinimumDistance, ISaveable, IUpgradeable, IDamageable
     {
         // wall có 2 trạng thái là wall và stump
         //khi trở thành stump sẽ unactive gameobejct chứa collider chặn enemy
@@ -60,10 +61,6 @@ namespace Script.Game.Structures.Wall_And_Stump
         #region Properties
         public WallStatus Status => status;
         
-        // IHealth Implementation
-        public int MaxHp { get => status.maxHp; set => status.maxHp = value; }
-        public int CurrentHp { get => status.currentHp; set => status.currentHp = value; }
-        
         // IMinimumDistance Implementation
         public float MinimumDistance => status.minimumDistance;
         
@@ -99,10 +96,18 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
         private void Start()
         {
+            // [State First] Đảm bảo visual và data khớp với status.state trước khi chạy tiếp
+            LoadFromCurrentStatus();
 
-            UpdateCoinUserData();//cậpt nhật coinuser theo status
-            RegisterWithManager();//đăng ký với manager
-            SubscribeToWorldInfoChanges(); //đăng ký file thế giới (buff tăng máu)
+            RegisterWithManager(); // Đăng ký với manager (đã bao gồm sync tag và list)
+            
+            SubscribeToWorldInfoChanges(); // Đăng ký buff máu từ thế giới
+            UpdateCoinUserData(); // Đồng bộ trạng thái khe cắm tiền
+
+            // Đăng ký nhận sự kiện máu từ Status
+            status.OnDeath += OnDeathHandler;
+            status.OnDamaged += OnDamagedHandler;
+            status.OnHealed += OnHealedHandler;
 
             // FIX: Wall mới build cũng cần check upgrade status sau khi BuildingManager ready
             StartCoroutine(DelayedUpgradeCheck());
@@ -113,6 +118,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
         
         
+        private void OnDisable()
+        {
+            // [Cleanup] Đảm bảo gỡ bỏ khỏi manager khi object bị disable (về pool hoặc bị tắt)
+            UnregisterFromManager();
+            UnsubscribeFromWorldInfoChanges();
+        }
+
         private void OnDestroy()
         {
             UnregisterFromManager();
@@ -177,10 +189,10 @@ namespace Script.Game.Structures.Wall_And_Stump
 
          //   Debug.Log($"[WallBehavior] Applied status from input. New tier: {status.tier}, State: {status.state}");
 
-            // Sau khi load xong data, cập nhật lại trạng thái defendable trên manager
+            // Sau khi load xong data, cập nhật lại danh sách và phân loại
             if (WallAndStumpManager.Instance != null)
             {
-                WallAndStumpManager.Instance.UpdateDefendableWalls();
+                WallAndStumpManager.Instance.SortAndNotify();
             }
         }
         //hàm này chỉ dùng để load data vào status
@@ -519,6 +531,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         public void Collapse() //sụp đổ
         {
             status.state = WallState.Stump;
+
+            // [TAG] Chuyển tag thành 'Stump' để hệ thống khác (GuardManager v.v.) biết wall này không còn hoạt động
+            gameObject.tag = "Stump";
+
+            // [SECURITY] Đảm bảo bắn event lùi quân nếu chưa bắn (trường hợp bị phá hủy quá nhanh)
+            int threshold = (WallAndStumpManager.Instance != null) ? WallAndStumpManager.Instance.criticalHPThreshold : 10;
+            CheckAndFireCriticalEvent(threshold);
             
             // Lấy data stump từ tier hiện tại
             WallTierData currentTierData =GetCurrentTier();
@@ -533,6 +552,10 @@ namespace Script.Game.Structures.Wall_And_Stump
             
              // Cập nhật CoinUser cho chế độ sửa chữa
              UpdateCoinUserData();
+
+             // Thông báo cho WallAndStumpManager: đồng bộ lại state mới (chuyển sang Stump list)
+             SyncRegistrationWithManager();
+
              
              
            //  Debug.Log($"[Wall] Đã chuyển thành stump tại tier {status.tier}");
@@ -569,35 +592,29 @@ namespace Script.Game.Structures.Wall_And_Stump
         
         public void RepairStump()
         {
-            
             // Reset HP về đầy
             status.currentHp = status.maxHp;
             status.state = WallState.Wall;
-            LoadWallComponents(GetCurrentTier(),status.state);
-            
+
+            // [TAG] Khôi phục tag thành 'Wall' để hệ thống khác nhận biết wall đã chạy lại
+            gameObject.tag = "Wall";
+
+            LoadWallComponents(GetCurrentTier(), status.state);
+
             // Explicitly re-enable childBlocker to ensure physics blocker is active
             if (childBlocker != null)
             {
                 childBlocker.SetActive(true);
-              //  Debug.Log($"[Wall-Debug] RepairStump: Reactivated childBlocker for {gameObject.name}");
-            }
-            else
-            {
-                Debug.LogWarning($"[Wall-Debug] RepairStump: childBlocker is null for {gameObject.name}");
             }
 
             // Cập nhật CoinUser cho chế độ nâng cấp
             UpdateCoinUserData();
-            
+
             // Thông báo cho manager
             OnWallRepaired?.Invoke(this);
 
-            // Sync with manager explicitly
-            if (WallAndStumpManager.Instance != null)
-            {
-                WallAndStumpManager.Instance.UpdateDefendableWalls();
-            }
-        
+            // [Flow] Đồng bộ lại state mới (chuyển về Wall list)
+            SyncRegistrationWithManager();
         }
         /// <summary>
         /// hàm này được gọi sau khi wall vừa chuyển từ wall thành stump và ngược lại
@@ -646,28 +663,36 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
         private void RegisterWithManager()
         {
-            if (WallAndStumpManager.Instance != null)
+            if (status == null)
             {
-                if (gameObject.CompareTag("Wall"))
-                {
-                    WallAndStumpManager.Instance.RegisterWall(gameObject);
-                }
-                else
-                {
-                    Debug.LogWarning($"[WallBehavior] GameObject {gameObject.name} has unexpected tag: {gameObject.tag}");
-                }
+                Debug.LogError($"[WallBehavior] {gameObject.name} RegisterWithManager failed: Status component is missing!");
+                return;
             }
-            else
-            {
-                Debug.LogError("[WallBehavior] WallAndStumpManager instance not found!");
-            }
+
+            // Đồng bộ tag và danh sách dựa trên status.state hiện tại
+            SyncRegistrationWithManager();
         }
-        
+
+        private void SyncRegistrationWithManager()
+        {
+            if (WallAndStumpManager.Instance == null) return;
+
+            // 1. Đảm bảo tag khớp với state hiện tại
+            if (status.state == WallState.Stump)
+                gameObject.tag = "Stump";
+            else
+                gameObject.tag = "Wall";
+
+            // 2. Đồng bộ lại với Manager (Hàm UnregisterEntity sẽ xóa khỏi mọi list cũ, RegisterEntity sẽ thêm vào list mới dựa trên Tag)
+            WallAndStumpManager.Instance.UnregisterEntity(gameObject);
+            WallAndStumpManager.Instance.RegisterEntity(gameObject);
+        }
+
         private void UnregisterFromManager()
         {
-            if (WallAndStumpManager.Instance != null && gameObject.CompareTag("Wall"))
+            if (WallAndStumpManager.Instance != null)
             {
-                WallAndStumpManager.Instance.UnregisterWall(gameObject);
+                WallAndStumpManager.Instance.UnregisterEntity(gameObject);
             }
         }
         
@@ -707,70 +732,48 @@ namespace Script.Game.Structures.Wall_And_Stump
             //Debug.Log($"Wall {gameObject.name} updated HP due to WorldInfo change. TechAdhesive: {worldInfo.TechAdhesive}, MaxHP: {status.maxHp}");
             
         }
-        public void TakeDamage(int amount)
+        private void OnDamagedHandler(int amount)
         {
-            status.currentHp -= amount;
-            
-            // Notify manager to check critical HP logic (still needed for other systems if any)
+            // Notify manager and guard system
             if (WallAndStumpManager.Instance != null)
             {
-                WallAndStumpManager.Instance.CheckWallCriticalHP(gameObject);
-                
-                // NEW: Trigger internal event system for GuardManager
                 CheckAndFireCriticalEvent(WallAndStumpManager.Instance.criticalHPThreshold);
             }
-            
-            if (status.currentHp <= 0)
-            {
-                // Tường bị xập -> gọi Die()
-                //die là hàm đi theo interface để sử dụng interface takedame
-                Die();
-            }
         }
-        //dùng cho cả stump và wall, là wall sẽ hồi hp, là stump thì sẽ thành wall khi đầy hp
-        public void Heal(int amount)
+
+        private void OnHealedHandler(int amount)
         {
             if (status.state == WallState.Stump)
             {
                 // Nếu là stump và heal đủ HP -> rebuild thành wall
-                if (status.currentHp + amount >= status.maxHp)
-                {
-                     RepairStump();
-                     return; // Đã xử lý xong notify trong RepairStump, return để tránh duplicate
-                }
-                else
-                {
-                    status.currentHp += amount;
-                }
-            }
-            else
-            {
-                // Nếu là wall -> chỉ tăng HP
-                status.currentHp = Mathf.Min(status.currentHp + amount, status.maxHp);
-            }
-            
-            // NEW LOGIC: Chỉ gọi OnWallRepaired khi wall đã ĐẦY MÁU
-            // Điều này tránh spam update logic đội hình mỗi lần gõ búa
-            if (WallAndStumpManager.Instance != null)
-            {
-                // Luôn cập nhật trạng thái reset cờ critical (để đảm bảo không báo động giả)
-                 ResetCriticalFlag(WallAndStumpManager.Instance.criticalHPThreshold);
-
-                // Chỉ notify Manager khi đầy máu
                 if (status.currentHp >= status.maxHp)
                 {
-                    WallAndStumpManager.Instance.OnWallRepaired(gameObject);
-                    WallAndStumpManager.Instance.UpdateDefendableWalls();
+                    RepairStump();
                 }
-                // KHÔNG GỌI UpdateDefendableWalls mỗi lần Heal nữa
-                // Vì danh sách defendable chỉ cần update khi:
-                // 1. Wall đầy máu (đã gọi ở trên)
-                // 2. Wall vượt ngưỡng critical lần đầu (event OnCriticalHP đã xử lý)
-                // 3. Wall bị phá hủy/xây mới (RegisterWall/UnregisterWall đã gọi)
             }
             
-           // Debug.Log($"[Wall] Healed {amount} HP. Current HP: {status.currentHp}/{status.maxHp}");
-            
+            if (WallAndStumpManager.Instance != null)
+            {
+                ResetCriticalFlag(WallAndStumpManager.Instance.criticalHPThreshold);
+
+                if (status.currentHp >= status.maxHp)
+                {
+                    WallAndStumpManager.Instance.SortAndNotify();
+                }
+            }
+        }
+
+        private void OnDeathHandler()
+        {
+            Debug.Log($"{gameObject.name} đã bị xập");
+            Collapse();
+            OnWallDestroyed?.Invoke(this);
+        }
+
+        // --- IDamageable Implementation ---
+        public void ReceiveDamage(int damage, GameObject instigator)
+        {
+            status.TakeDamage(damage);
         }
         public void Die()
         {
@@ -787,7 +790,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             // But if it needs to update defendable list:
             if (WallAndStumpManager.Instance != null)
             {
-                WallAndStumpManager.Instance.UpdateDefendableWalls();
+                WallAndStumpManager.Instance.SortAndNotify();
             }
         }
         #endregion
@@ -1189,5 +1192,32 @@ namespace Script.Game.Structures.Wall_And_Stump
             return $"WALL[{gameObject.name}]: Pos{transform.position}, State:{status.state}, Tier:{status.tier}, HP:{status.currentHp}/{status.maxHp}, ReadyUpgrade:{status.readyToUpgrade}, MaxTier:{status.isMaxTier}, UpgradeCost:{status.upgradeCost}, RebuildCost:{status.rebuildCost}, TC:{tcInfo}, CanUpgradeByTC:{canUpgradeByTC}, CoinUser:{coinUserInfo}, CanAccept:{CanAcceptCoins}, IsReady:{IsReadyToUpgrade}";
         }
         #endregion
+        
+        [ContextMenu("Debug: Force to Critical HP")]
+        public void DebugForceToCriticalHP()
+        {
+            if (WallAndStumpManager.Instance == null)
+            {
+                Debug.LogError("[WallDebug] WallAndStumpManager.Instance is null! Cannot find threshold.");
+                return;
+            }
+
+            int threshold = WallAndStumpManager.Instance.criticalHPThreshold;
+            
+            // Tính toán lượng dame cần thiết để máu còn lại đúng bằng (ngưỡng - 1)
+            // (Vì logic CheckAndFireCriticalEvent dùng dấu < nên phải trừ 1 mới trigger được event)
+            int targetHp = threshold - 1;
+            int damageToInfict = status.currentHp - targetHp;
+
+            if (damageToInfict > 0)
+            {
+                Debug.Log($"[Debug] Forcing {gameObject.name} to critical state. Inflicting {damageToInfict} damage to reach {targetHp} HP.");
+                status.TakeDamage(damageToInfict);
+            }
+            else
+            {
+                Debug.LogWarning($"[Debug] Wall {gameObject.name} is already below or at critical HP!");
+            }
+        }
     }
 }

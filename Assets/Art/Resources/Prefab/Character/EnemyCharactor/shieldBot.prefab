@@ -190,6 +190,7 @@ MonoBehaviour:
   <AttackRange>k__BackingField: 1.8
   <AttackCooldown>k__BackingField: 0
   <AttackDamage>k__BackingField: 0
+  debugEnemy: 0
 --- !u!114 &3288081392546131592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -253,13 +254,15 @@ MonoBehaviour:
   isShowGizmoUser: 1
   showDebugLog: 0
   isActive: 1
-  scanFrequencyHz: 5
   tagsToDetect:
   - Player
   - Wall
   - TownCenter
   - Archer
   - Denizen
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 45569
   debugHitObjects: []
 --- !u!1 &297064708596671372
 GameObject:

@@ -19,13 +19,12 @@ namespace Script.Game.Other
         [Header("Behavior Settings")]
         public bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
         
-        [Header("Scan Settings")]
-        [Tooltip("Số lần quét mỗi giây (0 = mỗi frame)")]
-        public float scanFrequencyHz = 5f;
-        private float scanTimer = 0f;
 
         [Header("Tag Settings")]
         public List<string> tagsToDetect = new List<string> { "Player", "Coin", "Enemy", "Animal" };
+
+        [Header("Layer Settings")]
+        public LayerMask targetLayer = ~0;
 
         [Header("Debug Display")]
         [Tooltip("Bật cờ này để xem danh sách Object bên dưới trên Inspector")]
@@ -39,31 +38,13 @@ namespace Script.Game.Other
 
         private void Update()
         {
-            if (!isActive) 
-            {
-                if (detectedObjects.Count > 0) detectedObjects.Clear();
-                return;
-            }
-
-            if (scanFrequencyHz > 0)
-            {
-                scanTimer += Time.deltaTime;
-                float interval = 1f / scanFrequencyHz;
-                
-                if (scanTimer >= interval)
-                {
-                    scanTimer = 0f;
-                    ScanCircle();
-                }
-            }
-            else
-            {
-                ScanCircle(); // Quét mỗi frame nếu Hz = 0
-            }
+            // [REFECTOR] Logic Update đã được chuyển sang NPC Behavior chủ động gọi.
         }
 
         public List<GameObject> GetListDetectedObjects(float? overrideRadius = null)
         {
+            if (!isActive) return new List<GameObject>();
+
             if (overrideRadius.HasValue && overrideRadius.Value > 0)
             {
                 float oldRad = detectRadius;
@@ -73,12 +54,12 @@ namespace Script.Game.Other
             }
             else
             {
-                ScanCircle(); // Luôn scan fresh khi được gọi
+                ScanCircle();
             }
             return new List<GameObject>(detectedObjects);
         }
 
-        private void ScanCircle()
+        public void ScanCircle()
         {
             detectedObjects.Clear();
             
@@ -92,7 +73,7 @@ namespace Script.Game.Other
             filter.useTriggers = true;
             filter.useDepth = false;
             filter.useLayerMask = true;
-            filter.layerMask = ~0; // Quét mọi layer, tự lọc bằng code bên dưới
+            filter.layerMask = targetLayer; // Quét mọi layer, tự lọc bằng code bên dưới
             
             int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, filter, _overlapResults);
             
@@ -161,6 +142,21 @@ namespace Script.Game.Other
         public void SetDetectRadius(float radius)
         {
             detectRadius = radius;
+        }
+
+        [ContextMenu("Debug Log All Hits")]
+        public void DebugLogAllHits()
+        {
+            ContactFilter2D filter = new ContactFilter2D();
+            filter.useTriggers = true;
+            filter.useDepth = false;
+            filter.useLayerMask = true;
+            filter.layerMask = targetLayer;
+
+            Collider2D[] results = new Collider2D[500];
+            int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, filter, results);
+
+            Script.Utils.DebugUtility.LogPhysicsResults(gameObject.name, "CircleOverlap", transform.position, hitCount, results, tagsToDetect);
         }
 
         private void OnDrawGizmos()

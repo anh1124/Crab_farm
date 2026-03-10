@@ -1,9 +1,10 @@
 using System;
 using UnityEngine;
+using Script.Interfaces;
 
 namespace Script.Game.Enemy
 {
-    public class EnemyBehavior : MonoBehaviour
+    public class EnemyBehavior : MonoBehaviour, IDamageable
     {
         // Define Despawn event for GuardManager to subscribe to
         public event Action<EnemyBehavior> OnDespawn;
@@ -37,7 +38,7 @@ namespace Script.Game.Enemy
             OnDespawn?.Invoke(this);
         }
 
-        // Simple Hit logic for testing
+        // Simple Hit logic
         public void TakeDamage(int amount)
         {
             hp -= amount;
@@ -45,6 +46,12 @@ namespace Script.Game.Enemy
             {
                 Despawn();
             }
+        }
+
+        // --- IDamageable Interface Implementation ---
+        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        {
+            TakeDamage(damage);
         }
     }
 }

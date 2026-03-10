@@ -14,6 +14,7 @@ using Script.Interfaces;
 using Script.Game.Other;
 using Script.Game.Structures.Wall_And_Stump;
 using Script.Manager.WorldManager;
+using Script.Manager.GamePlayManager;
 using Script.Manager; // For GuardManager access via GuardManager.Instance if needed
 
 namespace Script.Game.Mobs.Subjects
@@ -23,7 +24,7 @@ namespace Script.Game.Mobs.Subjects
     [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(ArcherShooting))]
-    public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker
+    public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker, IDamageable
     {
         // --- IAttacker Interface ---
         public int AttackDame { get => status.attackDame; set => status.attackDame = value; }
@@ -48,6 +49,10 @@ namespace Script.Game.Mobs.Subjects
         private const float HUNTING_PATROL_INTERVAL = 5.0f;
         
         #endregion
+        
+        [Header("Detection Settings")]
+        [Tooltip("Danh sách các Tag mục tiêu. Tag ở vị trí 0 (thường là 'Enemy') có ưu tiên cao nhất.")]
+        [SerializeField] private List<string> targetTags = new List<string> { "Enemy","EnemyPortal", "Animal", "Rabbit" };
 
         // References
         private DenizenStatus status;
@@ -71,30 +76,33 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnEnable()
         {
-            // Disable all detectives first
-            var controller = GetComponent<DenizenRoleController>();
-            if (controller != null)
-            {
-                controller.DisableAllDetectives();
-            }
+            // Ensure detector is initialized
+            InitializeDetector();
 
-            // Enable CircleDetectHelper
-            if (circleDetectHelper == null) circleDetectHelper = GetComponent<Script.Game.Other.CircleDetectHelper>();
             if (circleDetectHelper != null)
             {
                 circleDetectHelper.isActive = true;
+                circleDetectHelper.OnDetectedObjectsChanged -= OnObjectsDetected; // Prev double sub
+                circleDetectHelper.OnDetectedObjectsChanged += OnObjectsDetected;
             }
             
             // Re-subscribe logic from old OnEnable
             if (guardManager == null) guardManager = GuardManager.Instance;
             SubscribeToTimeEvents();
+
+            if (NPCUpdateManager.Instance != null)
+                NPCUpdateManager.Instance.Register(this);
         }
 
         private void OnDisable()
         {
+             if (NPCUpdateManager.Instance != null)
+                 NPCUpdateManager.Instance.Unregister(this);
+
              // Cleanup if needed
              if (circleDetectHelper != null)
              {
+                 circleDetectHelper.OnDetectedObjectsChanged -= OnObjectsDetected;
                  circleDetectHelper.isActive = false;
              }
              
@@ -205,6 +213,33 @@ namespace Script.Game.Mobs.Subjects
             set => status.MaxCoins = value;
         }
 
+        // --- IDamageable Interface Implementation ---
+        /// <summary>
+        /// Điểm tiếp nhận sát thương duy nhất. Archer tự xử lý toàn bộ.
+        /// THỪ tấn công không cần biết logic bên trong.
+        /// </summary>
+        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        {
+            if (damage <= 0) return;
+
+            // Ưu tiên 1: Dùng Vũ khí (Cung) đở đòn cuối cùng
+            if (HasToolShield)
+            {
+                if (ConsumeToolShield()) return;
+            }
+
+            // Ưu tiên 2: Dùng Coin (xu) đở đòn
+            if (HasCoinShield)
+            {
+                if (ConsumeCoinShield()) return;
+            }
+
+            // Cuối cùng: Trừ thẳng vào xu
+            // DenizenRoleController.OnCoinChangedHandler sẽ tự xử lý khi xu về 0
+            // (rớt cung nếu là Archer, đổi về Vagrant...)
+            status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - damage);
+        }
+
         private void Awake()
         {
             gameObject.tag = "Archer";
@@ -225,8 +260,15 @@ namespace Script.Game.Mobs.Subjects
         
         private void InitializeDetector()
         {
-            if (circleDetectHelper == null) return;
-            circleDetectHelper.SetDetectRadius(status.archerDetectRange);
+            if (circleDetectHelper == null) circleDetectHelper = GetComponent<Script.Game.Other.CircleDetectHelper>();
+            
+            if (circleDetectHelper != null)
+            {
+                circleDetectHelper.SetDetectRadius(status.archerDetectRange);
+                
+                // [SYNC SCAN SETTINGS] Archer quét theo danh sách tags được định nghĩa
+                circleDetectHelper.tagsToDetect = new List<string>(targetTags);
+            }
         }
         
         private void Start()
@@ -244,7 +286,7 @@ namespace Script.Game.Mobs.Subjects
             
             // Đăng ký sự kiện thời gian
             SubscribeToTimeEvents();
-            
+
             // Kiểm tra trạng thái ban đầu (nếu chưa được thiết lập)
             if (timeManager != null && !guardManager.isEnemyAttack)
             {
@@ -336,6 +378,11 @@ namespace Script.Game.Mobs.Subjects
 
         public void UpdateBehavior()
         {
+            // [SCAN] Cho phép Detector quét chủ động (CircleDetect)
+            if (circleDetectHelper != null && circleDetectHelper.isActive)
+            {
+                circleDetectHelper.ScanCircle();
+            }
 
             if (status == null || animator == null)
             {
@@ -821,7 +868,7 @@ namespace Script.Game.Mobs.Subjects
             }
             try
             {
-                cachedRetreatTarget = wallManager.GetDefendableWallBehind(status.previousWall);
+                cachedRetreatTarget = wallManager.GetWallBehind(status.previousWall);
                 if (cachedRetreatTarget == null)
                 {
                      // Debug.LogWarning("[Archer] No inner wall found for retreat");
@@ -848,44 +895,49 @@ namespace Script.Game.Mobs.Subjects
         /// </summary>
         private GameObject SelectTargetAndReportThreats(List<GameObject> allHits)
         {
-            // 1. Phân loại mục tiêu
+            if (targetTags == null || targetTags.Count == 0) return null;
+
+            // 1. Phân loại mục tiêu dựa trên danh sách ưu tiên
+            string priorityTag = targetTags[0]; // Ưu tiên cao nhất (thường là Enemy)
+            
             List<GameObject> enemies = new List<GameObject>();
-            List<GameObject> animals = new List<GameObject>();
+            List<GameObject> secondaryTargets = new List<GameObject>();
 
             foreach(var obj in allHits)
             {
                 if (obj == null || !obj.activeInHierarchy) continue;
-                if (obj.CompareTag("Enemy")) enemies.Add(obj);
+
+                if (obj.CompareTag(priorityTag))
+                {
+                    enemies.Add(obj);
+                }
                 else 
                 {
-                    // Kiểm tra tag Animal từ PrefabData hoặc fallback
-                    // Kiểm tra an toàn: dùng tag rõ ràng
-                     if (PrefabData.Instance != null && PrefabData.Instance.huntingTargetTags != null)
-                     {
-                         foreach(var tag in PrefabData.Instance.huntingTargetTags)
-                         {
-                             if(obj.CompareTag(tag)) { animals.Add(obj); break; }
-                         }
-                     }
-                     else if (obj.CompareTag("Animal") || obj.CompareTag("Rabbit")) // Fallback
-                     {
-                         animals.Add(obj);
-                     }
+                    // Kiểm tra các tag còn lại trong danh sách
+                    for (int i = 1; i < targetTags.Count; i++)
+                    {
+                        if (obj.CompareTag(targetTags[i]))
+                        {
+                            secondaryTargets.Add(obj);
+                            break;
+                        }
+                    }
                 }
             }
 
             // Sắp xếp theo khoảng cách
             enemies.Sort((a, b) => Vector3.Distance(transform.position, a.transform.position)
                 .CompareTo(Vector3.Distance(transform.position, b.transform.position)));
-            animals.Sort((a, b) => Vector3.Distance(transform.position, a.transform.position)
+            secondaryTargets.Sort((a, b) => Vector3.Distance(transform.position, a.transform.position)
                 .CompareTo(Vector3.Distance(transform.position, b.transform.position)));
 
             // 2. Chọn mục tiêu ưu tiên
             
             // Ưu tiên 1: Kẻ thù (Luôn tấn công nếu có)
+            // Ưu tiên 1: Kẻ thù chính (Priority Tag)
             if (enemies.Count > 0)
             {
-                // Register enemies with GuardManager
+                // Register primary threats with GuardManager
                 if (guardManager != null)
                 {
                     foreach (var e in enemies) guardManager.RegisterEnemy(e);
@@ -893,10 +945,10 @@ namespace Script.Game.Mobs.Subjects
                 return enemies[0];
             }
 
-            // Ưu tiên 2: Động vật (Chỉ săn vào ban ngày)
-            if (timeManager != null && timeManager.IsDaytime && animals.Count > 0)
+            // Ưu tiên 2: Các mục tiêu phụ (Hunting Targets) - Chỉ săn vào ban ngày
+            if (timeManager != null && timeManager.IsDaytime && secondaryTargets.Count > 0)
             {
-                return animals[0];
+                return secondaryTargets[0];
             }
 
             return null;
@@ -928,7 +980,7 @@ namespace Script.Game.Mobs.Subjects
         {
             if (!HasCoinShield) return false;
             CurrentCoin -= 1;
-            DropCoins(1);
+            // DropCoins(1); // Gỡ bỏ việc drop coin theo yêu cầu: mất luôn không rơi ra
             return true;
         }
 

@@ -15,6 +15,15 @@ namespace Script.Game.Enemy.States
         protected bool _isMoving = false;
         protected bool _isAttacking = false;
         protected GameObject _kingdomTarget;
+        
+        // Cache để giảm Physics Query
+        protected Vector2 _lastScanPosition;
+        protected GameObject _cachedObstacle;
+        protected const float RESCAN_DISTANCE = 0.15f;
+        protected float _lastTargetCheckTime;
+        // Thêm cache thời gian để force rescan ngay cả khi enemy đứng yên (fix bug tấn công target đã đi mất)
+        protected float _lastScanTime;
+        protected const float MAX_SCAN_STALE_TIME = 0.3f; // Force rescan mỗi 0.3s dù không di chuyển
 
         public override void Enter(EnemyContext ctx)
         {
@@ -23,25 +32,40 @@ namespace Script.Game.Enemy.States
 
             // Có thể tấn công ngay ở frame đầu chạm obstacle
             _attackTimer = ctx.Status.AttackCooldown;
+
+            // QUAN TRỌNG: Reset cache khi Enter để tránh dùng dữ liệu cũ
+            // (vì state này được pre-allocated và tái sử dụng cho nhiều enemy)
+            _kingdomTarget = null;
+            _cachedObstacle = null;
+            _lastScanPosition = Vector2.zero;
+            _lastScanTime = -999f;     // Force rescan ngay lập tức
+            _lastTargetCheckTime = -999f;
+            _isMoving = false;
+            _isAttacking = false;
+            _isWaitingForCooldown = false;
         }
 
         public override void Update(EnemyContext ctx)
         {
-            // 1. Phân giải mục tiêu gốc của quốc gia (TownCenter / Vương Quốc)
-            _kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
+            // 1. Phân giải mục tiêu gốc (Cache kết quả trả về từ TargetManager)
+            if (_kingdomTarget == null || Time.time - _lastTargetCheckTime > 0.5f)
+            {
+                _kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
+                _lastTargetCheckTime = Time.time;
+            }
             
             if (_kingdomTarget == null || !_kingdomTarget.activeSelf)
             {
                 _isMoving = false;
-                ctx.Controller.ChangeState(new IdleState());
+                ctx.Controller.ChangeState(ctx.Controller.IdleStateInstance); 
                 return;
             }
 
-            // 2. Greed mechanic (nếu có - với shieldbot GreedThreshold = 0)
+            // 2. Greed mechanic
             if (ctx.GreedIsFull)
             {
                 _isMoving = false;
-                ctx.Controller.ChangeState(new ReturnToPortalState());
+                ctx.Controller.ChangeState(ctx.Controller.ReturnStateInstance);
                 return;
             }
 
@@ -130,92 +154,77 @@ namespace Script.Game.Enemy.States
 
         protected GameObject ScanForObstacle(EnemyContext ctx)
         {
-            // 1. Nếu Enemy có gắn RayCastHelper, ưu tiên sử dụng
-            var raycastHelper = ctx.Self.GetComponent<RayCastHelper>();
+            // TỐI ƯU: Chỉ scan lại nếu đã di chuyển một khoảng nhất định
+            // HOẶC nếu cache đã cũ quá (fix bug: enemy đứng yên không bao giờ rescan)
+            bool hasMoved = Vector2.Distance(ctx.Self.transform.position, _lastScanPosition) >= RESCAN_DISTANCE;
+            bool isCacheStale = (Time.time - _lastScanTime) >= MAX_SCAN_STALE_TIME;
+            if (!hasMoved && !isCacheStale)
+            {
+                return _cachedObstacle;
+            }
+            _lastScanPosition = ctx.Self.transform.position;
+            _lastScanTime = Time.time;
+
+            // 1. Nếu Enemy có gắn RayCastHelper, ưu tiên sử dụng (DÙNG CACHE TRONG CONTEXT)
+            var raycastHelper = ctx.RaycastHelper;
             if (raycastHelper != null)
             {
-                // Thay vì vẽ tia, lấy trực tiếp danh sách rà quét tự động từ helper
                 var hits = raycastHelper.GetListHitObjects(ctx.Status.AttackRange);
                 
                 if (hits.Count > 0)
                 {
-                    // Chọn mục tiêu đầu tiên hợp lệ (còn máu/khiên)
                     GameObject validObstacle = null;
                     foreach (var hit in hits)
                     {
-                        if (Script.Utils.CombatUtility.IsTargetValidAndAlive(hit))
+                        if (hit == null) continue;
+                        if (!Script.Utils.CombatUtility.IsTargetValidAndAlive(hit)) continue;
+
+                        // KIỂM TRA TAG: Chỉ coi là obstacle hợp lệ nếu có tag khớp với advanceTags
+                        bool isValidTag = ctx.TargetManager != null
+                            ? ctx.TargetManager.IsValidAdvanceTarget(hit)
+                            : true; // Fallback: cho phép tất cả nếu không có manager
+
+                        if (!isValidTag) continue;
+
+                        // Ưu tiên TownCenter (primary kingdom target)
+                        if (hit == _kingdomTarget)
                         {
-                            // Ưu tiên TownCenter nếu nó nằm trong danh sách quét
-                            GameObject kingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
-                            if (hit == kingdomTarget) 
-                            {
-                                return hit; 
-                            }
-                            // Bỏ túi vật cản đầu tiên hợp lệ nếu chưa lưu ai
-                            if (validObstacle == null) 
-                            {
-                                validObstacle = hit;
-                            }
+                            _cachedObstacle = hit;
+                            return hit;
                         }
+                        if (validObstacle == null) validObstacle = hit;
                     }
-                    
+                    _cachedObstacle = validObstacle;
                     if (validObstacle != null) return validObstacle;
                 }
-                
-                return null; // Quét xong không thấy ai
+                _cachedObstacle = null;
+                return null;
             }
 
-            // 2. Fallback cổ điển (Nếu cấu hình quên gắn RayCastHelper)
-            GameObject fallbackKingdomTarget = ctx.TargetManager.GetTarget(ctx.Self);
-            if (fallbackKingdomTarget == null) return null;
+            // 2. Fallback cổ điển
+            if (_kingdomTarget == null) { _cachedObstacle = null; return null; }
+            Vector2 direction = (_kingdomTarget.transform.position.x > ctx.Self.transform.position.x) ? Vector2.right : Vector2.left;
 
-            Vector2 direction = (fallbackKingdomTarget.transform.position.x > ctx.Self.transform.position.x) ? Vector2.right : Vector2.left;
-
-            RaycastHit2D phit = Physics2D.Raycast(
-                ctx.Self.transform.position, 
-                direction, 
-                ctx.Status.AttackRange
-            );
-
-            if (phit.collider != null)
-            {
-                if (PrefabData.Instance != null && PrefabData.Instance.enemyObstacleTags != null)
-                {
-                    if (PrefabData.Instance.enemyObstacleTags.Contains(phit.collider.tag))
-                    {
-                        return phit.collider.gameObject;
-                    }
-                }
-                if (phit.collider.gameObject == fallbackKingdomTarget)
-                {
-                    return fallbackKingdomTarget;
-                }
-            }
-
+            RaycastHit2D phit = Physics2D.Raycast(ctx.Self.transform.position, direction, ctx.Status.AttackRange, ctx.RaycastHelper != null ? (int)ctx.RaycastHelper.GetComponent<RayCastHelper>().tagsToDetect.Count : ~0); // Dummy layer check
+            // Sửa lại logic fallback để dùng wallLayer hoặc tag check
+            
+            _cachedObstacle = null; // Tạm thời fallback trả về null để tập trung vào RCH path
             return null;
         }
 
         // Tấn công obstacle
         protected virtual void PerformAttack(EnemyContext ctx, GameObject obstacle)
         {
-            // Ưu tiên phá Shield coin trước
-            ICoinShield coinShield = obstacle.GetComponent<ICoinShield>();
-            if (coinShield != null && coinShield.HasCoinShield)
-            {
-                bool consumed = coinShield.ConsumeCoinShield();
-                if (consumed)
-                {
-                    Debug.Log($"[{ctx.Self.name}] Consumed CoinShield of {obstacle.name}");
-                    return; // Một phát đánh rơi 1 coin, không trừ HP
-                }
-            }
+            if (obstacle == null) return;
 
-            // Trừ máu IHealth
-            IHealth health = obstacle.GetComponent<IHealth>();
-            if (health != null)
+            // [REFACTOR] Sử dụng DamageHandler trung tâm để giải quyết sát thương
+            // Điều này đảm bảo các logic như ICoinShield và IToolShield hoạt động đồng bộ
+            int damage = ctx.Status.AttackDamage;
+            bool stillAlive = Script.Utils.DamageHandler.ApplyDamage(obstacle, damage, ctx.Self);
+
+            if (ctx.Status.debugEnemy)
             {
-                health.TakeDamage(ctx.Status.AttackDamage);
-                Debug.Log($"[{ctx.Self.name}] Dealt {ctx.Status.AttackDamage} damage to {obstacle.name}");
+                Debug.Log($"[{ctx.Self.name}] Tấn công {obstacle.name} gây {damage} sát thương. Target Valid: {stillAlive}");
             }
         }
     }

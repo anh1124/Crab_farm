@@ -241,12 +241,14 @@ MonoBehaviour:
   isShowGizmoUser: 1
   showDebugLog: 0
   isActive: 1
-  scanFrequencyHz: 5
   tagsToDetect:
   - Player
   - Coin
   - Enemy
   - Animal
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 10369
   debugHitObjects: []
 --- !u!114 &3979009691190339230
 MonoBehaviour:
@@ -295,6 +297,7 @@ MonoBehaviour:
   previousArcherState: 0
   detectRangeRaycast: 10
   archerDetectRange: 18
+  attackDame: 1
   attackSpeed: 2
   lastAttackTime: 0
   isLeftFlank: 0
@@ -325,8 +328,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b35f9a4dcda5864da06b55f8d18cb68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackCooldownTimer: 0
-  isDebugShotTarget: 1
+  targetTags:
+  - Enemy
+  - EnemyPortal
+  - Animal
+  - Rabbit
+  isDebugShotTarget: 0
   isDebugMovePos: 0
   isDebugAttackRange: 0
 --- !u!114 &6996326795921770314
@@ -361,6 +368,7 @@ MonoBehaviour:
   currentTool: {fileID: 0}
   isDebugGoPlace: 0
   COIN_DROP_COOLDOWN: 0.7
+  _lastToolCheckTime: -999
 --- !u!114 &4705056387235239032
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,12 +386,14 @@ MonoBehaviour:
   isShowGizmo: 0
   isShowGizmoUser: 1
   isActive: 1
-  scanFrequencyHz: 5
   tagsToDetect:
   - Player
   - Coin
   - Enemy
   - Animal
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 17537
   showDebugLog: 0
   debugDetectedObjects: []
 --- !u!114 &4524887816005871866
@@ -402,9 +412,12 @@ MonoBehaviour:
   arrowPool: {fileID: 0}
   projectileSpeed: 15
   gravityScale: 2
-  minAngle: 30
-  maxAngle: 70
-  angleStep: 5
+  lowMinAngle: 30
+  lowMaxAngle: 45
+  lowAngleStep: 5
+  highMinAngle: 60
+  highMaxAngle: 80
+  highAngleStep: 10
   accuracy: 0.5
   wallLayer:
     serializedVersion: 2
@@ -423,5 +436,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 106f39c8cdd0857499f2b2e14dbf7ea7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  faction: 2
-  _ownerNpc: {fileID: 0}
+  canPickupCoin: 1
+  canPickupTool: 1

@@ -82,13 +82,17 @@ namespace Script.Manager.Building
             else if (instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
+
+            LoadTownCenterConfigsFromJson();
         }
         
         private void Start()
         {
-           
-            LoadTownCenterConfigsFromJson();
+            // Cập nhật danh sách công trình khả dụng ngay lập tức nếu TownCenter đã tồn tại
+            // Nếu TownCenter đã tồn tại (do thứ tự Start)
+            UpdateAvailableBuildings();
         } // Đọc dữ liệu từ JSON
         
         //load config mới theo cấp towncenter hiện tại
@@ -250,8 +254,14 @@ namespace Script.Manager.Building
         //nếu hàm này trả về true thì sẽ hiện coinslot cho update,còn không thì tắt coinslot đi
         public bool CanBuildingBeUpgraded(BuildingType buildingType, int currentTier)
         {
+            // TỰ ĐỘNG CẬP NHẬT nếu danh sách đang trống nhưng đã có TownCenter
+            if ((availableStructures == null || availableStructures.Count == 0) && currentTownCenter != null)
+            {
+                UpdateAvailableBuildings();
+            }
+
             // kiểm tra đã load được config chưa
-            if (townCenterConfigs == null || availableStructures == null)
+            if (townCenterConfigs == null || townCenterConfigs.Count == 0 || availableStructures == null || availableStructures.Count == 0)
             {
                 Debug.LogWarning("No town center configurations available for upgrade check");
                 return false;
@@ -292,7 +302,13 @@ namespace Script.Manager.Building
         //hiện tại chỉ dùng cho wallbehavior debug
         public int GetMaxAllowedTier(BuildingType buildingType)
         {
-            if (townCenterConfigs == null || availableStructures == null)
+            // TỰ ĐỘNG CẬP NHẬT nếu danh sách đang trống nhưng đã có TownCenter
+            if ((availableStructures == null || availableStructures.Count == 0) && currentTownCenter != null)
+            {
+                UpdateAvailableBuildings();
+            }
+
+            if (townCenterConfigs == null || availableStructures == null || availableStructures.Count == 0)
             {
                 return 0;
             }
