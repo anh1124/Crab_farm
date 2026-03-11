@@ -8,11 +8,13 @@ using System.Collections.Generic;
 using Script.Game.Enemy;
 using Script.Interfaces;
 using Script.Game.Enemy.Interfaces;
+using Script.Data_Model.Interfaces;
+using System;
 
 namespace Script.Entities.Structures.SummondPortal
 {
     [RequireComponent(typeof(EnemyPortalStatus))]
-    public class EnemyPortalBehavior : MonoBehaviour, IDamageable
+    public class EnemyPortalBehavior : MonoBehaviour, IDamageable, ISaveable
     {
         private EnemyPortalStatus status;
 
@@ -147,6 +149,55 @@ namespace Script.Entities.Structures.SummondPortal
             // Destruction logic is handled in OnDestroy and via this method
             Destroy(gameObject);
         }
+
+        #region ISaveable Implementation
+
+        [Serializable]
+        public struct PortalSaveData
+        {
+            public int spawnDay;
+            public bool isReadyToSpawn;
+            public int currentHp;
+            public float x, y, z;
+        }
+
+        public string GetPrefabID()
+        {
+            return "EnemyPortalPrefab_ID";
+        }
+
+        public object CaptureData()
+        {
+            return new PortalSaveData
+            {
+                spawnDay = status.spawnDay,
+                isReadyToSpawn = status.isReadyToSpawn,
+                currentHp = status.CurrentHp,
+                x = transform.position.x,
+                y = transform.position.y,
+                z = transform.position.z
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            if (data is PortalSaveData saveData)
+            {
+                status.spawnDay = saveData.spawnDay;
+                status.isReadyToSpawn = saveData.isReadyToSpawn;
+                status.CurrentHp = saveData.currentHp;
+                transform.position = new Vector3(saveData.x, saveData.y, saveData.z);
+
+                // --- LOGIC PHỤC HỒI BEHAVIOR ---
+                // Sau khi load xong data, nếu portal đã ready -> kích hoạt visual ngay lập tức
+                if (status.isReadyToSpawn && visualAnimator != null)
+                {
+                    visualAnimator.SetActive();
+                }
+            }
+        }
+
+        #endregion
 
         private void OnDestroy()
         {

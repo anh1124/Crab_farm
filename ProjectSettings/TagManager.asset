@@ -35,6 +35,7 @@ TagManager:
   - Animal
   - Arrow
   - EnemyPortal
+  - Trigger
   layers:
   - Default
   - TransparentFX

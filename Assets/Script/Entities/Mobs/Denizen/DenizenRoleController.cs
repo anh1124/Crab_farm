@@ -20,7 +20,7 @@ namespace Script.Game.Mobs.Subjects
         Farmer
     }
 
-    public class DenizenRoleController : MonoBehaviour, ISaveable, IItemHandle
+    public class DenizenRoleController : MonoBehaviour, ISaveable, IItemHandle, INPCBehavior
     {
         // Script này quản lý chuyển nghề và thiết lập script cần thiết
         public NPCRole CurrentRole = NPCRole.Vagrant;
@@ -150,6 +150,9 @@ namespace Script.Game.Mobs.Subjects
             {
                 denizenStatus.OnCoinChanged += OnCoinChangedHandler;
             }
+
+            if (NPCUpdateManager.Instance != null)
+                NPCUpdateManager.Instance.Register(this);
         }
 
         private void OnDisable()
@@ -158,6 +161,9 @@ namespace Script.Game.Mobs.Subjects
             {
                 denizenStatus.OnCoinChanged -= OnCoinChangedHandler;
             }
+
+            if (NPCUpdateManager.Instance != null)
+                NPCUpdateManager.Instance.Unregister(this);
         }
 
 
@@ -199,11 +205,21 @@ namespace Script.Game.Mobs.Subjects
             ApplyRole(CurrentRole);
             RegisterWithManager();
 
-            // Set Detection Ranges based on Status
-            // Logic moved to specific Behaviors
+            // Fallback registration
+            if (NPCUpdateManager.Instance != null)
+                NPCUpdateManager.Instance.Register(this);
         }
 
-        // Update loop has been removed, replaced by NPCUpdateManager
+        // INPCBehavior implementation - delegate to sub-behaviors
+        public void UpdateBehavior()
+        {
+            currentActiveBehavior?.UpdateBehavior();
+        }
+
+        public void OnObjectsDetected(System.Collections.Generic.List<GameObject> detectedObjects)
+        {
+            currentActiveBehavior?.OnObjectsDetected(detectedObjects);
+        }
 
         public void ChangeRole(NPCRole newRole)
         {
@@ -263,7 +279,6 @@ namespace Script.Game.Mobs.Subjects
                     gameObject.tag = "Vagrant";
                     vagrantBehavior.enabled = true;
                     currentActiveBehavior = vagrantBehavior;
-                    NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.vagrantAnimatorController;
                     break;
 
@@ -276,7 +291,6 @@ namespace Script.Game.Mobs.Subjects
                     gameObject.tag = "Villager";
                     villagerBehavior.enabled = true;
                     currentActiveBehavior = villagerBehavior;
-                    NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.villagerAnimatorController;
                     break;
 
@@ -289,7 +303,6 @@ namespace Script.Game.Mobs.Subjects
                     gameObject.tag = "Archer";
                     archerBehavior.enabled = true;
                     currentActiveBehavior = archerBehavior;
-                    NPCUpdateManager.Instance?.Register(currentActiveBehavior);
                     targetController = DenizenManager.Instance.archerAnimatorController;
                     
                     // Register to GuardManager centrally
@@ -318,11 +331,6 @@ namespace Script.Game.Mobs.Subjects
 
         private void DisableAllBehaviors()
         {
-            if (currentActiveBehavior != null)
-            {
-                NPCUpdateManager.Instance?.Unregister(currentActiveBehavior);
-            }
-            
             if (vagrantBehavior != null) vagrantBehavior.enabled = false;
             if (villagerBehavior != null) villagerBehavior.enabled = false;
             if (archerBehavior != null) archerBehavior.enabled = false;

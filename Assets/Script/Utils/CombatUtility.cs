@@ -29,15 +29,30 @@ namespace Script.Utils
         {
             if (hitObject == null) return null;
 
-            int triggerLayer = LayerMask.NameToLayer("TriggerLayer");
-            // Kiểm tra Layer "TriggerLayer" HOẶC Tag "Trigger" HOẶC Tag "TriggerLayer"
-            if (hitObject.layer == triggerLayer || hitObject.CompareTag("Trigger") || hitObject.CompareTag("TriggerLayer"))
+            // 1. Kiểm tra bằng Tag "Trigger" (Được ưu tiên nhất)
+            // LƯU Ý: Phải đảm bảo Tag "Trigger" đã được tạo trong Tag Manager của Unity để tránh log lỗi.
+            if (hitObject.CompareTag("Trigger"))
             {
                 if (hitObject.transform.parent != null)
-                {
                     return hitObject.transform.parent.gameObject;
-                }
             }
+
+            // 2. Kiểm tra Layer (Dự phòng)
+            int triggerLayer = LayerMask.NameToLayer("TriggerLayer");
+            if (triggerLayer != -1 && hitObject.layer == triggerLayer)
+            {
+                if (hitObject.transform.parent != null)
+                    return hitObject.transform.parent.gameObject;
+            }
+
+            // 3. Kiểm tra nếu là Trigger Collider (Dự phòng - dành cho các child hitbox chưa đặt tag)
+            var col = hitObject.GetComponent<Collider2D>();
+            if (col != null && col.isTrigger)
+            {
+                if (hitObject.transform.parent != null)
+                    return hitObject.transform.parent.gameObject;
+            }
+
             return hitObject;
         }
 

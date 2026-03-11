@@ -91,7 +91,7 @@ namespace Script.Game.Mobs.Subjects
             ArrowController arrow = arrowObj.GetComponent<ArrowController>();
             if (arrow != null)
             {
-                arrow.Initialize(velocity, finalAngle, gravityScale, stickImpactOffset);
+                arrow.Initialize(velocity, finalAngle, gravityScale, stickImpactOffset, gameObject);
             }
         }
         

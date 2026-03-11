@@ -80,14 +80,18 @@ namespace Script.Game.Mobs.Subjects
         {
             if (damage <= 0) return;
 
-            // Dân làng dùng Coin đở đòn trước
+            // 1. Trừ coin trước nếu còn xu
             if (HasCoinShield)
             {
-                if (ConsumeCoinShield()) return;
+                ConsumeCoinShield(); // Mỗi lần hit mất 1 coin
             }
 
-            // Hết xu thì để DenizenRoleController.OnCoinChangedHandler xử lý (đổi về Vagrant)
-            status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - damage);
+            // 2. Nếu sau khi trừ mà hết xu thì đổi thành Vagrant
+            if (status.CurrentCoins <= 0)
+            {
+                var ctrl = GetComponent<DenizenRoleController>();
+                if (ctrl != null) ctrl.ChangeRole(NPCRole.Vagrant);
+            }
         }
 
         [ContextMenu("Debug / Simulate Damage")]
@@ -122,15 +126,15 @@ namespace Script.Game.Mobs.Subjects
         {
             InitializeVillager();
             
-            if (NPCUpdateManager.Instance != null)
-                NPCUpdateManager.Instance.Register(this);
-
             if (rayCastHelper != null)
             {
                 rayCastHelper.isActive = true;
                 rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected; // Prev double sub
                 rayCastHelper.OnDetectedObjectsChanged += OnObjectsDetected;
             }
+
+            // Reset tool check timer to trigger immediately
+            _lastToolCheckTime = -999f;
 
             // Subscribe to time events
             if (GameTimeManager.Instance != null)
@@ -147,9 +151,6 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnDisable()
         {
-            if (NPCUpdateManager.Instance != null)
-                NPCUpdateManager.Instance.Unregister(this);
-            
             if (rayCastHelper != null)
             {
                 rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected;
@@ -211,18 +212,28 @@ namespace Script.Game.Mobs.Subjects
 
         public void UpdateBehavior()
         {
+            // Debug call frequency
+            // Debug.Log($"[VillagerBehavior] UpdateBehavior for {gameObject.name} | State: {status.villagerState} | isInDanger: {isInDanger}");
+
             // [SCAN] Chủ động quét
             if (rayCastHelper != null && rayCastHelper.isActive)
             {
                 rayCastHelper.DrawRay();
             }
 
-            // Kiểm tra tool định kỳ khi đang Idle (mỗi 2 giây)
-            if (currentTool == null &&
-                status.villagerState == DenizenStatus.VillagerState.Idle &&
+            // Safety: Nếu tool đã bị ai đó lượm mất thì bỏ qua
+            if (currentTool != null && currentTool.pickedBy != null)
+            {
+                currentTool = null;
+            }
+
+            // Kiểm tra tool định kỳ khi đang Idle hoặc đang về TownCenter (mỗi 2 giây)
+            if (currentTool == null && !isInDanger &&
+                (status.villagerState == DenizenStatus.VillagerState.Idle || status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter) &&
                 Time.time - _lastToolCheckTime >= TOOL_CHECK_INTERVAL)
             {
                 _lastToolCheckTime = Time.time;
+                Debug.Log($"[VillagerBehavior] Running periodic tool check for {gameObject.name} | curX: {transform.position.x}");
                 CheckForToolsOnSpawn();
             }
 
@@ -236,25 +247,24 @@ namespace Script.Game.Mobs.Subjects
             if (fearTimer > 0)
             {
                 fearTimer -= Time.deltaTime;
-                if (fearTimer <= 0 && status.villagerState == DenizenStatus.VillagerState.Fear)
+                if (fearTimer <= 0)
                 {
                     isInDanger = false;
-                    // Kiểm tra thời gian để quyết định trạng thái tiếp theo
-                    if (GameTimeManager.Instance != null)
+                    // Nếu đang trong trạng thái Fear thì mới cần chọn lại state
+                    if (status.villagerState == DenizenStatus.VillagerState.Fear)
                     {
-                        int currentHour = GameTimeManager.Instance.GameHour;
-                        if (currentHour >= 19 || currentHour < 6)
+                        if (GameTimeManager.Instance != null)
                         {
-                            status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                            int currentHour = GameTimeManager.Instance.GameHour;
+                            if (currentHour >= 19 || currentHour < 6)
+                                status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                            else
+                                status.villagerState = DenizenStatus.VillagerState.Idle;
                         }
                         else
                         {
                             status.villagerState = DenizenStatus.VillagerState.Idle;
                         }
-                    }
-                    else
-                    {
-                        status.villagerState = DenizenStatus.VillagerState.Idle;
                     }
                 }
             }

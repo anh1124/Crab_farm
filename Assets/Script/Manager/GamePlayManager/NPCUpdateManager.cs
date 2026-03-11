@@ -4,6 +4,7 @@ using Script.Data_Model.Interfaces;
 
 namespace Script.Manager.GamePlayManager
 {
+    [DefaultExecutionOrder(-100)]
     public class NPCUpdateManager : MonoBehaviour
     {
         public static NPCUpdateManager Instance { get; private set; }

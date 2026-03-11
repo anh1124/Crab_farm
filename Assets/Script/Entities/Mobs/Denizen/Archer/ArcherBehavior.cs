@@ -90,15 +90,12 @@ namespace Script.Game.Mobs.Subjects
             if (guardManager == null) guardManager = GuardManager.Instance;
             SubscribeToTimeEvents();
 
-            if (NPCUpdateManager.Instance != null)
-                NPCUpdateManager.Instance.Register(this);
+            if (guardManager == null) guardManager = GuardManager.Instance;
+            SubscribeToTimeEvents();
         }
 
         private void OnDisable()
         {
-             if (NPCUpdateManager.Instance != null)
-                 NPCUpdateManager.Instance.Unregister(this);
-
              // Cleanup if needed
              if (circleDetectHelper != null)
              {
@@ -222,21 +219,22 @@ namespace Script.Game.Mobs.Subjects
         {
             if (damage <= 0) return;
 
-            // Ưu tiên 1: Dùng Vũ khí (Cung) đở đòn cuối cùng
-            if (HasToolShield)
+            // 1. Trừ coin trước nếu > 1
+            if (status.CurrentCoins > 1)
             {
-                if (ConsumeToolShield()) return;
+                ConsumeCoinShield(); // Mỗi lần hit mất 1 coin
+                return;
+            }
+            
+            // 2. Nếu coin = 1 thì trừ bow và đổi nghề sang Villager
+            if (status.CurrentCoins == 1)
+            {
+                // ConsumeToolShield đã bao gồm logic drop bow và ChangeRole(Villager)
+                ConsumeToolShield();
+                return;
             }
 
-            // Ưu tiên 2: Dùng Coin (xu) đở đòn
-            if (HasCoinShield)
-            {
-                if (ConsumeCoinShield()) return;
-            }
-
-            // Cuối cùng: Trừ thẳng vào xu
-            // DenizenRoleController.OnCoinChangedHandler sẽ tự xử lý khi xu về 0
-            // (rớt cung nếu là Archer, đổi về Vagrant...)
+            // 3. Fallback: Nếu không còn gì (đã là Villager hoặc Vagrant)
             status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - damage);
         }
 

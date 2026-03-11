@@ -6,7 +6,7 @@ using Script.Interfaces;
 
 namespace Script.Entities.Structures.SummondPortal
 {
-    public class EnemyPortalStatus : MonoBehaviour, ISaveable, IHealth
+    public class EnemyPortalStatus : MonoBehaviour, IHealth
     {
         [Header("Portal States")]
         public bool isReadyToSpawn = false;
@@ -62,46 +62,5 @@ namespace Script.Entities.Structures.SummondPortal
             OnDeath?.Invoke();
         }
 
-        #region ISaveable Implementation
-
-        [Serializable]
-        public struct PortalSaveData
-        {
-            public int spawnDay;
-            public bool isReadyToSpawn;
-            public int currentHp;
-            public float x, y, z;
-        }
-
-        public string GetPrefabID()
-        {
-            return "EnemyPortalPrefab_ID"; // Modify if you have a specific ID system
-        }
-
-        public object CaptureData()
-        {
-            return new PortalSaveData
-            {
-                spawnDay = this.spawnDay,
-                isReadyToSpawn = this.isReadyToSpawn,
-                currentHp = this.CurrentHp,
-                x = transform.position.x,
-                y = transform.position.y,
-                z = transform.position.z
-            };
-        }
-
-        public void RestoreData(object data)
-        {
-            if (data is PortalSaveData saveData)
-            {
-                this.spawnDay = saveData.spawnDay;
-                this.isReadyToSpawn = saveData.isReadyToSpawn;
-                this.CurrentHp = saveData.currentHp;
-                transform.position = new Vector3(saveData.x, saveData.y, saveData.z);
-            }
-        }
-
-        #endregion
     }
 }

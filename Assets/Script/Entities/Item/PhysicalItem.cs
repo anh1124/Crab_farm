@@ -263,7 +263,13 @@ namespace Script.Game.Item.Coin
         
         public string GetPrefabID()
         {
-            return prefabID;
+            switch (itemType)
+            {
+                case ItemType.Coin: return "coin";
+                case ItemType.Tool_Bow: return "bow";
+                case ItemType.Tool_Hammer: return "hammer";
+                default: return "coin";
+            }
         }
         
         public object CaptureData()

@@ -309,6 +309,8 @@ namespace Script.Data_Model
             prefabDict.Add("spike_vendor", upgradeHouse);
             prefabDict.Add("wall", prefabWall);
             prefabDict.Add("coin", coinPrefab);
+            prefabDict.Add("bow", bow);
+            prefabDict.Add("hammer", hammer);
             prefabDict.Add("denizen", denizen);
             prefabDict.Add("EnemyPortalPrefab_ID", summoningPortal);
             

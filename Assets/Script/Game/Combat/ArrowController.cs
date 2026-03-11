@@ -1,6 +1,6 @@
 using UnityEngine;
-using Script.Game.Enemy.Interfaces; // For IHealth
 using Script.Data_Model; // For PrefabData
+using Script.Utils; // For DamageHandler and CombatUtility
 
 namespace Script.Game.Combat
 {
@@ -46,6 +46,8 @@ namespace Script.Game.Combat
         private Transform stuckTarget;
         private Vector3 stuckLocalPosition;
         private float stuckLocalRotationDelta;
+
+        private GameObject instigator; // Added instigator tracking
         #endregion
         
         private void Awake()
@@ -55,8 +57,9 @@ namespace Script.Game.Combat
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
         
-        public void Initialize(Vector2 velocity, float launchAngle, float gravityScaleValue, float stickOffset = 0.4f)
+        public void Initialize(Vector2 velocity, float launchAngle, float gravityScaleValue, float stickOffset = 0.4f, GameObject instigator = null)
         {
+            this.instigator = instigator;
             hasDealtDamage = false;
             isActive = true;
             isStuck = false;
@@ -140,74 +143,73 @@ namespace Script.Game.Combat
             
             // Debug collision
             if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
-                Debug.Log($"[Arrow] Hit: {collision.gameObject.name} | Tag: {collision.gameObject.tag} | Layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
+                Debug.Log($"[Arrow] Collision: {collision.gameObject.name} | Tag: {collision.gameObject.tag} | Layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
 
-            // Stop immediately to prevent bounce/rotation
-            rb.velocity = Vector2.zero; 
+            HandleHit(collision.gameObject, collision);
+        }
+
+        private void OnTriggerEnter2D(Collider2D collider)
+        {
+            if (!isActive) return;
+
+            // Debug trigger
+            if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
+                Debug.Log($"[Arrow] Trigger: {collider.gameObject.name} | Tag: {collider.gameObject.tag} | Layer: {LayerMask.LayerToName(collider.gameObject.layer)}");
+
+            HandleHit(collider.gameObject, null, collider);
+        }
+
+        private void HandleHit(GameObject hitObject, Collision2D collision = null, Collider2D collider = null)
+        {
+            if (!isActive) return;
+
+            // Stop immediately
+            rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
 
-            // Damage logic
+            // Damage logic (Only once)
             if (!hasDealtDamage)
             {
-                TryDealDamage(collision.gameObject);
+                TryDealDamage(hitObject);
             }
-            
+
             // Stick logic
             if (enableSticking && !isStuck)
             {
-                TryStickToTarget(collision);
+                if (collision != null) TryStickToTarget(collision);
+                else if (collider != null) TryStickToTrigger(collider);
             }
-            else
-            {
-                // Debug.Log("[Arrow] Sticking disabled or already stuck.");
-            }
-            
-            // Always deactivate physics after collision logic (if not already handled)
+
             if (isActive)
             {
-                 DeactivatePhysics();
+                DeactivatePhysics();
             }
         }
         
         private void TryStickToTarget(Collision2D collision)
         {
-            // Removed LayerMask check as requested by user. 
-            // Now relies on Physics 2D Matrix for collision filtering.
-            
             isStuck = true;
             lifeTimer = stuckLifetime; 
             
-            // Debug Position BEFORE Parenting
-            Vector3 beforePos = transform.position;
-            Vector3 targetPos = collision.transform.position;
-            
-            // Disable collider
             if (col != null) col.enabled = false;
 
             stuckTarget = collision.transform;
             stuckLocalPosition = stuckTarget.InverseTransformPoint(transform.position);
             stuckLocalRotationDelta = transform.eulerAngles.z - stuckTarget.eulerAngles.z;
             
-            // ... (Position adjustment logic)
-            if (collision.contactCount > 0)
-            {
-                Vector2 contactPoint = collision.contacts[0].point;
-                // [DISABLED] Manual shift causes visual snap. Rely on Physics stop.
-                // Vector3 direction = transform.right; 
-                // transform.position = (Vector3)contactPoint - direction * stickImpactOffset;
-            }
-            
-            // Debug Position AFTER Parenting
-            Vector3 afterPos = transform.position;
-            
-            if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
-            {
-                Debug.Log($"[Arrow Stick Debug] \n" +
-                          $"- Hit Object: {collision.gameObject.name} (Pos: {targetPos})\n" +
-                          $"- Arrow Pos BEFORE: {beforePos}\n" +
-                          $"- Arrow Pos AFTER: {afterPos}\n" +
-                          $"- Shift Delta: {Vector3.Distance(beforePos, afterPos)}");
-            }
+            DeactivatePhysics();
+        }
+
+        private void TryStickToTrigger(Collider2D collider)
+        {
+            isStuck = true;
+            lifeTimer = stuckLifetime;
+
+            if (col != null) col.enabled = false;
+
+            stuckTarget = collider.transform;
+            stuckLocalPosition = stuckTarget.InverseTransformPoint(transform.position);
+            stuckLocalRotationDelta = transform.eulerAngles.z - stuckTarget.eulerAngles.z;
 
             DeactivatePhysics();
         }
@@ -240,27 +242,26 @@ namespace Script.Game.Combat
         
         private void TryDealDamage(GameObject target)
         {
-            // Debug Log Hit
-            // Debug.Log($"[Arrow] Hit: {target.name} | Tag: {target.tag}");
+            if (target == null) return;
+
+            // Resolve target (e.g., if hit a trigger/blocker child)
+            GameObject effectiveTarget = CombatUtility.ResolveTargetFromTrigger(target);
 
             // 1. Check Ally Tags (Friendly Fire Prevention)
-            if (PrefabData.Instance != null)
+            if (PrefabData.Instance != null && !PrefabData.Instance.allowAllyDamage)
             {
-                // Only skip if ally tags matched AND friendly fire is OFF
-                if (!PrefabData.Instance.allowAllyDamage && PrefabData.Instance.allyTags.Contains(target.tag))
+                if (CombatUtility.IsAlly(effectiveTarget))
                 {
                     return; // Ignore allies
                 }
             }
 
-            // 2. Deal Damage
-            IHealth health = target.GetComponent<IHealth>();
-            if (health != null)
+            // 2. Deal Damage via DamageHandler
+            if (DamageHandler.ApplyDamage(effectiveTarget, damage, instigator))
             {
-                health.TakeDamage(damage);
                 hasDealtDamage = true;
                 if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
-                    Debug.Log($"[Arrow] Dealt {damage} damage to {target.name} (Tag: {target.tag})");
+                    Debug.Log($"[Arrow] Dealt {damage} damage to {effectiveTarget.name} (Tag: {effectiveTarget.tag}) via DamageHandler");
             }
         }
         
