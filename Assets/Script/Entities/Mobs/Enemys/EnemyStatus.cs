@@ -6,7 +6,7 @@ using static Script.Game.Enemy.TotalEnemyList;
 
 namespace Script.Game.Enemy
 {
-    public class EnemyStatus : MonoBehaviour, IHealth, IDie, ICoinable
+    public class EnemyStatus : MonoBehaviour, IHealth, IDie, ICoinable, IDamageable
     {
         [Header("Debug Stats")]
         [SerializeField] private int _currentHp;
@@ -88,6 +88,12 @@ namespace Script.Game.Enemy
             {
                 Die();
             }
+        }
+
+        // --- IDamageable Implementation ---
+        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        {
+            TakeDamage(damage);
         }
 
         public void Die()

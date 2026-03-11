@@ -9,6 +9,7 @@ using Script.Game.Other;
 using Script.Manager.WorldManager;
 using Script.Manager.GamePlayManager;
 using Script.Game.Item.Coin;
+using Script.Interfaces;
 
 namespace Script.Game.Mobs.Subjects
 {
@@ -417,12 +418,7 @@ namespace Script.Game.Mobs.Subjects
             PhysicalItem coin = item.GetComponent<PhysicalItem>();
             if (coin != null && coin.itemType == ItemType.Coin)
             {
-                // Only transform if enabled (double check, though CoinCollector checks this usually)
                 if (!this.enabled) return false;
-                
-                // Tiêu hủy coin được dời sang cho LootPickupTrigger xử lý, chỉ cần return true
-                
-                // Debug.Log($"[VagrantBehavior] Coin pickup successful, transforming to Villager");
                 StartCoroutine(TransformToVillagerNextFrame());
                 return true;
             }
