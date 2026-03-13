@@ -14,7 +14,6 @@ namespace Script.Game.Item.Coin
     {
         public ItemType itemType = ItemType.Coin;
         public GameObject pickedBy = null;
-        private string prefabID = "coin";
         public bool playerPickupAble = true;
         public bool denizensPickupAble  = true;
         public bool enemyPickupAble = false;

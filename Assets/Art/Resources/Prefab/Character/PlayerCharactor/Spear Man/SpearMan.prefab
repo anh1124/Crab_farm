@@ -343,7 +343,7 @@ MonoBehaviour:
   - skill: {fileID: 11400000, guid: cd02f2b29e2862c4790c3869c80729b7, type: 2}
     state: 0
     cooldownTimer: 0
-  - skill: {fileID: 0}
+  - skill: {fileID: 11400000, guid: e3ca122597458f942b6ced7413f6e213, type: 2}
     state: 0
     cooldownTimer: 0
   - skill: {fileID: 0}

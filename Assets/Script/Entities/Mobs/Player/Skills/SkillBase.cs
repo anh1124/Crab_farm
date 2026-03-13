@@ -8,21 +8,32 @@ namespace Script.Game.PlayerCharacter.Skills
     /// </summary>
     public abstract class SkillBase : ScriptableObject
     {
+        public enum ResourceType
+        {
+            Mana,
+            Stamina
+        }
+
         // === CONFIGURATION PROPERTIES ===
         
-        /// <summary>Tên skill hiển thị</summary>
+        [Header("Resource")]
+        public ResourceType resourceType;
+        public int resourceCost;
+        
+        [Header("UI")]
+        /// <summary>Tên hiển thị trên UI</summary>
+        public string displayName;
+        
+        /// <summary>Icon hiển thị trên UI (dùng cho cooldown overlay)</summary>
+        public Sprite icon;
+        
+        [Header("Stats")]
+        /// <summary>Tên skill</summary>
         public string skillName;
         
         /// <summary>Damage gây ra (int để tương thích với DamageHandler)</summary>
         public int damage;
         
-        /// <summary>Stamina tiêu hao khi dùng skill</summary>
-        public float staminaCost;
-        
-        /// <summary>Mana tiêu hao khi dùng skill</summary>
-        public float manaCost;
-        
-        /// <summary>Thời gian cooldown (giây) sau khi skill kết thúc</summary>
         /// <summary>Thời gian cooldown (giây) sau khi skill kết thúc</summary>
         public float cooldown;
         
@@ -32,6 +43,10 @@ namespace Script.Game.PlayerCharacter.Skills
         /// <summary>Collider dùng để phát hiện va chạm và gây damage</summary>
         public Collider2D hitbox;
         
+        [Header("Animation")]
+        /// <summary>Nếu true, skill sẽ đợi Animation Event gọi OnEnd. Nếu false, skill kết thúc ngay sau OnStart.</summary>
+        public bool useAnimation = true;
+
         /// <summary>Tên trigger animation trong Animator Controller</summary>
         public string animationTrigger;
         

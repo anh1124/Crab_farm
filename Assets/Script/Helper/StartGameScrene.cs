@@ -405,6 +405,12 @@ namespace Script.Game.Other
             // Setup PlayerController
             PlayerController.Instance.player = player;
             PlayerController.Instance.SetUpControllerPlayer();
+            
+            // Làm mới cache SkillManager trong PlayerGui sau khi Player đã được spawn và setup xong
+            if (Script.Controller.GUI_Controller.PlayerGui.PlayerGui.Instance != null)
+            {
+                Script.Controller.GUI_Controller.PlayerGui.PlayerGui.Instance.RefreshSkillManagerCache();
+            }
 
             // Setup Camera
             if (CameraFollowPlayer.Instance != null)

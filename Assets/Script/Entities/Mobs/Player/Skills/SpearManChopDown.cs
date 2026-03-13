@@ -6,7 +6,7 @@ namespace Script.Game.PlayerCharacter.Skills
 {
     /// <summary>
     /// Skill ChopDown - Skill 1 của SpearMan
-    /// Skill chém thẳng xuống, gây 10 damage, tiêu 15 stamina, cooldown 0.8s
+    /// Skill chém thẳng xuống, gây 10 damage, cooldown 0.8s
     /// </summary>
     [CreateAssetMenu(fileName = "SpearManChopDown", menuName = "Skills/SpearMan/ChopDown")]
     public class SpearManChopDown : SkillBase

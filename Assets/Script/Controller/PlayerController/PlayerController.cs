@@ -2,6 +2,7 @@ using Script.Game.Player;
 using UnityEngine;
 using Script.Game.PlayerCharacter;
 using Script.Game.Item.Coin;
+using Script.Game.PlayerCharacter.Skills;
 
 namespace Script.Controller.PlayerController
 {
@@ -31,6 +32,9 @@ namespace Script.Controller.PlayerController
         [Tooltip("Kéo GameObject container rỗng (child của Player) vào đây. Hitbox của skill sẽ được spawn vào đây.")]
         public Transform skillColliderContainer;
 
+        /// <summary>Single source of truth cho Skill. UI và hệ thống khác đọc qua đây.</summary>
+        public PlayerSkillManager SkillManager { get; private set; }
+
         // Coin-use related
         public CoinUser coinUser;
         private float coinPressStartTime = 0f;
@@ -58,6 +62,7 @@ namespace Script.Controller.PlayerController
         {
             rb = player.GetComponent<Rigidbody2D>();
             playerBehavior = player.GetComponent<PlayerBehavior>();
+            SkillManager = player.GetComponent<PlayerSkillManager>();
             isActiveUpdate = true;
         }
 

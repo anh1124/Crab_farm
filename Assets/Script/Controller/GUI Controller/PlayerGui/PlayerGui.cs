@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Script.Game.Mobs.MobsManager;
+using Script.Game.Player;
 
 // For PlayerController.Instance
 
@@ -45,6 +47,9 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         public Action OnSkill2PressedACT;//spawn vagrant btn
         public Action OnSkill1PressedACT; // New: Event for Skill 1
         
+        // Cache SkillManager một lần duy nhất để tránh GetComponent mỗi lần bấm nút
+        private Script.Game.PlayerCharacter.PlayerSkillManager _cachedSkillManager;
+        
         private void Start()
         {
             // Add event triggers for move buttons
@@ -60,7 +65,52 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             // Add listeners for item buttons (Debug Time)
             if(itemSlot1 != null) itemSlot1.onClick.AddListener(OnItem1Pressed);
             if(itemSlot2 != null) itemSlot2.onClick.AddListener(OnItem2Pressed);
+            
+            // Cache SkillManager một lần. Được assign bởi SetUpControllerPlayer() sau khi Player spawn.
+            _cachedSkillManager = PlayerController.PlayerController.Instance?.SkillManager;
         }
+
+        /// <summary>
+        /// Gọi sau khi Player spawn và SetUpControllerPlayer() hoàn tất để làm mới cache.
+        /// VD: PlayerSpawnManager gọi hàm này sau khi spawn.
+        /// </summary>
+        public void RefreshSkillManagerCache()
+        {
+            _cachedSkillManager = PlayerController.PlayerController.Instance?.SkillManager;
+            Debug.Log($"[PlayerGui] SkillManager cache refreshed: {(_cachedSkillManager != null ? "OK" : "NULL")}");
+
+            InitSkillButtonsFromExisting();
+        }
+        
+        /// <summary>
+        /// Lấy SkillButtonUI từ các Button đã khai báo sẵn (skill1, skill2, skill3)
+        /// và gọi Init() trên từng cái theo slot index.
+        /// </summary>
+        private void InitSkillButtonsFromExisting()
+        {
+            if (_cachedSkillManager == null) return;
+
+            var behavior = PlayerController.PlayerController.Instance?.playerBehavior;
+            var buttons  = new Button[] { skill1, skill2, skill3 };
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] == null) continue;
+
+                var ui = buttons[i].GetComponent<SkillButtonUI>();
+                if (ui != null)
+                {
+                    ui.Init(_cachedSkillManager, behavior, i);
+                    Debug.Log($"[PlayerGui] SkillButtonUI slot {i} initialized.");
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerGui] skill{i+1} không có component SkillButtonUI!");
+                }
+            }
+        }
+        
+
         
         // --- DEBUG TIME CONTROLS ---
         
@@ -84,34 +134,16 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             }
         }
 
-        // Hàm được gọi khi skill2 được nhấn - DEBUG: SPAWN VAGRANT
+        // Hàm được gọi khi skill2 được nhấn - SPAWN VAGRANT (Hệ thống mới)
         private void OnSkill2Pressed()
         {
-            Debug.Log("[PlayerGui] OnSkill2Pressed called - Spawning Vagrant!");
-            if (PlayerController.PlayerController.Instance?.player == null)
+            Debug.Log("[PlayerGui] OnSkill2Pressed called!");
+            if (PlayerController.PlayerController.Instance?.playerBehavior == null)
             {
-                Debug.LogError("[PlayerGui] Player instance not found!");
+                Debug.LogError("[PlayerGui] Player not spawned yet!");
                 return;
             }
-            
-            // Lấy vị trí trước mặt player
-            float direction = PlayerController.PlayerController.Instance.player.transform.localScale.x;
-            Vector3 spawnPos = PlayerController.PlayerController.Instance.player.transform.position + new Vector3(direction * 2, 2, 0); // +2Y to drop from sky
-
-            if (VagrantManager.Instance != null)
-            {
-                VagrantManager.Instance.SpawnVagrants(1, null, spawnPos);
-                Debug.Log($"[PlayerGui] Spawned vagrant at {spawnPos}");
-            }
-            else
-            {
-                Debug.LogError("[PlayerGui] VagrantManager instance not found!");
-            }
-            
-            /* Old skill logic
-            var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
-            skillManager?.ExecuteSkill(1);
-            */
+            _cachedSkillManager?.ExecuteSkill(1);
             OnSkill2PressedACT?.Invoke();
         }
         
@@ -124,9 +156,7 @@ namespace Script.Controller.GUI_Controller.PlayerGui
                 Debug.LogError("[PlayerGui] Player not spawned yet!");
                 return;
             }
-            
-            var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
-            skillManager?.ExecuteSkill(2);
+            _cachedSkillManager?.ExecuteSkill(2);
             OnSkill3PressedACT?.Invoke();
         }
 
@@ -139,9 +169,7 @@ namespace Script.Controller.GUI_Controller.PlayerGui
                 Debug.LogError("[PlayerGui] Player not spawned yet!");
                 return;
             }
-            
-            var skillManager = PlayerController.PlayerController.Instance.playerBehavior.GetComponent<Script.Game.PlayerCharacter.PlayerSkillManager>();
-            skillManager?.ExecuteSkill(0);
+            _cachedSkillManager?.ExecuteSkill(0);
             OnSkill1PressedACT?.Invoke();
         }
         
