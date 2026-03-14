@@ -58,6 +58,12 @@ namespace Script.Manager.WorldManager
         [Tooltip("Màu ban đêm")]
         public Color colorNight        = new Color(0.04f, 0.05f, 0.18f);
 
+        [Header("Grounding")]
+        [Tooltip("Nếu bật, Sky root (Y=0) sẽ luôn ghim vào đáy camera. Giúp đường chân trời ổn định khi camera di chuyển dọc.")]
+        public bool lockToCameraBottom = true;
+        [Tooltip("Độ lệch Y so với đáy màn hình.")]
+        public float yOffset = 0f;
+
         // ──────────────────────────────────────────────────────────────────────────
         // Private State
         // ──────────────────────────────────────────────────────────────────────────
@@ -102,16 +108,21 @@ namespace Script.Manager.WorldManager
             UpdateSkyColor(currentHour);
         }
 
-        private void LateUpdate()
+        private void FixedUpdate()
         {
-            // Sky object theo camera theo trục X, giữ nguyên Y và Z của chính nó.
-            // Waypoints là con của Sky nên tự động đi theo.
+            // Sky object theo camera theo trục X. 
+            // Nếu lockToCameraBottom = true, ghim Y vào đáy camera.
             if (_camera == null) return;
-            transform.position = new Vector3(
-                _camera.transform.position.x,
-                transform.position.y,
-                transform.position.z
-            );
+
+            float targetX = _camera.transform.position.x;
+            float targetY = transform.position.y;
+
+            if (lockToCameraBottom)
+            {
+                targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
+            }
+
+            transform.position = new Vector3(targetX, targetY, transform.position.z);
         }
 
         // ──────────────────────────────────────────────────────────────────────────

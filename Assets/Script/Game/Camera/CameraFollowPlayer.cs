@@ -8,7 +8,7 @@ public class CameraFollowPlayer : MonoBehaviour {
     public float targetDistance = 1.0f; // Distance the camera will adjust based on target movement
     public float smoothTime = 0.3f; // Time it takes for the camera to reach the target position smoothly
     public GameObject target;
-    public Vector3 offset ; // Optional offset for camera position
+    public Vector3 offset =new Vector3(0,4.75f,0); // Optional offset for camera position
 
     private float previousTargetX; // Stores the previous X position of the target
     private float currentTargetX;  // Stores the current X position of the target
@@ -44,7 +44,6 @@ public class CameraFollowPlayer : MonoBehaviour {
     {
         target = GameObject.FindWithTag("CameraTaget");
 
-        offset = new Vector3(0,4.5f,0);
     }
     // Update is called once per frame
     void FixedUpdate() {
