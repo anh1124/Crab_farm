@@ -133,7 +133,7 @@ public class GameTimeManager : MonoBehaviour
         UpdateTimeDisplay();
     }
 
-    public bool IsDaytime => GameHour >= 6 && GameHour < 18;
+    public bool IsDaytime => GameHour >= MORNING_HOUR && GameHour < NIGHT_HOUR;
 
     private IEnumerator TimeUpdateCoroutine()
     {
@@ -194,6 +194,12 @@ public class GameTimeManager : MonoBehaviour
     }
     
     public int GetTotalMinutes => _totalMinutes;
+
+    /// <summary>
+    /// Số giây thực tế tương đương 1 ngày game.
+    /// CelestialManager dùng giá trị này để drive smooth movement theo Time.deltaTime.
+    /// </summary>
+    public float SecondsPerDay => realSecondsPerGameDay;
     #endregion
 
     private void OnValidate()

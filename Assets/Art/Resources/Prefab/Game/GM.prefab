@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1109258664885330200}
-  - component: {fileID: 3643117081489509252}
   - component: {fileID: 4930023356812252655}
   - component: {fileID: 3345430047266833447}
   - component: {fileID: 6112153921068883486}
@@ -36,28 +35,9 @@ Transform:
   - {fileID: 2815593975664735317}
   - {fileID: 3655759098094132315}
   - {fileID: 471920209248215435}
+  - {fileID: 1023114066770394473}
   m_Father: {fileID: 8862165295465698764}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3643117081489509252
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 489224416659448179}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d62d6202e3fd4742a46c32b0221ee76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  timeDisplay: {fileID: 0}
-  inspectorHour: 0
-  inspectorMinute: 0
-  inspectorDay: 1
-  inspectorMonth: 1
-  inspectorYear: 1
-  realSecondsPerGameDay: 240
-  hourlyEventDebug: []
 --- !u!114 &4930023356812252655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195,8 +175,6 @@ MonoBehaviour:
   rightWalls: []
   stumps: []
   criticalHPThreshold: 10
-  defendableLeftWalls: []
-  defendableRightWalls: []
 --- !u!1 &1595070778010574993
 GameObject:
   m_ObjectHideFlags: 0
@@ -363,6 +341,9 @@ MonoBehaviour:
   - TownCenter
   retreatTags:
   - Wall
+  detectionLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -541,11 +522,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94ca18e9b02094a47bc8d6aad890e6fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  placementLayers:
-  - Structure
-  - 
-  - 
-  - 
+  placementLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
   invalidPlacementTags:
   - 
   - 
@@ -554,6 +533,7 @@ MonoBehaviour:
   - 
   raycastYOffset: 0.8
   showDebugLog: 0
+  detectedObjects: []
 --- !u!114 &6720191489177407989
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -804,6 +784,90 @@ MonoBehaviour:
   chunkList: []
   impassableRockLeft: {fileID: 0}
   impassableRockRight: {fileID: 0}
+--- !u!1 &8356058680024437741
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1023114066770394473}
+  - component: {fileID: 6490999052333895481}
+  - component: {fileID: 8825931610287078424}
+  m_Layer: 0
+  m_Name: Celestial
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1023114066770394473
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8356058680024437741}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1109258664885330200}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6490999052333895481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8356058680024437741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d62d6202e3fd4742a46c32b0221ee76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  timeDisplay: {fileID: 0}
+  inspectorHour: 0
+  inspectorMinute: 0
+  inspectorDay: 0
+  inspectorMonth: 0
+  inspectorYear: 0
+  realSecondsPerGameDay: 240
+  hourlyEventDebug: []
+--- !u!114 &8825931610287078424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8356058680024437741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 815f3f5b9b85da44bb16fcc1256d795d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sun: {fileID: 0}
+  moon: {fileID: 0}
+  sunRenderer: {fileID: 0}
+  moonRenderer: {fileID: 0}
+  backgroundRenderer: {fileID: 0}
+  mainCamera: {fileID: 0}
+  radiusX: 25
+  radiusY: 12
+  pivotOffset: 10
+  skyDepth: 20
+  sunSprite: {fileID: 0}
+  moonSprite: {fileID: 0}
+  dayBackgrounds:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  nightBackground: {fileID: 0}
 --- !u!1 &8561453029835615655
 GameObject:
   m_ObjectHideFlags: 0

@@ -229,6 +229,7 @@ RectTransform:
   m_Children:
   - {fileID: 8508173067471689724}
   - {fileID: 723925891496339252}
+  - {fileID: 1691250493302182253}
   - {fileID: 4309521159699465118}
   - {fileID: 5894371527820798687}
   m_Father: {fileID: 0}
@@ -775,7 +776,7 @@ GameObject:
   - component: {fileID: 963326308097990157}
   - component: {fileID: 1146501083492694080}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Time Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -793,7 +794,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4309521159699465118}
+  m_Father: {fileID: 5460128929680463596}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1773,7 +1774,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7259693077718394976}
-  - {fileID: 1691250493302182253}
   - {fileID: 4740269615289073010}
   m_Father: {fileID: 5460128929680463596}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1810,8 +1810,6 @@ MonoBehaviour:
   itemSlot1: {fileID: 1917515272502157070}
   itemSlot2: {fileID: 8660254743546107535}
   useCoin: {fileID: 2483452685182158005}
-  skillBarContainer: {fileID: 0}
-  skillButtonPrefab: {fileID: 0}
 --- !u!1 &5739276131014368763
 GameObject:
   m_ObjectHideFlags: 0
