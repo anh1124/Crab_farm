@@ -15,14 +15,19 @@ namespace Script.Manager.WorldManager
     public class CelestialManager : MonoBehaviour
     {
         // ──────────────────────────────────────────────────────────────────────────
-        // Inspector Fields
+        // Inspector F ields 
         // ──────────────────────────────────────────────────────────────────────────
 
         [Header("References")]
         public SpriteRenderer sunRenderer;
         public SpriteRenderer moonRenderer;
         public SpriteRenderer backgroundRenderer;
-        public Camera mainCamera;
+        
+        [Header("Follow Targets")]
+        [Tooltip("Transform mục tiêu để bầu trời (Background) bám theo.")]
+        public Transform backgroundFollowTarget;
+        [Tooltip("Transform mục tiêu để Mặt Trời/Mặt Trăng bám theo.")]
+        public Transform celestialFollowTarget;
 
         [Header("Waypoints — trái → phải (con của Sky object)")]
         [Tooltip("Danh sách Transform làm điểm di chuyển. Index 0 = chân trời trái, cuối = chân trời phải.")]
@@ -66,9 +71,11 @@ namespace Script.Manager.WorldManager
 
         // ──────────────────────────────────────────────────────────────────────────
         // Private State
-        // ──────────────────────────────────────────────────────────────────────────
+        private Camera _bgCamera;
+        private Camera _celestialCamera;
 
-        private Camera _camera;
+        // Container object cho waypoints, sun, moon để di chuyển độc lập với background
+        private Transform _celestialsRoot;
 
         /// <summary>Tiến trình ngày mượt mà (0.0 → 1.0), được drive bởi Time.deltaTime.</summary>
         private float _smoothDayProgress;
@@ -79,7 +86,19 @@ namespace Script.Manager.WorldManager
 
         private void Awake()
         {
-            _camera = mainCamera != null ? mainCamera : Camera.main;
+            if (backgroundFollowTarget != null) _bgCamera = backgroundFollowTarget.GetComponent<Camera>();
+            if (celestialFollowTarget != null) _celestialCamera = celestialFollowTarget.GetComponent<Camera>();
+
+            // Tạo một root ảo để chứa Sun, Moon và Waypoints để chúng có thể di chuyển cùng nhau
+            _celestialsRoot = new GameObject("CelestialsRoot").transform;
+            _celestialsRoot.SetParent(transform);
+            
+            if (sunRenderer != null) sunRenderer.transform.SetParent(_celestialsRoot, true);
+            if (moonRenderer != null) moonRenderer.transform.SetParent(_celestialsRoot, true);
+            if (waypoints.Count > 0 && waypoints[0] != null && waypoints[0].parent != null)
+            {
+                waypoints[0].parent.SetParent(_celestialsRoot, true);
+            }
         }
 
         private void Start()
@@ -98,7 +117,7 @@ namespace Script.Manager.WorldManager
 
         private void Update()
         {
-            if (GameTimeManager.Instance == null || _camera == null) return;
+            if (GameTimeManager.Instance == null) return;
 
             AdvanceSmoothProgress();
 
@@ -108,21 +127,40 @@ namespace Script.Manager.WorldManager
             UpdateSkyColor(currentHour);
         }
 
-        private void FixedUpdate()
+        private void LateUpdate()
         {
-            // Sky object theo camera theo trục X. 
-            // Nếu lockToCameraBottom = true, ghim Y vào đáy camera.
-            if (_camera == null) return;
-
-            float targetX = _camera.transform.position.x;
-            float targetY = transform.position.y;
-
-            if (lockToCameraBottom)
+            // Update Background Root
+            if (backgroundFollowTarget != null && backgroundRenderer != null)
             {
-                targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
+                float bgX = backgroundFollowTarget.position.x;
+                float bgY = backgroundFollowTarget.position.y;
+
+                if (lockToCameraBottom)
+                {
+                    if (_bgCamera != null) bgY = backgroundFollowTarget.position.y - _bgCamera.orthographicSize + yOffset;
+                    else bgY = backgroundFollowTarget.position.y + yOffset;
+                }
+                
+                // Tránh set position nếu Target chính là Background (để khỏi xung đột tự set)
+                if (backgroundFollowTarget != backgroundRenderer.transform)
+                {
+                    backgroundRenderer.transform.position = new Vector3(bgX, bgY, backgroundRenderer.transform.position.z);
+                }
             }
 
-            transform.position = new Vector3(targetX, targetY, transform.position.z);
+            // Update Celestials Root (Sun, Moon, Waypoints)
+            if (celestialFollowTarget != null && _celestialsRoot != null)
+            {
+                float celX = celestialFollowTarget.position.x;
+                float celY = celestialFollowTarget.position.y;
+
+                if (lockToCameraBottom)
+                {
+                    if (_celestialCamera != null) celY = celestialFollowTarget.position.y - _celestialCamera.orthographicSize + yOffset;
+                    else celY = celestialFollowTarget.position.y + yOffset;
+                }
+                _celestialsRoot.position = new Vector3(celX, celY, _celestialsRoot.position.z);
+            }
         }
 
         // ──────────────────────────────────────────────────────────────────────────

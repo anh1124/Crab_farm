@@ -18,6 +18,9 @@ namespace Script.Manager.WorldManager
         [Header("Sprites")]
         [Tooltip("CHÚ Ý QUAN TRỌNG: Tất cả Sprites PHẢI được thiết lập Pivot là Bottom (hoặc BottomCenter) trong Sprite Editor để viền dưới luôn bằng Y=0!")]
         public List<Sprite> sprites = new List<Sprite>();
+        
+        [Header("Layer Config")]
+        [Tooltip("Layer Sorting. NẾU để trống, script sẽ tự copy Sorting Layer và Order trong component SpriteRenderer của Game Object này.")]
         public string sortingLayerName = "Sky";
         public int orderInLayer = 0;
 
@@ -66,9 +69,18 @@ namespace Script.Manager.WorldManager
                 Debug.LogWarning($"[ParallaxLayer] {name}: Vui lòng kiểm tra lại Pivot của Sprite '{sprites[0].name}'. Script hoạt động tốt nhất khi Pivot là Bottom hoặc BottomCenter.");
             }
 
+            // Đồng bộ Sorting Layer từ SpriteRenderer của GameObject gốc (nếu có)
+            SpriteRenderer selfSr = GetComponent<SpriteRenderer>();
+            if (selfSr != null)
+            {
+                sortingLayerName = selfSr.sortingLayerName;
+                orderInLayer = selfSr.sortingOrder;
+            }
+
             SpawnInitialTiles();
             TurnOffCurrentSpriteRenderer();
         }
+        
         private void TurnOffCurrentSpriteRenderer()
         {
             SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
@@ -77,6 +89,7 @@ namespace Script.Manager.WorldManager
                 spriteRenderer.enabled = false;
             }
         }
+        
         private void FixedUpdate()
         {
             if (_camera == null || _tiles.Count == 0) return;
@@ -109,7 +122,6 @@ namespace Script.Manager.WorldManager
 
             float camLocalX = _camera.transform.position.x - transform.position.x;
             
-            // X path calculated normally
             float startX = camLocalX - (_totalWidth / 2f) + (_tileWidth / 2f);
 
             for (int i = 0; i < tilesNeeded; i++)
@@ -126,9 +138,6 @@ namespace Script.Manager.WorldManager
             GameObject go = new GameObject($"Tile_{_tiles.Count}");
             go.transform.SetParent(transform, worldPositionStays: false);
             
-            // Nếu pivot = Bottom, sprite sẽ tự đẩy lên trên tính từ vị trí y=0 của GO con.
-            // Điều khiển Pivot thì chỉ cần localPosition giữ nguyên 0 ở trục Y là mặt đất (Bottom) 
-            // sẽ tự align với Y của GameObject gốc (Layer Root Parallax).
             go.transform.localPosition = new Vector3(localX, 0f, 0f);
 
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
@@ -148,13 +157,11 @@ namespace Script.Manager.WorldManager
             {
                 float diff = camLocalX - tile.localPosition.x;
 
-                // Nếu tile nằm quá xa về bên trái của camera -> dịch qua phải
                 if (diff > halfTotalWidth)
                 {
                     tile.localPosition += new Vector3(_totalWidth, 0f, 0f);
                     UpdateTileSprite(tile);
                 }
-                // Nếu nằm quá xa về bên phải -> dịch qua trái
                 else if (diff < -halfTotalWidth)
                 {
                     tile.localPosition -= new Vector3(_totalWidth, 0f, 0f);

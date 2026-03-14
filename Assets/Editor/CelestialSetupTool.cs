@@ -55,7 +55,13 @@ namespace Script.Editor
             );
 
             CelestialManager manager = skyRoot.AddComponent<CelestialManager>();
-            manager.mainCamera = mainCam;
+
+            // Tạo một GameObject trống làm điểm neo mục tiêu mặc định
+            GameObject targetObj = new GameObject("CelestialTarget");
+            // Không đặt làm child của Sky để nó có thể di chuyển độc lập hoặc bám theo Player
+            targetObj.transform.position = skyRoot.transform.position;
+            manager.backgroundFollowTarget = targetObj.transform;
+            manager.celestialFollowTarget = targetObj.transform;
 
             // ── Background ────────────────────────────────────────────────────────
             // Background cần sprite màu TRẮNG để SpriteRenderer.color tint đúng.

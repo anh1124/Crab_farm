@@ -378,20 +378,13 @@ namespace Script.Game.Structures.Wall_And_Stump
           //  Debug.Log($"[Wall-Debug] Kết thúc RemoveAllColliders. Tổng số collider còn active (lưu ý: Destroy sẽ thực hiện cuối frame nên số lượng chưa giảm ngay): {remainingColliders}");
         }
 
-        /// Lấy trigger collider từ prefab
+        /// Lấy collider đầu tiên từ root của prefab (không cần là trigger)
         private Collider2D GetTriggerColliderFromPrefab(GameObject prefab)
         {
             if (prefab == null) return null;
-
-            Collider2D[] colliders = prefab.GetComponents<Collider2D>();
-            foreach (var collider in colliders)
-            {
-                if (collider.isTrigger)
-                {
-                    return collider;
-                }
-            }
-            return null;
+            // Trả về collider đầu tiên tìm thấy trên root — không yêu cầu isTrigger
+            // Script sẽ tự set isTrigger=true / false sau khi copy xong
+            return prefab.GetComponent<Collider2D>();
         }
 
         /// Setup trigger collider trên gameObject chính (luôn trigger = true)
@@ -516,7 +509,13 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
             else if (prefabCollider is PolygonCollider2D prefabPolygon && newCollider is PolygonCollider2D newPolygon)
             {
-                newPolygon.points = prefabPolygon.points;
+                // IMPORTANT: `.points` chỉ copy path[0]. Nếu PolygonCollider có nhiều paths
+                // (ví dụ: collider dạng donut hoặc tách rời), phải copy từng path riêng.
+                newPolygon.pathCount = prefabPolygon.pathCount;
+                for (int i = 0; i < prefabPolygon.pathCount; i++)
+                {
+                    newPolygon.SetPath(i, prefabPolygon.GetPath(i));
+                }
             }
         }
         

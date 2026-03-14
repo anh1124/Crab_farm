@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5196739344977987146}
   - component: {fileID: 4654264550758574106}
-  - component: {fileID: 5411035842738316472}
+  - component: {fileID: 653524397974876829}
   m_Layer: 15
   m_Name: Wall3Collider
   m_TagString: Wall
@@ -85,8 +85,8 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 1
---- !u!61 &5411035842738316472
-BoxCollider2D:
+--- !u!60 &653524397974876829
+PolygonCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -114,19 +114,33 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.23369694, y: 1.6632581}
+  m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
-    oldSize: {x: 3.6, y: 4.8}
+    oldSize: {x: 3.2, y: 6.4}
     newSize: {x: 0.36, y: 0.36}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  serializedVersion: 2
-  m_Size: {x: 2.5539265, y: 3.3265162}
-  m_EdgeRadius: 0
+  m_Points:
+    m_Paths:
+    - - {x: -1.2152109, y: 4.7079635}
+      - {x: -1.3167249, y: 3.9901235}
+      - {x: -1.3192794, y: 3.310772}
+      - {x: -1.6070367, y: 2.9010797}
+      - {x: -1.6, y: 0}
+      - {x: 1.6, y: 0}
+      - {x: 1.6185939, y: 2.4137285}
+      - {x: 1.5038996, y: 3.107999}
+      - {x: 1.2020078, y: 3.3862987}
+      - {x: 0.6979036, y: 3.8107347}
+      - {x: 0.40251762, y: 4.199114}
+      - {x: 0.29258478, y: 4.705623}
+      - {x: -0.18527687, y: 5.007009}
+      - {x: -1.0020816, y: 5.008574}
+  m_UseDelaunayMesh: 0
