@@ -28,7 +28,6 @@ namespace Script.Controller.GUI_Controller.PlayerGui
 
         [Header("Colors")]
         [SerializeField] private Color colorNoMana      = new Color(0.2f, 0.4f, 1f, 0.6f);   // Xanh lam
-        [SerializeField] private Color colorNoStamina   = new Color(1f, 0.8f, 0.1f, 0.6f);   // Vàng
         [SerializeField] private Color colorExecuting   = new Color(0.2f, 0.2f, 0.2f, 0.5f); // Tối khi đang đánh
 
         // ── Runtime ────────────────────────────────────────────────────────
@@ -98,15 +97,11 @@ namespace Script.Controller.GUI_Controller.PlayerGui
 
         private void ApplyState_Ready(SkillBase skill)
         {
-            bool hasMana    = true;
-            bool hasStamina = true;
+            bool hasMana = true;
 
             if (_playerBehavior != null)
             {
-                if (skill.resourceType == SkillBase.ResourceType.Mana)
-                    hasMana = _playerBehavior.CanUseSkill(0, skill.resourceCost);
-                else
-                    hasStamina = _playerBehavior.CanUseSkill(skill.resourceCost, 0);
+                hasMana = _playerBehavior.CanUseSkill(skill.resourceCost);
             }
 
             if (cooldownGroup != null) cooldownGroup.SetActive(false);
@@ -114,11 +109,6 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             if (!hasMana)
             {
                 SetResourceMask(true, colorNoMana);
-                if (button != null) button.interactable = false;
-            }
-            else if (!hasStamina)
-            {
-                SetResourceMask(true, colorNoStamina);
                 if (button != null) button.interactable = false;
             }
             else
@@ -169,7 +159,7 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             if (costText != null)
             {
                 costText.text  = skill.resourceCost.ToString();
-                costText.color = (skill.resourceType == SkillBase.ResourceType.Mana) ? Color.cyan : Color.yellow;
+                costText.color = Color.cyan;
             }
         }
 

@@ -311,8 +311,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 100
-  currentHp: 100
+  maxHp: 10
+  currentHp: 10
   coin: 0
   maxCoins: 100
   moveSpeed: 12
@@ -321,9 +321,6 @@ MonoBehaviour:
   attackDame: 1
   attackSpeed: 1
   isGround: 0
-  currentStamina: 100
-  maxStamina: 100
-  staminaRegenRate: 10
   currentMana: 50
   maxMana: 50
   manaRegenRate: 5

@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09553bbec7288484ba5d97bc15cf97c6, type: 3}
   m_Name: SpawnVagrantSkill
   m_EditorClassIdentifier: 
-  resourceType: 0
   resourceCost: 50
   displayName: 
   icon: {fileID: -1242149758, guid: c667a3208f3d40a49930630a8b3acaed, type: 3}

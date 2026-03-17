@@ -83,11 +83,8 @@ namespace Script.Game.PlayerCharacter
         {
             if (playerBehavior == null) return true;
             
-            // Sử dụng hệ thống ResourceType mới
-            if (skill.resourceType == SkillBase.ResourceType.Mana)
-                return playerBehavior.CanUseSkill(0, skill.resourceCost);
-            else
-                return playerBehavior.CanUseSkill(skill.resourceCost, 0);
+            // Sử dụng hệ thống Resource mới (chỉ Mana)
+            return playerBehavior.CanUseSkill(skill.resourceCost);
         }
 
         protected override void OnBeforeExecute(int index, GameObject instigator)
@@ -96,11 +93,8 @@ namespace Script.Game.PlayerCharacter
             var skill = GetSkill(index);
             if (skill == null) return;
 
-            // Trừ tài nguyên dựa trên ResourceType
-            if (skill.resourceType == SkillBase.ResourceType.Mana)
-                playerBehavior?.ConsumeSkillResources(0, skill.resourceCost);
-            else
-                playerBehavior?.ConsumeSkillResources(skill.resourceCost, 0);
+            // Trừ tài nguyên (Mana)
+            playerBehavior?.ConsumeSkillResources(skill.resourceCost);
 
             // Trigger animation
             if (playerBehavior?.playerAnim != null)

@@ -15,6 +15,7 @@ namespace Script.GUI_Controller
         public GameObject pauseMenu;
         public GameObject playerHud;
         public GameObject buildMenu;
+        public HealBarUI healBarUI;
         
         private void Start()
         {

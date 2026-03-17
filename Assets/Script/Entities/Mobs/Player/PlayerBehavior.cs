@@ -37,7 +37,6 @@ namespace Script.Game.Player
             public bool isGround;
             
             // NEW: Resource data for save/load
-            public float currentStamina;
             public float currentMana;
         }
 
@@ -63,6 +62,24 @@ namespace Script.Game.Player
                 }
             }
         }
+
+        private void Start()
+        {
+            SetupHealBarUI();
+        }
+
+        private void SetupHealBarUI()
+        {
+            var canvasManager = FindObjectOfType<Script.GUI_Controller.GuiCanvasManager>();
+            if (canvasManager != null && canvasManager.healBarUI != null)
+            {
+                canvasManager.healBarUI.Setup(status);
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerBehavior] Khong tim thay GuiCanvasManager hoac HealBarUI chua duoc gan vao CanvasManager de setup!");
+            }
+        }
         
         private void OnDestroy()
         {
@@ -76,13 +93,6 @@ namespace Script.Game.Player
 
         private void Update()
         {
-            // Tự động regen stamina
-            if (status.currentStamina < status.maxStamina)
-            {
-                status.currentStamina += status.staminaRegenRate * Time.deltaTime;
-                status.currentStamina = Mathf.Min(status.currentStamina, status.maxStamina);
-            }
-            
             // Tự động regen mana
             if (status.currentMana < status.maxMana)
             {
@@ -94,18 +104,16 @@ namespace Script.Game.Player
         }
         
         // === RESOURCE HELPERS ===
-        public bool CanUseSkill(float staminaCost, float manaCost)
+        public bool CanUseSkill(float manaCost)
         {
-            return status.currentStamina >= staminaCost && status.currentMana >= manaCost;
+            return status.currentMana >= manaCost;
         }
 
-        public void ConsumeSkillResources(float staminaCost, float manaCost)
+        public void ConsumeSkillResources(float manaCost)
         {
-            status.currentStamina -= staminaCost;
             status.currentMana -= manaCost;
             
             // Validate không âm
-            status.currentStamina = Mathf.Max(0f, status.currentStamina);
             status.currentMana = Mathf.Max(0f, status.currentMana);
         }
 
@@ -274,7 +282,6 @@ namespace Script.Game.Player
                 isGround = status.isGround,
                 
                 // Save current resources directly from status
-                currentStamina = status.currentStamina,
                 currentMana = status.currentMana
             };
         }
@@ -294,7 +301,6 @@ namespace Script.Game.Player
                 transform.position = new Vector3(loaded.positionX, loaded.positionY, 0);
                 
                 // NEW: Restore resources to PlayerStatus
-                status.currentStamina = loaded.currentStamina;
                 status.currentMana = loaded.currentMana;
                 
                 // ResourceManager removed, data lives in PlayerStatus now

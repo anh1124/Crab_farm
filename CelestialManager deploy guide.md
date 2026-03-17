@@ -1,1000 +1,550 @@
-[trước khi đọc tài liệu ,tôi là user thực tế  , tôi sẽ luôn viết comment trong [] để tránh việc bạn bị nhầm với AI khác ]
+Tóm tắt từng thay đổi
+GameTimeManager.cs — Chỉ thêm 1 dòng
+csharppublic float SecondsPerDay => realSecondsPerGameDay;
+CelestialManager cần giá trị này để biết tốc độ di chuyển thực tế. Conflict IsDaytime vs NIGHT_HOUR đã được resolve trong file bạn paste — không cần sửa thêm.
 
-# Enemy State Machine Architecture
-### Dự án: Crab Farm | Môi trường: Unity 2D | Style: Kingdom Two Crowns
+CelestialManager.cs — Viết lại hoàn toàn
+Req 3 — Smooth movement: Thay vì đọc totalMinutes (nhảy từng phút), dùng Time.deltaTime để tự advance _smoothDayProgress mỗi frame. Khi SetGameTime() jump lớn hơn 5 phút game thì snap thẳng, không lag.
+Req 1 & 2 — Coexist + luôn có ít nhất 1 cái: Sun hiện 6:00→19:00, Moon hiện 17:30→6:00 (ngày hôm sau). Overlap 1.5 giờ từ 17:30→19:00, moon fade in từ alpha 0.3→1.0 trong khoảng đó. Không có khoảng trống nào trên bầu trời.
+Req 4 — Color thay sprite: Background giờ chỉ cần 1 sprite trắng, SpriteRenderer.color tự lerp qua 6 màu chọn trong inspector theo giờ game. Không còn 5 sprite day backgrounds.
+Req 5 — Waypoint path: List Transform làm điểm di chuyển, Sun đi từ WP[0]→WP[last] trong 6:00→19:00. Moon đảm bảo t=0.5 (middle waypoint) đúng lúc 0:00, kết thúc tại WP[last] lúc 6:00.
 
----
+CelestialSetupTool.cs — Cập nhật
+Tạo đúng 5 waypoint theo hình arc trong Scene View, bỏ background sprite setup (giờ chỉ cần sprite trắng), thêm Undo support và checklist log sau khi tạo.
 
-## ⚠️ GHI CHÚ CHO AI TIẾP THEO — ĐỌC TRƯỚC KHI PHÂN TÍCH
 
-**Yêu cầu hiện tại của User (tính đến thời điểm tạo file này):**
 
-> Chỉ implement những gì liên quan đến **cấu trúc code core của một Enemy** — đủ làm khung để sau này dễ dàng thêm và sửa các loại Enemy mới. Không cần implement đầy đủ mọi feature.
->
-> Bắt đầu bằng enemy ví dụ: **ShieldBot** — có thể di chuyển và tấn công. **Không có** chức năng nhặt coin (LootingState) và **không có** chức năng rút về cổng (ReturnToPortalState).
->
-> Toàn bộ script liên quan đến ShieldBot được ghi trực tiếp vào tài liệu này như một phần của kiến trúc.[tôi muốn triển khai làm shieldbot trước để test lỗi trực quan]
 
-**Lịch sử review tài liệu này:**
-- `v1` — Kiến trúc gốc do AI tạo từ kế hoạch `npc_enemy_system_report.md`
-- `v2` → `v3` — Đã qua 2 vòng review (Reviewer #1 + Reviewer #2) và 1 vòng phán quyết (Arbitrator). 8 fix đã được apply vào v3.
-- `v4 (file này)` — Sửa các lỗi còn tồn tại sau v3, thu gọn về scope thực tế, bổ sung ShieldBot làm ví dụ cụ thể.
-
-**Những gì đã bị xác định là lỗi trong v3 và được sửa trong v4:**
-1. `LootingState` trở thành **unreachable** sau Fix #2 (không có state nào chuyển sang nó). Đây là lỗi do fix #2 đưa vào. → Trong v4: `LootingState` và `ReturnToPortalState` được giữ lại trong base framework nhưng **không phải scope hiện tại** — ghi rõ, không xóa.
-2. `MoveToTargetState`: condition `ctx.LootTarget != null && ctx.CurrentTarget != null` — `CurrentTarget != null` là thừa vì đã pass qua guard trên. → Sửa gọn thành `ctx.LootTarget = null` đơn giản.
-3. `IdleState` dùng `ctx.TargetManager.IsReady` — property này **chưa tồn tại** trong `EnemyTargetManager`. → Giữ comment nhưng dùng fallback không crash đến khi property được implement.
-4. Cache trigger dùng `System.Array.FindAll` + LINQ lẫn lộn → Thống nhất về LINQ.
-
----
-
-## 1. Tổng quan kiến trúc
-
-Enemy AI được tổ chức theo **State Pattern** — mỗi state là một class riêng, `EnemyAIController` chỉ giữ nhiệm vụ chuyển state, không chứa logic của bất kỳ state nào.
-
-```
-EnemyAIController
-    │
-    ├── currentState.Enter()
-    ├── currentState.Update()
-    └── currentState.Exit()
-         │
-         ├── IdleState           ← dùng cho mọi enemy
-         ├── PatrolState         ← dùng cho mọi enemy
-         ├── MoveToTargetState   ← dùng cho mọi enemy
-         ├── AttackState         ← dùng cho mọi enemy
-         ├── DeadState           ← dùng cho mọi enemy
-         │
-         ├── LootingState        ← feature optional (enemy có greed)
-         └── ReturnToPortalState ← feature optional (enemy có greed )[greed là sự tham lam, chúng sẽ đi cướp đồ của player]
-```
-
-**Triết lý mở rộng:** State nào không dùng thì không override — Enemy đơn giản như ShieldBot chỉ dùng 5 state đầu. Enemy phức tạp hơn sau này kế thừa thêm state tùy nhu cầu.
-
----
-
-## 2. Cấu trúc thư mục
-[tôi thấy tài liệu này nói khá rõ ràng về statemachine , nhưng để triển khai thực tế , ta cũng cần status (theo kiến trức hệ thống tôi đang làm thì mỗi gameobject dạng npc sẽ có status và name+behavior để phân biệt hành vi, tôi hi vọng các bạn bổ xung thêm status và đổi các state đặc thù (variants của từng loại enemy)thành tên thống nhất là name + behavior  để đồng bộ cấu trúc hiện tại theo tên gọi)]
-```
-E:\unity\Crab_farm\Assets\Script\Game\Enemy\
-│
-├── EnemyAIController.cs          ← script gắn lên GameObject, điều phối state
-├── EnemyContext.cs               ← dữ liệu chia sẻ giữa các state
-│
-├── Core\
-│   └── EnemyState.cs             ← abstract base class cho mọi state
-│
-├── States\                       ← States dùng chung cho mọi loại Enemy
-│   ├── IdleState.cs
-│   ├── PatrolState.cs
-│   ├── MoveToTargetState.cs
-│   ├── AttackState.cs
-│   ├── LootingState.cs           ← optional, chỉ dùng cho enemy có greed
-│   ├── ReturnToPortalState.cs    ← optional, chỉ dùng cho enemy có greed
-│   └── DeadState.cs
-│
-└── Variants\                     ← States đặc thù từng loại Enemy
-    └── ShieldBot\
-        └── ShieldBotAttackState.cs
-```
-
----
-
-## 3. Script Core
-
-### `EnemyState.cs` — Abstract base class
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\Core\EnemyState.cs
-
-namespace Script.Game.Enemy.Core
-{
-    public abstract class EnemyState
-    {
-        public abstract void Enter(EnemyContext ctx);
-        public abstract void Update(EnemyContext ctx);
-        public abstract void Exit(EnemyContext ctx);
-    }
-}
-```
-
----
-
-### `EnemyContext.cs` — Túi dữ liệu chia sẻ giữa các state
-
-Script này **không phải MonoBehaviour**, chỉ là một class chứa dữ liệu. Các State được phép ghi vào Context khi cần cập nhật trạng thái runtime (`CurrentTarget`, `CurrentGreed`, `LootTarget`). Những field chỉ được set một lần lúc khởi tạo (`MoveSpeed`, `AttackRange`...) thì không nên ghi lại từ State.
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\EnemyContext.cs
-
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace Script.Game.Enemy
+namespace Script.Manager.WorldManager
 {
-    public class EnemyContext
+    /// <summary>
+    /// Quản lý toàn bộ bầu trời: quỹ đạo mặt trời/mặt trăng theo waypoint,
+    /// hiệu ứng xuất hiện cùng lúc lúc hoàng hôn, và chuyển màu background mượt mà.
+    ///
+    /// TIMELINE:
+    ///   Mặt trời  : 06:00 → 19:00 (waypoint[0] → waypoint[last])
+    ///   Mặt trăng : 17:30 → 06:00 (waypoint[0] → middle@midnight → waypoint[last])
+    ///   Giao nhau : 17:30 → 19:00 (moon fade in, cả hai cùng hiện)
+    /// </summary>
+    public class CelestialManager : MonoBehaviour
     {
-        // References
-        public GameObject Self;
-        public Animator Animator;
-        public EnemyAIController Controller;
+        // ──────────────────────────────────────────────────────────────────────────
+        // Inspector Fields
+        // ──────────────────────────────────────────────────────────────────────────
 
-        // External systems — inject từ Controller, State không gọi Singleton trực tiếp
-        public EnemyTargetManager TargetManager;
-        public EnemyPool Pool;
+        [Header("References")]
+        public SpriteRenderer sunRenderer;
+        public SpriteRenderer moonRenderer;
+        public SpriteRenderer backgroundRenderer;
+        public Camera mainCamera;
 
-        // Target
-        public GameObject CurrentTarget;
-        public GameObject LootTarget;   // coin/item Enemy nhắm tới — chỉ dùng cho enemy có greed
+        [Header("Waypoints — trái → phải (con của Sky object)")]
+        [Tooltip("Danh sách Transform làm điểm di chuyển. Index 0 = chân trời trái, cuối = chân trời phải.")]
+        public List<Transform> waypoints = new List<Transform>();
 
-        // Greed — chỉ dùng cho enemy có greed mechanic (ví dụ CircleHead)
-        // Enemy không có greed (ví dụ ShieldBot) để nguyên giá trị mặc định, không đọc field này
-        public float GreedThreshold;
-        public float CurrentGreed;
+        [Header("Sun Timing")]
+        [Tooltip("Giờ mặt trời xuất hiện tại waypoint[0]")]
+        public float sunRiseHour = 6f;
+        [Tooltip("Giờ mặt trời biến mất tại waypoint[last]")]
+        public float sunSetHour = 19f;
 
-        // Stats
-        public float MoveSpeed;
-        public float AttackRange;
-        public float AttackCooldown = 1f;
+        [Header("Moon Timing")]
+        [Tooltip("Giờ mặt trăng bắt đầu xuất hiện (cùng lúc với mặt trời)")]
+        public float moonRiseHour = 17.5f;
+        [Tooltip("Giờ mặt trăng biến mất — nên = sunRiseHour để không có khoảng trống")]
+        public float moonSetHour = 6f;
+        [Tooltip("Alpha của mặt trăng ngay khi mới xuất hiện (lúc còn mờ chiều tối)")]
+        [Range(0f, 1f)] public float moonDuskAlpha = 0.3f;
+        [Tooltip("Thời lượng fade-in của mặt trăng (đơn vị: giờ game)")]
+        public float moonFadeInHours = 1f;
 
-        // Patrol
-        public Vector3 SpawnPosition;
-        public float PatrolRadius = 10f;
+        [Header("Sky Colors — chọn màu theo giờ, background tự lerp")]
+        [Tooltip("Màu lúc 06:00 — bình minh")]
+        public Color colorEarlyMorning = new Color(1.0f, 0.72f, 0.42f);
+        [Tooltip("Màu lúc 09:00 — sáng")]
+        public Color colorMorning      = new Color(0.55f, 0.78f, 1.0f);
+        [Tooltip("Màu lúc 12:00 — trưa")]
+        public Color colorNoon         = new Color(0.75f, 0.90f, 1.0f);
+        [Tooltip("Màu lúc 15:00 — chiều")]
+        public Color colorAfternoon    = new Color(1.0f, 0.92f, 0.70f);
+        [Tooltip("Màu lúc 18:00 — hoàng hôn")]
+        public Color colorDusk         = new Color(1.0f, 0.42f, 0.15f);
+        [Tooltip("Màu ban đêm")]
+        public Color colorNight        = new Color(0.04f, 0.05f, 0.18f);
 
-        // Portal — chỉ dùng cho enemy có ReturnToPortalState
-        public Vector3 PortalPosition;
-        // LƯU Ý: PortalPosition không tự cập nhật nếu Portal di chuyển runtime.
-        // Nếu Portal có thể bị phá hoặc di chuyển, cần inject reference GameObject thay vì Vector3 tĩnh.
-/*[ở đây portal không thể di chuyển nhưng chúng có thể bị phá hủy ,chú ý, enemy không nhớ vị trí portal, tôi có 
-public class EnemyPortalManager : MonoBehaviour
-    {
-        public static EnemyPortalManager Instance { get; private set; }
+        // ──────────────────────────────────────────────────────────────────────────
+        // Private State
+        // ──────────────────────────────────────────────────────────────────────────
 
-        public GameObject portalL;
-        public GameObject portalR;
+        private Camera _camera;
 
- để quản lý việc enemy đi ra từ đâu nên cần thay đổi chút ,enemy sẽ lưu portal , nếu portal nó đi ra bị phá hủy thì enemy sẽ hỏi EnemyPortalManager để lấy portal khác ,nếu không còn portal nào thì nó sẽ tiếp tục tấn công trong state green?
-]*/
-        // Trạng thái sống — dùng để chặn AI chạy sau khi chết
-        public bool IsAlive = true;
+        /// <summary>Tiến trình ngày mượt mà (0.0 → 1.0), được drive bởi Time.deltaTime.</summary>
+        private float _smoothDayProgress;
 
-        // Flag defer recycle — tránh gọi Pool.ReturnEnemy từ bên trong Enter/Exit
-        public bool PendingRecycle = false;
-
-        // Throttle GetTarget trong PatrolState
-        // Không thay đổi sau khi enemy đã spawn — PatrolState dùng field này làm ngưỡng kiểm tra liên tục
-        public float PatrolCheckInterval = 0.3f;
-
-        // Helpers
-        public bool GreedIsFull => CurrentGreed >= GreedThreshold;
-    }
-}
-```
-
----
-
-### `EnemyAIController.cs` — Script duy nhất gắn lên GameObject Enemy
-
-Script này chỉ làm đúng một việc: **giữ state hiện tại và điều phối vòng lặp**. Đây là nơi duy nhất inject các Singleton vào Context.
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\EnemyAIController.cs
-
-using System.Linq;
-using UnityEngine;
-using Script.Game.Enemy.Core;
-using Script.Game.Enemy.States;
-
-namespace Script.Game.Enemy
-{
-    public class EnemyAIController : MonoBehaviour
-    {
-/* user ghi chú :
-tôi có 1 script TotalEnemyList  lưu danh sách và thông tin enemy , bạn tham khảo và bổ sung*/
-
-        [Header("Stats")]
-        [SerializeField] private float moveSpeed = 2f;
-        [SerializeField] private float attackRange = 0.8f;
-        [SerializeField] private float attackCooldown = 1f;
-        [SerializeField] private float greedThreshold = 5f;
-        [SerializeField] private float patrolRadius = 10f;
-
-        private EnemyState _currentState;
-        private EnemyContext _ctx;
-
-        // Cache tên trigger một lần trong Awake.
-        // Animator.parameters trả về array copy mỗi lần gọi — nếu reset trong ChangeState mỗi frame
-        // mà không cache, sẽ tạo allocation liên tục. Cache giải quyết vấn đề này.
-        private string[] _animatorTriggers;
+        // ──────────────────────────────────────────────────────────────────────────
+        // Unity Lifecycle
+        // ──────────────────────────────────────────────────────────────────────────
 
         private void Awake()
         {
-            _ctx = new EnemyContext
-            {
-                Self           = gameObject,
-                Animator       = GetComponent<Animator>(),
-                Controller     = this,
-                MoveSpeed      = moveSpeed,
-                AttackRange    = attackRange,
-                AttackCooldown = attackCooldown,
-                GreedThreshold = greedThreshold,
-                PatrolRadius   = patrolRadius,
-                SpawnPosition  = transform.position,
-                TargetManager  = EnemyTargetManager.Instance,
-                Pool           = EnemyPool.Instance
-            };
-
-            _animatorTriggers = _ctx.Animator.parameters
-                .Where(p => p.type == AnimatorControllerParameterType.Trigger)
-                .Select(p => p.name)
-                .ToArray();
+            _camera = mainCamera != null ? mainCamera : Camera.main;
         }
 
         private void Start()
         {
-            ChangeState(new IdleState());
+            if (GameTimeManager.Instance == null) return;
+
+            // Khởi tạo smooth progress từ giá trị thực tế để tránh lerp từ 0
+            _smoothDayProgress = GetRawDayProgress();
+
+            // Đặt trạng thái ban đầu ngay lập tức (không chờ frame đầu)
+            float startHour = _smoothDayProgress * 24f;
+            UpdateSkyColor(startHour);
+            UpdateSun(startHour);
+            UpdateMoon(startHour);
         }
 
         private void Update()
         {
-            // Guard: không chạy AI sau khi đã chết
-            if (!_ctx.IsAlive) return;
+            if (GameTimeManager.Instance == null || _camera == null) return;
 
-            // Defer recycle ra khỏi Enter/Exit để tránh corrupt state machine.
-            // Gọi Pool.ReturnEnemy từ trong Enter/Exit sẽ disable GameObject
-            // trong khi ChangeState chưa return xong.
-            if (_ctx.PendingRecycle)
-            {
-                _ctx.PendingRecycle = false;
-                if (_ctx.Pool != null)
-                    _ctx.Pool.ReturnEnemy(_ctx.Self);
-                else
-                {
-                    // Fallback: Pool không tồn tại (scene không có EnemyPool, hoặc
-                    // Pool bị destroy trước enemy khi unload scene).
-                    Debug.LogWarning($"[EnemyAIController] {_ctx.Self.name}: Pool is null, deactivating directly.");
-                    gameObject.SetActive(false);
-                }
-                return;
-            }
+            AdvanceSmoothProgress();
 
-            _currentState?.Update(_ctx);
+            float currentHour = _smoothDayProgress * 24f;
+            UpdateSun(currentHour);
+            UpdateMoon(currentHour);
+            UpdateSkyColor(currentHour);
         }
 
-        public void ChangeState(EnemyState newState)
+        private void LateUpdate()
         {
-            _currentState?.Exit(_ctx);
-
-            // Reset toàn bộ Animator trigger trước khi Enter state mới.
-            // Tránh trigger còn trong queue từ state cũ fire sai vào animation state mới
-            // khi state exit trước khi Animator kịp consume trigger đã set.
-            foreach (var t in _animatorTriggers)
-                _ctx.Animator.ResetTrigger(t);
-
-            _currentState = newState;
-            _currentState.Enter(_ctx);
-        }
-
-        // Gọi từ IHealth.Die() khi Enemy hết máu
-        public void OnDeath()
-        {
-            // Guard tránh double-call trong cùng một frame:
-            // Nếu 2 projectile chạm Enemy cùng physics step, Unity gọi OnTriggerEnter2D
-            // 2 lần liên tiếp — guard này đủ để chặn.
-            if (!_ctx.IsAlive) return;
-
-            _ctx.IsAlive = false;
-            ChangeState(new DeadState());
-        }
-
-        // Gọi từ Pool khi tái sử dụng Enemy
-        public void ResetEnemy(Vector3 portalPosition)
-        {
-            // Bước 1: Exit state cũ với context nguyên trạng.
-            // Đảm bảo Exit thấy đúng context lúc enemy "đang chết/recycle",
-            // không bị ảnh hưởng bởi các field reset phía sau.
-            _currentState?.Exit(_ctx);
-            _currentState = null;
-
-            // Bước 2: Reset toàn bộ context.
-            _ctx.IsAlive        = true;
-            _ctx.CurrentGreed   = 0;
-            _ctx.CurrentTarget  = null;
-            _ctx.LootTarget     = null;
-            _ctx.PendingRecycle = false;
-            _ctx.PortalPosition = portalPosition;
-            // ASSUMPTION: Enemy luôn spawn từ Portal → SpawnPosition = PortalPosition.
-            // Nếu sau này có loại enemy spawn từ vị trí khác, cần truyền spawnPosition riêng.
-            _ctx.SpawnPosition  = portalPosition;
-
-            // Bước 3: Enter state mới với context đã sạch.
-            // Tách khỏi ChangeState() để không reset trigger khi mới spawn
-            // (Animator chưa có trigger nào pending từ trước).
-            _currentState = new IdleState();
-            _currentState.Enter(_ctx);
-        }
-    }
-}
-```
-
----
-
-## 4. States dùng chung
-
-### `IdleState.cs` — Tìm mục tiêu khi mới spawn hoặc mất target
-
-> **Về `IsReady` guard:** Lý tưởng, `IdleState` nên chờ `TargetManager.IsReady` trước khi query để tránh nhảy `PatrolState` ngay frame đầu khi raycast chưa refresh. Tuy nhiên `EnemyTargetManager` **chưa expose property `IsReady`** — cần bổ sung sau. Hiện tại: nếu `GetTarget` trả về null (raycast chưa kịp), enemy vào `PatrolState` và sẽ tìm lại sau 0.3s — chấp nhận được cho giai đoạn này.
-
-> **Lý do không gọi `ChangeState` trong `Enter`:** Call stack sẽ là `ChangeState(Idle)` → `Idle.Enter()` → `ChangeState(MoveToTarget)` → `Idle.Exit()` — Exit chạy **sau** Enter đã gọi state khác, thứ tự không thể đoán khi Exit có cleanup logic.
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\States\IdleState.cs
-
-using Script.Game.Enemy.Core;
-
-namespace Script.Game.Enemy.States
-{
-    public class IdleState : EnemyState
-    {
-        public override void Enter(EnemyContext ctx)
-        {
-            ctx.Animator.SetTrigger("Idle");
-        }
-
-        public override void Update(EnemyContext ctx)
-        {
-            // TODO: thêm guard khi EnemyTargetManager expose IsReady:
-            // if (!ctx.TargetManager.IsReady) return;
-
-            var target = ctx.TargetManager.GetTarget(ctx.Self);
-
-            if (target != null)
-            {
-                ctx.CurrentTarget = target;
-                ctx.Controller.ChangeState(new MoveToTargetState());
-            }
-            else
-            {
-                ctx.Controller.ChangeState(new PatrolState());
-            }
-        }
-
-        public override void Exit(EnemyContext ctx) { }
-    }
-}
-```
-
----
-
-### `PatrolState.cs` — Đi dạo khi chưa có mục tiêu
-
-> Điểm patrol tính từ `SpawnPosition`, không phải vị trí hiện tại — tránh enemy drift ra khỏi khu vực spawn.
-
-> Với 50+ enemy patrol đồng thời, `_checkTimer` throttle tần suất gọi `GetTarget` xuống còn `PatrolCheckInterval` (mặc định 0.3s/lần) để giảm tải performance.
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\States\PatrolState.cs
-
-using UnityEngine;
-using Script.Game.Enemy.Core;
-using Script.Utils;
-
-namespace Script.Game.Enemy.States
-{
-    public class PatrolState : EnemyState
-    {
-        private Vector3 _patrolTarget;
-        private float _waitTimer;
-        private float _checkTimer;
-        private const float WaitTime = 1.5f;
-
-        public override void Enter(EnemyContext ctx)
-        {
-            ctx.Animator.SetTrigger("Walk");
-            _waitTimer = 0;
-            _checkTimer = ctx.PatrolCheckInterval; // cho phép check ngay lần đầu
-            _patrolTarget = GetRandomPatrolPoint(ctx);
-        }
-
-        public override void Update(EnemyContext ctx)
-        {
-            _checkTimer += Time.deltaTime;
-            if (_checkTimer >= ctx.PatrolCheckInterval)
-            {
-                _checkTimer = 0;
-                var target = ctx.TargetManager.GetTarget(ctx.Self);
-                if (target != null)
-                {
-                    ctx.CurrentTarget = target;
-                    ctx.Controller.ChangeState(new MoveToTargetState());
-                    return;
-                }
-            }
-
-            bool reached = MovementUtility.MoveTowardsTarget(
-                ctx.Self, _patrolTarget, ctx.MoveSpeed
-            );
-
-            if (reached)
-            {
-                _waitTimer += Time.deltaTime;
-                if (_waitTimer >= WaitTime)
-                {
-                    _waitTimer = 0;
-                    _patrolTarget = GetRandomPatrolPoint(ctx);
-                }
-            }
-        }
-
-        public override void Exit(EnemyContext ctx) { }
-
-        private Vector3 GetRandomPatrolPoint(EnemyContext ctx)
-        {
-            float offsetX = Random.Range(-ctx.PatrolRadius, ctx.PatrolRadius);
-            return new Vector3(ctx.SpawnPosition.x + offsetX, ctx.SpawnPosition.y, 0);
-        }
-    }
-}
-```
-
----
-
-### `MoveToTargetState.cs` — Di chuyển đến mục tiêu
-
-> **LootTarget và combat:** `LootTarget` được set bởi `OnTriggerEnter2D` khi enemy va vào coin (collision-based). Khi đang chase `CurrentTarget`, nếu va vào coin thì **clear `LootTarget` ngay** — tránh coin bị "ghost-reserved" (set vào ctx nhưng không có state nào xử lý vì không ai chuyển sang `LootingState` khi đang có combat target).
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\States\MoveToTargetState.cs
-
-using UnityEngine;
-using Script.Game.Enemy.Core;
-using Script.Utils;
-
-namespace Script.Game.Enemy.States
-{
-    public class MoveToTargetState : EnemyState
-    {
-        public override void Enter(EnemyContext ctx)
-        {
-            ctx.Animator.SetTrigger("Walk");
-        }
-
-        public override void Update(EnemyContext ctx)
-        {
-            if (ctx.CurrentTarget == null)
-            {
-                ctx.Controller.ChangeState(new IdleState());
-                return;
-            }
-
-            if (ctx.GreedIsFull)
-            {
-                ctx.LootTarget = null;
-                ctx.Controller.ChangeState(new ReturnToPortalState());
-                return;
-            }
-
-            float dist = Vector3.Distance(
-                ctx.Self.transform.position,
-                ctx.CurrentTarget.transform.position
-            );
-
-            if (dist <= ctx.AttackRange)
-            {
-                ctx.Controller.ChangeState(new AttackState());
-                return;
-            }
-
-            // Đang chase combat target → clear LootTarget ngay nếu có.
-            // Không để coin bị ghost-reserved trong ctx đến khi enemy reset.
-            ctx.LootTarget = null;
-
-            MovementUtility.MoveTowardsTarget(
-                ctx.Self, ctx.CurrentTarget.transform.position, ctx.MoveSpeed
+            // Sky object theo camera theo trục X, giữ nguyên Y và Z của chính nó.
+            // Waypoints là con của Sky nên tự động đi theo.
+            if (_camera == null) return;
+            transform.position = new Vector3(
+                _camera.transform.position.x,
+                transform.position.y,
+                transform.position.z
             );
         }
 
-        public override void Exit(EnemyContext ctx) { }
-    }
-}
-```
+        // ──────────────────────────────────────────────────────────────────────────
+        // Smooth Progress
+        // ──────────────────────────────────────────────────────────────────────────
 
----
-
-### `AttackState.cs` — Tấn công mục tiêu (Wall, Lính, TownCenter)
-
-> **Timer check trước, cộng sau** — tránh drift tích lũy khi cần sync với animation.
-
-> **Attack timer vs Animation Event:** Cách hiện tại gọi `Attack()` theo timer, damage xảy ra cùng frame với `SetTrigger` — trước khi animation swing kịp play. Nếu cần damage sync đúng hit frame, dùng **Animation Event** thay vì timer. Nếu không cần sync chặt, timer hiện tại là đủ.
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\States\AttackState.cs
-
-using UnityEngine;
-using Script.Game.Enemy.Core;
-
-namespace Script.Game.Enemy.States
-{
-    public class AttackState : EnemyState
-    {
-        private float _attackTimer;
-
-        public override void Enter(EnemyContext ctx)
+        /// <summary>
+        /// Advance smooth progress theo thời gian thực thay vì nhảy theo phút game.
+        /// Snap ngay khi có jump lớn (load save, context menu set time).
+        /// </summary>
+        private void AdvanceSmoothProgress()
         {
-            ctx.Animator.SetTrigger("Attack");
-            _attackTimer = ctx.AttackCooldown; // cho phép đánh ngay lần đầu
-        }
+            float rawProgress = GetRawDayProgress();
 
-        public override void Update(EnemyContext ctx)
-        {
-            if (ctx.CurrentTarget == null)
+            // Tính khoảng cách có tính wrap (ví dụ: 0.99 vs 0.01 = 0.02, không phải 0.98)
+            float diff = rawProgress - _smoothDayProgress;
+            if (diff > 0.5f)  diff -= 1f;
+            if (diff < -0.5f) diff += 1f;
+
+            // Snap nếu lệch quá 5 phút game (do SetGameTime jump)
+            const float snapThreshold = 5f / 1440f;
+            if (Mathf.Abs(diff) > snapThreshold)
             {
-                ctx.Controller.ChangeState(new IdleState());
+                _smoothDayProgress = rawProgress;
                 return;
             }
 
-            float dist = Vector3.Distance(
-                ctx.Self.transform.position,
-                ctx.CurrentTarget.transform.position
-            );
-
-            if (dist > ctx.AttackRange)
-            {
-                ctx.Controller.ChangeState(new MoveToTargetState());
-                return;
-            }
-
-            // Check TRƯỚC, cộng SAU — tránh drift timer
-            if (_attackTimer >= ctx.AttackCooldown)
-            {
-                _attackTimer = 0;
-                PerformAttack(ctx);
-            }
-            _attackTimer += Time.deltaTime;
+            // Advance bình thường: 1 ngày game = realSecondsPerGameDay giây thực
+            float progressPerSecond = 1f / GameTimeManager.Instance.SecondsPerDay;
+            _smoothDayProgress += progressPerSecond * Time.deltaTime;
+            _smoothDayProgress %= 1f;
         }
 
-        public override void Exit(EnemyContext ctx)
+        private float GetRawDayProgress()
         {
-            _attackTimer = 0;
+            return (GameTimeManager.Instance.GetTotalMinutes % 1440) / 1440f;
         }
 
-        // Virtual để subclass override hành vi đánh cụ thể
-        protected virtual void PerformAttack(EnemyContext ctx)
+        // ──────────────────────────────────────────────────────────────────────────
+        // Sun
+        // ──────────────────────────────────────────────────────────────────────────
+
+        private void UpdateSun(float currentHour)
         {
-            // TODO: gọi IAttacker.Attack() khi EnemyStatus hoàn thiện
-            // ctx.Self.GetComponent<IAttacker>()?.Attack();
+            if (sunRenderer == null || waypoints.Count < 2) return;
+
+            bool visible = currentHour >= sunRiseHour && currentHour < sunSetHour;
+            sunRenderer.enabled = visible;
+            if (!visible) return;
+
+            float t = Mathf.InverseLerp(sunRiseHour, sunSetHour, currentHour);
+            sunRenderer.transform.position = GetPathPosition(t);
         }
-    }
-}
-```
 
----
+        // ──────────────────────────────────────────────────────────────────────────
+        // Moon
+        // ──────────────────────────────────────────────────────────────────────────
 
-### `DeadState.cs` — Trạng thái chết
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\States\DeadState.cs
-
-using Script.Game.Enemy.Core;
-
-namespace Script.Game.Enemy.States
-{
-    public class DeadState : EnemyState
-    {
-        public override void Enter(EnemyContext ctx)
+        private void UpdateMoon(float currentHour)
         {
-            ctx.Animator.SetTrigger("Die");
-            // Không recycle ngay — để animation chết chạy xong.
-            // Pool.ReturnEnemy được gọi từ Animation Event hoặc Coroutine bên ngoài.
+            if (moonRenderer == null || waypoints.Count < 2) return;
+
+            float moonT = GetMoonT(currentHour);
+            bool visible = moonT >= 0f;
+            moonRenderer.enabled = visible;
+            if (!visible) return;
+
+            moonRenderer.transform.position = GetPathPosition(moonT);
+
+            // Fade in lúc vừa xuất hiện (coexist với mặt trời)
+            Color c = moonRenderer.color;
+            c.a = GetMoonAlpha(currentHour);
+            moonRenderer.color = c;
         }
 
         /// <summary>
-        /// Intentionally empty.
-        /// INVARIANT: State này CHỈ được enter qua EnemyAIController.OnDeath(),
-        /// method đó set IsAlive = false TRƯỚC khi gọi ChangeState.
-        /// EnemyAIController.Update() guard trên IsAlive = false ngăn method này chạy.
-        /// Nếu ChangeState(new DeadState()) được gọi từ nơi khác mà không set IsAlive = false
-        /// trước, đây là vi phạm invariant — không phải lỗi của state này.
+        /// Trả về t (0→1) trên waypoint path cho mặt trăng.
+        /// Đảm bảo t=0.5 (middle) đúng lúc nửa đêm (0:00).
+        /// Trả về -1 nếu mặt trăng không hiển thị.
+        ///
+        /// Chia làm 2 phase:
+        ///   Phase 1: moonRiseHour → 24:00  →  t: 0.0 → 0.5
+        ///   Phase 2: 00:00 → moonSetHour   →  t: 0.5 → 1.0
         /// </summary>
-        public override void Update(EnemyContext ctx) { }
-
-        public override void Exit(EnemyContext ctx) { }
-    }
-}
-```
-
----
-
-### States optional — chỉ dùng cho enemy có greed mechanic
-
-`LootingState` và `ReturnToPortalState` là một phần của framework nhưng **không phải scope hiện tại**. Giữ lại trong codebase để enemy phức tạp sau này dùng, không xóa.
-
-Xem chi tiết implementation tại nhánh feature khi cần implement greed mechanic.
-
----
-
-## 5. ShieldBot — Enemy ví dụ đầu tiên
-
-ShieldBot là enemy đơn giản nhất: **di chuyển và tấn công**, không nhặt coin, không rút về cổng. Toàn bộ behavior dùng lại 5 state base, chỉ override `AttackState` để thêm animation riêng.
-
-### Cấu trúc file ShieldBot
-
-```
-States\Variants\ShieldBot\
-└── ShieldBotAttackState.cs     ← override animation, giữ nguyên toàn bộ logic attack
-```
-
-GameObject Inspector của ShieldBot:
-```
-GameObject: ShieldBot
- ├── EnemyAIController.cs   ← cấu hình stats trong Inspector
- ├── Animator               ← có các trigger: Idle, Walk, Attack, Die, ShieldBash
- ├── Rigidbody2D
- └── Collider2D
-```
-
----
-
-### `ShieldBotAttackState.cs`
-
-ShieldBot có animation tấn công riêng ("ShieldBash") thay vì animation "Attack" mặc định. Toàn bộ logic timer, cooldown, transition kiểm tra distance — kế thừa hoàn toàn từ `AttackState`.
-
-> **Lưu ý double trigger:** `base.Enter()` set trigger "Attack", sau đó override set thêm "ShieldBash". Cả hai vào queue của Animator trong cùng frame. Để tránh "Attack" fire trước "ShieldBash", cần đảm bảo trong Animator: transition "ShieldBash" có priority cao hơn "Attack", hoặc chỉ dùng một trigger. Cách đơn giản nhất: trong `ShieldBotAttackState.Enter()` **không gọi `base.Enter()`** và set trigger "ShieldBash" trực tiếp — nhưng vẫn phải khởi tạo `_attackTimer` thủ công.
-
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\States\Variants\ShieldBot\ShieldBotAttackState.cs
-
-using UnityEngine;
-using Script.Game.Enemy.Core;
-using Script.Game.Enemy.States;
-
-namespace Script.Game.Enemy.States.Variants.ShieldBot
-{
-    public class ShieldBotAttackState : AttackState
-    {
-        public override void Enter(EnemyContext ctx)
+        private float GetMoonT(float currentHour)
         {
-            // KHÔNG gọi base.Enter() để tránh double trigger ("Attack" + "ShieldBash").
-            // Khởi tạo _attackTimer trực tiếp qua reflection hoặc exposed method.
-            // Vì _attackTimer là private trong base, cần đổi thành protected:
-            //   protected float _attackTimer;  ← đổi access modifier trong AttackState.cs
-            ctx.Animator.SetTrigger("ShieldBash");
-            _attackTimer = ctx.AttackCooldown; // cho phép đánh ngay lần đầu
+            if (currentHour >= moonRiseHour)
+            {
+                // Phase 1: rising (chiều → nửa đêm)
+                return Mathf.InverseLerp(moonRiseHour, 24f, currentHour) * 0.5f;
+            }
+            else if (currentHour < moonSetHour)
+            {
+                // Phase 2: setting (nửa đêm → sáng)
+                return 0.5f + Mathf.InverseLerp(0f, moonSetHour, currentHour) * 0.5f;
+            }
+
+            return -1f; // không hiển thị (khoảng moonSetHour → moonRiseHour)
         }
 
-        protected override void PerformAttack(EnemyContext ctx)
+        private float GetMoonAlpha(float currentHour)
         {
-            // ShieldBot gây sát thương theo cơ chế riêng — ví dụ knockback
-            // TODO: ctx.Self.GetComponent<ShieldBotStatus>()?.ShieldBash();
-            Debug.Log($"[ShieldBot] {ctx.Self.name} ShieldBash!");
+            // Fade in từ moonDuskAlpha → 1.0 trong khoảng moonFadeInHours
+            if (currentHour >= moonRiseHour && currentHour < moonRiseHour + moonFadeInHours)
+            {
+                float fadeProgress = Mathf.InverseLerp(moonRiseHour, moonRiseHour + moonFadeInHours, currentHour);
+                return Mathf.Lerp(moonDuskAlpha, 1f, fadeProgress);
+            }
+            return 1f;
         }
-    }
-}
-```
 
-> **Yêu cầu thay đổi trong `AttackState.cs`:** Đổi `private float _attackTimer` thành `protected float _attackTimer` để subclass truy cập trực tiếp mà không cần reflection.
+        // ──────────────────────────────────────────────────────────────────────────
+        // Waypoint Path
+        // ──────────────────────────────────────────────────────────────────────────
 
-**`AttackState.cs` — dòng cần sửa:**
-```csharp
-// Trước:
-private float _attackTimer;
+        /// <summary>
+        /// Nội suy tuyến tính giữa các waypoint.
+        /// t=0 → waypoints[0], t=1 → waypoints[last].
+        /// </summary>
+        private Vector3 GetPathPosition(float t)
+        {
+            t = Mathf.Clamp01(t);
+            int count = waypoints.Count;
 
-// Sau:
-protected float _attackTimer;
-```
+            if (count == 0) return transform.position;
+            if (count == 1) return waypoints[0].position;
 
----
+            float scaledT = t * (count - 1);
+            int index = Mathf.Clamp(Mathf.FloorToInt(scaledT), 0, count - 2);
+            float localT = scaledT - index;
 
-### `EnemyAIController` cho ShieldBot — không cần file riêng
+            return Vector3.Lerp(waypoints[index].position, waypoints[index + 1].position, localT);
+        }
 
-ShieldBot **dùng cùng `EnemyAIController.cs`** với mọi enemy khác. Sự khác biệt duy nhất là ở `Start()` — khởi tạo state ban đầu với `ShieldBotAttackState` được inject vào khi cần.
+        // ──────────────────────────────────────────────────────────────────────────
+        // Sky Color
+        // ──────────────────────────────────────────────────────────────────────────
 
-Cách làm sạch nhất: `EnemyAIController` expose một virtual method để subclass override state khởi đầu:
+        private void UpdateSkyColor(float currentHour)
+        {
+            if (backgroundRenderer == null) return;
+            backgroundRenderer.color = SampleSkyColor(currentHour);
+        }
 
-```csharp
-// Thêm vào EnemyAIController.cs
-protected virtual EnemyState CreateAttackState() => new AttackState();
-```
+        /// <summary>
+        /// Lerp màu bầu trời theo giờ. Không có sprite swap, chỉ đổi màu SpriteRenderer.
+        /// Background cần là sprite màu trắng để hiển thị màu tint đúng.
+        /// </summary>
+        private Color SampleSkyColor(float hour)
+        {
+            // Key: (giờ bắt đầu, giờ kết thúc, màu đầu, màu cuối)
+            if (hour < 6f)
+            {
+                // Pre-dawn: night → earlyMorning (bắt đầu transition từ 4h)
+                return Color.Lerp(colorNight, colorEarlyMorning, Mathf.InverseLerp(4f, 6f, hour));
+            }
+            if (hour < 9f)   return Color.Lerp(colorEarlyMorning, colorMorning,   Mathf.InverseLerp(6f,  9f,  hour));
+            if (hour < 12f)  return Color.Lerp(colorMorning,      colorNoon,      Mathf.InverseLerp(9f,  12f, hour));
+            if (hour < 15f)  return Color.Lerp(colorNoon,         colorAfternoon, Mathf.InverseLerp(12f, 15f, hour));
+            if (hour < 18f)  return Color.Lerp(colorAfternoon,    colorDusk,      Mathf.InverseLerp(15f, 18f, hour));
+            if (hour < 21f)  return Color.Lerp(colorDusk,         colorNight,     Mathf.InverseLerp(18f, 21f, hour));
 
-Sau đó tạo `ShieldBotAIController.cs` kế thừa:
+            return colorNight;
+        }
 
-```csharp
-// E:\unity\Crab_farm\Assets\Script\Game\Enemy\ShieldBotAIController.cs
+        // ──────────────────────────────────────────────────────────────────────────
+        // Editor Gizmos — hiển thị path và các waypoint trong Scene View
+        // ──────────────────────────────────────────────────────────────────────────
 
-using Script.Game.Enemy.States.Variants.ShieldBot;
-using Script.Game.Enemy.Core;
+#if UNITY_EDITOR
+        private void OnDrawGizmos()
+        {
+            if (waypoints == null || waypoints.Count < 2) return;
 
-namespace Script.Game.Enemy
-{
-    public class ShieldBotAIController : EnemyAIController
-    {
-        protected override EnemyState CreateAttackState()
-            => new ShieldBotAttackState();
-    }
-}
-```
+            // Vẽ đường path
+            Gizmos.color = Color.yellow;
+            for (int i = 0; i < waypoints.Count - 1; i++)
+            {
+                if (waypoints[i] == null || waypoints[i + 1] == null) continue;
+                Gizmos.DrawLine(waypoints[i].position, waypoints[i + 1].position);
+            }
 
-Đặt `ShieldBotAIController` lên GameObject ShieldBot thay vì `EnemyAIController` base. Không thay đổi bất kỳ dòng nào trong base class.
+            // Vẽ các waypoint sphere
+            for (int i = 0; i < waypoints.Count; i++)
+            {
+                if (waypoints[i] == null) continue;
+                Gizmos.color = (i == 0 || i == waypoints.Count - 1) ? Color.red : Color.cyan;
+                Gizmos.DrawWireSphere(waypoints[i].position, 0.3f);
+            }
 
-> Tuy nhiên, cách này đòi hỏi `MoveToTargetState` biết dùng `CreateAttackState()` thay vì `new AttackState()` hardcode. Nếu chưa muốn refactor ngay, cách đơn giản hơn là **thay thẳng `new AttackState()` bằng `new ShieldBotAttackState()`** trong một `ShieldBotAIController` override `Start()`:
+            // Preview vị trí sun/moon tại thời gian hiện tại (nếu đang play)
+            if (!Application.isPlaying || GameTimeManager.Instance == null) return;
 
-```csharp
-// Cách đơn giản hơn — ShieldBotAIController chỉ cần override Start
-public class ShieldBotAIController : EnemyAIController
-{
-    protected override void Start()
-    {
-        // Không gọi base.Start() — tự quản lý state khởi đầu
-        ChangeState(new IdleState()); // ShieldBot vẫn bắt đầu từ Idle
-    }
-}
-```
+            float raw = (GameTimeManager.Instance.GetTotalMinutes % 1440) / 1440f;
+            float hour = raw * 24f;
 
-Và trong `MoveToTargetState`, thay `new AttackState()` thành gọi factory method qua Context hoặc Controller:
+            if (hour >= sunRiseHour && hour < sunSetHour)
+            {
+                float t = Mathf.InverseLerp(sunRiseHour, sunSetHour, hour);
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(GetPathPosition(t), 0.4f);
+            }
 
-```csharp
-// Trong MoveToTargetState.Update() — thay vì hardcode:
-ctx.Controller.ChangeState(new AttackState());
-
-// Dùng factory:
-ctx.Controller.ChangeState(ctx.Controller.CreateAttackState());
-```
-
----
-
-## 6. Sơ đồ chuyển state — ShieldBot
-
-```
-Spawn → ResetEnemy()
-  ↓
-[Idle] ──── GetTarget() ────→ target found → [MoveToTarget]
-  │                                               │
-  └── null ──→ [Patrol]                          ├── dist <= AttackRange → [ShieldBotAttack]
-        │                                         │          │
-        └── GetTarget() (0.3s) → found ──────────┘    target null/dead → [Idle]
-                                                   │
-                                        dist > AttackRange → [MoveToTarget]
-
-Bất kỳ state nào
-  └── OnDeath() → [Dead] → animation xong → Pool.Return()
-```
-
-**ShieldBot không có path đến `LootingState` hoặc `ReturnToPortalState`.** Đây là by design — không phải thiếu sót.
-
----
-
-## 7. Sơ đồ chuyển state — Enemy đầy đủ (tham khảo cho sau này)
-
-```
-Spawn → ResetEnemy()
-  ↓
-[Idle] ──── GetTarget() ────────────────────→ [MoveToTarget]
-  │                                                 │
-  └── null ──→ [Patrol]                            ├── dist <= AttackRange → [Attack]
-        │                                           │        │
-        └── GetTarget() (0.3s) → found ────────────┘   target null/dead → [Idle]
-                                                    │
-                        ctx.LootTarget được set bởi OnTriggerEnter2D,
-                        chỉ xử lý khi CurrentTarget == null (patrol/idle flow)
-                                                    │
-                                                [Looting]
-                                                    │
-                                   ├── greed chưa full → [Idle]
-                                   └── greed full ──→ [ReturnToPortal]
-                                                            │
-                              PendingRecycle → EnemyAIController.Update → Pool.ReturnEnemy()
-
-Bất kỳ state nào
-  └── OnDeath() → IsAlive = false → [Dead] → animation xong → Pool.Return()
-```
-
-> **Lưu ý về LootingState trigger:** Theo thiết kế, `LootingState` được vào từ `PatrolState` hoặc `IdleState` khi enemy không có combat target và `LootTarget != null`. `MoveToTargetState` **không trigger LootingState** — khi đang chase mục tiêu chiến đấu, coin bị clear khỏi ctx ngay. Phần logic check `LootTarget` trong `PatrolState`/`IdleState` là **TODO** — chưa implement trong scope hiện tại.
-[user ghi chú :   looting state là di chuyển đến vị trí item mà enemy thấy, không bao gồm hàm nhặt item, có 1 script riêng quản lý khi enemy trigger vào item sẽ kích hoạt tự động nhặt nếu tag thuộc  prefabdata.instance.enemyLootTags.
-
-việc định nghĩa enemy này có thể nhặt đồ hay không phải được định nghĩa ngay trong json và hàm load ,bạn phải sửa lại kịch bản sao chu phù hợp việc load này ]
----
-
-## 8. Inspector và GameObject setup
-
-Chỉ có **một script gắn lên GameObject** mỗi loại enemy:
-
-```
-GameObject: ShieldBot
- ├── ShieldBotAIController.cs  ← thay EnemyAIController base
- ├── Animator                  ← triggers: Idle, Walk, ShieldBash, Die
- ├── Rigidbody2D
- └── Collider2D
-```
-
-Inspector sạch. Không có state class nào hiện trong Inspector vì tất cả là plain C# class.
-
----
-
-## 9. Hướng mở rộng sau này
-
-Khi thêm loại enemy mới:
-
-```csharp
-// Ví dụ: ArcherEnemy — tấn công tầm xa, không patrol
-public class ArcherAttackState : AttackState
-{
-    protected override void PerformAttack(EnemyContext ctx)
-    {
-        // Bắn projectile thay vì melee
+            float moonT = GetMoonT(hour);
+            if (moonT >= 0f)
+            {
+                Gizmos.color = Color.white;
+                Gizmos.DrawSphere(GetPathPosition(moonT), 0.35f);
+            }
+        }
+#endif
     }
 }
 
-// Ví dụ: CircleHead — có greed, nhặt coin, rút về cổng
-// Dùng đầy đủ tất cả 7 state bao gồm LootingState + ReturnToPortalState
-// Không cần override gì — behavior mặc định đủ dùng
-```
 
-**Quy tắc:** State nào không cần thay đổi thì không override. Chỉ tạo file mới khi behavior thực sự khác.
+
+
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// THÊM VÀO GameTimeManager.cs — trong region Save/Load Integration
+// (đặt cạnh public int GetTotalMinutes)
+// ══════════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Số giây thực tế tương đương 1 ngày game.
+/// CelestialManager dùng giá trị này để drive smooth movement theo Time.deltaTime.
+/// </summary>
+public float SecondsPerDay => realSecondsPerGameDay;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SỬA IsDaytime (đã được sửa trong codebase hiện tại — chỉ ghi lại để xác nhận)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// TRƯỚC (dùng magic number 18):
+// public bool IsDaytime => GameHour >= MORNING_HOUR && GameHour < 18;
+
+// SAU (dùng NIGHT_HOUR = 19, đã fix trong file hiện tại):
+// public bool IsDaytime => GameHour >= MORNING_HOUR && GameHour < NIGHT_HOUR;
+// → Xác nhận: file hiện tại ĐÃ dùng NIGHT_HOUR, conflict đã được resolve.
+
+
+
+
+
+
 using System.Collections.Generic;
-using System.Linq;
+using UnityEditor;
 using UnityEngine;
+using Script.Manager.WorldManager;
 
-namespace Script.Game.Enemy
+namespace Script.Editor
 {
-    public class TotalEnemyList : MonoBehaviour
+    /// <summary>
+    /// Tool tạo toàn bộ Sky hierarchy trong scene.
+    /// Menu: Tools → Setup CelestialManager
+    ///
+    /// Hierarchy được tạo:
+    ///   Sky
+    ///    ├── Background  (SpriteRenderer — cần assign sprite trắng)
+    ///    ├── Sun         (SpriteRenderer)
+    ///    ├── Moon        (SpriteRenderer)
+    ///    └── Waypoints
+    ///         ├── WP_0  (chân trời trái)
+    ///         ├── WP_1
+    ///         ├── WP_2  (đỉnh)
+    ///         ├── WP_3
+    ///         └── WP_4  (chân trời phải)
+    /// </summary>
+    public class CelestialSetupTool : EditorWindow
     {
-
-        public GameObject circleHead;
-        
-        public GameObject shieldBot;
-        public GameObject twoHeadBot;
-
-        public GameObject stormHead;
-        public GameObject toucher;
-        
-        public static TotalEnemyList Instance { get; private set; }
-
-        private void Awake()
+        [MenuItem("Tools/Setup CelestialManager")]
+        public static void SetupCelestialManager()
         {
-            if (Instance == null)
+            // Guard: không tạo trùng
+            CelestialManager existing = Object.FindObjectOfType<CelestialManager>();
+            if (existing != null)
             {
-                Instance = this;
-               
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-
-            InitializeEnemyData();
-        }
-
-        // Class cơ sở cho dữ liệu của mọi enemy
-        [System.Serializable]
-        public class EnemyDataBase
-        {
-            public int id;
-            public string enemyName;
-            public float attackSpeed;
-            public int dame;
-            public int hp;
-            public int speed;
-            public GameObject enemyPrefab; // Not loaded from JSON
-            public string description;
-            public int power;//sử dụng để tích chiến lực,dẫn đến số lượng loại này sẽ spawn ra
-        }
-
-        [System.Serializable]
-        public class EnemyDataConfigWrapper
-        {
-            public List<EnemyDataBase> enemies;
-        }
-
-        public List<EnemyDataBase> EnemyDataList = new List<EnemyDataBase>();
-
-        private void InitializeEnemyData()
-        {
-            // Load JSON from Resources
-            TextAsset jsonFile = Resources.Load<TextAsset>("DataConfig/EnemyDataConfig");
-            if (jsonFile == null)
-            {
-                Debug.LogError("Cannot find EnemyDataConfig.json in Resources/DataConfig");
+                Debug.LogWarning($"[CelestialSetupTool] CelestialManager đã tồn tại trên object: '{existing.gameObject.name}'. Hủy setup.");
+                Selection.activeGameObject = existing.gameObject;
                 return;
             }
 
-            EnemyDataConfigWrapper config = JsonUtility.FromJson<EnemyDataConfigWrapper>(jsonFile.text);
-
-            if (config != null && config.enemies != null)
+            // Guard: cần camera
+            Camera mainCam = Camera.main;
+            if (mainCam == null)
             {
-                foreach (var data in config.enemies)
-                {
-                    // Map prefab based on name
-                    switch (data.enemyName)
-                    {
-                        case "circleHead":
-                            data.enemyPrefab = circleHead;
-                            break;
-                        case "shieldBot":
-                            data.enemyPrefab = shieldBot;
-                            break;
-                        case "twoHeadBot":
-                            data.enemyPrefab = twoHeadBot;
-                            break;
-                        case "stormHead":
-                            data.enemyPrefab = stormHead;
-                            break;
-                        case "toucher":
-                            data.enemyPrefab = toucher;
-                            break;
-                        default:
-                            Debug.LogWarning($"Prefab not found for enemy: {data.enemyName}");
-                            break;
-                    }
-                    EnemyDataList.Add(data);
-                }
-            }
-        }
-
-        // Phương thức lấy dữ liệu enemy theo tên
-        public EnemyDataBase GetEnemyDataByName(string enemyName)
-        {
-            return EnemyDataList.Find(data => data.enemyName == enemyName);
-        }
-        
-        
-        // Hàm chọn danh sách quái vật dựa trên maxPower
-        public List<(EnemyDataBase Data, int Quantity)> SelectMonstersByPower(int maxPower)
-        {
-            int monterPowerReturn = 0;
-            var selectedMonsters = new List<(EnemyDataBase Data, int Quantity)>();
-
-            var sortedEnemies = EnemyDataList.OrderByDescending(e => e.power).ToList();
-            int index = 0;
-
-            while (monterPowerReturn < maxPower)
-            {
-                var enemy = sortedEnemies[index % sortedEnemies.Count];
-
-                if (monterPowerReturn + enemy.power <= maxPower)
-                {
-                    monterPowerReturn += enemy.power;
-
-                    var existingMonster = selectedMonsters.FirstOrDefault(m => m.Data == enemy);
-                    if (existingMonster != default)
-                    {
-                        int i = selectedMonsters.FindIndex(m => m.Data == enemy);
-                        selectedMonsters[i] = (enemy, existingMonster.Quantity + 1);
-                    }
-                    else
-                    {
-                        selectedMonsters.Add((enemy, 1));
-                    }
-                }
-
-                index++;
+                Debug.LogError("[CelestialSetupTool] Không tìm thấy Main Camera trong scene. Hãy đặt tag 'MainCamera' cho camera trước.");
+                return;
             }
 
-            // Disable internal logging as the caller handles it now
-            // DisplaySelectedMonsters(selectedMonsters);
-            return selectedMonsters;
-        }
-        public void DisplaySelectedMonsters(List<(EnemyDataBase Data, int Quantity)> selectedMonsters)
-        {
-            foreach (var monster in selectedMonsters)
+            // Đảm bảo Sorting Layer "Sky" tồn tại
+            EnsureSortingLayer("Sky");
+
+            // ── Tạo Sky root ──────────────────────────────────────────────────────
+            GameObject skyRoot = new GameObject("Sky");
+            skyRoot.transform.position = new Vector3(
+                mainCam.transform.position.x,
+                0f,
+                0f
+            );
+
+            CelestialManager manager = skyRoot.AddComponent<CelestialManager>();
+            manager.mainCamera = mainCam;
+
+            // ── Background ────────────────────────────────────────────────────────
+            // Background cần sprite màu TRẮNG để SpriteRenderer.color tint đúng.
+            GameObject bgObj = new GameObject("Background");
+            bgObj.transform.SetParent(skyRoot.transform);
+            bgObj.transform.localPosition = new Vector3(0f, 0f, 10f); // đẩy về sau
+            SpriteRenderer bgRenderer = bgObj.AddComponent<SpriteRenderer>();
+            bgRenderer.sortingLayerName = "Sky";
+            bgRenderer.sortingOrder = 0;
+            bgRenderer.color = Color.white;
+            manager.backgroundRenderer = bgRenderer;
+
+            // ── Sun ───────────────────────────────────────────────────────────────
+            GameObject sunObj = new GameObject("Sun");
+            sunObj.transform.SetParent(skyRoot.transform);
+            sunObj.transform.localPosition = new Vector3(-manager.waypoints.Count, 5f, 9f);
+            SpriteRenderer sunRenderer = sunObj.AddComponent<SpriteRenderer>();
+            sunRenderer.sortingLayerName = "Sky";
+            sunRenderer.sortingOrder = 2;
+            manager.sun = sunObj.transform;
+            manager.sunRenderer = sunRenderer;
+
+            // ── Moon ──────────────────────────────────────────────────────────────
+            GameObject moonObj = new GameObject("Moon");
+            moonObj.transform.SetParent(skyRoot.transform);
+            moonObj.transform.localPosition = new Vector3(5f, 5f, 9f);
+            SpriteRenderer moonRenderer = moonObj.AddComponent<SpriteRenderer>();
+            moonRenderer.sortingLayerName = "Sky";
+            moonRenderer.sortingOrder = 2;
+            manager.moon = moonObj.transform;
+            manager.moonRenderer = moonRenderer;
+
+            // ── Waypoints ─────────────────────────────────────────────────────────
+            // Tạo 5 waypoint theo hình cung nửa ellipse.
+            // Người dùng có thể kéo chỉnh lại trong scene view.
+            //
+            // Hình dung (nhìn từ trên):
+            //   WP0              WP4
+            //      WP1    WP3
+            //          WP2
+            // Thực ra là arc từ trái → phải, WP2 là đỉnh cao nhất.
+            GameObject waypointsRoot = new GameObject("Waypoints");
+            waypointsRoot.transform.SetParent(skyRoot.transform);
+            waypointsRoot.transform.localPosition = Vector3.zero;
+
+            // Định nghĩa arc: 5 điểm theo hình bán ellipse
+            // radiusX theo hướng ngang, radiusY theo hướng dọc
+            float rX = 20f;
+            float rY = 10f;
+            int waypointCount = 5;
+            List<Transform> wps = new List<Transform>();
+
+            for (int i = 0; i < waypointCount; i++)
             {
-                Debug.Log($"Enemy: {monster.Data.enemyName}, Quantity: {monster.Quantity}");
+                // Góc từ π (trái) → 0 (phải), chiều từ trái sang phải
+                float t = i / (float)(waypointCount - 1);       // 0 → 1
+                float angle = Mathf.PI - t * Mathf.PI;          // π → 0
+
+                float x = Mathf.Cos(angle) * rX;                // -rX → +rX
+                float y = Mathf.Sin(angle) * rY;                //  0  → rY → 0
+
+                GameObject wp = new GameObject($"WP_{i}");
+                wp.transform.SetParent(waypointsRoot.transform);
+                wp.transform.localPosition = new Vector3(x, y, 9f);
+                wps.Add(wp.transform);
             }
+
+            manager.waypoints = wps;
+
+            // ── Focus inspector ───────────────────────────────────────────────────
+            Selection.activeGameObject = skyRoot;
+            Undo.RegisterCreatedObjectUndo(skyRoot, "Setup CelestialManager");
+
+            Debug.Log(
+                "[CelestialSetupTool] Sky hierarchy đã được tạo!\n" +
+                "Việc cần làm:\n" +
+                "  1. Assign sprite TRẮNG cho Background SpriteRenderer\n" +
+                "  2. Assign sprite mặt trời cho Sun SpriteRenderer\n" +
+                "  3. Assign sprite mặt trăng cho Moon SpriteRenderer\n" +
+                "  4. Kéo chỉnh các WP_x trong Scene View để tạo arc theo ý muốn\n" +
+                "  5. Thêm 'Sky' vào Sorting Layers nếu chưa có (đã cố gắng tự thêm)"
+            );
         }
 
+        // ──────────────────────────────────────────────────────────────────────────
+        // Utility: Tự thêm Sorting Layer nếu chưa có
+        // ──────────────────────────────────────────────────────────────────────────
+
+        private static void EnsureSortingLayer(string layerName)
+        {
+            SerializedObject tagManager = new SerializedObject(
+                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]
+            );
+
+            SerializedProperty sortingLayers = tagManager.FindProperty("m_SortingLayers");
+            if (sortingLayers == null) return;
+
+            // Kiểm tra đã tồn tại chưa
+            for (int i = 0; i < sortingLayers.arraySize; i++)
+            {
+                SerializedProperty layer = sortingLayers.GetArrayElementAtIndex(i);
+                if (layer.FindPropertyRelative("name").stringValue == layerName) return;
+            }
+
+            // Thêm mới
+            sortingLayers.InsertArrayElementAtIndex(sortingLayers.arraySize);
+            SerializedProperty newLayer = sortingLayers.GetArrayElementAtIndex(sortingLayers.arraySize - 1);
+            newLayer.FindPropertyRelative("name").stringValue = layerName;
+            newLayer.FindPropertyRelative("uniqueID").intValue = layerName.GetHashCode();
+
+            tagManager.ApplyModifiedProperties();
+            Debug.Log($"[CelestialSetupTool] Đã thêm Sorting Layer '{layerName}'.");
+        }
     }
-}
-
-E:\unity\Crab_farm\Assets\Art\Resources\DataConfig\EnemyDataConfig.json
-có nội dung {
-    "enemies": [
-        {
-            "id": 2,
-            "enemyName": "circleHead",
-            "attackSpeed": 1,
-            "dame": 1,
-            "hp": 2,
-            "speed": 1,
-            "description": "Sạc không dây di động,giúp tăng tốc độ tích năng lượng cho shieldBot gần đó ",
-            "power": 1
-        }
-    ]
 }

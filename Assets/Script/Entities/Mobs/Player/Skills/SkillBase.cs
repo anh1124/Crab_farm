@@ -8,16 +8,9 @@ namespace Script.Game.PlayerCharacter.Skills
     /// </summary>
     public abstract class SkillBase : ScriptableObject
     {
-        public enum ResourceType
-        {
-            Mana,
-            Stamina
-        }
-
         // === CONFIGURATION PROPERTIES ===
         
         [Header("Resource")]
-        public ResourceType resourceType;
         public int resourceCost;
         
         [Header("UI")]
