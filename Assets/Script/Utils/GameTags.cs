@@ -17,6 +17,8 @@ namespace Script.Utils
         public const string TownCenter = "TownCenter";
         public const string Denizen = "Denizen";
         public const string Untagged = "Untagged";
+        public const string Hammer = "Hammer";
+        public const string Bow = "Bow";
     }
 
     public static class GameLayers
@@ -66,6 +68,23 @@ namespace Script.Utils
         public static readonly System.Collections.Generic.List<string> EnemyRetreatTargets = new System.Collections.Generic.List<string> 
         { 
             GameTags.Wall 
+        };
+
+        public static readonly System.Collections.Generic.List<string> AllyTags = new System.Collections.Generic.List<string> 
+        { 
+            GameTags.Player, 
+            GameTags.Archer, 
+            GameTags.Villager,
+            GameTags.Vagrant,
+            GameTags.Denizen,
+            GameTags.Wall, 
+            GameTags.TownCenter 
+        };
+
+        public static readonly System.Collections.Generic.List<string> ToolTags = new System.Collections.Generic.List<string>
+        {
+            GameTags.Hammer,
+            GameTags.Bow
         };
     }
 }

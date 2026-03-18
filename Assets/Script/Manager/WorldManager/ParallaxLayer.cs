@@ -37,6 +37,10 @@ namespace Script.Manager.WorldManager
         [Tooltip("Độ lệch Y so với đáy màn hình (nếu lockToCameraBottom được bật).")]
         public float yOffset = 0f;
 
+        [Header("Target")]
+        [Tooltip("Nếu được gán, Parallax sẽ đi theo transform này thay vì Camera")]
+        public Transform followTarget;
+
         private Camera _camera;
         private float _originCamX;
         private float _tileWidth;
@@ -94,8 +98,10 @@ namespace Script.Manager.WorldManager
         {
             if (_camera == null || _tiles.Count == 0) return;
 
+            Transform targetTransform = followTarget != null ? followTarget : _camera.transform;
+
             // 1. Tính toán vị trí X (Parallax)
-            float camDelta = _camera.transform.position.x - _originCamX;
+            float camDelta = targetTransform.position.x - _originCamX;
             float followAmount = 1f - parallaxFactor; 
             float targetX = _originCamX + camDelta * followAmount;
 
@@ -103,14 +109,21 @@ namespace Script.Manager.WorldManager
             float targetY = transform.position.y;
             if (lockToCameraBottom)
             {
-                // Toạ độ Y của đáy Camera = Camera.Y - OrthographicSize
-                targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
+                if (followTarget != null)
+                {
+                    targetY = targetTransform.position.y + yOffset;
+                }
+                else
+                {
+                    // Toạ độ Y của đáy Camera = Camera.Y - OrthographicSize
+                    targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
+                }
             }
             
             transform.position = new Vector3(targetX, targetY, transform.position.z);
 
             // 3. Recycle
-            RecycleTiles();
+            RecycleTiles(targetTransform);
         }
 
         private void SpawnInitialTiles()
@@ -148,9 +161,10 @@ namespace Script.Manager.WorldManager
             _tiles.Add(go.transform);
         }
 
-        private void RecycleTiles()
+        private void RecycleTiles(Transform targetTransform)
         {
-            float camLocalX = _camera.transform.position.x - transform.position.x;
+            float targetX = targetTransform != null ? targetTransform.position.x : _camera.transform.position.x;
+            float camLocalX = targetX - transform.position.x;
             float halfTotalWidth = _totalWidth / 2f;
 
             foreach (var tile in _tiles)

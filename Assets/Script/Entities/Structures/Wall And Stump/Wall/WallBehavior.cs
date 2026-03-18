@@ -731,7 +731,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             //Debug.Log($"Wall {gameObject.name} updated HP due to WorldInfo change. TechAdhesive: {worldInfo.TechAdhesive}, MaxHP: {status.maxHp}");
             
         }
-        private void OnDamagedHandler(int amount)
+        private void OnDamagedHandler(float amount)
         {
             // Notify manager and guard system
             if (WallAndStumpManager.Instance != null)
@@ -740,7 +740,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
 
-        private void OnHealedHandler(int amount)
+        private void OnHealedHandler(float amount)
         {
             if (status.state == WallState.Stump)
             {
@@ -770,7 +770,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
 
         // --- IDamageable Implementation ---
-        public void ReceiveDamage(int damage, GameObject instigator)
+        public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (!this.enabled || gameObject == null || !gameObject.activeSelf) return;
 
@@ -985,7 +985,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             public float positionX;
             public float positionY;
             public int tier;
-            public int currentHp;
+            public float currentHp;
             public bool readyToUpgrade;
             public int buildProgress;
             public WallState wallState;
@@ -1019,7 +1019,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             transform.position = new Vector3(wallData.positionX, wallData.positionY, 0);
 
             // Lưu lại các giá trị từ save data để overwrite sau
-            int savedCurrentHp = wallData.currentHp;
+            float savedCurrentHp = wallData.currentHp;
             bool savedReadyToUpgrade = wallData.readyToUpgrade;
             int savedBuildProgress = wallData.buildProgress;
             WallState savedWallState = wallData.wallState;
@@ -1209,10 +1209,9 @@ namespace Script.Game.Structures.Wall_And_Stump
 
             int threshold = WallAndStumpManager.Instance.criticalHPThreshold;
             
-            // Tính toán lượng dame cần thiết để máu còn lại đúng bằng (ngưỡng - 1)
-            // (Vì logic CheckAndFireCriticalEvent dùng dấu < nên phải trừ 1 mới trigger được event)
-            int targetHp = threshold - 1;
-            int damageToInfict = status.currentHp - targetHp;
+            // QUAN TRỌNG: threshold và targetHp dùng float để khớp với status.currentHp
+            float targetHp = threshold - 1f;
+            float damageToInfict = status.currentHp - targetHp;
 
             if (damageToInfict > 0)
             {

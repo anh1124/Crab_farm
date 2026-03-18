@@ -18,8 +18,7 @@ namespace Script.Utils
         /// <param name="hitbox">Collider2D của skill</param>
         /// <param name="damage">Damage gây ra</param>
         /// <param name="instigator">GameObject gây damage (player)</param>
-        /// <param name="damageAlly">Có cho phép damage đồng minh không</param>
-        public static void ActivateHitbox(Collider2D hitbox, int damage, GameObject instigator, bool damageAlly)
+        public static void ActivateHitbox(Collider2D hitbox, float damage, GameObject instigator)
         {
             if (hitbox == null)
             {
@@ -52,7 +51,7 @@ namespace Script.Utils
             }
             
             // Process damage thông qua CombatUtility (existing system)
-            CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage, damageAlly);
+            CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage);
             
             // Disable hitbox ngay sau khi xử lý
             hitbox.enabled = false;

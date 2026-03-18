@@ -88,7 +88,8 @@ public class Spawner : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Vector2 newPosition = new Vector2(position.x, position.y + yOffset + (i * 0.1f));
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
+            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)
@@ -108,7 +109,8 @@ public class Spawner : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Vector2 newPosition = new Vector2(position.x, position.y + yOffset);
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
+            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)
@@ -129,7 +131,8 @@ public class Spawner : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Vector2 newPosition = new Vector2(position.x, position.y);
-            GameObject coin = Instantiate(coinPrefab, newPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
+            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)

@@ -8,12 +8,12 @@ namespace Script.Game.Enemy.Interfaces
     // Quản lý máu
     public interface IHealth
     {
-        int CurrentHp { get; set; }
-        int MaxHp { get; set; }
+        float CurrentHp { get; set; }
+        float MaxHp { get; set; }
 
-        void TakeDamage(int amount);
+        void TakeDamage(float amount);
         void Die();
-        void Heal(int amount);
+        void Heal(float amount);
         
     }
 }

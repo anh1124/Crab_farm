@@ -24,15 +24,15 @@ namespace Script.Game.Player
             playerBehavior = GetComponent<PlayerBehavior>();
         }
 
-        public int CurrentHp 
+        public float CurrentHp 
         { 
-            get => Mathf.RoundToInt(status.currentHp); 
+            get => status.currentHp; 
             set => status.currentHp = value; 
         }
 
-        public int MaxHp 
+        public float MaxHp 
         { 
-            get => Mathf.RoundToInt(status.maxHp); 
+            get => status.maxHp; 
             set => status.maxHp = value; 
         }
 
@@ -44,12 +44,12 @@ namespace Script.Game.Player
         // ICoinShield
         public bool HasCoinShield => playerBehavior.Coin > 0;
 
-        public void TakeDamage(int amount)
+        public void TakeDamage(float amount)
         {
             TakeDamage(amount, null);
         }
 
-        public void Heal(int amount)
+        public void Heal(float amount)
         {
             if (IsDead) return;
             status.currentHp += amount;
@@ -62,7 +62,7 @@ namespace Script.Game.Player
         }
 
         // IDamageable
-        public void ReceiveDamage(int damage, GameObject instigator)
+        public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0 || IsDead) return;
 
@@ -85,7 +85,7 @@ namespace Script.Game.Player
             }
         }
 
-        public bool TakeDamage(int damage, GameObject whoDoDame)
+        public bool TakeDamage(float damage, GameObject whoDoDame)
         {
             ReceiveDamage(damage, whoDoDame);
             return !IsDead;

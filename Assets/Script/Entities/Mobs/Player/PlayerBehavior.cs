@@ -9,6 +9,7 @@ using Script.Game.PlayerCharacter;
 using Script.Controller.PlayerController;
 using Art.Resources.Character.PlayerCharactor.Spear_Man;
 using Script.Game.Item.Coin;
+using Script.Game.PlayerCharacter.Skills;
 
 namespace Script.Game.Player
 {
@@ -118,7 +119,15 @@ namespace Script.Game.Player
             status.manaRegenRate = config.manaRegenRate;
         }
 
-
+        private void Start()
+        {
+            // Tìm kiếm tất cả ParallaxLayer và assign target follow là transform của player
+            Script.Manager.WorldManager.ParallaxLayer[] parallaxLayers = FindObjectsOfType<Script.Manager.WorldManager.ParallaxLayer>();
+            foreach (var layer in parallaxLayers)
+            {
+                layer.followTarget = this.transform;
+            }
+        }
 
         private void OnDestroy()
         {
@@ -130,19 +139,43 @@ namespace Script.Game.Player
             }
         }
         
-        // === RESOURCE HELPERS ===
-        public bool CanUseSkill(float manaCost)
+        // === RESOURCE HELPERS (Multi-Type) ===
+        public bool CanAfford(ResourceType type, float amount)
         {
-            return status.currentMana >= manaCost;
+            switch (type)
+            {
+                case ResourceType.Mana:
+                    return status.currentMana >= amount;
+                case ResourceType.Coin:
+                    return status.coin >= amount;
+                case ResourceType.Health:
+                    return status.currentHp >= amount; // Tránh dùng HP làm cost nếu chết
+                default:
+                    return false;
+            }
         }
 
-        public void ConsumeSkillResources(float manaCost)
+        public void ConsumeResource(ResourceType type, float amount)
         {
-            status.currentMana -= manaCost;
-            
-            // Validate không âm
-            status.currentMana = Mathf.Max(0f, status.currentMana);
+            switch (type)
+            {
+                case ResourceType.Mana:
+                    status.currentMana = Mathf.Max(0f, status.currentMana - amount);
+                    break;
+                case ResourceType.Coin:
+                    SubtractCoin(Mathf.RoundToInt(amount));
+                    break;
+                case ResourceType.Health:
+                    status.currentHp = Mathf.Max(0.1f, status.currentHp - amount); // Để lại 0.1 máu nếu dùng máu cast skill
+                    break;
+            }
         }
+
+        [Obsolete("Use CanAfford instead")]
+        public bool CanUseSkill(float manaCost) => CanAfford(ResourceType.Mana, manaCost);
+
+        [Obsolete("Use ConsumeResource instead")]
+        public void ConsumeSkillResources(float manaCost) => ConsumeResource(ResourceType.Mana, manaCost);
 
         public int Coin 
         { 

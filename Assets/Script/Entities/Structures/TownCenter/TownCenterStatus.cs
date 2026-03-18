@@ -14,8 +14,8 @@ namespace Script.Data_Model.Status
         public int buildProgressMax;
 
         [Header("Health")]
-        public int maxHp = 500;
-        public int currentHp = 500;
+        public float maxHp = 500f;
+        public float currentHp = 500f;
 
     }
 }

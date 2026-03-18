@@ -67,8 +67,16 @@ namespace Script.Utils
             {
                 drop.pickedBy = _ownerNpc.gameObject;
                 drop.StopAllCoroutines();
-                other.gameObject.SetActive(false); // Hoặc Destroy(other.gameObject);
-                Destroy(other.gameObject, 0.1f);
+                
+                if (drop.itemType == ItemType.Coin && CoinPool.Instance != null)
+                {
+                    CoinPool.Instance.ReturnCoin(other.gameObject);
+                }
+                else
+                {
+                    other.gameObject.SetActive(false);
+                    Destroy(other.gameObject, 0.1f);
+                }
             }
         }
         

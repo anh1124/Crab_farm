@@ -30,6 +30,8 @@ namespace Script.Game.PlayerCharacter.Skills
         [Header("Skill Slots")]
         [SerializeField] protected SkillSlot[] skillSlots = new SkillSlot[0];
 
+        protected Transform _skillContainer;
+
         // ── Public API ────────────────────────────────────────────────────
 
         public int SlotCount => skillSlots.Length;
@@ -61,6 +63,11 @@ namespace Script.Game.PlayerCharacter.Skills
             skillSlots[index].skill = newSkill;
             skillSlots[index].state = SkillState.Ready;
             skillSlots[index].cooldownTimer = 0f;
+
+            if (newSkill != null && _skillContainer != null)
+            {
+                newSkill.Initialize(_skillContainer);
+            }
             
             Debug.Log($"[SkillManager] Equipped skill '{(newSkill != null ? newSkill.skillName : "None")}' to slot {index}");
         }
@@ -205,6 +212,8 @@ namespace Script.Game.PlayerCharacter.Skills
         /// </summary>
         protected virtual void InitializeSkills(Transform container)
         {
+            _skillContainer = container;
+
             for (int i = 0; i < skillSlots.Length; i++)
             {
                 if (skillSlots[i] != null && skillSlots[i].skill != null)

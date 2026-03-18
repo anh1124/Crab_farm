@@ -76,7 +76,7 @@ namespace Script.Data_Model.Status
         [Tooltip("Phạm vi tấn công/phát hiện của Archer (Dùng Circular Check)")]
         public float archerDetectRange = 18f; // Was attackRange & huntingRange
 
-        public int attackDame = 1;
+        public float attackDame = 1f;
         public float attackSpeed = 2.0f; // Control attack frequency / debug log frequency
         public float lastAttackTime = 0f;
         public bool isLeftFlank;

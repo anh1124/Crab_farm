@@ -15,6 +15,6 @@ namespace Script.Interfaces
         /// </summary>
         /// <param name="damage">Lượng sát thương muốn gây ra</param>
         /// <param name="instigator">Đối tượng gây ra sát thương (có thể null)</param>
-        void ReceiveDamage(int damage, UnityEngine.GameObject instigator);
+        void ReceiveDamage(float damage, UnityEngine.GameObject instigator);
     }
 }

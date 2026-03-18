@@ -18,28 +18,28 @@ namespace Script.Entities.Structures.SummondPortal
         public int spawnDay;
 
         [Header("Health")]
-        [SerializeField] private int maxHp = 1000;
-        [SerializeField] private int currentHp;
+        [SerializeField] private float maxHp = 1000f;
+        [SerializeField] private float currentHp;
 
-        public int CurrentHp 
+        public float CurrentHp 
         { 
             get => currentHp; 
             set => currentHp = Mathf.Clamp(value, 0, MaxHp); 
         }
 
-        public int MaxHp 
+        public float MaxHp 
         { 
             get => maxHp; 
-            set => maxHp = Mathf.Max(1, value); 
+            set => maxHp = Mathf.Max(1f, value); 
         }
 
         // Events for Behavior to subscribe to
-        public Action<int> OnDamaged;
-        public Action<int> OnHealed;
+        public Action<float> OnDamaged;
+        public Action<float> OnHealed;
         public Action OnDeath;
 
         // --- IHealth Implementation ---
-        public void TakeDamage(int amount)
+        public void TakeDamage(float amount)
         {
             if (currentHp <= 0) return;
             currentHp -= amount;
@@ -51,7 +51,7 @@ namespace Script.Entities.Structures.SummondPortal
             }
         }
 
-        public void Heal(int amount)
+        public void Heal(float amount)
         {
             currentHp = Mathf.Min(currentHp + amount, maxHp);
             OnHealed?.Invoke(amount);

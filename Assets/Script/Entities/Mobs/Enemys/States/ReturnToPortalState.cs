@@ -86,7 +86,7 @@ namespace Script.Game.Enemy.States
             ctx.Controller.DebugAttackTimer = _attackTimer;
         }
 
-        public override void PhysicsUpdate(EnemyContext ctx)
+        public override void FrameUpdate(EnemyContext ctx)
         {
             if (_isMoving && ctx.HomePortal != null)
             {

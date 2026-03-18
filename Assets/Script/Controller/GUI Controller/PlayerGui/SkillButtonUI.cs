@@ -26,9 +26,8 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         [SerializeField] private Image cooldownRadialImage;      // → CooldownGroup/CooldownRadial
         [SerializeField] private TMP_Text cooldownText;          // → CooldownGroup/CooldownText
 
-        [Header("Colors")]
-        [SerializeField] private Color colorNoMana      = new Color(0.2f, 0.4f, 1f, 0.6f);   // Xanh lam
-        [SerializeField] private Color colorExecuting   = new Color(0.2f, 0.2f, 0.2f, 0.5f); // Tối khi đang đánh
+        [Header("Theme")]
+        [SerializeField] private SkillButtonTheme theme;
 
         // ── Runtime ────────────────────────────────────────────────────────
         private Script.Game.PlayerCharacter.Skills.SkillManager _skillManager;
@@ -97,18 +96,28 @@ namespace Script.Controller.GUI_Controller.PlayerGui
 
         private void ApplyState_Ready(SkillBase skill)
         {
-            bool hasMana = true;
+            bool hasResource = true;
+            Color defaultNoMana = new Color(0.2f, 0.4f, 1f, 0.6f);
+            Color maskColor = theme != null ? theme.colorNoMana : defaultNoMana;
 
             if (_playerBehavior != null)
             {
-                hasMana = _playerBehavior.CanUseSkill(skill.resourceCost);
+                hasResource = _playerBehavior.CanAfford(skill.resourceType, skill.resourceCost);
+                
+                // Chọn màu mask dựa trên loại tài nguyên bị thiếu
+                switch (skill.resourceType)
+                {
+                    case ResourceType.Coin:   maskColor = theme != null ? theme.colorNoCoin : new Color(1f, 0.8f, 0f, 0.6f); break;
+                    case ResourceType.Health: maskColor = theme != null ? theme.colorNoHealth : new Color(1f, 0.2f, 0.2f, 0.6f); break;
+                    default:                  maskColor = theme != null ? theme.colorNoMana : defaultNoMana; break;
+                }
             }
 
             if (cooldownGroup != null) cooldownGroup.SetActive(false);
 
-            if (!hasMana)
+            if (!hasResource)
             {
-                SetResourceMask(true, colorNoMana);
+                SetResourceMask(true, maskColor);
                 if (button != null) button.interactable = false;
             }
             else
@@ -144,7 +153,7 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         {
             if (button != null) button.interactable = false;
             if (cooldownGroup != null) cooldownGroup.SetActive(false);
-            SetResourceMask(true, colorExecuting);
+            SetResourceMask(true, theme != null ? theme.colorExecuting : new Color(0.2f, 0.2f, 0.2f, 0.5f));
         }
 
         // ── Helpers ────────────────────────────────────────────────────────
@@ -158,8 +167,16 @@ namespace Script.Controller.GUI_Controller.PlayerGui
 
             if (costText != null)
             {
-                costText.text  = skill.resourceCost.ToString();
-                costText.color = Color.cyan;
+                costText.text  = skill.resourceCost.ToString("0");
+                
+                // Đổi màu chữ cost theo loại tài nguyên
+                switch (skill.resourceType)
+                {
+                    case ResourceType.Mana:   costText.color = theme != null ? theme.textMana : Color.cyan; break;
+                    case ResourceType.Coin:   costText.color = theme != null ? theme.textCoin : Color.yellow; break;
+                    case ResourceType.Health: costText.color = theme != null ? theme.textHealth : Color.red; break;
+                    default:                  costText.color = theme != null ? theme.textDefault : Color.white; break;
+                }
             }
         }
 

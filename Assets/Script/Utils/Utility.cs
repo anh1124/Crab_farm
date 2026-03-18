@@ -17,9 +17,9 @@ namespace Script
             return CombatUtility.IsAlly(obj);
         }
 
-        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, int damageAmount, bool allowDamageAlly)
+        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, float damageAmount)
         {
-            CombatUtility.ProcessAttackHits(instigator, hits, count, damageAmount, allowDamageAlly);
+            CombatUtility.ProcessAttackHits(instigator, hits, count, damageAmount);
         }
 
         public static void LogCollidedObjects(string colliderName, Collider2D[] hits, int count)

@@ -139,6 +139,12 @@ namespace Script.Game.Enemy
                 status.Setup(data);
             }
             
+            EnemyAIController controller = enemy.GetComponent<EnemyAIController>();
+            if (controller != null)
+            {
+                controller.InjectDependencies(EnemyTargetManager.Instance, this.ReturnEnemy);
+            }
+            
             return enemy;
         }
     }

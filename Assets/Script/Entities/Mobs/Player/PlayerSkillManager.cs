@@ -82,9 +82,7 @@ namespace Script.Game.PlayerCharacter
         protected override bool CanAfford(SkillBase skill, GameObject instigator)
         {
             if (playerBehavior == null) return true;
-            
-            // Sử dụng hệ thống Resource mới (chỉ Mana)
-            return playerBehavior.CanUseSkill(skill.resourceCost);
+            return playerBehavior.CanAfford(skill.resourceType, skill.resourceCost);
         }
 
         protected override void OnBeforeExecute(int index, GameObject instigator)
@@ -93,8 +91,8 @@ namespace Script.Game.PlayerCharacter
             var skill = GetSkill(index);
             if (skill == null) return;
 
-            // Trừ tài nguyên (Mana)
-            playerBehavior?.ConsumeSkillResources(skill.resourceCost);
+            // Trừ tài nguyên (Tự động theo ResourceType)
+            playerBehavior?.ConsumeResource(skill.resourceType, skill.resourceCost);
 
             // Trigger animation
             if (playerBehavior?.playerAnim != null)

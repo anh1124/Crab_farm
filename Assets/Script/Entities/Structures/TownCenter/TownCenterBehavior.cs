@@ -285,7 +285,7 @@ namespace Script.Game.Structures.TownCenter
         public int GetUpgradeCost() => status.upgradeCost;
 
         // --- IDamageable Implementation ---
-        public void ReceiveDamage(int damage, GameObject instigator)
+        public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0) return;
             

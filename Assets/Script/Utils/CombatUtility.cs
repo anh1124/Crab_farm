@@ -13,12 +13,12 @@ namespace Script.Utils
     {
         public static bool IsAlly(GameObject obj)
         {
-            if (PrefabData.Instance == null || PrefabData.Instance.allyTags == null)
+            if (Script.Utils.TargetLists.AllyTags == null)
             {
-                Debug.LogWarning("PrefabData.Instance hoặc allyTags là null. Không thể kiểm tra đồng minh.");
+                Debug.LogWarning("AllyTags là null. Không thể kiểm tra đồng minh.");
                 return false;
             }
-            return PrefabData.Instance.allyTags.Contains(obj.tag);
+            return Script.Utils.TargetLists.AllyTags.Contains(obj.tag);
         }
 
         /// <summary>
@@ -84,8 +84,18 @@ namespace Script.Utils
         /// hiện tại hàm gây dame chỉ mới sử dụng cho player
         /// khi enemy dùng sẽ cần thêm logic và chuyển isAlly thành false 
         /// </summary>
-        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, int damageAmount, bool allowDamageAlly)
+        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, float damageAmount)
         {
+            bool allowDamageAlly = false;
+            // Xác định xem instigator có được chém đồng minh không
+            if (instigator != null && instigator.CompareTag(Script.Utils.GameTags.Player))
+            {
+                if (Script.Controller.PlayerController.PlayerController.Instance != null)
+                {
+                    allowDamageAlly = Script.Controller.PlayerController.PlayerController.Instance.damageAlly;
+                }
+            }
+
             Debug.Log($"[Utility.ProcessAttackHits] {instigator.name} bắt đầu xử lý HIT {count} đối tượng. Damage: {damageAmount}. Damage Ally: {allowDamageAlly}.");
 
             HashSet<GameObject> processedTargets = new HashSet<GameObject>();

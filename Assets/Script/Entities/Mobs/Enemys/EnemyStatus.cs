@@ -9,14 +9,14 @@ namespace Script.Game.Enemy
     public class EnemyStatus : MonoBehaviour, IHealth, IDie, ICoinable, IDamageable
     {
         [Header("Debug Stats")]
-        [SerializeField] private int _currentHp;
-        [field: SerializeField] public int MaxHp { get; set; }
+        [SerializeField] private float _currentHp;
+        [field: SerializeField] public float MaxHp { get; set; }
 
         // ICoinable implementation
         [field: SerializeField] public int Coin { get; set; }
         [field: SerializeField] public int MaxCoins { get; set; } = 999;
 
-        public int CurrentHp 
+        public float CurrentHp 
         { 
             get => _currentHp; 
             set => _currentHp = value; 
@@ -28,7 +28,7 @@ namespace Script.Game.Enemy
         [field: SerializeField] public float MoveSpeed { get; private set; }
         [field: SerializeField] public float AttackRange { get; private set; } = 0.8f; // Mặc định cận chiến
         [field: SerializeField] public float AttackCooldown { get; private set; }
-        [field: SerializeField] public int AttackDamage { get; private set; }
+        [field: SerializeField] public float AttackDamage { get; private set; }
         public bool debugEnemy; // Biến kiểm soát debug cho Enemy
 
         public event System.Action<GameObject> OnDieEvent;
@@ -79,7 +79,7 @@ namespace Script.Game.Enemy
 
 
 
-        public void TakeDamage(int amount)
+        public void TakeDamage(float amount)
         {
             if (IsDead) return;
 
@@ -91,7 +91,7 @@ namespace Script.Game.Enemy
         }
 
         // --- IDamageable Implementation ---
-        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        public void ReceiveDamage(float damage, UnityEngine.GameObject instigator)
         {
             TakeDamage(damage);
         }
@@ -103,7 +103,7 @@ namespace Script.Game.Enemy
             OnDieEvent?.Invoke(gameObject);
         }
 
-        public void Heal(int amount)
+        public void Heal(float amount)
         {
             if (IsDead) return;
             

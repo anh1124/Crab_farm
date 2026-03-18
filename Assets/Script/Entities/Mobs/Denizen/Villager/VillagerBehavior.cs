@@ -76,7 +76,7 @@ namespace Script.Game.Mobs.Subjects
         }
 
         // --- IDamageable Interface Implementation ---
-        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        public void ReceiveDamage(float damage, UnityEngine.GameObject instigator)
         {
             if (damage <= 0) return;
 

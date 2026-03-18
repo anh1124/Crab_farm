@@ -20,7 +20,6 @@ namespace Script.Data_Model
         // Biến kiểm soát quá trình xây dựng (bỏ qua quá trình xây dựng hoặc yêu cầu thợ xây)
         public bool skipBuildingProcess = true; 
         
-        public List<string> toolTag = new List<string> { "Hammer", "Bow" };
         public GameObject hammer; 
         public GameObject bow;
         [Header("Player Character")] [Space(5)]

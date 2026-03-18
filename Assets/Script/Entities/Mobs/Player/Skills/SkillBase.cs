@@ -6,12 +6,19 @@ namespace Script.Game.PlayerCharacter.Skills
     /// Abstract base class cho tất cả skills trong game.
     /// Mỗi skill cụ thể sẽ kế thừa class này và implement các method abstract.
     /// </summary>
+    public enum ResourceType { Mana, Coin, Health}
+
+    /// <summary>
+    /// Abstract base class cho tất cả skills trong game.
+    /// Mỗi skill cụ thể sẽ kế thừa class này và implement các method abstract.
+    /// </summary>
     public abstract class SkillBase : ScriptableObject
     {
         // === CONFIGURATION PROPERTIES ===
         
         [Header("Resource")]
-        public int resourceCost;
+        public ResourceType resourceType = ResourceType.Mana;
+        public float resourceCost;
         
         [Header("UI")]
         /// <summary>Tên hiển thị trên UI</summary>
@@ -24,8 +31,8 @@ namespace Script.Game.PlayerCharacter.Skills
         /// <summary>Tên skill</summary>
         public string skillName;
         
-        /// <summary>Damage gây ra (int để tương thích với DamageHandler)</summary>
-        public int damage;
+        /// <summary>Damage gây ra (float để đồng bộ với HP)</summary>
+        public float damage;
         
         /// <summary>Thời gian cooldown (giây) sau khi skill kết thúc</summary>
         public float cooldown;

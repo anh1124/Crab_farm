@@ -55,8 +55,9 @@ namespace Script.Game.Enemy
                 Animator       = animator,
                 Controller     = this,
                 Status         = status,
-                TargetManager  = EnemyTargetManager.Instance,
-                Pool           = EnemyPool.Instance,
+                // Fallback nếu không có Pool inject (Test mode)
+                TargetManager  = EnemyTargetManager.Instance, 
+                ReturnToPoolAction = null,
                 RaycastHelper  = rch,
                 IsAlive        = true
             };
@@ -152,9 +153,13 @@ namespace Script.Game.Enemy
             }
         }
 
-        private void FixedUpdate()
+        public void InjectDependencies(EnemyTargetManager targetManager, System.Action<GameObject> returnToPoolAction)
         {
-            _currentState?.PhysicsUpdate(_ctx);
+            if (_ctx != null)
+            {
+                _ctx.TargetManager = targetManager;
+                _ctx.ReturnToPoolAction = returnToPoolAction;
+            }
         }
 
         public virtual void UpdateBehavior()
@@ -181,7 +186,7 @@ namespace Script.Game.Enemy
             if (!_ctx.IsAlive) return;
 
             // Interpolation movement liên tục ở cấp độ Frame (60Hz) thay vì Tick (5Hz)
-            _currentState?.PhysicsUpdate(_ctx);
+            _currentState?.FrameUpdate(_ctx);
         }
 
         public void ChangeState(EnemyState newState)
@@ -240,9 +245,9 @@ namespace Script.Game.Enemy
         public void AnimEvent_DeathComplete()
         {
             // Trả xác về pool NGAY LẬP TỨC sau khi diễn xong animation gục ngã
-            if (_ctx.Pool != null)
+            if (_ctx.ReturnToPoolAction != null)
             {
-                _ctx.Pool.ReturnEnemy(_ctx.Self);
+                _ctx.ReturnToPoolAction(_ctx.Self);
             }
             else
             {

@@ -13,7 +13,7 @@ namespace Script.Game.Enemy
 
         // Managers
         public EnemyTargetManager TargetManager;
-        public EnemyPool Pool;
+        public System.Action<GameObject> ReturnToPoolAction;
 
         // States
         public GameObject CurrentTarget;

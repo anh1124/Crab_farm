@@ -27,7 +27,7 @@ namespace Script.Game.Mobs.Subjects
     public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker, IDamageable
     {
         // --- IAttacker Interface ---
-        public int AttackDame { get => status.attackDame; set => status.attackDame = value; }
+        public float AttackDame { get => status.attackDame; set => status.attackDame = value; }
         public float AttackSpeed { get => status.attackSpeed; set => status.attackSpeed = value; }
         
         public void Attack()
@@ -215,7 +215,7 @@ namespace Script.Game.Mobs.Subjects
         /// Điểm tiếp nhận sát thương duy nhất. Archer tự xử lý toàn bộ.
         /// THỪ tấn công không cần biết logic bên trong.
         /// </summary>
-        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
+        public void ReceiveDamage(float damage, UnityEngine.GameObject instigator)
         {
             if (damage <= 0) return;
 
@@ -235,7 +235,7 @@ namespace Script.Game.Mobs.Subjects
             }
 
             // 3. Fallback: Nếu không còn gì (đã là Villager hoặc Vagrant)
-            status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - damage);
+            status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - Mathf.RoundToInt(damage));
         }
 
         private void Awake()

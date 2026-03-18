@@ -15,7 +15,7 @@ namespace Script.Utils
         /// Yêu cầu mục tiêu phải implement IDamageable.
         /// </summary>
         /// <returns>True nếu đã giao sát thương thành công, False nếu mục tiêu không hợp lệ.</returns>
-        public static bool ApplyDamage(GameObject target, int damage, GameObject instigator)
+        public static bool ApplyDamage(GameObject target, float damage, GameObject instigator)
         {
             if (target == null) return false;
 

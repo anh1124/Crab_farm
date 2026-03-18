@@ -301,7 +301,14 @@ namespace Script.Game.Item.Coin
             {
                 if (coin != null)
                 {
-                    Destroy(coin);
+                    if (CoinPool.Instance != null)
+                    {
+                        CoinPool.Instance.ReturnCoin(coin);
+                    }
+                    else
+                    {
+                        Destroy(coin);
+                    }
                 }
             }
             ClearTransitCoins();
@@ -370,7 +377,8 @@ namespace Script.Game.Item.Coin
             Vector3 playerPosition = player.transform.position;
             Vector3 targetPosition = coinSlots[currentSlotIndex].transform.position;
 
-            GameObject coin = Instantiate(coinPrefab, playerPosition, Quaternion.identity);
+            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab);
+            if (coin != null) coin.transform.position = playerPosition;
             SetCoinProperties(coin);
             
             coinsInTransit.Add(coin);
@@ -434,14 +442,19 @@ namespace Script.Game.Item.Coin
             StopAllCoinCoroutines();
             ClearTransitCoins();
             isCollectingCoins = false;
-            GameObject droppedCoin = Instantiate(PrefabData.Instance.coinPrefab, transform.position, Quaternion.identity, Script.Manager.EntitySaveManager.Instance.coinContainer.transform);
             
-            PhysicalItem coinScript = droppedCoin.GetComponent<PhysicalItem>();
-            if (coinScript != null)
+            GameObject droppedCoin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(PrefabData.Instance.coinPrefab, Script.Manager.EntitySaveManager.Instance.coinContainer.transform);
+            if (droppedCoin != null)
             {
-                coinScript.floating = false;
-                coinScript.playerPickupAble = true;
-                coinScript.denizensPickupAble = true;
+                droppedCoin.transform.position = transform.position;
+            
+                PhysicalItem coinScript = droppedCoin.GetComponent<PhysicalItem>();
+                if (coinScript != null)
+                {
+                    coinScript.floating = false;
+                    coinScript.playerPickupAble = true;
+                    coinScript.denizensPickupAble = true;
+                }
             }
             currentSlotIndex = 0;
         }

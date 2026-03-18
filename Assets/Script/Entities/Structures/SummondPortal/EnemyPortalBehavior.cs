@@ -139,7 +139,7 @@ namespace Script.Entities.Structures.SummondPortal
         }
 
         // --- IDamageable Implementation ---
-        public void ReceiveDamage(int damage, GameObject instigator)
+        public void ReceiveDamage(float damage, GameObject instigator)
         {
             status.TakeDamage(damage);
         }
@@ -157,7 +157,7 @@ namespace Script.Entities.Structures.SummondPortal
         {
             public int spawnDay;
             public bool isReadyToSpawn;
-            public int currentHp;
+            public float currentHp;
             public float x, y, z;
         }
 

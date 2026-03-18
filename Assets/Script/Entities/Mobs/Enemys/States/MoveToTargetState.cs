@@ -120,7 +120,7 @@ namespace Script.Game.Enemy.States
             ctx.Controller.DebugAttackTimer = _attackTimer;
         }
 
-        public override void PhysicsUpdate(EnemyContext ctx)
+        public override void FrameUpdate(EnemyContext ctx)
         {
             if (_isMoving && _kingdomTarget != null)
             {
@@ -219,7 +219,7 @@ namespace Script.Game.Enemy.States
 
             // [REFACTOR] Sử dụng DamageHandler trung tâm để giải quyết sát thương
             // Điều này đảm bảo các logic như ICoinShield và IToolShield hoạt động đồng bộ
-            int damage = ctx.Status.AttackDamage;
+            float damage = ctx.Status.AttackDamage;
             bool stillAlive = Script.Utils.DamageHandler.ApplyDamage(obstacle, damage, ctx.Self);
 
             if (ctx.Status.debugEnemy)
