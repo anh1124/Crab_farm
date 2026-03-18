@@ -10,6 +10,14 @@ namespace Script.Game.Item.Coin
 {
     public enum ItemType { Coin, Tool_Bow, Tool_Hammer, Tool_Scythe }
 
+    /*
+     * VẬT PHẨM VẬT LÝ (Coin, Tools)
+     * - Chức năng chính: Rơi tự do, ném parabol, tự đăng ký với ToolManager, Save/Load.
+     * - Tối ưu hiệu năng: 
+     *     + Staggered Update: Check Raycast mỗi 3 frame (chia đều tải CPU theo frame).
+     *     + Early-Exit: Dừng Update ngay khi chạm đất (floating = true).
+     *     + Static Caching: Cache LayerMask dùng chung cho tất cả instance.
+     */
     public class PhysicalItem : MonoBehaviour, ISaveable, IPickingUpMyItem
     {
         public ItemType itemType = ItemType.Coin;
@@ -44,7 +52,7 @@ namespace Script.Game.Item.Coin
         [Header("Physics State")]
         public bool floating;
         public float rayLength = 0.6f;  // Độ dài của raycast
-        public int fallSpeed =10 ;  // Tốc độ rơi của coin
+        public int fallSpeed = 10;  // Tốc độ rơi của coin
     
         // Add new variables for throwing physics
         private Vector2 initialVelocity;
@@ -54,10 +62,18 @@ namespace Script.Game.Item.Coin
         [Header("Throwing Physics")]
         [Range(1f, 20f)]
         public float throwGravity = 9.81f;
+
+        // --- Performance: cache LayerMask & stagger raycast ---
+        // Cache LayerMask một lần, tránh GetMask() mỗi frame
+        private static LayerMask _groundMask;
+        private static bool _groundMaskCached;
+
+        // Mỗi coin check raycast ở frame khác nhau để trải đều tải
+        // (stagger): check mỗi RAYCAST_INTERVAL frame, offset theo instanceId
+        private const int RAYCAST_INTERVAL = 3;   // giảm xuống 2 nếu cần mượt hơn
+        private int _raycastFrameOffset;           // offset riêng của từng coin
     
         private Animator _animator;
-        //private float groundCheckRadius = 0.1f; // Bán kính kiểm tra mặt đất
-        // // Pickup abilities
        
         private Coroutine _cooldownCoroutine;
 
@@ -72,6 +88,17 @@ namespace Script.Game.Item.Coin
             {
                 _animator = GetComponent<Animator>();
             }
+
+            // Cache LayerMask một lần cho tất cả các instance (static)
+            if (!_groundMaskCached)
+            {
+                _groundMask = Script.Utils.GameLayers.GroundMask;
+                _groundMaskCached = true;
+            }
+
+            // Stagger: mỗi coin nhận 1 frame offset riêng để tải raycast trải đều
+            // GetInstanceID() đảm bảo mỗi coin có offset khác nhau
+            _raycastFrameOffset = Mathf.Abs(GetInstanceID()) % RAYCAST_INTERVAL;
             
             // Khởi động lại coroutine sau khi load game
             RestartCooldownsIfNeeded();
@@ -124,20 +151,26 @@ namespace Script.Game.Item.Coin
 
         void Update()
         {
-            if (!floating)
-            {
-                if (isThrown)
-                {
-                    ThrowMovement();
-                }
-                else
-                {
-                    Falling();
-                }
-            }
-            // Vẽ raycast trong Scene View
-            Debug.DrawRay(transform.position, Vector2.down * rayLength, Color.red);
+            // Early-exit: khi đã chạm đất, không cần làm gì thêm
+            if (floating) return;
 
+            // Stagger: chỉ chạy logic vật lý ở frame được phân công
+            // Các coin khác nhau sẽ check ở các frame khác nhau → giảm raycast/frame
+            if ((Time.frameCount + _raycastFrameOffset) % RAYCAST_INTERVAL != 0) return;
+
+            if (isThrown)
+            {
+                ThrowMovement();
+            }
+            else
+            {
+                Falling();
+            }
+
+#if UNITY_EDITOR
+            // Chỉ vẽ debug ray trong Editor, không tốn tài nguyên khi build
+            Debug.DrawRay(transform.position, Vector2.down * rayLength, Color.red);
+#endif
         }
 
         public void StopRotate()
@@ -158,21 +191,18 @@ namespace Script.Game.Item.Coin
 
         public void Falling()
         {
-            // Vẽ raycast hướng xuống với chiều dài rayLength
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, Script.Utils.GameLayers.GroundMask);
+            // Dùng cached mask thay vì gọi lại Script.Utils.GameLayers mỗi lần
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, _groundMask);
 
-            // Kiểm tra va chạm mặt đất dựa trên kết quả của raycast
             if (hit.collider != null)
             {
-                // Dừng di chuyển xuống khi va chạm mặt đất
                 floating = true;
                 StartRotate();
             }
             else
             {
-                // Di chuyển coin xuống dưới với tốc độ fallSpeed nếu không chạm đất
-                StopRotate();
-                transform.Translate(Vector2.down * fallSpeed * Time.deltaTime);
+                // Nhân thêm RAYCAST_INTERVAL để bù cho số frame bị bỏ qua
+                transform.Translate(Vector2.down * fallSpeed * RAYCAST_INTERVAL * Time.deltaTime);
             }
         }
 
@@ -193,16 +223,16 @@ namespace Script.Game.Item.Coin
 
         private void ThrowMovement()
         {
-            throwTime += Time.deltaTime;
+            // Nhân thêm RAYCAST_INTERVAL để bù cho số frame bị bỏ qua
+            throwTime += Time.deltaTime * RAYCAST_INTERVAL;
             
-            // Calculate new position using projectile motion equations
             float x = startPosition.x + initialVelocity.x * throwTime;
             float y = startPosition.y + (initialVelocity.y * throwTime) - (0.5f * throwGravity * throwTime * throwTime);
             
             transform.position = new Vector3(x, y, transform.position.z);
 
-            // Check for ground collision
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, LayerMask.GetMask("Ground"));
+            // Dùng cached mask, tránh LayerMask.GetMask("Ground") mỗi frame
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, _groundMask);
             if (hit.collider != null)
             {
                 isThrown = false;
