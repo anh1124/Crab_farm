@@ -1,71 +1,40 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Script.Game.Structures.Wall_And_Stump;
-using Script.Data_Model.Interfaces;
 using Script.Data_Model;
-using Script.Data_Model.Status;
-using Script.Manager.WorldManager;
-using Script.Manager.Building;
+using Script.Data_Model.Interfaces;
 
 namespace Script.Game.Mobs.MobsManager
 {
-    /// <summary>
-    /// GuardManager - Quản lý hệ thống phòng thủ
-    /// Điều phối tất cả archer và đặt thiết quân luật
-    /// điều phối tường phòng thủ
-    /// </summary>
+    [RequireComponent(typeof(GuardAlarmSystem))]
+    [RequireComponent(typeof(GuardSquadSystem))]
+    [RequireComponent(typeof(GuardWallSystem))]
     public class GuardManager : MonoBehaviour, IDataListBootstrap
     {
         public static GuardManager Instance { get; private set; }
 
-        [Header("Archer Management")]
-        public List<GameObject> leftFlankArchers = new List<GameObject>();
-        public List<GameObject> rightFlankArchers = new List<GameObject>();
-        
-        [Header("Defensive Structures")]
-        public GameObject currentLeftWall;
-        public GameObject currentRightWall;
+        public GuardAlarmSystem Alarm { get; private set; }
+        public GuardSquadSystem Squad { get; private set; }
+        public GuardWallSystem Wall { get; private set; }
 
-        [Header("Defense Slot Settings")]
-        public int archerSlotCount = 7;
-        public float archerSlotSpacing = 1.2f;
-        [Tooltip("Khoảng cách từ tường đến slot đầu tiên")]
-        public float defaultSlotOffset = 3.0f;
-
-        [Header("Runtime State")]
-        public bool isEnemyAttack = false;
-        
-        [Header("Debug")]
-        public bool isDebugHuntingRange = true;
-        public float archerHuntingRange = 25f;
-        public List<GameObject> detectedEnemies = new List<GameObject>();
-        
-        [Tooltip("Thời gian chờ trước khi tắt báo động (seconds)")]
-        private const float ALARM_COOLDOWN_DURATION = 30f;
-        
-        [Header("Alarm Status")]
-        [Tooltip("Thời gian còn lại trước khi tắt báo động (Chỉ đếm ngược khi KHÔNG còn kẻ thù)")]
-        public float alarmTimer = 0f;
-        
         [Header("Debug Settings")]
         public bool showDebugLogs = false;
-
-        // Cached references
-        private WallAndStumpManager wallManager;
-
-        #region Initialization
+        
+        [Header("Visualization Debug")]
+        public bool isDebugHuntingRange = true;
+        public float archerHuntingRange = 25f;
 
         private void Awake()
         {
             InitializeSingleton();
-        }
-
-        private void Start()
-        {
-            if (wallManager == null && WallAndStumpManager.Instance != null)
-            {
-                InitializeReferences();
-            }
+             
+            Alarm = GetComponent<GuardAlarmSystem>();
+            if (Alarm == null) Alarm = gameObject.AddComponent<GuardAlarmSystem>();
+            
+            Squad = GetComponent<GuardSquadSystem>();
+            if (Squad == null) Squad = gameObject.AddComponent<GuardSquadSystem>();
+            
+            Wall = GetComponent<GuardWallSystem>();
+            if (Wall == null) Wall = gameObject.AddComponent<GuardWallSystem>();
         }
 
         private void InitializeSingleton()
@@ -82,651 +51,93 @@ namespace Script.Game.Mobs.MobsManager
             }
         }
 
-        private void InitializeReferences()
-        {
-            wallManager = WallAndStumpManager.Instance;
-            
-            if (wallManager == null)
-            {
-                Debug.LogError("[GuardManager] WallAndStumpManager phải được setup trước GuardManager");
-            }
-            else
-            {
-                //lấy thông tin wall xa nhất mỗi bên
-                UpdateDefensiveWalls();
-            }
-        }
-
-        /// <summary>
-        /// Cập nhật vị trí phòng thủ tối ưu từ WallManager
-        /// QUAN TRỌNG: Hàm này được gọi từ:
-        /// 1. InitializeReferences() lúc khởi tạo để lấy wall nếu có 
-        /// 2. WallAndStumpManager khi có wall mới (nếu KHÔNG đang combat-lưu ý là hàm này sẽ không lấy wall xa nhất nếu đang trong comabt,chỉ lấy wall phía sau)
-        /// 3. ClearAlarm() sau khi hết thiết quân luật
-        /// </summary>
-        public void UpdateDefensiveWalls()
-        {
-            if (wallManager == null) return;
-            
-            // Nếu đang trong combat, không tự động đổi wall (tránh lính chạy lên)
-            if (isEnemyAttack) return;
-
-            // Bầu wall xa nhất mỗi bên từ danh sách của WallAndStumpManager
-            GameObject newLeftWall = FindBestDefensiveWall(wallManager.leftWalls);
-            GameObject newRightWall = FindBestDefensiveWall(wallManager.rightWalls);
-            
-            // === XỬ LÝ LEFT WALL ===
-            UpdateSpecificWall(ref currentLeftWall, newLeftWall, true);
-            
-            // === XỬ LÝ RIGHT WALL ===
-            UpdateSpecificWall(ref currentRightWall, newRightWall, false);
-            
-            // Thông báo cho tất cả Archer cập nhật vị trí phòng thủ
-            NotifyArchersDefensivePositionChanged();
-        }
-
-        /// <summary>
-        /// Tìm wall xa nhất trong danh sách (cuối list) mà không bị Critical HP và vẫn là Wall (không phải Stump)
-        /// Nguồn dữ liệu lấy từ WallAndStumpManager để tránh lưu trư trùng lập
-        /// </summary>
-        private GameObject FindBestDefensiveWall(List<GameObject> walls)
-        {
-            if (walls == null || walls.Count == 0) return null;
-
-            int threshold = (wallManager != null) ? wallManager.criticalHPThreshold : 10;
-
-            // Duyệt từ xa nhất về gần (cuối list về đầu list)
-            for (int i = walls.Count - 1; i >= 0; i--)
-            {
-                GameObject wall = walls[i];
-                if (wall == null) continue;
-
-                // Kiểm tra tag: phải là Wall (không phải Stump)
-                if (!wall.CompareTag("Wall")) continue;
-
-                var behavior = wall.GetComponent<WallBehavior>();
-                if (behavior != null && behavior.Status.CurrentHp >= threshold)
-                {
-                    return wall;
-                }
-            }
-            return null;
-        }
-        
-        private void UpdateSpecificWall(ref GameObject currentWall, GameObject newWall, bool isLeft)
-        {
-            if (currentWall != newWall)
-            {
-                // Hủy đăng ký event của wall cũ
-                if (currentWall != null)
-                {
-                    var oldBehavior = currentWall.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
-                    if (oldBehavior != null)
-                    {
-                        oldBehavior.OnCriticalHP -= HandleWallCritical;
-                    }
-                }
-
-                // Gán wall mới
-                currentWall = newWall;
-
-                // Đăng ký event cho wall mới
-                if (currentWall != null)
-                {
-                    var newBehavior = currentWall.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
-                    if (newBehavior != null)
-                    {
-                        newBehavior.OnCriticalHP += HandleWallCritical;
-                    }
-                }
-
-                DebugLog($"[GuardManager] Updated {(isLeft ? "LEFT" : "RIGHT")} defensive wall to: {currentWall?.name ?? "NULL"}");
-            }
-        }
-        
-        /// <summary>
-        /// Callback khi wall trong currentLeftWall/currentRightWall xuống critical HP = rút quân ra tường phía sau
-        /// </summary>
-        private void HandleWallCritical(GameObject wall)
-        {
-            if (wall == null) return;
-            
-            bool isLeftSide = (wall == currentLeftWall);
-           // DebugLog($"⚠️ Wall Critical Event: {wall.name} ({(isLeftSide ? "LEFT" : "RIGHT")})");
-            
-            // Gọi logic rút lui hiện tại
-            NotifyWallCritical(wall, isLeftSide);
-        }
-        
-        /// <summary>
-        /// Thông báo cho Archer cập nhật vị trí phòng thủ mới
-        /// (Không cần Archer tự check mỗi giây)
-        /// </summary>
-        private void NotifyArchersDefensivePositionChanged()
-        {
-            NotifyFlankArchers(leftFlankArchers, currentLeftWall);
-            NotifyFlankArchers(rightFlankArchers, currentRightWall);
-        }
-
-        private void NotifyFlankArchers(List<GameObject> archers, GameObject wall)
-        {
-            if (wall == null) return;
-
-            foreach (var archer in archers)
-            {
-                if (archer == null) continue;
-                var status = archer.GetComponent<DenizenStatus>();
-                if (status != null)
-                {
-                    // Chỉ cập nhật nếu Archer đang ở trạng thái phòng thủ/canh gác
-                    if (status.archerState == DenizenStatus.ArcherState.ReturningToBase ||
-                        status.archerState == DenizenStatus.ArcherState.HoldingWall)
-                    {
-                        status.assignedWall = wall;
-                        // Archer behavior sẽ tự xử lý di chuyển đến assignedWall trong Update
-                    }
-                }
-            }
-        }
-
         #region IDataListBootstrap Implementation
-        // High priority (1) to ensure it's initialized early
         public int Order => 1; 
 
         public void InitializeData(PrefabData context)
         {
             InitializeSingleton();
-            InitializeReferences();
+            // Sub-systems self-initialize via Start() where possible
             DebugLog("✅ GuardManager initialized via Bootstrap");
         }
         #endregion
 
-        #endregion
+        #region Delegation 
 
-        #region Archer Registration
-
-        public void RegisterArcher(GameObject archer)
-        {
-            if (archer == null)
-            {
-                Debug.LogWarning("[GuardManager] Cannot register null archer");
-                return;
-            }
-
-            if (leftFlankArchers.Contains(archer) || rightFlankArchers.Contains(archer))
-            {
-               // Debug.LogWarning($"[GuardManager] Archer {archer.name} already registered");
-                return;
-            }
-
-            // ... (rest of logic)
-            // ...
-            
-            var archerStatus = archer.GetComponent<DenizenStatus>(); // Simplified using
-            if (archerStatus == null)
-            {
-                Debug.LogError($"[GuardManager] Archer {archer.name} missing DenizenStatus component!");
-                return;
-            }
-
-            // Assign to flank based on balance
-            if (leftFlankArchers.Count <= rightFlankArchers.Count)
-            {
-                leftFlankArchers.Add(archer);
-                archerStatus.isLeftFlank = true;
-                DebugLog($"Registered {archer.name} to LEFT flank");
-            }
-            else
-            {
-                rightFlankArchers.Add(archer);
-                archerStatus.isLeftFlank = false;
-                DebugLog($"Registered {archer.name} to RIGHT flank");
-            }
-
-            // Check if alarm active -> force ReturningToBase immediately
-            if (isEnemyAttack)
-            {
-                 archerStatus.archerState = DenizenStatus.ArcherState.ReturningToBase;
-            }
+        // Public getters/setters specifically used by other components to preserve compatibility
+        public bool isEnemyAttack 
+        { 
+            get => Alarm != null && Alarm.isEnemyAttack; 
+            set { if (Alarm != null) Alarm.isEnemyAttack = value; } 
         }
 
-        public void UnregisterArcher(GameObject archer)
-        {
-            if (archer == null)
-            {
-                Debug.LogWarning("[GuardManager] UnregisterArcher called with NULL archer");
-                return;
-            }
+        public List<GameObject> leftFlankArchers => Squad?.leftFlankArchers;
+        public List<GameObject> rightFlankArchers => Squad?.rightFlankArchers;
+        public List<GameObject> detectedEnemies => Alarm?.detectedEnemies;
 
-            //Debug.Log($"[GuardManager] UnregisterArcher called for {archer.name}, LEFT count={leftFlankArchers.Count}, RIGHT count={rightFlankArchers.Count}");
-            
-            bool wasRemoved = false;
-            if (leftFlankArchers.Contains(archer))
-            {
-                leftFlankArchers.Remove(archer);
-                wasRemoved = true;
-               // Debug.Log($"[GuardManager] ✅ Unregistered {archer.name} from LEFT flank");
-            }
-            else if (rightFlankArchers.Contains(archer))
-            {
-                rightFlankArchers.Remove(archer);
-                wasRemoved = true;
-              //  Debug.Log($"[GuardManager] ✅ Unregistered {archer.name} from RIGHT flank");
-            }
-            else
-            {
-                Debug.LogWarning($"[GuardManager] ⚠️ Attempted to unregister {archer.name} but it was NOT in any flank list!");
-            }
+        public GameObject currentLeftWall => Wall?.currentLeftWall;
+        public GameObject currentRightWall => Wall?.currentRightWall;
 
-            if (wasRemoved)
-            {
-                RebalanceSquads();
-            }
-        }
+        public int archerSlotCount => Squad != null ? Squad.archerSlotCount : 7;
+        public float archerSlotSpacing => Squad != null ? Squad.archerSlotSpacing : 1.2f;
+        public float defaultSlotOffset => Squad != null ? Squad.defaultSlotOffset : 3.0f;
 
-        public void RebalanceSquads()
-        {
-            // Clean up lists first
-            leftFlankArchers.RemoveAll(x => x == null);
-            rightFlankArchers.RemoveAll(x => x == null);
+        public float alarmTimer => Alarm != null ? Alarm.alarmTimer : 0f;
 
-            int diff = leftFlankArchers.Count - rightFlankArchers.Count;
+        public void RegisterArcher(GameObject archer) => Squad?.RegisterArcher(archer);
+        public void UnregisterArcher(GameObject archer) => Squad?.UnregisterArcher(archer);
+        public Vector3 GetDefensePositionForArcher(GameObject archer) => Squad != null ? Squad.GetDefensePositionForArcher(archer) : archer.transform.position;
+        public void RebalanceSquads() => Squad?.RebalanceSquads();
 
-            // Difference of 1 is acceptable (e.g. 5 vs 4)
-            if (Mathf.Abs(diff) <= 1) return;
+        public void OnWallListUpdated() => Wall?.OnWallListUpdated();
+        public GameObject GetCurrentDefensiveWall(bool isLeft) => Wall?.GetCurrentDefensiveWall(isLeft);
+        public void UpdateDefensiveWalls() => Wall?.UpdateDefensiveWalls();
 
-            DebugLog($"[GuardManager] Rebalancing squads... (Diff: {diff})");
-
-            if (diff > 1) 
-            {
-                // Left has too many (e.g. 6 vs 2 -> diff 4 -> move 2), move to Right
-                int countToMove = diff / 2;
-                for (int i = 0; i < countToMove; i++)
-                {
-                    MoveArcher(leftFlankArchers, rightFlankArchers, false);
-                }
-            }
-            else // diff < -1
-            {
-                // Right has too many, move to Left
-                int countToMove = Mathf.Abs(diff) / 2;
-                for (int i = 0; i < countToMove; i++)
-                {
-                     MoveArcher(rightFlankArchers, leftFlankArchers, true);
-                }
-            }
-        }
-
-        private void MoveArcher(List<GameObject> fromList, List<GameObject> toList, bool toLeft)
-        {
-            if (fromList.Count == 0) return;
-
-            // Take from end to minimize shift cost
-            GameObject archer = fromList[fromList.Count - 1];
-            fromList.RemoveAt(fromList.Count - 1);
-            toList.Add(archer);
-
-            var status = archer.GetComponent<DenizenStatus>();
-            if (status != null)
-            {
-                status.isLeftFlank = toLeft;
-                // Update assigned wall immediately
-                status.assignedWall = toLeft ? currentLeftWall : currentRightWall;
-                DebugLog($"[GuardManager] Reassigned {archer.name} to {(toLeft ? "LEFT" : "RIGHT")} flank");
-            }
-        }
+        public void RegisterEnemy(GameObject enemy) => Alarm?.RegisterEnemy(enemy);
+        public void ClearAlarm() => Alarm?.ClearAlarm();
 
         #endregion
 
-        #region Alarm System
+        #region Logs & Visuals
 
-        // Use coroutine to handle alert cooldown
-        private Coroutine alertCooldownCoroutine;
-
-        /// <summary>
-        /// Gọi khi Archer phát hiện Enemy
-        /// </summary>
-        public void RegisterEnemy(GameObject enemy)
+        public void DebugLog(string message)
         {
-            if (enemy == null) return;
-
-            // PREVENT BUG: Check for EnemyBehavior FIRST. 
-            // If missing, we cannot track its death, so do NOT add to list.
-            var enemyStatus = enemy.GetComponent<Script.Game.Enemy.EnemyStatus>();
-            if (enemyStatus == null)
-            {
-                Debug.LogWarning($"[GuardManager] Rejected enemy {enemy.name}: Missing EnemyStatus component!");
-                return;
-            }
-
-            // Cleanup inactive/dead before checking
-            detectedEnemies.RemoveAll(x => x == null || !x.activeInHierarchy);
-
-            // Prevent duplicates
-            if (detectedEnemies.Contains(enemy)) return;
-
-            detectedEnemies.Add(enemy);
-            //DebugLog($"[GuardManager] 🚨 Detected NEW Enemy: {enemy.name}");
-
-            // Lấy controller hoặc một thành phần nào đó có chứa OnDeath/OnDespawn
-            var enemyController = enemy.GetComponent<Script.Game.Enemy.EnemyAIController>();
-            if (enemyController != null)
-            {
-                enemyController.OnDespawn += HandleEnemyDespawn;
-            }
-
-            // If we detect a new enemy, CANCEL any pending peacetime cooldown
-            if (alertCooldownCoroutine != null)
-            {
-                StopCoroutine(alertCooldownCoroutine);
-                alertCooldownCoroutine = null;
-            }
-            // Always reset timer to max when enemy is present (Combat Mode)
-            alarmTimer = ALARM_COOLDOWN_DURATION;
-
-            // ACTIVATE ALARM immediately
-            if (!isEnemyAttack)
-            {
-                isEnemyAttack = true;
-                DebugLog("[GuardManager] ⚔️ ALARM ACTIVATED - Mobilizing Archers!");
-                NotifyAllArchersValues(true);
-            }
-        }
-        private void HandleEnemyDespawn(Script.Game.Enemy.EnemyAIController enemyController)
-        {
-            if (enemyController == null) return;
-
-            // Hủy đăng ký để tránh leak memory
-            enemyController.OnDespawn -= HandleEnemyDespawn;
-
-            // Xóa enemy này khỏi danh sách đang theo dõi
-            if (detectedEnemies.Contains(enemyController.gameObject))
-            {
-                detectedEnemies.Remove(enemyController.gameObject);
-            }
-
-            // Dọn dẹp kỹ hơn: Xóa tất cả các đối tượng null hoặc đã bị tắt (về pool)
-            detectedEnemies.RemoveAll(x => x == null || !x.activeInHierarchy);
-
-            // Kiểm tra xem còn mối đe dọa nào không
-            if (detectedEnemies.Count == 0)
-            {
-                // Bắt đầu đếm ngược tắt báo động
-                if (alertCooldownCoroutine == null)
-                {
-                    alertCooldownCoroutine = StartCoroutine(AlertCooldownRoutine());
-                }
-            }
-        }
-
-        private System.Collections.IEnumerator AlertCooldownRoutine()
-        {
-            // DebugLog($"[GuardManager] Enemy list cleared. Waiting {ALARM_COOLDOWN_DURATION}s...");
-            
-            // Set timer và đếm ngược
-            alarmTimer = ALARM_COOLDOWN_DURATION;
-            while (alarmTimer > 0)
-            {
-                alarmTimer -= Time.deltaTime;
-                yield return null;
-            }
-            alarmTimer = 0f;
-
-            // If we are here, no new enemies appeared for 30s
-            // Check logic for Day/Night
-            if (GameTimeManager.Instance != null && GameTimeManager.Instance.IsDaytime)
-            {
-                ClearAlarm();
-            }
-            else
-            {
-                // If Night, we do NOT clear alarm logic completely?
-                // User requirement: "If night... continue holding wall..."
-                // So we basically keep isEnemyAttack = true? 
-                // OR we clear it but Archer logic handles Night autonomously?
-                // Archer logic: On Update/Idle -> Check Time -> If Night -> ReturningToBase.
-                // So it is SAFE to ClearAlarm here. Archer will just go back to wall because it's Night.
-                // Clearing alarm lets them enter "Peaceful Night Guard" instead of "Active Combat Alert".
-                ClearAlarm();
-            }
-            
-            alertCooldownCoroutine = null;
+            if (showDebugLogs) Debug.Log($"[GuardManager] {message}");
         }
 
         private void Update()
         {
-            // Draw debug visualization
             UpdateHuntingRangeVisualization();
         }
 
-        public void ClearAlarm()
+        public Vector3? GetHuntingRangeStartPosition(bool isLeft)
         {
-            // Trước khi Clear, cần hủy đăng ký tất cả các event báo tử đang lắng nghe
-            foreach (var enemy in detectedEnemies)
-            {
-                if (enemy == null) continue;
-                var controller = enemy.GetComponent<Script.Game.Enemy.EnemyAIController>();
-                if (controller != null)
-                {
-                    controller.OnDespawn -= HandleEnemyDespawn;
-                }
-            }
-
-            isEnemyAttack = false;
-            detectedEnemies.Clear();
-            alarmTimer = 0f;
-            DebugLog("✅ Alarm cleared - Returning to peacetime duties");
+            GameObject wall = isLeft ? Wall?.currentLeftWall : Wall?.currentRightWall;
             
-            // CẬP NHẬT VỊ TRÍ PHÒNG THỦ TỐI ƯU SAU KHI HẾT CHIẾN ĐẤU
-            // Đảm bảo đồng bộ lại với WallAndStumpManager 1 lần cuối
-            UpdateDefensiveWalls();
+            if (wall != null) return wall.transform.position;
             
-            //xếp lại đội hình 
-            RebalanceSquads();
-            // Notify transition to Hunting if Day
-            NotifyAllArchersValues(false);
+            if (Script.Manager.Building.BuildingManager.instance != null && Script.Manager.Building.BuildingManager.instance.currentTownCenter != null)
+                return Script.Manager.Building.BuildingManager.instance.currentTownCenter.transform.position;
+            
+            return null;
         }
-
-        #region Wall List Updates (Called by WallAndStumpManager)
-
-        /// <summary>
-        /// Được gọi bởi WallAndStumpManager mỗi khi có wall mới được xây, sửa xong, hoặc bị phá hủy
-        /// </summary>
-        public void OnWallListUpdated()
+        
+        private void UpdateHuntingRangeVisualization()
         {
-            // [LOGIC] Chỉ cập nhật wall phòng thủ nếu không có kẻ thù tấn công (tránh lính chạy lên)
-            // Nếu wall bị phá hủy trong lúc combat, NotifyWallCritical() sẽ xử lý việc lùi quân.
-            if (!isEnemyAttack)
-            {
-                UpdateDefensiveWalls();
-            }
+             Vector3? leftStart = GetHuntingRangeStartPosition(true);
+             if (leftStart.HasValue) DrawHuntingRange(leftStart.Value, true);
+                 
+             Vector3? rightStart = GetHuntingRangeStartPosition(false);
+             if (rightStart.HasValue) DrawHuntingRange(rightStart.Value, false);
         }
-
-        #endregion
-
-        private void NotifyAllArchersValues(bool isAttack)
+        
+        private void DrawHuntingRange(Vector3 wallPos, bool isLeft)
         {
-            // Hàm helper này chỉ dùng để đổi trạng thái của tất cả cung thủ thành rút về phòng thủ 
-            List<GameObject> allArchers = new List<GameObject>();
-            allArchers.AddRange(leftFlankArchers);
-            allArchers.AddRange(rightFlankArchers);
-            
-            foreach(var archer in allArchers)
-            {
-                if(archer == null) continue;
-                var behavior = archer.GetComponent<Script.Game.Mobs.Subjects.ArcherBehavior>();
-                
-                 if(behavior != null)
-                 {
-                     behavior.OnGuardManagerStatusChanged(isAttack);
-                 }
-            }
+            if (!isDebugHuntingRange) return;
+            float range = archerHuntingRange;
+            Vector3 rayDir = isLeft ? Vector3.left : Vector3.right;
+            Debug.DrawRay(wallPos, rayDir * range, Color.blue);
         }
-
-        #endregion
-
-        #region Wall Management Integration (Retreat Logic)
-
-        /// <summary>
-        /// Logic Retreat: Khi wall hiện tại đạt ngưỡng máu tử (Critical HP).
-        /// GuardManager sẽ tìm đệ quy về phía nhà chính để tìm bức tường 'khỏe' nhất gần đó.
-        /// </summary>
-        public void NotifyWallCritical(GameObject wall, bool isLeftSide)
-        {
-            if (wall == null || wallManager == null) return;
-            
-            // [QUAN TRỌNG] Chỉ xử lý nếu wall bị đánh xuống máu tử CHÍNH LÀ wall đang phòng thủ hiện tại
-            if (wall != currentLeftWall && wall != currentRightWall) return;
-
-            Debug.Log($"[GuardManager] ⚠️ WALL CRITICAL: {wall.name} trên {(isLeftSide ? "LEFT" : "RIGHT")}. Tìm điểm lùi quân...");
-
-            // Sử dụng đệ quy để tìm wall an toàn phía sau
-            GameObject safeWall = FindSafeWallRecursively(wall);
-            
-            // Cập nhật vị trí phòng thủ mới toàn cục
-            if (isLeftSide)
-                UpdateSpecificWall(ref currentLeftWall, safeWall, true);
-            else
-                UpdateSpecificWall(ref currentRightWall, safeWall, false);
-
-            // Ra lệnh cho toàn bộ lính ở cánh này rút lui về điểm mới (hoặc đứng im nếu safeWall là null)
-            List<GameObject> flank = isLeftSide ? leftFlankArchers : rightFlankArchers;
-            foreach (var archer in flank)
-            {
-                if (archer == null) continue;
-                var behavior = archer.GetComponent<Script.Game.Mobs.Subjects.ArcherBehavior>();
-                if (behavior != null)
-                {
-                    // Lệnh ForceRetreat sẽ khiến Archer bỏ qua AI Idle thông thường và chạy về base mới
-                    if (safeWall != null)
-                    {
-                        behavior.ForceRetreat(safeWall);
-                    }
-                    else
-                    {
-                        // Không còn wall để lính lùi nữa -> Có thể là nhà chính hoặc đứng tại chỗ tử thủ
-                        DebugLog($"[GuardManager] {archer.name} không còn nơi để lùi, đứng tại chỗ!");
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Hàm đệ quy: Tìm bức tường phía sau (gần nhà chính hơn) mà KHÔNG ở ngưỡng máu tử.
-        /// Việc sử dụng đệ quy giúp tránh trường hợp enemy phá xuyên 2 bức tường cùng lúc.
-        /// </summary>
-        private GameObject FindSafeWallRecursively(GameObject currentWall)
-        {
-            if (currentWall == null || wallManager == null) return null;
-
-            GameObject wallBehind = wallManager.GetWallBehind(currentWall);
-            
-            // 1. Nếu không còn wall nào phía sau -> Trả về null (Rút về nhà chính / Không còn điểm tựa)
-            if (wallBehind == null) return null;
-
-            // 2. Nếu wall phía sau 'khỏe' (không đạt ngưỡng máu tử) -> Đây là điểm lùi an toàn
-            if (wallManager.IsWallDefendable(wallBehind))
-            {
-                return wallBehind;
-            }
-
-            // 3. Nếu wall phía sau CŨNG ở ngưỡng máu tử -> Đệ quy tiếp
-            Debug.LogWarning($"[GuardManager] Bức tường {wallBehind.name} cũng đang ở trạng thái nguy hiểm (Máu tử). Tiếp tục tìm đệ quy lùi sâu hơn...");
-            return FindSafeWallRecursively(wallBehind);
-        }
-
-        public GameObject GetCurrentDefensiveWall(bool isLeft)
-        {
-            // Ensure data is fresh if null
-            if (isLeft && currentLeftWall == null) UpdateDefensiveWalls();
-            if (!isLeft && currentRightWall == null) UpdateDefensiveWalls();
-            
-            return isLeft ? currentLeftWall : currentRightWall;
-        }
-
-        /// <summary>
-        /// Tính toán vị trí phòng thủ cho archer dựa trên slot system
-        /// Mỗi flank có archerSlotCount slots, cách nhau archerSlotSpacing
-        /// </summary>
-        public Vector3 GetDefensePositionForArcher(GameObject archer)
-        {
-            if (archer == null) return Vector3.zero;
-
-            var status = archer.GetComponent<DenizenStatus>();
-            if (status == null) return archer.transform.position;
-
-            bool isLeft = status.isLeftFlank;
-            List<GameObject> flankList = isLeft ? leftFlankArchers : rightFlankArchers;
-            GameObject wall = isLeft ? currentLeftWall : currentRightWall;
-            
-            // Tìm index của archer trong danh sách flank
-            int index = flankList.IndexOf(archer);
-            // Tính slot index (tuần hoàn)
-            int slotIndex = (index >= 0) ? index % archerSlotCount : 0;
-
-            if (wall == null)
-            {
-                // Fallback: Use TownCenter position if available
-                if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
-                {
-                    var tc = BuildingManager.instance.currentTownCenter;
-                    Transform tcTransform = tc.transform;
-                    Vector3 tcPos = tcTransform.position;
-                    
-                    // Logic: Xếp hàng xung quanh TownCenter (Plaza)
-                    // Lấy bán kính Plaza thực tế
-                    float startDist = 5f; // Default fallback
-                    var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
-                    if(tcBehavior != null)
-                    {
-                        startDist = tcBehavior.plazaDistance;
-                    }
-
-                    // Bên trái đứng bên trái TC, bên phải đứng bên phải TC
-                    float dir = isLeft ? -1f : 1f;
-                    
-                    // Khoảng cách an toàn từ TC (plazaDistance)
-                    // Archer sẽ xếp hàng từ rìa Plaza VỀ PHÍA TownCenter
-                    // Slot 0: plazaDistance
-                    // Slot 1: plazaDistance - spacing
-                    // Slot 2: plazaDistance - 2*spacing
-                    float totalOffset = startDist - (slotIndex * archerSlotSpacing);
-                    
-                    // Đảm bảo không đứng quá gần tâm (giữ khoảng cách tối thiểu 2f)
-                    if (totalOffset < 2f) totalOffset = 2f;
-                    
-                    return new Vector3(tcPos.x + (dir * totalOffset), tcPos.y, archer.transform.position.z);
-                }
-                
-                // No wall, no TC -> Stand still
-                return archer.transform.position;
-            }
-
-            // Tính hướng (left flank = +, right flank = -)
-            float direction = isLeft ? 1f : -1f; // Lưu ý: Wall logic direction có thể khác TC logic direction tùy vào pivot của Wall
-            // Kiểm tra lại logic direction của Wall:
-            // Wall bên trái (LeftFlank): Quái đến từ bên trái -> Archer đứng Hướng +1 (Bên phải của Wall - Phía trong) ??? 
-            // KHÔNG, logic cũ là: isLeft ? 1f : -1f.
-            // Nếu Wall trái, quái bên trái. Archer đứng sau wall (bên phải wall). -> +1. Đúng.
-            // Nếu Wall phải, quái bên phải. Archer đứng sau wall (bên trái wall). -> -1. Đúng.
-
-            // Tính offset: defaultSlotOffset + (slotIndex * spacing)
-            float offset = defaultSlotOffset + (slotIndex * archerSlotSpacing);
-
-            Vector3 basePos = wall.transform.position;
-
-            return new Vector3(
-                basePos.x + direction * offset,
-                basePos.y,
-                archer.transform.position.z
-            );
-        }
-
-        #endregion
-
-        #region Statistics & Debug
-
-       
 
         [ContextMenu("Debug Archer Positions")]
         public void DebugArcherPositions()
@@ -734,161 +145,52 @@ namespace Script.Game.Mobs.MobsManager
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             sb.AppendLine("=== ARCHER POSITION DEBUG INFO ===");
             
-            if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
+            if (Script.Manager.Building.BuildingManager.instance != null && Script.Manager.Building.BuildingManager.instance.currentTownCenter != null)
             {
-                var tc = BuildingManager.instance.currentTownCenter;
+                var tc = Script.Manager.Building.BuildingManager.instance.currentTownCenter;
                 sb.AppendLine($"TownCenter Pos: {tc.transform.position}");
-                
                 var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
-                if (tcBehavior != null)
-                {
-                    sb.AppendLine($"Plaza Distance: {tcBehavior.plazaDistance}");
-                }
-                else
-                {
-                    sb.AppendLine("Plaza Distance: N/A (Behavior Missing)");
-                }
+                if (tcBehavior != null) sb.AppendLine($"Plaza Distance: {tcBehavior.plazaDistance}");
+                else sb.AppendLine("Plaza Distance: N/A (Behavior Missing)");
             }
             else
             {
                 sb.AppendLine("TownCenter: NULL");
             }
             
-            sb.AppendLine($"--- LEFT FLANK ({leftFlankArchers.Count}) ---");
-            for(int i=0; i<leftFlankArchers.Count; i++)
+            if (Squad != null)
             {
-                var archer = leftFlankArchers[i];
-                if(archer != null)
+                sb.AppendLine($"--- LEFT FLANK ({Squad.leftFlankArchers.Count}) ---");
+                for(int i=0; i<Squad.leftFlankArchers.Count; i++)
                 {
-                    int slotIndex = i % archerSlotCount;
-                    sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {GetDefensePositionForArcher(archer)}");
+                    var archer = Squad.leftFlankArchers[i];
+                    if(archer != null)
+                    {
+                        int slotIndex = i % Squad.archerSlotCount;
+                        sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {Squad.GetDefensePositionForArcher(archer)}");
+                    }
+                }
+                
+                sb.AppendLine($"--- RIGHT FLANK ({Squad.rightFlankArchers.Count}) ---");
+                for(int i=0; i<Squad.rightFlankArchers.Count; i++)
+                {
+                    var archer = Squad.rightFlankArchers[i];
+                    if(archer != null)
+                    {
+                        int slotIndex = i % Squad.archerSlotCount;
+                        sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {Squad.GetDefensePositionForArcher(archer)}");
+                    }
                 }
             }
-            
-            sb.AppendLine($"--- RIGHT FLANK ({rightFlankArchers.Count}) ---");
-            for(int i=0; i<rightFlankArchers.Count; i++)
-            {
-                var archer = rightFlankArchers[i];
-                if(archer != null)
-                {
-                    int slotIndex = i % archerSlotCount;
-                    sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {GetDefensePositionForArcher(archer)}");
-                }
-            }
-            
             Debug.Log(sb.ToString());
         }
 
         [ContextMenu("Debug Clear Enemies")]
         public void DebugClearEnemies()
         {
-            if (detectedEnemies.Count > 0)
-            {
-                DebugLog("[GuardManager] 🛠️ Debug Clear ALL Enemies");
-                // Create copy to iterate safely
-                var enemies = new List<GameObject>(detectedEnemies);
-                foreach (var enemy in enemies)
-                {
-                    if (enemy != null)
-                    {
-                        var behavior = enemy.GetComponent<Script.Game.Enemy.EnemyAIController>();
-                        if (behavior != null)
-                        {
-                            // Trigger despawn logic manually or just simulate it
-                            // Better to just clear list and trigger logic as if they all died
-                             behavior.OnDespawn -= HandleEnemyDespawn; // Unsub manually
-                        }
-                    }
-                }
-                detectedEnemies.Clear();
-                
-                // Trigger Cooldown Routine
-                if (alertCooldownCoroutine == null)
-                {
-                    alertCooldownCoroutine = StartCoroutine(AlertCooldownRoutine());
-                }
-            }
+            Alarm?.DebugClearEnemies();
         }
 
-        private void DebugLog(string message)
-        {
-            if (showDebugLogs) Debug.Log($"[GuardManager] {message}");
-        }
-
-        private void OnDestroy()
-        {
-            // Cleanup event subscriptions
-            if (currentLeftWall != null)
-            {
-                var leftBehavior = currentLeftWall.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
-                if (leftBehavior != null)
-                {
-                    leftBehavior.OnCriticalHP -= HandleWallCritical;
-                }
-            }
-            
-            if (currentRightWall != null)
-            {
-                var rightBehavior = currentRightWall.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
-                if (rightBehavior != null)
-                {
-                    rightBehavior.OnCriticalHP -= HandleWallCritical;
-                }
-            }
-            
-            leftFlankArchers.Clear();
-            rightFlankArchers.Clear();
-            detectedEnemies.Clear();
-        }
-        
-        /// <summary>
-        /// Xác định vị trí bắt đầu cho vùng săn bắn
-        /// Ưu tiên: Wall → TownCenter → null (không vẽ)
-        /// </summary>
-        public Vector3? GetHuntingRangeStartPosition(bool isLeft)
-        {
-            GameObject wall = isLeft ? currentLeftWall : currentRightWall;
-            
-            // Ưu tiên 1: Dùng tường nếu có
-            if (wall != null)
-                return wall.transform.position;
-            
-            // Ưu tiên 2: Fallback về TownCenter
-            if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
-                return BuildingManager.instance.currentTownCenter.transform.position;
-            
-            // Ưu tiên 3: Không có điểm tham chiếu - trả về null để không vẽ
-            return null;
-        }
-        
-        /// <summary>
-        /// Update logic for visualization
-        /// </summary>
-        private void UpdateHuntingRangeVisualization()
-        {
-             Vector3? leftStart = GetHuntingRangeStartPosition(true);
-             if (leftStart.HasValue)
-                 DrawHuntingRange(leftStart.Value, true); // Left is Left
-                 
-             Vector3? rightStart = GetHuntingRangeStartPosition(false);
-             if (rightStart.HasValue)
-                 DrawHuntingRange(rightStart.Value, false); // Right is Right
-        }
-        
-        /// <summary>
-        /// Visualization of hunting range for blue prints
-        /// </summary>
-        private void DrawHuntingRange(Vector3 wallPos, bool isLeft)
-        {
-            if (!isDebugHuntingRange) return;
-            
-            float range = archerHuntingRange;
-            Vector3 rayDir = isLeft ? Vector3.left : Vector3.right;
-            
-             // Draw Blue Ray
-            Debug.DrawRay(wallPos, rayDir * range, Color.blue);
-        }
-
-    #endregion
+        #endregion
     }
 }
