@@ -1,6 +1,7 @@
 using Script.Data_Model.Interfaces;
 using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
+using System;
 using UnityEngine;
 
 namespace Script.Data_Model.Status
@@ -8,9 +9,37 @@ namespace Script.Data_Model.Status
     // Data component cho Player (MonoBehaviour, khởi tạo qua AddComponent)
     public class PlayerStatus: MonoBehaviour
     {
-        public int maxHp;
-        public int currentHp;
-        public int coin;
+        // Event bắn ra mỗi khi số coin thay đổi — UI lắng nghe event này
+        public event Action<int> OnCoinChanged;
+
+        // Event bắn ra mỗi khi HP thay đổi (currentHp, maxHp)
+        public event Action<int, int> OnHPChanged;
+
+        // currentHp và maxHp dùng property để tự động bắn event OnHPChanged
+        private int _currentHp;
+        public int currentHp
+        {
+            get => _currentHp;
+            set
+            {
+                if (_currentHp == value) return;
+                _currentHp = value;
+                OnHPChanged?.Invoke(_currentHp, _maxHp);
+            }
+        }
+
+        private int _maxHp;
+        public int maxHp
+        {
+            get => _maxHp;
+            set
+            {
+                if (_maxHp == value) return;
+                _maxHp = value;
+                OnHPChanged?.Invoke(_currentHp, _maxHp);
+            }
+        }
+
         public int maxCoins;
         public float moveSpeed;
         public float positionX;
@@ -18,6 +47,19 @@ namespace Script.Data_Model.Status
         public int attackDame;
         public float attackSpeed;
         public bool isGround;
+
+        // Coin sử dụng property để tự động bắn event khi thay đổi
+        private int _coin;
+        public int coin
+        {
+            get => _coin;
+            set
+            {
+                if (_coin == value) return;
+                _coin = value;
+                OnCoinChanged?.Invoke(_coin);
+            }
+        }
         
         [Header("Resources")]
         

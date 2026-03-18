@@ -3,6 +3,7 @@ using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Game.Enemy;
 using Script.Game.Item.Coin; // For PhysicalItem
+using Script.Game.Player; // Sửa lỗi thiếu namespace PlayerBehavior
 
 namespace Script.Utils
 {
@@ -12,9 +13,11 @@ namespace Script.Utils
         public bool canPickupCoin = true;
         public bool canPickupTool = true;
 
-        //NPC sở hữu logic pickup này. Tự động lấy ở GetComponentInParent nếu để trống
         private MonoBehaviour _ownerNpc;
         private IItemHandle _itemReceiver;
+        private bool _isPlayer;
+        private bool _isEnemy;
+        private PlayerBehavior _playerBehavior; // Cache PlayerBehavior if it's the player
         
         private void Awake()
         {
@@ -23,6 +26,15 @@ namespace Script.Utils
             if (_itemReceiver != null)
             {
                 _ownerNpc = _itemReceiver as MonoBehaviour;
+                
+                // Cache trạng thái phe phái để dùng trong CheckItemRule không tốn CPU
+                _isPlayer = _ownerNpc.CompareTag("Player") || CompareTag("Player");
+                _isEnemy = _ownerNpc.CompareTag("Enemy") || CompareTag("Enemy");
+                
+                if (_isPlayer)
+                {
+                    _playerBehavior = _ownerNpc.GetComponent<PlayerBehavior>();
+                }
             }
         }
 
@@ -37,9 +49,13 @@ namespace Script.Utils
 
             // 1. Kiểm tra trạng thái item xem có được nhặt không (FaceID, Cooldown, Thể Loại)
             if (!CheckItemRule(drop)) 
-            {
-              //  Debug.Log($"[LootPickupTrigger] {_ownerNpc.name} check rule failed for {drop.gameObject.name}");
                 return;
+
+            // Tối ưu cực mạnh cho Player: Nếu full túi thì skip gọi HandleItem luôn
+            if (_isPlayer && _playerBehavior != null)
+            {
+                if (drop.itemType == ItemType.Coin && _playerBehavior.Coin >= _playerBehavior.MaxCoins)
+                    return;
             }
 
             // 2. Trao quyền Quyết Định (Decision Making) cho Não bộ NPC
@@ -65,13 +81,9 @@ namespace Script.Utils
             if (drop.itemType == ItemType.Coin && !canPickupCoin) return false;
             if (drop.itemType != ItemType.Coin && !canPickupTool) return false;
 
-            // Suy luận Phe từ Tag để áp dụng Cooldown nhặt
-            bool isPlayer = CompareTag("Player") || (_ownerNpc != null && _ownerNpc.CompareTag("Player"));
-            bool isEnemy = CompareTag("Enemy") || (_ownerNpc != null && _ownerNpc.CompareTag("Enemy"));
-            
-            if (isPlayer && !drop.playerPickupAble) return false;
-            if (isEnemy && !drop.enemyPickupAble) return false;
-            if (!isPlayer && !isEnemy && !drop.denizensPickupAble) return false;
+            if (_isPlayer && !drop.playerPickupAble) return false;
+            if (_isEnemy && !drop.enemyPickupAble) return false;
+            if (!_isPlayer && !_isEnemy && !drop.denizensPickupAble) return false;
 
             return true;
         }

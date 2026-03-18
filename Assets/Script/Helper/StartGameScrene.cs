@@ -435,7 +435,7 @@ namespace Script.Game.Other
             }
 
             //add some coin for player test
-            PlayerController.Instance.playerBehavior.Coin += 100;
+            PlayerController.Instance.playerBehavior.Coin += 50;
 
             // Cho phép gây damage lên đồng minh khi test
             PlayerController.Instance.damageAlly = true;

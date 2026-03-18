@@ -61,26 +61,16 @@ namespace Script.Game.Player
                     status = gameObject.AddComponent<PlayerStatus>();
                 }
             }
-        }
 
-        private void Start()
-        {
-            SetupHealBarUI();
-        }
-
-        private void SetupHealBarUI()
-        {
-            var canvasManager = FindObjectOfType<Script.GUI_Controller.GuiCanvasManager>();
-            if (canvasManager != null && canvasManager.healBarUI != null)
+            // Tự động thêm PlayerUISetup nếu chưa có trên GameObject này
+            if (GetComponent<PlayerUISetup>() == null)
             {
-                canvasManager.healBarUI.Setup(status);
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerBehavior] Khong tim thay GuiCanvasManager hoac HealBarUI chua duoc gan vao CanvasManager de setup!");
+                gameObject.AddComponent<PlayerUISetup>();
             }
         }
-        
+
+
+
         private void OnDestroy()
         {
             // Unregister from PlayerController
@@ -91,6 +81,9 @@ namespace Script.Game.Player
             }
         }
 
+        private float _interactionCheckTimer = 0f;
+        private const float InteractionCheckInterval = 0.1f;
+
         private void Update()
         {
             // Tự động regen mana
@@ -100,7 +93,12 @@ namespace Script.Game.Player
                 status.currentMana = Mathf.Min(status.currentMana, status.maxMana);
             }
             
-            ValidateInteraction();
+            _interactionCheckTimer += Time.deltaTime;
+            if (_interactionCheckTimer >= InteractionCheckInterval)
+            {
+                _interactionCheckTimer = 0f;
+                ValidateInteraction();
+            }
         }
         
         // === RESOURCE HELPERS ===
@@ -161,21 +159,28 @@ namespace Script.Game.Player
 
         public bool HandleItem(GameObject item)
         {
-            var physicalItem = item.GetComponent<PhysicalItem>();
-            Debug.Log($"[PlayerBehavior] HandleItem triggered for {item.name}. physicalItem: {physicalItem != null}");
-            
-            if (physicalItem == null) return false;
-
-            if (physicalItem.itemType == ItemType.Coin)
+            // 1. Kiểm tra nhanh loại item bằng tag/name trước khi GetComponent để tối ưu
+            if (item.name.ToLower().Contains("coin"))
             {
-                Debug.Log($"[PlayerBehavior] HandleItem: Coin={Coin}, MaxCoins={MaxCoins}");
-                if (Coin < MaxCoins)
+                // Nếu túi đầy thì không nhặt, trả về false ngay lập tức mà không cần GetComponent PhysicalItem
+                if (Coin >= MaxCoins) return false;
+
+                var physicalItem = item.GetComponent<PhysicalItem>();
+                if (physicalItem != null && physicalItem.itemType == ItemType.Coin)
                 {
                     AddCoin(1);
-                    Debug.Log($"[PlayerBehavior] HandleItem: Picked up coin successfully!");
                     return true;
                 }
             }
+            else // Các loại tool khác
+            {
+                var physicalItem = item.GetComponent<PhysicalItem>();
+                if (physicalItem != null)
+                {
+                    // [TODO] Xử lý nhặt Tool ở đây
+                }
+            }
+            
             return false;
         }
 

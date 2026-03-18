@@ -311,10 +311,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 10
-  currentHp: 10
-  coin: 0
-  maxCoins: 100
+  maxCoins: 50
   moveSpeed: 12
   positionX: 0
   positionY: 0
