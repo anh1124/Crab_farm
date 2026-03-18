@@ -84,7 +84,7 @@ public class HealBarUI : MonoBehaviour
 
     // ─── Event Handler ────────────────────────────────────────────────────────
 
-    private void OnHPChanged(int currentHP, int maxHP)
+    private void OnHPChanged(float currentHP, float maxHP)
     {
         UpdateMidWidth(maxHP);
         UpdateFill(currentHP, maxHP);
@@ -92,7 +92,7 @@ public class HealBarUI : MonoBehaviour
 
     // ─── Display Logic ────────────────────────────────────────────────────────
 
-    private void UpdateMidWidth(int maxHP)
+    private void UpdateMidWidth(float maxHP)
     {
         if (mid == null)
         {
@@ -106,7 +106,7 @@ public class HealBarUI : MonoBehaviour
         mid.preferredWidth = Mathf.Clamp(targetWidth, 0f, maxMidWidth);
     }
 
-    private void UpdateFill(int currentHP, int maxHP)
+    private void UpdateFill(float currentHP, float maxHP)
     {
         if (fill == null)
         {
@@ -114,6 +114,6 @@ public class HealBarUI : MonoBehaviour
             return;
         }
 
-        fill.fillAmount = (maxHP > 0) ? Mathf.Clamp01((float)currentHP / maxHP) : 0f;
+        fill.fillAmount = (maxHP > 0) ? Mathf.Clamp01(currentHP / maxHP) : 0f;
     }
 }

@@ -33,9 +33,6 @@ namespace Script.Game.PlayerCharacter.Skills
         /// <summary>Cho phép di chuyển trong lúc skill đang chạy hay không</summary>
         public bool allowMovementDuringSkill;
         
-        /// <summary>Collider dùng để phát hiện va chạm và gây damage</summary>
-        public Collider2D hitbox;
-        
         [Header("Animation")]
         /// <summary>Nếu true, skill sẽ đợi Animation Event gọi OnEnd. Nếu false, skill kết thúc ngay sau OnStart.</summary>
         public bool useAnimation = true;

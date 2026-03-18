@@ -13,7 +13,7 @@ namespace Script.Game.Player
     /// </summary>
     [RequireComponent(typeof(PlayerStatus))]
     [RequireComponent(typeof(PlayerBehavior))]
-    public class PlayerCombat : MonoBehaviour, IAttacker, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop
+    public class PlayerCombat : MonoBehaviour, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop
     {
         private PlayerStatus status;
         private PlayerBehavior playerBehavior;
@@ -26,26 +26,14 @@ namespace Script.Game.Player
 
         public int CurrentHp 
         { 
-            get => status.currentHp; 
+            get => Mathf.RoundToInt(status.currentHp); 
             set => status.currentHp = value; 
         }
 
         public int MaxHp 
         { 
-            get => status.maxHp; 
+            get => Mathf.RoundToInt(status.maxHp); 
             set => status.maxHp = value; 
-        }
-
-        public int AttackDame 
-        { 
-            get => status.attackDame; 
-            set => status.attackDame = value; 
-        }
-
-        public float AttackSpeed 
-        { 
-            get => status.attackSpeed; 
-            set => status.attackSpeed = value; 
         }
 
         public bool IsDead { get; private set; }
@@ -64,19 +52,13 @@ namespace Script.Game.Player
         public void Heal(int amount)
         {
             if (IsDead) return;
-            CurrentHp += amount;
-            if (CurrentHp > MaxHp) CurrentHp = MaxHp;
+            status.currentHp += amount;
+            if (status.currentHp > status.maxHp) status.currentHp = status.maxHp;
         }
 
         public void Die()
         {
             Die(null);
-        }
-
-        // IAttacker
-        public void Attack()
-        {
-            // Logic tấn công cơ bản
         }
 
         // IDamageable
@@ -95,8 +77,8 @@ namespace Script.Game.Player
             // Hết Coin thì trừ máu
             if (HasHp)
             {
-                CurrentHp -= damage;
-                if (CurrentHp <= 0)
+                status.currentHp -= damage;
+                if (status.currentHp <= 0)
                 {
                     Die(instigator);
                 }

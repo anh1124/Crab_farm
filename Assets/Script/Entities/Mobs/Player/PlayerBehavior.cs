@@ -1,12 +1,13 @@
 using System;
 using Script.Data_Model.Status;
+using Script.Data_Model.Config;
 using Script.Data_Model.Interfaces;
 using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 using UnityEngine;
 using Script.Game.PlayerCharacter;
-using Script.Controller.PlayerController; // For PlayerController.Instance
-using Art.Resources.Character.PlayerCharactor.Spear_Man; // Namespace cho AnimController
+using Script.Controller.PlayerController;
+using Art.Resources.Character.PlayerCharactor.Spear_Man;
 using Script.Game.Item.Coin;
 
 namespace Script.Game.Player
@@ -15,10 +16,20 @@ namespace Script.Game.Player
     
     //[TODO] thêm script kiểm tra script player đã đủ chưa
     
+    [RequireComponent(typeof(PlayerStatus))]
+    [RequireComponent(typeof(PlayerCombat))]
+    [RequireComponent(typeof(PlayerInteraction))]
+    [RequireComponent(typeof(PlayerItemHandler))]
+    [RequireComponent(typeof(PlayerUISetup))]
+    [RequireComponent(typeof(PlayerStatRegenerator))]
     public class PlayerBehavior : MonoBehaviour, ISaveable
     {
         [Header("Player Status Data")]
         public PlayerStatus status;
+
+        [Header("Default Config")]
+        [Tooltip("ScriptableObject chứa giá trị mặc định. Tạo qua: Create > Config > PlayerConfig")]
+        public PlayerConfig defaultConfig;
         
         [Header("Animation Reference")]
         public SpearManAnimationController playerAnim; 
@@ -27,17 +38,18 @@ namespace Script.Game.Player
         private PlayerCombat _combat;
         private PlayerInteraction _interaction;
 
+        // Flag: true nếu RestoreData() đã chạy thành công → bỏ qua ApplyConfig trong Awake
+        private bool _dataRestoredFromSave = false;
+
         [Serializable]
         public class PlayerStatusData
         {
-            public int maxHp;
-            public int currentHp;
+            public float maxHp;
+            public float currentHp;
             public int coin;
             public float moveSpeed;
             public float positionX;
             public float positionY;
-            public int attackDame;
-            public float attackSpeed;
             public bool isGround;
             
             // NEW: Resource data for save/load
@@ -57,43 +69,53 @@ namespace Script.Game.Player
                 Debug.LogError("[PlayerBehavior] PlayerController.Instance is null! Cannot register.");
             }
             
-            if (status == null)
-            {
-                status = GetComponent<PlayerStatus>();
-                if (status == null)
-                {
-                    status = gameObject.AddComponent<PlayerStatus>();
-                }
-            }
+            // Đã chuyển sang sử dụng RequireComponent cho các dependency
+            status = GetComponent<PlayerStatus>();
 
-            // Tự động thêm PlayerInteraction nếu chưa có
-            if (GetComponent<PlayerInteraction>() == null)
-            {
-                gameObject.AddComponent<PlayerInteraction>();
-            }
-
-            // Tự động thêm PlayerItemHandler nếu chưa có
-            if (GetComponent<PlayerItemHandler>() == null)
-            {
-                gameObject.AddComponent<PlayerItemHandler>();
-            }
-
-            // Tự động thêm PlayerCombat nếu chưa có
-
-            if (GetComponent<PlayerCombat>() == null)
-            {
-                gameObject.AddComponent<PlayerCombat>();
-            }
-
-            // Tự động thêm PlayerUISetup nếu chưa có trên GameObject này
-            if (GetComponent<PlayerUISetup>() == null)
-            {
-                gameObject.AddComponent<PlayerUISetup>();
-            }
 
             // Cache references for bridge properties
             _combat = GetComponent<PlayerCombat>();
             _interaction = GetComponent<PlayerInteraction>();
+
+            // Tự động tìm config nếu chưa gán trong Inspector (Ưu tiên logic Resources)
+            if (defaultConfig == null)
+            {
+                defaultConfig = Resources.Load<PlayerConfig>("Data/Player/PlayerConfig");
+                if (defaultConfig != null)
+                    Debug.Log("[PlayerBehavior] Successfully auto-loaded PlayerConfig from Resources.");
+                else
+                    Debug.LogWarning("[PlayerBehavior] Could not find PlayerConfig at: Assets/Art/Resources/Data/Player/PlayerConfig.asset");
+            }
+
+            // Khởi tạo giá trị mặc định từ Config — chỉ khi chưa load từ save.
+            if (!_dataRestoredFromSave)
+            {
+                if (defaultConfig != null)
+                {
+                    ApplyConfig(defaultConfig);
+                    Debug.Log("[PlayerBehavior] Applied default config (no save data found).");
+                }
+                else
+                {
+                    Debug.LogWarning("[PlayerBehavior] defaultConfig is null! Please assign PlayerConfig asset in Inspector.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Áp dụng giá trị mặc định từ PlayerConfig.
+        /// Gọi khi: (1) game mới, (2) new game, (3) debug reset.
+        /// </summary>
+        public void ApplyConfig(PlayerConfig config)
+        {
+            status.maxHp        = config.maxHp;
+            status.currentHp    = config.maxHp;      // Bắt đầu full HP
+            status.moveSpeed    = config.moveSpeed;
+            status.hpRegenRate  = config.hpRegenRate; // New: HP regen
+            status.maxCoins     = config.maxCoins;
+            status.maxMana      = config.maxMana;
+            status.currentMana  = config.maxMana;    // Bắt đầu full Mana
+            status.manaRegenRate = config.manaRegenRate;
         }
 
 
@@ -105,16 +127,6 @@ namespace Script.Game.Player
             {
                 PlayerController.Instance.playerBehavior = null;
                 Debug.Log("[PlayerBehavior] Unregistered from PlayerController.");
-            }
-        }
-
-        private void Update()
-        {
-            // Tự động regen mana
-            if (status.currentMana < status.maxMana)
-            {
-                status.currentMana += status.manaRegenRate * Time.deltaTime;
-                status.currentMana = Mathf.Min(status.currentMana, status.maxMana);
             }
         }
         
@@ -175,8 +187,6 @@ namespace Script.Game.Player
                 moveSpeed = status.moveSpeed,
                 positionX = transform.position.x,
                 positionY = transform.position.y,
-                attackDame = status.attackDame,
-                attackSpeed = status.attackSpeed,
                 isGround = status.isGround,
                 
                 // Save current resources directly from status
@@ -187,22 +197,20 @@ namespace Script.Game.Player
         public void RestoreData(object data)
         {
             PlayerStatusData loaded = data as PlayerStatusData;
-            if (loaded != null)
-            {
-                status.maxHp = loaded.maxHp;
-                status.currentHp = loaded.currentHp;
-                status.coin = loaded.coin;
-                status.moveSpeed = loaded.moveSpeed;
-                status.attackDame = loaded.attackDame;
-                status.attackSpeed = loaded.attackSpeed;
-                status.isGround = loaded.isGround;
-                transform.position = new Vector3(loaded.positionX, loaded.positionY, 0);
-                
-                // NEW: Restore resources to PlayerStatus
-                status.currentMana = loaded.currentMana;
-                
-                // ResourceManager removed, data lives in PlayerStatus now
-            }
+            if (loaded == null) return;
+
+            // Đánh dấu đã load từ save — Awake sẽ bỏ qua ApplyConfig
+            _dataRestoredFromSave = true;
+
+            status.maxHp        = loaded.maxHp;
+            status.currentHp    = loaded.currentHp;
+            status.coin         = loaded.coin;
+            status.moveSpeed    = loaded.moveSpeed;
+            status.isGround     = loaded.isGround;
+            transform.position  = new Vector3(loaded.positionX, loaded.positionY, 0);
+            status.currentMana  = loaded.currentMana;
+
+            Debug.Log($"[PlayerBehavior] Restored save data. HP={status.currentHp}/{status.maxHp}, Mana={status.currentMana}/{status.maxMana}");
         }
 
 
