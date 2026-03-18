@@ -15,8 +15,10 @@ namespace Script.Game.PlayerCharacter.Skills
         [Tooltip("Prefab chứa Collider của skill này")]
         public GameObject hitboxPrefab;
         
-        // Runtime refernece
-        private GameObject runtimeHitbox;
+        // Runtime references: [NonSerialized] đảm bảo Unity KHÔNG lưu vào Asset file.
+        // Sau khi Exit Play Mode, các field này tự reset về null — an toàn tuyệt đối.
+        [System.NonSerialized] private GameObject _runtimeHitbox;
+        [System.NonSerialized] private Collider2D _hitbox;
 
         public override void Initialize(Transform parent)
         {
@@ -26,19 +28,24 @@ namespace Script.Game.PlayerCharacter.Skills
                 return;
             }
 
-            // Spawn prefabs
-            if (runtimeHitbox == null)
+            // Cleanup object cũ nếu còn sót (ví dụ: re-initialize khi reload scene)
+            if (_runtimeHitbox != null)
             {
-                runtimeHitbox = Instantiate(hitboxPrefab, parent);
-                runtimeHitbox.name = hitboxPrefab.name + "_Runtime";
-                runtimeHitbox.SetActive(false); // Hide by default
+                Destroy(_runtimeHitbox);
+                _runtimeHitbox = null;
+                _hitbox = null;
             }
 
-            // Get collider
-            hitbox = runtimeHitbox.GetComponent<Collider2D>();
-            if (hitbox == null)
+            // Spawn prefab vào scene dưới parent của Player
+            _runtimeHitbox = Instantiate(hitboxPrefab, parent);
+            _runtimeHitbox.name = hitboxPrefab.name + "_Runtime";
+            _runtimeHitbox.SetActive(false); // Ẩn mặc định
+
+            // Lấy collider từ object vừa spawn — lưu cục bộ, KHÔNG ghi vào SO field
+            _hitbox = _runtimeHitbox.GetComponent<Collider2D>();
+            if (_hitbox == null)
             {
-                 Debug.LogError($"[SpearManChopDown] Created object has no Collider2D!");
+                Debug.LogError($"[SpearManChopDown] Spawned hitbox has no Collider2D component!");
             }
         }
         
@@ -51,25 +58,21 @@ namespace Script.Game.PlayerCharacter.Skills
         public override void OnHit(GameObject owner)
         {
             // Called tại frame damage trong animation
-            Debug.Log($"[SpearManChopDown] OnHit called. runtimeHitbox={runtimeHitbox}, hitbox={hitbox}");
+            Debug.Log($"[SpearManChopDown] OnHit called. runtimeHitbox={_runtimeHitbox}, hitbox={_hitbox}");
             
-            if (hitbox == null)
+            if (_hitbox == null)
             {
-                Debug.LogError("[SpearManChopDown] Hitbox is NULL! Skill not initialized properly.");
+                Debug.LogError("[SpearManChopDown] Hitbox is NULL! Call Initialize() first.");
                 return;
             }
             
             // Get damageAlly flag từ PlayerController
-            bool damageAlly = false;
-            if (PlayerController.Instance != null)
-            {
-                damageAlly = PlayerController.Instance.damageAlly;
-            }
+            bool damageAlly = PlayerController.Instance?.damageAlly ?? false;
             
             Debug.Log($"[SpearManChopDown] Calling ActivateHitbox with damage={damage}, damageAlly={damageAlly}");
             
             // Use HitboxController để process damage
-            HitboxController.ActivateHitbox(hitbox, damage, owner, damageAlly);
+            HitboxController.ActivateHitbox(_hitbox, damage, owner, damageAlly);
         }
         
         public override void OnEnd(GameObject owner)

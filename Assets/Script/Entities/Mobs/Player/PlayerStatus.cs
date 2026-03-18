@@ -6,8 +6,12 @@ using UnityEngine;
 
 namespace Script.Data_Model.Status
 {
-    // Data component cho Player (MonoBehaviour, khởi tạo qua AddComponent)
-    public class PlayerStatus: MonoBehaviour
+    /// <summary>
+    /// Data container thuần túy cho Player runtime state.
+    /// KHÔNG chứa logic khởi tạo — giá trị mặc định được quản lý bởi PlayerConfig.
+    /// PlayerBehavior chịu trách nhiệm điều phối: load từ save → dùng Config mặc định.
+    /// </summary>
+    public class PlayerStatus : MonoBehaviour
     {
         // Event bắn ra mỗi khi số coin thay đổi — UI lắng nghe event này
         public event Action<int> OnCoinChanged;
@@ -44,8 +48,6 @@ namespace Script.Data_Model.Status
         public float moveSpeed;
         public float positionX;
         public float positionY;
-        public int attackDame;
-        public float attackSpeed;
         public bool isGround;
 
         // Coin sử dụng property để tự động bắn event khi thay đổi
@@ -62,60 +64,19 @@ namespace Script.Data_Model.Status
         }
         
         [Header("Resources")]
-        
         public float currentMana;
         public float maxMana;
         public float manaRegenRate;
-        
-        // Khởi tạo mặc định khi component được tạo runtime (AddComponent)
-        private void Awake()
-        {
-            // Chỉ khởi tạo nếu chưa có giá trị (tránh ghi đè data đã load)
-            if (maxMana == 0f)
-            {
-                maxMana = 50f;
-                currentMana = 50f;
-                manaRegenRate = 5f;
-            }
-            
-            if (maxHp == 0)
-            {
-                maxHp = 100;
-                currentHp = 100;
-                moveSpeed = 10f;
-                attackDame = 1;
-                attackSpeed = 1f;
-                maxCoins = 100;
-            }
-        }
-        
-        // Thiết lập mặc định khi thêm component trong Editor (không ghi đè runtime)
-        private void Reset()
-        {
-            maxHp = 100;
-            currentHp = 100;
-            coin = 0;
-            maxCoins = 100;
-            moveSpeed = 12f;
-            positionX = 0f;
-            positionY = 0f;
-            attackDame = 1;
-            attackSpeed = 1f;
-            isGround = false;
-            
-            // NEW: Initialize resources
-            
-            maxMana = 50f;
-            currentMana = 50f;
-            manaRegenRate = 5f;
-        }
+
+        // Không có Awake() — PlayerBehavior.ApplyConfig() là nơi khởi tạo duy nhất
+        // Không có Reset() — giá trị mặc định sống trong PlayerConfig ScriptableObject
 
         [ContextMenu("Trừ 2 HP")]
         public void Deduct2HP()
         {
             currentHp -= 2;
             if (currentHp < 0) currentHp = 0;
-            Debug.Log($"[PlayerStatus] Đã trừ 2  HP. HP hiện tại: {currentHp}/{maxHp}");
+            Debug.Log($"[PlayerStatus] Đã trừ 2 HP. HP hiện tại: {currentHp}/{maxHp}");
         }
 
         [ContextMenu("Tăng 10 Max HP")]

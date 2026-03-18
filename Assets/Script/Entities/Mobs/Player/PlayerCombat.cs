@@ -13,7 +13,7 @@ namespace Script.Game.Player
     /// </summary>
     [RequireComponent(typeof(PlayerStatus))]
     [RequireComponent(typeof(PlayerBehavior))]
-    public class PlayerCombat : MonoBehaviour, IAttacker, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop
+    public class PlayerCombat : MonoBehaviour, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop
     {
         private PlayerStatus status;
         private PlayerBehavior playerBehavior;
@@ -34,18 +34,6 @@ namespace Script.Game.Player
         { 
             get => status.maxHp; 
             set => status.maxHp = value; 
-        }
-
-        public int AttackDame 
-        { 
-            get => status.attackDame; 
-            set => status.attackDame = value; 
-        }
-
-        public float AttackSpeed 
-        { 
-            get => status.attackSpeed; 
-            set => status.attackSpeed = value; 
         }
 
         public bool IsDead { get; private set; }
@@ -71,12 +59,6 @@ namespace Script.Game.Player
         public void Die()
         {
             Die(null);
-        }
-
-        // IAttacker
-        public void Attack()
-        {
-            // Logic tấn công cơ bản
         }
 
         // IDamageable

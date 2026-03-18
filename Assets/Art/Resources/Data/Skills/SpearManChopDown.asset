@@ -19,7 +19,6 @@ MonoBehaviour:
   damage: 10
   cooldown: 2
   allowMovementDuringSkill: 0
-  hitbox: {fileID: 0}
   useAnimation: 1
   animationTrigger: ChopDown
   hitboxPrefab: {fileID: 7138325472076543894, guid: 3e5278dc97b535840bea76508714840b, type: 3}
