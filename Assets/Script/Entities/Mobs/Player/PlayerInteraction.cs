@@ -38,7 +38,7 @@ namespace Script.Game.Player
         private void OnTriggerEnter2D(Collider2D other)
         {
             // Tránh va chạm với trigger của chính mình hoặc con cái của mình nếu cần
-            if (other.isTrigger && (other.CompareTag("Player") || other.transform.IsChildOf(transform))) return;
+            if (other.isTrigger && (other.CompareTag(Script.Utils.GameTags.Player) || other.transform.IsChildOf(transform))) return;
 
             // Xử lý IPlayerInteractable
             IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();

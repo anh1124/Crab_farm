@@ -276,7 +276,7 @@ namespace Script.Game.Mobs.Subjects
                         Debug.LogError("[DenizenRoleController] Missing VagrantAnimatorController in DenizenManager!");
                         return;
                     }
-                    gameObject.tag = "Vagrant";
+                    gameObject.tag = Script.Utils.GameTags.Vagrant;
                     vagrantBehavior.enabled = true;
                     currentActiveBehavior = vagrantBehavior;
                     targetController = DenizenManager.Instance.vagrantAnimatorController;
@@ -288,7 +288,7 @@ namespace Script.Game.Mobs.Subjects
                         Debug.LogError("[DenizenRoleController] Missing VillagerAnimatorController in DenizenManager!");
                         return;
                     }
-                    gameObject.tag = "Villager";
+                    gameObject.tag = Script.Utils.GameTags.Villager;
                     villagerBehavior.enabled = true;
                     currentActiveBehavior = villagerBehavior;
                     targetController = DenizenManager.Instance.villagerAnimatorController;
@@ -300,7 +300,7 @@ namespace Script.Game.Mobs.Subjects
                         Debug.LogError("[DenizenRoleController] Missing ArcherAnimatorController in DenizenManager!");
                         return;
                     }
-                    gameObject.tag = "Archer";
+                    gameObject.tag = Script.Utils.GameTags.Archer;
                     archerBehavior.enabled = true;
                     currentActiveBehavior = archerBehavior;
                     targetController = DenizenManager.Instance.archerAnimatorController;

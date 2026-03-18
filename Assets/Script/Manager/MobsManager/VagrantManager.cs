@@ -204,7 +204,7 @@ namespace Script.Game.Mobs.MobsManager
             int vagrantCount = 0;
             foreach (GameObject obj in objects)
             {
-                if (obj != null && obj.CompareTag("Vagrant"))
+                if (obj != null && obj.CompareTag(Script.Utils.GameTags.Vagrant))
                 {
                     vagrantCount++;
                 }

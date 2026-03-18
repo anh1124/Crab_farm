@@ -31,14 +31,14 @@ namespace Script.Utils
 
             // 1. Kiểm tra bằng Tag "Trigger" (Được ưu tiên nhất)
             // LƯU Ý: Phải đảm bảo Tag "Trigger" đã được tạo trong Tag Manager của Unity để tránh log lỗi.
-            if (hitObject.CompareTag("Trigger"))
+            if (hitObject.CompareTag(Script.Utils.GameTags.Trigger))
             {
                 if (hitObject.transform.parent != null)
                     return hitObject.transform.parent.gameObject;
             }
 
             // 2. Kiểm tra Layer (Dự phòng)
-            int triggerLayer = LayerMask.NameToLayer("TriggerLayer");
+            int triggerLayer = Script.Utils.GameLayers.TriggerLayerIndex;
             if (triggerLayer != -1 && hitObject.layer == triggerLayer)
             {
                 if (hitObject.transform.parent != null)
@@ -122,7 +122,7 @@ namespace Script.Utils
                     }
 
                     // 2. ƯU TIÊN: Xử lý Wall Tier 0 (không nhận dame khi là móng)
-                    if (effectiveTarget.CompareTag("Wall") || effectiveTarget.CompareTag("Stump"))
+                    if (effectiveTarget.CompareTag(Script.Utils.GameTags.Wall) || effectiveTarget.CompareTag(Script.Utils.GameTags.Stump))
                     {
                         var wallStatus = effectiveTarget.GetComponent<WallStatus>();
                         if (wallStatus != null && wallStatus.tier == 0)

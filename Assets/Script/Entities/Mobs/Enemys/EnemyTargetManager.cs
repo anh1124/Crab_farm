@@ -12,11 +12,11 @@ namespace Script.Game.Enemy
 
         [Header("Tag Whitelist - Tiến công (MoveToTarget)")]
         [Tooltip("Enemy chỉ tấn công/chặn target có tag này khi đang ở State tiến công (MoveToTarget/ShieldBotAttack)")]
-        public List<string> advanceTags = new List<string> { "Wall", "TownCenter","Archer","Player","Denizen" };
+        public List<string> advanceTags;
 
         [Header("Tag Whitelist - Rút lui (ReturnToPortal)")]
         [Tooltip("Enemy chỉ tấn công/chặn target có tag này khi đang rút về Portal")]
-        public List<string> retreatTags = new List<string> { "Wall" };
+        public List<string> retreatTags;
 
         [Header("Layer Settings")]
         [Tooltip("Layer mà Enemy sẽ quét tia phát hiện vật thể")]
@@ -29,6 +29,16 @@ namespace Script.Game.Enemy
             if (Instance == null)
             {
                 Instance = this;
+                
+                if (advanceTags == null || advanceTags.Count == 0)
+                {
+                    advanceTags = new List<string>(Script.Utils.TargetLists.EnemyAdvanceTargets);
+                }
+                
+                if (retreatTags == null || retreatTags.Count == 0)
+                {
+                    retreatTags = new List<string>(Script.Utils.TargetLists.EnemyRetreatTargets);
+                }
             }
             else
             {

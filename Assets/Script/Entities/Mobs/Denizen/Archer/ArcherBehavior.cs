@@ -51,8 +51,8 @@ namespace Script.Game.Mobs.Subjects
         #endregion
         
         [Header("Detection Settings")]
-        [Tooltip("Danh sách các Tag mục tiêu. Tag ở vị trí 0 (thường là 'Enemy') có ưu tiên cao nhất.")]
-        [SerializeField] private List<string> targetTags = new List<string> { "Enemy","EnemyPortal", "Animal", "Rabbit" };
+        [Tooltip("Danh sách các Tag mục tiêu. Kế thừa từ GameTags.TargetLists")]
+        [SerializeField] private List<string> targetTags;
 
         // References
         private DenizenStatus status;
@@ -240,7 +240,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void Awake()
         {
-            gameObject.tag = "Archer";
+            gameObject.tag = Script.Utils.GameTags.Archer;
             status = GetComponent<DenizenStatus>();
             if (status == null)
             {
@@ -265,7 +265,9 @@ namespace Script.Game.Mobs.Subjects
                 circleDetectHelper.SetDetectRadius(status.archerDetectRange);
                 
                 // [SYNC SCAN SETTINGS] Archer quét theo danh sách tags được định nghĩa
-                circleDetectHelper.tagsToDetect = new List<string>(targetTags);
+                circleDetectHelper.tagsToDetect = targetTags != null && targetTags.Count > 0 
+                    ? new List<string>(targetTags) 
+                    : new List<string>(Script.Utils.TargetLists.ArcherTargets);
             }
         }
         

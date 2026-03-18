@@ -130,9 +130,9 @@ namespace Script.Game.Enemy.States
             _lastScanTime = Time.time;
 
             Vector2 direction = (ctx.HomePortal.transform.position.x > ctx.Self.transform.position.x) ? Vector2.right : Vector2.left;
-            RaycastHit2D phit = Physics2D.Raycast(ctx.Self.transform.position, direction, ctx.Status.AttackRange, 1 << LayerMask.NameToLayer("Wall"));
+            RaycastHit2D phit = Physics2D.Raycast(ctx.Self.transform.position, direction, ctx.Status.AttackRange, 1 << LayerMask.NameToLayer(Script.Utils.GameTags.Wall));
 
-            if (phit.collider != null && phit.collider.CompareTag("Wall"))
+            if (phit.collider != null && phit.collider.CompareTag(Script.Utils.GameTags.Wall))
             {
                 // Kiểm tra tag hợp lệ theo retreatTags
                 bool isValid = ctx.TargetManager != null

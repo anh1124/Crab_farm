@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2e0f033c063c3549bbcb2716bb306a5, type: 3}
+  m_Name: CelestialConfig
+  m_EditorClassIdentifier: 
+  sunRiseHour: 6
+  sunSetHour: 19
+  moonRiseHour: 17.5
+  moonSetHour: 6
+  moonDuskAlpha: 0.3
+  moonFadeInHours: 1
+  colorEarlyMorning: {r: 1, g: 0.72, b: 0.42, a: 1}
+  colorMorning: {r: 0.55, g: 0.78, b: 1, a: 1}
+  colorNoon: {r: 0.75, g: 0.9, b: 1, a: 1}
+  colorAfternoon: {r: 1, g: 0.92, b: 0.7, a: 1}
+  colorDusk: {r: 1, g: 0.42, b: 0.15, a: 1}
+  colorNight: {r: 0.04, g: 0.05, b: 0.18, a: 1}
+  lockToCameraBottom: 1
+  yOffset: 0

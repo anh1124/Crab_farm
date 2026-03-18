@@ -106,7 +106,7 @@ namespace Script.Game.Mobs.Subjects
         #region Unity Lifecycle Methods
         private void Awake()
         {
-            gameObject.tag = "Villager";
+            gameObject.tag = Script.Utils.GameTags.Villager;
             status = GetComponent<DenizenStatus>();
             if (status == null)
             {
@@ -186,7 +186,7 @@ namespace Script.Game.Mobs.Subjects
             // Check for enemies (Priority 1)
             foreach (var hitObject in detectedObjects)
             {
-                if (hitObject != null && hitObject.CompareTag("Enemy"))
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Enemy))
                 {
                     isInDanger = true;
                     fearTimer = FEAR_DURATION;
@@ -198,7 +198,7 @@ namespace Script.Game.Mobs.Subjects
             // Check for Player (Priority 2 - Drop Coin if rich)
             foreach (var hitObject in detectedObjects)
             {
-                if (hitObject != null && hitObject.CompareTag("Player"))
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
                 {
                     // Nếu gặp player và có trên 1 coin, đứng lại xin tiền
                     if (!isInDanger && status.CurrentCoins > 1 && status.villagerState == DenizenStatus.VillagerState.Idle)
@@ -299,7 +299,7 @@ namespace Script.Game.Mobs.Subjects
             {
                 rayCastHelper.SetRayLength(status.detectRangeRaycast);
                 // [SYNC SCAN SETTINGS]
-                rayCastHelper.tagsToDetect = new List<string> { "Enemy", "Player" };
+                rayCastHelper.tagsToDetect = new List<string>(Script.Utils.TargetLists.VillagerTargets);
             }
 
             animator = GetComponent<Animator>();
@@ -581,7 +581,7 @@ namespace Script.Game.Mobs.Subjects
             bool playerInRange = false;
             foreach (var hitObject in rayCastHelper.GetListHitObjects())
             {
-                if (hitObject != null && hitObject.CompareTag("Player"))
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
                 {
                     playerInRange = true;
                     break;

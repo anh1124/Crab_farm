@@ -55,7 +55,7 @@ namespace Script.Game.Mobs.MobsManager
             {
                 GameObject wall = walls[i];
                 if (wall == null) continue;
-                if (!wall.CompareTag("Wall")) continue;
+                if (!wall.CompareTag(Script.Utils.GameTags.Wall)) continue;
 
                 var behavior = wall.GetComponent<WallBehavior>();
                 if (behavior != null && behavior.Status.CurrentHp >= threshold)

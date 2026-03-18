@@ -159,7 +159,7 @@ namespace Script.Game.Item.Coin
         public void Falling()
         {
             // Vẽ raycast hướng xuống với chiều dài rayLength
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, LayerMask.GetMask("Ground"));
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, rayLength, Script.Utils.GameLayers.GroundMask);
 
             // Kiểm tra va chạm mặt đất dựa trên kết quả của raycast
             if (hit.collider != null)

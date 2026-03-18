@@ -36,7 +36,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void Awake()
         {
-            gameObject.tag = "Vagrant";
+            gameObject.tag = Script.Utils.GameTags.Vagrant;
             status = GetComponent<DenizenStatus>();
             if (status == null)
             {
@@ -107,7 +107,7 @@ namespace Script.Game.Mobs.Subjects
             {
                 rayCastHelper.SetRayLength(status.detectRangeRaycast);
                 // [SYNC SCAN SETTINGS] Đảm bảo Detector quét đúng Tag quan tâm
-                rayCastHelper.tagsToDetect = new List<string> { "Enemy", "Coin" };
+                rayCastHelper.tagsToDetect = new List<string>(Script.Utils.TargetLists.VagrantTargets);
             }
 
             status.roadToTarget = 0f;
@@ -130,7 +130,7 @@ namespace Script.Game.Mobs.Subjects
             {
                 if (obj == null) continue;
 
-                if (obj.CompareTag("Enemy"))
+                if (obj.CompareTag(Script.Utils.GameTags.Enemy))
                 {
                     if (status.vagrantState != DenizenStatus.VagrantState.Fear)
                     {
@@ -141,7 +141,7 @@ namespace Script.Game.Mobs.Subjects
                     break;
                 }
         
-                if (obj.CompareTag("Coin"))
+                if (obj.CompareTag(Script.Utils.GameTags.Coin))
                 {
                     // Sửa logic: Không được chủ động đi lượm nếu đang sợ
                     if (status.vagrantState != DenizenStatus.VagrantState.Fear)

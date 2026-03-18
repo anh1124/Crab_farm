@@ -28,8 +28,8 @@ namespace Script.Utils
                 _ownerNpc = _itemReceiver as MonoBehaviour;
                 
                 // Cache trạng thái phe phái để dùng trong CheckItemRule không tốn CPU
-                _isPlayer = _ownerNpc.CompareTag("Player") || CompareTag("Player");
-                _isEnemy = _ownerNpc.CompareTag("Enemy") || CompareTag("Enemy");
+                _isPlayer = _ownerNpc.CompareTag(Script.Utils.GameTags.Player) || CompareTag(Script.Utils.GameTags.Player);
+                _isEnemy = _ownerNpc.CompareTag(Script.Utils.GameTags.Enemy) || CompareTag(Script.Utils.GameTags.Enemy);
                 
                 if (_isPlayer)
                 {

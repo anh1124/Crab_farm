@@ -96,10 +96,12 @@ GameObject:
   m_Component:
   - component: {fileID: 8193409864386471885}
   - component: {fileID: 8651940488345645102}
-  - component: {fileID: 3080183978356143538}
   - component: {fileID: 3102458789741671300}
+  - component: {fileID: 9166607917822636031}
+  - component: {fileID: 7776104296125332313}
+  - component: {fileID: 4058388849087136591}
   m_Layer: 0
-  m_Name: ListManager
+  m_Name: Guard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -113,12 +115,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 781692592766937310}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8862165295465698764}
+  m_Father: {fileID: 8680344821423139051}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8651940488345645102
 MonoBehaviour:
@@ -132,32 +134,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04a205cf139ec384ea3ad5d15e12055f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leftFlankArchers: []
-  rightFlankArchers: []
-  currentLeftWall: {fileID: 0}
-  currentRightWall: {fileID: 0}
-  archerSlotCount: 7
-  archerSlotSpacing: 1.2
-  defaultSlotOffset: 3
-  isEnemyAttack: 0
+  showDebugLogs: 1
   isDebugHuntingRange: 1
   archerHuntingRange: 25
-  detectedEnemies: []
-  alarmTimer: 0
-  showDebugLogs: 1
---- !u!114 &3080183978356143538
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 781692592766937310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9baaf73b34d21664088426f2f2f8e7b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  availableTools: []
 --- !u!114 &3102458789741671300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -175,6 +154,52 @@ MonoBehaviour:
   rightWalls: []
   stumps: []
   criticalHPThreshold: 10
+--- !u!114 &9166607917822636031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 781692592766937310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09d70b7d2f814f54ab1e10c898215dd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isEnemyAttack: 0
+  detectedEnemies: []
+  alarmTimer: 0
+--- !u!114 &7776104296125332313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 781692592766937310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62be067f4074c154ea8dc9cf9dcbf28c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  leftFlankArchers: []
+  rightFlankArchers: []
+  archerSlotCount: 7
+  archerSlotSpacing: 1.2
+  defaultSlotOffset: 6
+--- !u!114 &4058388849087136591
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 781692592766937310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d666b88f763ebb44fa040fa7be6d53cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentLeftWall: {fileID: 0}
+  currentRightWall: {fileID: 0}
 --- !u!1 &1595070778010574993
 GameObject:
   m_ObjectHideFlags: 0
@@ -210,7 +235,6 @@ Transform:
   - {fileID: 6346922608528192028}
   - {fileID: 1109258664885330200}
   - {fileID: 4391942637148100560}
-  - {fileID: 8193409864386471885}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7567741772578441490
@@ -561,6 +585,7 @@ GameObject:
   - component: {fileID: 8680344821423139051}
   - component: {fileID: 5652501071760087765}
   - component: {fileID: 8848505126678873454}
+  - component: {fileID: 8943260865246160208}
   m_Layer: 0
   m_Name: Denizen
   m_TagString: Untagged
@@ -580,7 +605,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 8193409864386471885}
   m_Father: {fileID: 8862165295465698764}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5652501071760087765
@@ -620,6 +646,19 @@ MonoBehaviour:
     minDailySpawnCount: 0
     maxDailySpawnCount: 11
     randomXRange: 2
+--- !u!114 &8943260865246160208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5848034847329386121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9baaf73b34d21664088426f2f2f8e7b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availableTools: []
 --- !u!1 &6261044732328584789
 GameObject:
   m_ObjectHideFlags: 0
@@ -849,25 +888,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 815f3f5b9b85da44bb16fcc1256d795d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sun: {fileID: 0}
-  moon: {fileID: 0}
   sunRenderer: {fileID: 0}
   moonRenderer: {fileID: 0}
   backgroundRenderer: {fileID: 0}
-  mainCamera: {fileID: 0}
-  radiusX: 25
-  radiusY: 12
-  pivotOffset: 10
-  skyDepth: 20
-  sunSprite: {fileID: 0}
-  moonSprite: {fileID: 0}
-  dayBackgrounds:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  nightBackground: {fileID: 0}
+  backgroundFollowTarget: {fileID: 0}
+  celestialFollowTarget: {fileID: 0}
+  waypoints: []
+  sunRiseHour: 6
+  sunSetHour: 19
+  moonRiseHour: 17.5
+  moonSetHour: 6
+  moonDuskAlpha: 0.3
+  moonFadeInHours: 1
+  colorEarlyMorning: {r: 1, g: 0.72, b: 0.42, a: 1}
+  colorMorning: {r: 0.55, g: 0.78, b: 1, a: 1}
+  colorNoon: {r: 0.75, g: 0.9, b: 1, a: 1}
+  colorAfternoon: {r: 1, g: 0.92, b: 0.7, a: 1}
+  colorDusk: {r: 1, g: 0.42, b: 0.15, a: 1}
+  colorNight: {r: 0.04, g: 0.05, b: 0.18, a: 1}
+  lockToCameraBottom: 1
+  yOffset: 0
 --- !u!1 &8561453029835615655
 GameObject:
   m_ObjectHideFlags: 0

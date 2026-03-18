@@ -530,11 +530,12 @@ Transform:
   m_GameObject: {fileID: 333822720}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -3.9, z: 5}
+  m_LocalPosition: {x: 0, y: 0, z: 5}
   m_LocalScale: {x: 1.6701149, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1512451487}
+  - {fileID: 1558398416}
   m_Father: {fileID: 496004085}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &406521058 stripped
@@ -574,7 +575,7 @@ Transform:
   m_GameObject: {fileID: 420262568}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 15.23, y: 5.61, z: 0}
+  m_LocalPosition: {x: 16.32, y: 3.85, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -658,7 +659,7 @@ Transform:
   m_GameObject: {fileID: 425623701}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -6.4800005, y: 7.53, z: 0}
+  m_LocalPosition: {x: -6.4800005, y: 8.41, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -742,7 +743,7 @@ Transform:
   m_GameObject: {fileID: 430708612}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 19.85, y: 3.14, z: 0}
+  m_LocalPosition: {x: 20.37, y: -0.34, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -882,12 +883,11 @@ Transform:
   m_GameObject: {fileID: 496004083}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -4.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 333822722}
-  - {fileID: 1558398416}
   - {fileID: 1382629256}
   - {fileID: 908943255}
   m_Father: {fileID: 0}
@@ -918,7 +918,7 @@ Transform:
   m_GameObject: {fileID: 575950491}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.9800005, y: 8.62, z: 0}
+  m_LocalPosition: {x: -0.3, y: 9.45, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1259,7 +1259,7 @@ Transform:
   m_GameObject: {fileID: 751094162}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5, y: 8.73, z: 0}
+  m_LocalPosition: {x: 7.08, y: 8.47, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1605,7 +1605,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1382629256}
   - component: {fileID: 1382629258}
-  - component: {fileID: 1382629259}
+  - component: {fileID: 1382629260}
   m_Layer: 0
   m_Name: BackGround_Near
   m_TagString: Untagged
@@ -1622,7 +1622,7 @@ Transform:
   m_GameObject: {fileID: 1382629255}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -3.8, z: 2}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1680,7 +1680,7 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &1382629259
+--- !u!114 &1382629260
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1689,14 +1689,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1382629255}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f35b874ba8d889f418202b518706b6b0, type: 3}
+  m_Script: {fileID: 11500000, guid: 1b9a8a579d9ac0b4b9278c31056e49cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   sprites:
   - {fileID: 21300000, guid: 07b21d95b4cd195479a0587372ac2f07, type: 3}
   sortingLayerName: Background
   orderInLayer: 1
-  parallaxFactor: 0.05
   bufferTiles: 1
   lockToCameraBottom: 1
   yOffset: 0
@@ -1726,7 +1725,7 @@ Transform:
   m_GameObject: {fileID: 1512451486}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.25, z: -2}
+  m_LocalPosition: {x: 0, y: 0, z: -2}
   m_LocalScale: {x: 0.5987612, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1808,15 +1807,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1558398415}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 9.94, z: 4}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 14.300001, z: -1}
+  m_LocalScale: {x: 0.5987612, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1279352580}
   - {fileID: 662127962}
   - {fileID: 321832315}
-  m_Father: {fileID: 496004085}
+  m_Father: {fileID: 333822722}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &1658616174 stripped
 Camera:
@@ -1887,7 +1886,7 @@ Transform:
   m_GameObject: {fileID: 1950080658}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 10.35, y: 7.38, z: 0}
+  m_LocalPosition: {x: 12.58, y: 6.4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2347,6 +2346,18 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 662127962}
     - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: config
+      value: 
+      objectReference: {fileID: 11400000, guid: ee14cde9a8c429e44b1003ad18de0f9f, type: 2}
+    - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: skyRoot
+      value: 
+      objectReference: {fileID: 333822722}
+    - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: starPath
+      value: 
+      objectReference: {fileID: 321832315}
+    - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: mainCamera
       value: 
       objectReference: {fileID: 1658616174}
@@ -2378,6 +2389,14 @@ PrefabInstance:
       propertyPath: moonRenderer
       value: 
       objectReference: {fileID: 662127961}
+    - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: starPathRoot
+      value: 
+      objectReference: {fileID: 321832315}
+    - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: celestialRoot
+      value: 
+      objectReference: {fileID: 1558398416}
     - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: colorMorning.b
       value: 0.9811321

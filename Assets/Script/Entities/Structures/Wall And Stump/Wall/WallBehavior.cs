@@ -532,7 +532,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             status.state = WallState.Stump;
 
             // [TAG] Chuyển tag thành 'Stump' để hệ thống khác (GuardManager v.v.) biết wall này không còn hoạt động
-            gameObject.tag = "Stump";
+            gameObject.tag = Script.Utils.GameTags.Stump;
 
             // [SECURITY] Đảm bảo bắn event lùi quân nếu chưa bắn (trường hợp bị phá hủy quá nhanh)
             int threshold = (WallAndStumpManager.Instance != null) ? WallAndStumpManager.Instance.criticalHPThreshold : 10;
@@ -596,7 +596,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             status.state = WallState.Wall;
 
             // [TAG] Khôi phục tag thành 'Wall' để hệ thống khác nhận biết wall đã chạy lại
-            gameObject.tag = "Wall";
+            gameObject.tag = Script.Utils.GameTags.Wall;
 
             LoadWallComponents(GetCurrentTier(), status.state);
 
@@ -678,9 +678,9 @@ namespace Script.Game.Structures.Wall_And_Stump
 
             // 1. Đảm bảo tag khớp với state hiện tại
             if (status.state == WallState.Stump)
-                gameObject.tag = "Stump";
+                gameObject.tag = Script.Utils.GameTags.Stump;
             else
-                gameObject.tag = "Wall";
+                gameObject.tag = Script.Utils.GameTags.Wall;
 
             // 2. Đồng bộ lại với Manager (Hàm UnregisterEntity sẽ xóa khỏi mọi list cũ, RegisterEntity sẽ thêm vào list mới dựa trên Tag)
             WallAndStumpManager.Instance.UnregisterEntity(gameObject);
@@ -772,6 +772,12 @@ namespace Script.Game.Structures.Wall_And_Stump
         // --- IDamageable Implementation ---
         public void ReceiveDamage(int damage, GameObject instigator)
         {
+            if (!this.enabled || gameObject == null || !gameObject.activeSelf) return;
+
+            // Tier 0 (Stump) không thể bị target hoặc phá hủy bởi enemy
+            if (status.tier == 0 && instigator != null && instigator.CompareTag(Script.Utils.GameTags.Enemy))
+                return;
+
             status.TakeDamage(damage);
         }
         public void Die()

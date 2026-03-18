@@ -900,7 +900,7 @@ namespace Script.Manager
                 
                 foreach (Transform obj in allObjectsInChunks)
                 {
-                    if (obj != null && obj.CompareTag("Tree"))
+                    if (obj != null && obj.CompareTag(Script.Utils.GameTags.Tree))
                     {
                         MoveObjectToContainer(obj.gameObject);
                     }
@@ -997,7 +997,7 @@ namespace Script.Manager
                 
                 foreach (GameObject obj in walls)
                 {
-                    if (obj != null && obj.CompareTag("Wall"))
+                    if (obj != null && obj.CompareTag(Script.Utils.GameTags.Wall))
                     {
                         Vector3 wallPos = obj.transform.position;
                         

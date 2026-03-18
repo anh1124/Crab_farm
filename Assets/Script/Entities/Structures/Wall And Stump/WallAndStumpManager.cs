@@ -81,8 +81,8 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             if (entity == null) return;
 
-            if (entity.CompareTag("Wall")) RegisterWall(entity);
-            else if (entity.CompareTag("Stump")) RegisterStump(entity);
+            if (entity.CompareTag(Script.Utils.GameTags.Wall)) RegisterWall(entity);
+            else if (entity.CompareTag(Script.Utils.GameTags.Stump)) RegisterStump(entity);
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         /// </summary>
         public bool IsWallDefendable(GameObject wall)
         {
-            if (wall == null || !wall.CompareTag("Wall")) return false;
+            if (wall == null || !wall.CompareTag(Script.Utils.GameTags.Wall)) return false;
             var wallStatus = wall.GetComponent<WallStatus>();
             return wallStatus != null && wallStatus.currentHp >= criticalHPThreshold;
         }
