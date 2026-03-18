@@ -15,13 +15,17 @@ namespace Script.Game.Player
     
     //[TODO] thêm script kiểm tra script player đã đủ chưa
     
-    public class PlayerBehavior : MonoBehaviour, IAttacker, ICoinable, ICoinShield, IDeathDrop, IHealth, ISaveable, IDie, IItemHandle, IDamageable
+    public class PlayerBehavior : MonoBehaviour, ISaveable
     {
         [Header("Player Status Data")]
         public PlayerStatus status;
         
         [Header("Animation Reference")]
-        public SpearManAnimationController playerAnim; // Script Animation tự đăng ký vào đây(sau này tạo quy chuẩn riêng cho anim, cứ anim player là đăng ký vào đượkc)
+        public SpearManAnimationController playerAnim; 
+
+        // Components References (Cached for bridge properties)
+        private PlayerCombat _combat;
+        private PlayerInteraction _interaction;
 
         [Serializable]
         public class PlayerStatusData
@@ -62,11 +66,34 @@ namespace Script.Game.Player
                 }
             }
 
+            // Tự động thêm PlayerInteraction nếu chưa có
+            if (GetComponent<PlayerInteraction>() == null)
+            {
+                gameObject.AddComponent<PlayerInteraction>();
+            }
+
+            // Tự động thêm PlayerItemHandler nếu chưa có
+            if (GetComponent<PlayerItemHandler>() == null)
+            {
+                gameObject.AddComponent<PlayerItemHandler>();
+            }
+
+            // Tự động thêm PlayerCombat nếu chưa có
+
+            if (GetComponent<PlayerCombat>() == null)
+            {
+                gameObject.AddComponent<PlayerCombat>();
+            }
+
             // Tự động thêm PlayerUISetup nếu chưa có trên GameObject này
             if (GetComponent<PlayerUISetup>() == null)
             {
                 gameObject.AddComponent<PlayerUISetup>();
             }
+
+            // Cache references for bridge properties
+            _combat = GetComponent<PlayerCombat>();
+            _interaction = GetComponent<PlayerInteraction>();
         }
 
 
@@ -81,9 +108,6 @@ namespace Script.Game.Player
             }
         }
 
-        private float _interactionCheckTimer = 0f;
-        private const float InteractionCheckInterval = 0.1f;
-
         private void Update()
         {
             // Tự động regen mana
@@ -91,13 +115,6 @@ namespace Script.Game.Player
             {
                 status.currentMana += status.manaRegenRate * Time.deltaTime;
                 status.currentMana = Mathf.Min(status.currentMana, status.maxMana);
-            }
-            
-            _interactionCheckTimer += Time.deltaTime;
-            if (_interactionCheckTimer >= InteractionCheckInterval)
-            {
-                _interactionCheckTimer = 0f;
-                ValidateInteraction();
             }
         }
         
@@ -115,34 +132,22 @@ namespace Script.Game.Player
             status.currentMana = Mathf.Max(0f, status.currentMana);
         }
 
-        public float MoveSpeed { get => status.moveSpeed; set => status.moveSpeed = value; }
-        public int AttackDame { get => status.attackDame; set => status.attackDame = value; }
-        public float AttackSpeed { get => status.attackSpeed; set => status.attackSpeed = value; }
-        public int MaxHp { get => status.maxHp; set => status.maxHp = value; }
-
-     
-
-        public void TakeDamage(int amount)
-        {
-            TakeDamage(amount, null);
+        public int Coin 
+        { 
+            get => status.coin; 
+            set => status.coin = value; 
         }
 
-        public void Die()
-        {
-            Die(null);
+        // --- BRIDGE PROPERTIES (For backward compatibility) ---
+        public bool HasHp => _combat != null ? _combat.HasHp : status.currentHp > 0;
+        public Script.Interfaces.IPlayerInteractable currentInteractable => _interaction != null ? _interaction.currentInteractable : null;
+
+        public int MaxCoins 
+        { 
+            get => status.maxCoins; 
+            set => status.maxCoins = value; 
         }
 
-        public void Heal(int amount)
-        {
-            if (IsDead) return;
-            CurrentHp += amount;
-            if (CurrentHp > MaxHp) CurrentHp = MaxHp;
-        }
-
-        public bool IsDead { get; private set; }
-        public int CurrentHp { get => status.currentHp; set => status.currentHp = value; }
-        public int Coin { get => status.coin; set => status.coin = value; }
-        public int MaxCoins { get => status.maxCoins; set => status.maxCoins = value; }
         public void SubtractCoin(int amount)
         {
             if (amount <= 0) return;
@@ -155,119 +160,7 @@ namespace Script.Game.Player
             status.coin += amount;
         }
 
-        // PickUpCoin was removed as HandleItem directly performs this logic now.
 
-        public bool HandleItem(GameObject item)
-        {
-            // 1. Kiểm tra nhanh loại item bằng tag/name trước khi GetComponent để tối ưu
-            if (item.name.ToLower().Contains("coin"))
-            {
-                // Nếu túi đầy thì không nhặt, trả về false ngay lập tức mà không cần GetComponent PhysicalItem
-                if (Coin >= MaxCoins) return false;
-
-                var physicalItem = item.GetComponent<PhysicalItem>();
-                if (physicalItem != null && physicalItem.itemType == ItemType.Coin)
-                {
-                    AddCoin(1);
-                    return true;
-                }
-            }
-            else // Các loại tool khác
-            {
-                var physicalItem = item.GetComponent<PhysicalItem>();
-                if (physicalItem != null)
-                {
-                    // [TODO] Xử lý nhặt Tool ở đây
-                }
-            }
-            
-            return false;
-        }
-
-        // Implement các interface khác nếu cần
-
-        public void Attack()
-        {
-            // Logic tấn công
-        }
-
-        public bool TakeDamage(int damage, GameObject whoDoDame)
-        {
-            if (HasCoinShield && Coin > 0)
-            {
-                Coin -= 1;
-                if (Coin < 0) Coin = 0;
-                DropCoin(whoDoDame);
-                return true;
-            }
-            if (HasHp)
-            {
-                CurrentHp -= damage;
-                if (CurrentHp <= 0)
-                {
-                    Die(whoDoDame);
-                    return false;
-                }
-                return true;
-            }
-            return true;
-        }
-
-        public void Die(GameObject whoDoDame)
-        {
-            if (IsDead) return;
-            IsDead = true;
-            Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
-            gameObject.SetActive(false);
-        }
-
-        public int CurrentCoin { get => status.coin; set => status.coin = value; }
-        public bool HasCoinShield => Coin > 0;
-
-        public bool ConsumeCoinShield()
-        {
-            if (!HasCoinShield) return false;
-            Coin -= 1;
-            if (Coin < 0) Coin = 0;
-            return true;
-        }
-        public bool HasHp => CurrentHp > 0;
-
-        public void DropCoin(GameObject whoDoDame)
-        {
-            // Logic rơi coin khi bị tấn công
-        }
-
-        // --- IDamageable Interface Implementation ---
-        /// <summary>
-        /// Điểm nhận sát thương duy nhất cho Player.
-        /// Bên tấn công chỉ gọi hàm này và không cần biết gì thêm.
-        /// </summary>
-        public void ReceiveDamage(int damage, UnityEngine.GameObject instigator)
-        {
-            if (damage <= 0 || IsDead) return;
-
-            // Ưu tiên dùng Coin đở đòn (giống cơ chế gốc)
-            if (HasCoinShield && Coin > 0)
-            {
-                Coin -= 1;
-                if (Coin < 0) Coin = 0;
-                DropCoin(instigator);
-                return;
-            }
-
-            // Hết Coin thì trừ máu
-            if (HasHp)
-            {
-                CurrentHp -= damage;
-                if (CurrentHp <= 0)
-                {
-                    Die(instigator);
-                }
-            }
-        }
-
-        // ISaveable
         public string GetPrefabID() => "player";
 
         public object CaptureData()
@@ -312,104 +205,7 @@ namespace Script.Game.Player
             }
         }
 
-        public void DropOnDeath()
-        {
-            // [TODO] Implement drop logic (e.g. drop coins, items)
-            // For now, empty to prevent crash
-        }
-        // === INTERACTION LOGIC ===
-        private System.Collections.Generic.List<IPlayerInteractable> interactablesInRange = new System.Collections.Generic.List<IPlayerInteractable>();
-        public IPlayerInteractable currentInteractable;
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            // Tránh va chạm với trigger của chính mình hoặc con cái của mình nếu cần
-            if (other.isTrigger && (other.CompareTag("Player") || other.transform.IsChildOf(transform))) return;
-
-            // Xử lý IPlayerInteractable
-            IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
-            if (interactable != null)
-            {
-                if (!interactablesInRange.Contains(interactable))
-                {
-                    interactablesInRange.Add(interactable);
-                    UpdateCurrentInteractable();
-                }
-            }
-        }
-
-        private void OnTriggerExit2D(Collider2D other)
-        {
-            // Xử lý IPlayerInteractable
-            IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
-            if (interactable != null)
-            {
-                if (interactablesInRange.Contains(interactable))
-                {
-                    interactablesInRange.Remove(interactable);
-                    
-                    // Nếu đang tương tác với đối tượng này thì tắt đi
-                    if (currentInteractable == interactable)
-                    {
-                        interactable.OnPlayerExit(this);
-                        currentInteractable = null;
-                    }
-                    
-                    UpdateCurrentInteractable();
-                }
-            }
-        }
 
 
-        private void UpdateCurrentInteractable()
-        {
-            // Clean up destroyed interactables just in case
-            interactablesInRange.RemoveAll(i => i == null || (i is MonoBehaviour mb && mb == null));
-
-            if (interactablesInRange.Count == 0)
-            {
-                if (currentInteractable != null)
-                {
-                    currentInteractable.OnPlayerExit(this);
-                    currentInteractable = null;
-                }
-                return;
-            }
-
-            // Find the most recent valid interactable
-            IPlayerInteractable candidate = null;
-            for (int i = interactablesInRange.Count - 1; i >= 0; i--)
-            {
-                if (interactablesInRange[i].CanInteract())
-                {
-                    candidate = interactablesInRange[i];
-                    break;
-                }
-            }
-
-            // Switch to the new candidate if it's different
-            if (currentInteractable != candidate)
-            {
-                if (currentInteractable != null)
-                {
-                    currentInteractable.OnPlayerExit(this);
-                }
-
-                currentInteractable = candidate;
-                
-                if (currentInteractable != null)
-                {
-                    currentInteractable.OnPlayerEnter(this);
-                }
-            }
-        }
-        
-        // Validate interactable periodically or in Update
-        private void ValidateInteraction()
-        {
-             // Continuously check if we need to switch or drop the current interactable
-             // without permanently removing it from the physically-in-range list.
-             UpdateCurrentInteractable();
-        }
     }
 }
