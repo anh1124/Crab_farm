@@ -32,12 +32,12 @@ namespace Script.GUI_Controller
         public void SetupResourceBars(Script.Data_Model.Status.PlayerStatus status)
         {
             if (healBarUI != null)
-                healBarUI.Setup(status);
+                healBarUI.Setup(status.HP);
             else
                 Debug.LogError("[GuiCanvasManager] healBarUI chưa được gán trong Inspector!");
 
             if (manaBarUI != null)
-                manaBarUI.Setup(status);
+                manaBarUI.Setup(status.Mana);
             else
                 Debug.LogError("[GuiCanvasManager] manaBarUI chưa được gán trong Inspector!");
         }

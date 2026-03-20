@@ -25,20 +25,18 @@ namespace Script.Game.Player
 
         private void HandleManaRegen()
         {
-            if (status.currentMana < status.maxMana && status.manaRegenRate > 0)
+            if (status.manaRegenRate > 0 && status.Mana.Current < status.Mana.Max)
             {
-                status.currentMana += status.manaRegenRate * Time.deltaTime;
-                status.currentMana = Mathf.Min(status.currentMana, status.maxMana);
+                status.Mana.Add(status.manaRegenRate * Time.deltaTime);
             }
         }
 
         private void HandleHpRegen()
         {
             // Chỉ hồi máu nếu còn sống và chưa đầy máu
-            if (status.currentHp > 0 && status.currentHp < status.maxHp && status.hpRegenRate > 0)
+            if (status.HP.Current > 0 && status.HP.Current < status.HP.Max && status.hpRegenRate > 0)
             {
-                status.currentHp += status.hpRegenRate * Time.deltaTime;
-                status.currentHp = Mathf.Min(status.currentHp, status.maxHp);
+                status.HP.Add(status.hpRegenRate * Time.deltaTime);
             }
         }
     }

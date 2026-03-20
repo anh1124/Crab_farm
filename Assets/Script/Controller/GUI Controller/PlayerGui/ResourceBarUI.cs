@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using Script.Data_Model.Status;
@@ -10,8 +11,6 @@ namespace Script.GUI_Controller
     public class ResourceBarUI : MonoBehaviour
     {
         [Header("Resource Settings")]
-        [Tooltip("Loại resource mà thanh này đại diện")]
-        public ResourceType resourceType = ResourceType.HP;
 
         [Header("Components")]
         [Tooltip("LayoutElement của object Mid bên trong Container")]
@@ -27,8 +26,7 @@ namespace Script.GUI_Controller
         [Tooltip("GameObject chứa Image fill (dùng để đổi màu). Kéo thả fill GameObject vào đây.")]
         public GameObject fillGameObject;
 
-        [Tooltip("Kéo thả Script PlayerStatus vào đây, hoặc hệ thống sẽ tự gọi Setup()")]
-        public PlayerStatus playerStatus;
+
 
         [Header("Scale Settings")]
         [Tooltip("Nếu true: thanh sẽ co giãn theo MaxResource (như cũ). Nếu false: luôn cố định baseMidWidth.")]
@@ -48,42 +46,34 @@ namespace Script.GUI_Controller
         [Tooltip("Chiều cao của Mid. Điền đúng Height của GameObject Mid trong Prefab.")]
         public float baseMidHeight = 20f;
 
-        private float maxMidWidth;
-        private ResourceType _subscribedType;
+        [Header("Shake Settings")]
+        [Tooltip("Biên độ rung theo trục Y (pixel)")]
+        public float shakeAmount = 0.8f;
 
-        public enum ResourceType { HP, Mana }
+        private float maxMidWidth;
+        private ResourceStat _resource;
+        private bool _isShaking;
 
         // ─── Setup ───────────────────────────────────────────────────────────────
 
-        private void Start()
-        {
-            if (playerStatus == null)
-                gameObject.SetActive(false);
-        }
-
         /// <summary>
         /// Gọi bởi PlayerBehavior/PlayerUISetup khi Player được tạo.
-        /// Đăng ký lắng nghe event HP/Mana và cập nhật UI lần đầu.
+        /// Đăng ký lắng nghe event và cập nhật UI lần đầu.
         /// </summary>
-        public void Setup(PlayerStatus newStatus)
+        public void Setup(ResourceStat resource)
         {
-            // Hủy đăng ký event CŨ — dùng _subscribedType để an toàn
-            if (playerStatus != null)
+            // Hủy đăng ký event CŨ
+            if (_resource != null)
             {
-                if (_subscribedType == ResourceType.HP)
-                    playerStatus.OnHPChanged -= OnResourceChanged;
-                else
-                    playerStatus.OnManaChanged -= OnResourceChanged;
+                _resource.OnChanged   -= OnResourceChanged;
+                _resource.OnUITrigger -= NotifyUITrigger;
             }
 
-            playerStatus = newStatus;
-            _subscribedType = resourceType; // chốt lại loại sẽ dùng
-
+            _resource = resource;
+            
             // Đăng ký event mới
-            if (resourceType == ResourceType.HP)
-                playerStatus.OnHPChanged += OnResourceChanged;
-            else
-                playerStatus.OnManaChanged += OnResourceChanged;
+            _resource.OnChanged   += OnResourceChanged;
+            _resource.OnUITrigger += NotifyUITrigger;
 
             // Áp màu fill
             if (fill != null)
@@ -97,12 +87,43 @@ namespace Script.GUI_Controller
 
         private void OnDestroy()
         {
-            if (playerStatus == null) return;
+            if (_resource == null) return;
+            
+            _resource.OnChanged   -= OnResourceChanged;
+            _resource.OnUITrigger -= NotifyUITrigger;
+        }
 
-            if (_subscribedType == ResourceType.HP)
-                playerStatus.OnHPChanged -= OnResourceChanged;
-            else
-                playerStatus.OnManaChanged -= OnResourceChanged;
+        /// <summary>
+        /// Gọi khi OnUITrigger bắn — shake nhẹ thanh bar theo trục Y.
+        /// </summary>
+        public void NotifyUITrigger()
+        {
+            if (!_isShaking)
+                StartCoroutine(ShakeRoutine());
+        }
+
+        [ContextMenu("Test Shaking")]
+        public void TestShaking()
+        {
+            NotifyUITrigger();
+        }
+
+        private IEnumerator ShakeRoutine()
+        {
+            _isShaking = true;
+            RectTransform rt = GetComponent<RectTransform>();
+            Vector2 origin = rt.anchoredPosition;
+
+            // 3 chu kỳ rung: lên → xuống → về gốc
+            float[] offsets = { shakeAmount, -shakeAmount, shakeAmount * 0.5f, -shakeAmount * 0.5f, 0f };
+            foreach (float offset in offsets)
+            {
+                rt.anchoredPosition = origin + Vector2.up * offset;
+                yield return new WaitForSecondsRealtime(0.04f);
+            }
+
+            rt.anchoredPosition = origin;
+            _isShaking = false;
         }
 
         // ─── Init ─────────────────────────────────────────────────────────────────
@@ -113,10 +134,10 @@ namespace Script.GUI_Controller
             InitWidths();
             
             // Cập nhật lần đầu với giá trị hiện tại
-            if (_subscribedType == ResourceType.HP)
-                OnResourceChanged(playerStatus.currentHp, playerStatus.maxHp);
-            else if (_subscribedType == ResourceType.Mana)
-                OnResourceChanged(playerStatus.currentMana, playerStatus.maxMana);
+            if (_resource != null)
+            {
+                OnResourceChanged(_resource.Current, _resource.Max);
+            }
         }
 
         private void InitWidths()

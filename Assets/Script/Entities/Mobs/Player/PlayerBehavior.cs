@@ -109,13 +109,11 @@ namespace Script.Game.Player
         /// </summary>
         public void ApplyConfig(PlayerConfig config)
         {
-            status.maxHp        = config.maxHp;
-            status.currentHp    = config.maxHp;      // Bắt đầu full HP
+            status.HP.SetMax(config.maxHp, refillCurrent: true);
             status.moveSpeed    = config.moveSpeed;
             status.hpRegenRate  = config.hpRegenRate; // New: HP regen
             status.maxCoins     = config.maxCoins;
-            status.maxMana      = config.maxMana;
-            status.currentMana  = config.maxMana;    // Bắt đầu full Mana
+            status.Mana.SetMax(config.maxMana, refillCurrent: true);
             status.manaRegenRate = config.manaRegenRate;
         }
 
@@ -145,11 +143,11 @@ namespace Script.Game.Player
             switch (type)
             {
                 case ResourceType.Mana:
-                    return status.currentMana >= amount;
+                    return status.Mana.Current >= amount;
                 case ResourceType.Coin:
                     return status.coin >= amount;
                 case ResourceType.Health:
-                    return status.currentHp >= amount; // Tránh dùng HP làm cost nếu chết
+                    return status.HP.Current >= amount; // Tránh dùng HP làm cost nếu chết
                 default:
                     return false;
             }
@@ -160,13 +158,18 @@ namespace Script.Game.Player
             switch (type)
             {
                 case ResourceType.Mana:
-                    status.currentMana = Mathf.Max(0f, status.currentMana - amount);
+                    status.Mana.Reduce(amount);
                     break;
                 case ResourceType.Coin:
                     SubtractCoin(Mathf.RoundToInt(amount));
                     break;
                 case ResourceType.Health:
-                    status.currentHp = Mathf.Max(0.1f, status.currentHp - amount); // Để lại 0.1 máu nếu dùng máu cast skill
+                    float reduceAmount = amount;
+                    if (status.HP.Current - amount < 0.1f)
+                    {
+                        reduceAmount = status.HP.Current - 0.1f;
+                    }
+                    if (reduceAmount > 0) status.HP.Reduce(reduceAmount);
                     break;
             }
         }
@@ -184,7 +187,7 @@ namespace Script.Game.Player
         }
 
         // --- BRIDGE PROPERTIES (For backward compatibility) ---
-        public bool HasHp => _combat != null ? _combat.HasHp : status.currentHp > 0;
+        public bool HasHp => _combat != null ? _combat.HasHp : status.HP.Current > 0;
         public Script.Interfaces.IPlayerInteractable currentInteractable => _interaction != null ? _interaction.currentInteractable : null;
 
         public int MaxCoins 
@@ -214,8 +217,8 @@ namespace Script.Game.Player
             
             return new PlayerStatusData
             {
-                maxHp = status.maxHp,
-                currentHp = status.currentHp,
+                maxHp = status.HP.Max,
+                currentHp = status.HP.Current,
                 coin = status.coin,
                 moveSpeed = status.moveSpeed,
                 positionX = transform.position.x,
@@ -223,7 +226,7 @@ namespace Script.Game.Player
                 isGround = status.isGround,
                 
                 // Save current resources directly from status
-                currentMana = status.currentMana
+                currentMana = status.Mana.Current
             };
         }
 
@@ -235,15 +238,22 @@ namespace Script.Game.Player
             // Đánh dấu đã load từ save — Awake sẽ bỏ qua ApplyConfig
             _dataRestoredFromSave = true;
 
-            status.maxHp        = loaded.maxHp;
-            status.currentHp    = loaded.currentHp;
+            status.HP.SetMax(loaded.maxHp, true);
+            if (loaded.currentHp < loaded.maxHp)
+                status.HP.Reduce(loaded.maxHp - loaded.currentHp);
+
             status.coin         = loaded.coin;
             status.moveSpeed    = loaded.moveSpeed;
             status.isGround     = loaded.isGround;
             transform.position  = new Vector3(loaded.positionX, loaded.positionY, 0);
-            status.currentMana  = loaded.currentMana;
+            
+            // Mana chỉ lưu currentMana trong save, maxMana dùng từ config mặc định
+            float maxMana = defaultConfig != null ? defaultConfig.maxMana : 50f;
+            status.Mana.SetMax(maxMana, true);
+            if (loaded.currentMana < maxMana)
+                status.Mana.Reduce(maxMana - loaded.currentMana);
 
-            Debug.Log($"[PlayerBehavior] Restored save data. HP={status.currentHp}/{status.maxHp}, Mana={status.currentMana}/{status.maxMana}");
+            Debug.Log($"[PlayerBehavior] Restored save data. HP={status.HP.Current}/{status.HP.Max}, Mana={status.Mana.Current}/{status.Mana.Max}");
         }
 
 

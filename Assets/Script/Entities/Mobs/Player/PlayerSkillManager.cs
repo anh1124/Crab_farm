@@ -82,7 +82,16 @@ namespace Script.Game.PlayerCharacter
         protected override bool CanAfford(SkillBase skill, GameObject instigator)
         {
             if (playerBehavior == null) return true;
-            return playerBehavior.CanAfford(skill.resourceType, skill.resourceCost);
+            bool canAfford = playerBehavior.CanAfford(skill.resourceType, skill.resourceCost);
+            if (!canAfford)
+            {
+                // Trigger UI effect (shake, flash) trực tiếp qua ResourceStat
+                if (skill.resourceType == ResourceType.Mana)
+                    playerBehavior.status.Mana.TriggerUI();
+                else if (skill.resourceType == ResourceType.Health)
+                    playerBehavior.status.HP.TriggerUI();
+            }
+            return canAfford;
         }
 
         protected override void OnBeforeExecute(int index, GameObject instigator)

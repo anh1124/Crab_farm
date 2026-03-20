@@ -26,14 +26,19 @@ namespace Script.Game.Player
 
         public float CurrentHp 
         { 
-            get => status.currentHp; 
-            set => status.currentHp = value; 
+            get => status.HP.Current; 
+            set 
+            {
+                float diff = value - status.HP.Current;
+                if (diff > 0) status.HP.Add(diff);
+                else if (diff < 0) status.HP.Reduce(-diff);
+            }
         }
 
         public float MaxHp 
         { 
-            get => status.maxHp; 
-            set => status.maxHp = value; 
+            get => status.HP.Max; 
+            set => status.HP.SetMax(value); 
         }
 
         public bool IsDead { get; private set; }
@@ -52,8 +57,7 @@ namespace Script.Game.Player
         public void Heal(float amount)
         {
             if (IsDead) return;
-            status.currentHp += amount;
-            if (status.currentHp > status.maxHp) status.currentHp = status.maxHp;
+            status.HP.Add(amount);
         }
 
         public void Die()
@@ -77,8 +81,8 @@ namespace Script.Game.Player
             // Hết Coin thì trừ máu
             if (HasHp)
             {
-                status.currentHp -= damage;
-                if (status.currentHp <= 0)
+                status.HP.Reduce(damage);
+                if (status.HP.Current <= 0)
                 {
                     Die(instigator);
                 }
