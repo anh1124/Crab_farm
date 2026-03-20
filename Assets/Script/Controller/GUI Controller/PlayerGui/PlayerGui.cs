@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Script.Controller;
 using Script.Game.Mobs.MobsManager;
 using Script.Game.Player;
-
-// For PlayerController.Instance
 
 namespace Script.Controller.GUI_Controller.PlayerGui
 {
@@ -53,9 +52,18 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         private void Start()
         {
             // Add event triggers for move buttons
-            AddEventTriggers(moveLeft, PlayerController.PlayerController.Instance.MoveLeftDown, PlayerController.PlayerController.Instance.MoveLeftUp);
-            AddEventTriggers(moveRight, PlayerController.PlayerController.Instance.MoveRightDown, PlayerController.PlayerController.Instance.MoveRightUp);
-            AddEventTriggers(useCoin, PlayerController.PlayerController.Instance.UseCoinDownAction, PlayerController.PlayerController.Instance.UseCoinUpAction);
+            // Redirect mobile UI buttons → InputManager (unified input state)
+            AddEventTriggers(moveLeft,
+                () => InputManager.Instance.SetMoveLeft(true),
+                () => InputManager.Instance.SetMoveLeft(false));
+
+            AddEventTriggers(moveRight,
+                () => InputManager.Instance.SetMoveRight(true),
+                () => InputManager.Instance.SetMoveRight(false));
+
+            AddEventTriggers(useCoin,
+                () => PlayerController.PlayerController.Instance.UseCoinDownAction(),
+                () => PlayerController.PlayerController.Instance.UseCoinUpAction());
             
             // Add listeners for skill buttons
             if(skill1 != null) skill1.onClick.AddListener(OnSkill1Pressed);

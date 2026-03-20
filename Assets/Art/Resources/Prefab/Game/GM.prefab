@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4930023356812252655}
   - component: {fileID: 3345430047266833447}
   - component: {fileID: 6112153921068883486}
+  - component: {fileID: 5919832901600328901}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -86,6 +87,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tickInterval: 0.2
   showDebugLog: 0
+--- !u!114 &5919832901600328901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 829c4862dfb53a345bb9794d15929438, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  keyMap: {fileID: 0}
 --- !u!1 &781692592766937310
 GameObject:
   m_ObjectHideFlags: 0
@@ -429,9 +443,6 @@ MonoBehaviour:
   player: {fileID: 0}
   mainCamera: {fileID: 0}
   skipBuildingProcess: 1
-  toolTag:
-  - Hammer
-  - Bow
   hammer: {fileID: 0}
   bow: {fileID: 0}
   playerCharacterList: []
@@ -888,26 +899,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 815f3f5b9b85da44bb16fcc1256d795d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  skyRoot: {fileID: 0}
   sunRenderer: {fileID: 0}
   moonRenderer: {fileID: 0}
   backgroundRenderer: {fileID: 0}
-  backgroundFollowTarget: {fileID: 0}
-  celestialFollowTarget: {fileID: 0}
   waypoints: []
-  sunRiseHour: 6
-  sunSetHour: 19
-  moonRiseHour: 17.5
-  moonSetHour: 6
-  moonDuskAlpha: 0.3
-  moonFadeInHours: 1
-  colorEarlyMorning: {r: 1, g: 0.72, b: 0.42, a: 1}
-  colorMorning: {r: 0.55, g: 0.78, b: 1, a: 1}
-  colorNoon: {r: 0.75, g: 0.9, b: 1, a: 1}
-  colorAfternoon: {r: 1, g: 0.92, b: 0.7, a: 1}
-  colorDusk: {r: 1, g: 0.42, b: 0.15, a: 1}
-  colorNight: {r: 0.04, g: 0.05, b: 0.18, a: 1}
-  lockToCameraBottom: 1
-  yOffset: 0
+  config: {fileID: 0}
 --- !u!1 &8561453029835615655
 GameObject:
   m_ObjectHideFlags: 0

@@ -424,14 +424,13 @@ namespace Script.Save_Controller
                 return false;
             }
 
-            // Load Tech status and Game Time
-            LoadFromSave.Instance.LoadTechAndTimeFromSave();
-
-            // Load Entities (Walls, Mobs, etc.)
-            LoadFromSave.Instance.LoadEntitiesFromSave();
+            // NOTE: Tech/Time và Entities KHÔNG load ở đây.
+            // Chúng được load bởi StartGameScrene Phase 4 (LoadTechAndTimeFromSave + LoadEntitiesFromSave)
+            // để tránh load 2 lần.
 
             return true;
         }
+
 
         /// <summary>
         /// Hủy bỏ việc load game và quay về menu

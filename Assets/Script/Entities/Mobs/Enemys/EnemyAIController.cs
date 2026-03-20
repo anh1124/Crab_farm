@@ -166,6 +166,12 @@ namespace Script.Game.Enemy
         {
             if (!_ctx.IsAlive) return;
 
+            // Đồng bộ dữ liệu Greed từ EnemyStatus vào Context để State có thể nhận biết
+            if (_ctx.Status != null)
+            {
+                _ctx.CurrentGreed = _ctx.Status.Coin;
+            }
+
             // [SCAN] Chủ động quét tia để cập nhật danh sách vật cản (do Helper đã gỡ Update loop)
             _ctx.RaycastHelper?.DrawRay();
 
@@ -226,8 +232,22 @@ namespace Script.Game.Enemy
             _ctx.CurrentGreed   = 0;
             _ctx.CurrentTarget  = null;
             _ctx.HomePortal     = homePortal;
+            _ctx.PendingRecycle = false;
 
-            // Xem trong EnemyStatus component, currentHp sẽ được gán lại thông qua Setup
+            // Reset Animation Triggers để tránh quái vừa spawn đã tung đòn của kiếp trước
+            if (_ctx.Animator != null && _animatorTriggers != null)
+            {
+                foreach (var t in _animatorTriggers)
+                {
+                    _ctx.Animator.ResetTrigger(t);
+                }
+            }
+
+            // Sync lại GreedThreshold từ Status nếu có (hoặc set default)
+            if (_ctx.Status != null)
+            {
+                _ctx.GreedThreshold = _ctx.Status.MaxCoins;
+            }
 
             ChangeState(_idleState);
         }

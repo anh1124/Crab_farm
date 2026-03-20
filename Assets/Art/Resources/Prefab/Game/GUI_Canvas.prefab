@@ -1722,8 +1722,6 @@ RectTransform:
   - {fileID: 4636417538775546564}
   - {fileID: 6627063470896653433}
   - {fileID: 3450791545775804093}
-  - {fileID: 3334427996636634505}
-  - {fileID: 7003133388303415335}
   m_Father: {fileID: 4309521159699465118}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2130,11 +2128,11 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7259693077718394976}
+  m_Father: {fileID: 3450791545775804093}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 51.899902, y: 42.900024}
+  m_AnchoredPosition: {x: -496.39508, y: 42.900024}
   m_SizeDelta: {x: 67.21008, y: 49.940002}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &223042873821306073
@@ -2410,6 +2408,7 @@ GameObject:
   - component: {fileID: 4309521159699465118}
   - component: {fileID: 3350953638252891419}
   - component: {fileID: 4192515762952297591}
+  - component: {fileID: 5640346275933392946}
   m_Layer: 5
   m_Name: PlayerHUD
   m_TagString: Untagged
@@ -2466,6 +2465,20 @@ MonoBehaviour:
   itemSlot1: {fileID: 1917515272502157070}
   itemSlot2: {fileID: 8660254743546107535}
   useCoin: {fileID: 2483452685182158005}
+--- !u!114 &5640346275933392946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5652713210459866108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8f85a604b33aae45a57420d364cba8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mobileMovementControls: {fileID: 7224912496212679715}
+  coinButtonObject: {fileID: 8340203582910113832}
 --- !u!1 &5739276131014368763
 GameObject:
   m_ObjectHideFlags: 0
@@ -3319,11 +3332,11 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7259693077718394976}
+  m_Father: {fileID: 3450791545775804093}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 128.69995, y: 42.900024}
+  m_AnchoredPosition: {x: -419.59503, y: 42.900024}
   m_SizeDelta: {x: 67.21008, y: 49.940002}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2588455220018385626
@@ -3435,7 +3448,9 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 3334427996636634505}
+  - {fileID: 7003133388303415335}
   m_Father: {fileID: 7259693077718394976}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
@@ -3950,6 +3965,7 @@ MonoBehaviour:
   coinText: {fileID: 0}
   coinSlots: []
   playerStatus: {fileID: 0}
+  maxCoins: 50
 --- !u!1 &8763525772299779092
 GameObject:
   m_ObjectHideFlags: 0

@@ -226,10 +226,13 @@ namespace Script.Game.Mobs.Subjects
             if (newRole == CurrentRole) return;
 
             // Xử lý unregister role cũ
-            // The original instruction's "Code Edit" snippet was syntactically incorrect.
-            // Reverting to the original correct code for this section.
             // Debug.Log($"[DenizenRoleController] ChangeRole called: {CurrentRole} -> {newRole}");
             NPCRole oldRole = CurrentRole; // Save old role BEFORE changing
+
+            if (oldRole == NPCRole.Archer && newRole == NPCRole.Villager)
+            {
+                Debug.LogWarning($"[CRITICAL BUG TRACE] Archer {gameObject.name} đang bị chuyển nghề thành Villager!\nStackTrace:\n{System.Environment.StackTrace}");
+            }
 
             try
             {
@@ -256,6 +259,7 @@ namespace Script.Game.Mobs.Subjects
             // Ensure previousRole is kept in sync for Inspector changes
             previousRole = newRole;
         }
+
 
         private void ApplyRole(NPCRole role)
         {

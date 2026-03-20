@@ -109,15 +109,8 @@ namespace Script.Manager.WorldManager
             float targetY = transform.position.y;
             if (lockToCameraBottom)
             {
-                if (followTarget != null)
-                {
-                    targetY = targetTransform.position.y + yOffset;
-                }
-                else
-                {
-                    // Toạ độ Y của đáy Camera = Camera.Y - OrthographicSize
-                    targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
-                }
+                // ✅ Luôn dùng camera bottom, không phụ thuộc followTarget để tránh núi bị nhảy theo Y của Player khi nhảy
+                targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
             }
             
             transform.position = new Vector3(targetX, targetY, transform.position.z);
@@ -188,7 +181,13 @@ namespace Script.Manager.WorldManager
         {
             if (sprites.Count <= 1) return;
             var sr = tile.GetComponent<SpriteRenderer>();
-            if (sr != null) sr.sprite = sprites[Random.Range(0, sprites.Count)];
+
+            // ✅ Dùng index cố định để tránh sprite bị nhảy ngẫu nhiên khi recycle
+            int tileIndex = _tiles.IndexOf(tile);
+            if (sr != null && tileIndex != -1)
+            {
+                sr.sprite = sprites[tileIndex % sprites.Count];
+            }
         }
     }
 }

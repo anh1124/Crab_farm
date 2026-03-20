@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   colorNoMana: {r: 0.2, g: 0.4, b: 1, a: 0.6}
   colorNoCoin: {r: 1, g: 0.8, b: 0, a: 0.6}
-  colorNoHealth: {r: 1, g: 0.2, b: 0.2, a: 0.6}
+  colorNoHealth: {r: 1, g: 0.38169327, b: 0.19999999, a: 0.7294118}
   colorExecuting: {r: 0.2, g: 0.2, b: 0.2, a: 0.5}
   textMana: {r: 0, g: 1, b: 1, a: 1}
   textCoin: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

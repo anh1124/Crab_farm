@@ -686,6 +686,13 @@ namespace Script.Manager
                         continue;
                     }
                     
+                    // Bỏ qua các object inactive — chúng là pool objects (VD: CoinPool preload).
+                    // Coin đang nằm trong pool luôn inactive; chỉ save coin active (đang có trong thế giới).
+                    if (!child.gameObject.activeSelf)
+                    {
+                        continue;
+                    }
+                    
                     var saveable = child.GetComponent<ISaveable>();
                     if (saveable != null)
                     {
@@ -703,6 +710,7 @@ namespace Script.Manager
                         }
                     }
                 }
+
 
                 if (isDebug) Debug.Log($"Saving {container.name} with {savedObjects.Count} objects");
 

@@ -1,8 +1,10 @@
 using Script.Game.Player;
 using UnityEngine;
+using Script.Controller;
 using Script.Game.PlayerCharacter;
 using Script.Game.Item.Coin;
 using Script.Game.PlayerCharacter.Skills;
+
 
 namespace Script.Controller.PlayerController
 {
@@ -93,9 +95,20 @@ namespace Script.Controller.PlayerController
 
         private void FixedUpdate()
         {
+            // Đọc movement từ InputManager (tổng hợp keyboard + mobile).
+            // Luôn reset direction về 0 khi không có input từ bất kỳ nguồn nào.
+            if (InputManager.Instance != null)
+            {
+                if (InputManager.Instance.MoveLeft)       direction = -1;
+                else if (InputManager.Instance.MoveRight) direction =  1;
+                else                                       direction =  0;
+            }
+
             Movement(direction);
             UseCoinAction();
         }
+
+
 
         public void Movement(int direction)
         {

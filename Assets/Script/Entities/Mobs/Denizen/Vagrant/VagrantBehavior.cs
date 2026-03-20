@@ -262,14 +262,16 @@ namespace Script.Game.Mobs.Subjects
         
         private void HandleGetCoinState()
         {
-            if (status.coinTarget == null || status.coinTarget.Equals(null))
+            // Kiểm tra coin có hợp lệ không (null, bị destroy, hoặc bị đưa vào pool -> inactive)
+            if (status.coinTarget == null || status.coinTarget.Equals(null) || !status.coinTarget.activeInHierarchy)
             {
                 if (status.vagrantState == DenizenStatus.VagrantState.GetCoin)
                 {
-                    Debug.Log($"[Vagrant:{gameObject.name}] Mất dấu COIN hoặc Coin đã bị nhặt. Quay lại Idle.");
+                    Debug.Log($"[Vagrant:{gameObject.name}] Mất dấu COIN hoặc Coin đã bị nhặt (inactive). Quay lại Idle.");
                     status.vagrantState = DenizenStatus.VagrantState.Idle;
                     _isMovingToTarget = false;
                     status.isWalking = false;
+                    status.coinTarget = null; // Reset luôn target cho an toàn
                 }
                 return;
             }

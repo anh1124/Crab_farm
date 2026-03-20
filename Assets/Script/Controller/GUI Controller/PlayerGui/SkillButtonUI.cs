@@ -29,6 +29,12 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         [Header("Theme")]
         [SerializeField] private SkillButtonTheme theme;
 
+        [Header("Key Hint (WebGL/PC only)")]
+        [Tooltip("GameObject cha chứa cả text và ảnh nền. SetActive theo platform.")]
+        [SerializeField] private GameObject keyHintContainer; // Parent object (chứa text + bg image)
+        [Tooltip("TMP_Text hiển thị tên phím. Nằm bên trong keyHintContainer.")]
+        [SerializeField] private TMP_Text keyHintText;        // Text label "Q", "E", "R"…
+
         // ── Runtime ────────────────────────────────────────────────────────
         private Script.Game.PlayerCharacter.Skills.SkillManager _skillManager;
         private PlayerBehavior _playerBehavior;
@@ -50,6 +56,7 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             }
 
             RefreshStaticUI();
+            SetupKeyHint();
         }
 
         // ── Update ─────────────────────────────────────────────────────────
@@ -90,6 +97,9 @@ namespace Script.Controller.GUI_Controller.PlayerGui
                     ApplyState_Ready(skill);
                     break;
             }
+
+            // Runtime: hiện key hint khi có keyboard input (bất kể platform)
+            UpdateKeyHintVisibility();
         }
 
         // ── States ─────────────────────────────────────────────────────────
@@ -191,6 +201,59 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         {
             var instigator = _playerBehavior?.gameObject;
             _skillManager?.ExecuteSkill(_slotIndex, instigator);
+        }
+
+        // ── Key Hint ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Ghi label phím vào text (gọi 1 lần trong Init).
+        /// Visibility được cập nhật mỗi frame bởi UpdateKeyHintVisibility().
+        /// </summary>
+        private void SetupKeyHint()
+        {
+            if (keyHintText == null) return;
+
+            var km = Script.Controller.InputManager.Instance?.KeyMap;
+            if (km == null) return;
+
+            KeyCode key = _slotIndex switch
+            {
+                0 => km.skill1,
+                1 => km.skill2,
+                2 => km.skill3,
+                _ => KeyCode.None
+            };
+            keyHintText.text = key != KeyCode.None ? KeyCodeToLabel(key) : "";
+
+            // Ẩn container ngay lúc đầu, UpdateKeyHintVisibility() sẽ bật khi cần
+            var toggleTarget = keyHintContainer != null ? keyHintContainer : keyHintText.gameObject;
+            toggleTarget.SetActive(false);
+        }
+
+        /// <summary>
+        /// Gọi mỗi frame trong Update().
+        /// Hiện key hint khi InputManager phát hiện có keyboard được dùng (runtime, mọi platform).
+        /// </summary>
+        private void UpdateKeyHintVisibility()
+        {
+            var toggleTarget = keyHintContainer != null ? keyHintContainer : keyHintText?.gameObject;
+            if (toggleTarget == null) return;
+
+            bool shouldShow = Script.Controller.InputManager.Instance?.AnyKeyUsed ?? false;
+            if (toggleTarget.activeSelf != shouldShow)
+                toggleTarget.SetActive(shouldShow);
+        }
+
+        /// <summary>
+        /// Convert KeyCode sang label ngắn để hiển thị trên UI.
+        /// VD: KeyCode.Q → "Q", KeyCode.Alpha1 → "1"
+        /// </summary>
+        private string KeyCodeToLabel(KeyCode key)
+        {
+            string name = key.ToString();
+            // Bỏ prefix "Alpha" cho số (Alpha1 → "1")
+            if (name.StartsWith("Alpha")) return name.Substring(5);
+            return name;
         }
     }
 }
