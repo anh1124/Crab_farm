@@ -30,19 +30,8 @@ namespace Script.Game.Player
                 return;
             }
 
-            SetupHealBarUI(canvasManager);
+            canvasManager.SetupResourceBars(status);
             SetupCoinUI(canvasManager);
-        }
-
-        private void SetupHealBarUI(GuiCanvasManager canvasManager)
-        {
-            if (canvasManager.healBarUI == null)
-            {
-                Debug.LogWarning("[PlayerUISetup] HealBarUI chưa được gán vào GuiCanvasManager!");
-                return;
-            }
-
-            canvasManager.healBarUI.Setup(status);
         }
 
         private void SetupCoinUI(GuiCanvasManager canvasManager)

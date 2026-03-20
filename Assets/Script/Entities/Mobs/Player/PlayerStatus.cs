@@ -47,6 +47,9 @@ namespace Script.Data_Model.Status
         public int maxCoins;
         public float moveSpeed;
         public float hpRegenRate;
+        
+        // TODO: Chuyển isGround, positionX, positionY về PlayerMovement.
+        // Các field này là physics state, không phải player resource.
         public float positionX;
         public float positionY;
         public bool isGround;
@@ -64,9 +67,33 @@ namespace Script.Data_Model.Status
             }
         }
         
+        public event Action<float, float> OnManaChanged;
+
         [Header("Resources")]
-        public float currentMana;
-        public float maxMana;
+        private float _currentMana;
+        public float currentMana
+        {
+            get => _currentMana;
+            set
+            {
+                if (Mathf.Approximately(_currentMana, value)) return;
+                _currentMana = value;
+                OnManaChanged?.Invoke(_currentMana, _maxMana);
+            }
+        }
+
+        private float _maxMana;
+        public float maxMana
+        {
+            get => _maxMana;
+            set
+            {
+                if (Mathf.Approximately(_maxMana, value)) return;
+                _maxMana = value;
+                OnManaChanged?.Invoke(_currentMana, _maxMana);
+            }
+        }
+        
         public float manaRegenRate;
 
         // Không có Awake() — PlayerBehavior.ApplyConfig() là nơi khởi tạo duy nhất
