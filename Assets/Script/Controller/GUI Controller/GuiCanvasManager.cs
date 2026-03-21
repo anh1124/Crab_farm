@@ -65,6 +65,7 @@ namespace Script.GUI_Controller
         {
             Time.timeScale = 1; // Bỏ pause game
             pauseMenu.SetActive(false);
+            
     
             // Kích hoạt lại UI elements
             playerHud.gameObject.SetActive(true);

@@ -240,5 +240,15 @@ public class GameTimeManager : MonoBehaviour
         SetGameTime(nightMinutes);
         Debug.Log("Time set to Night (19:00)");
     }
+    [ContextMenu("Set Time To 7h50 ")]
+    public void SetTimeTo7h50()
+    {
+        // Set time to 7:50 of the CURRENT day
+        int currentDayStartMinutes = (GameYear - 1) * 172800 + (GameMonth - 1) * 43200 + (GameDay - 1) * 1440;
+        int nightMinutes = currentDayStartMinutes + (7 * 60 + 50); // 7:50 AM
+        
+        SetGameTime(nightMinutes);
+        Debug.Log("Time set to 7:50");
+    }
 }
 }

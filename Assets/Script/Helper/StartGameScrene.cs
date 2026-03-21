@@ -89,7 +89,7 @@ namespace Script.Game.Other
             }
             else
             {
-                pauseMenuPanel.SetActive(true);
+                pauseMenuPanel.SetActive(false); // SỬA LẠI THÀNH FALSE Ở ĐÂY LÀ HẾT LỖI
             }
         }
 

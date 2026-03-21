@@ -643,6 +643,10 @@ public class ChunkManager : MonoBehaviour
             // Khởi tạo Random với seed đã lưu
             rng = new System.Random(seed);
 
+            // Restore chunk ID bounds ngay sau ClearCurrentMap (ClearCurrentMap reset chúng về 0!)
+            currentChunkLeftId  = mapData.currentChunkLeftId;
+            currentChunkRightId = mapData.currentChunkRightId;
+
             // Ensure the necessary prefabs are loaded
             if (chunkPrefabsList.Count == 0)
             {
