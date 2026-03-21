@@ -35,6 +35,16 @@ namespace Script.Entities.Structures.SummondPortal
         private List<EnemyWaveData> enemyWaveData;
 
         private PortalVisualAnimator visualAnimator;
+        
+        [Header("Camera Shake Settings")]
+        [SerializeField] private int activationShakeCount = 3;
+        [SerializeField] private float activationInterval = 0.15f;
+        [SerializeField] private float activationTiltAngle = 5f;
+        
+        [Space]
+        [SerializeField] private int spawnShakeCount = 2;
+        [SerializeField] private float spawnIntervalRate = 0.2f; // Tên biến khác với spawnInterval (logic spawn)
+        [SerializeField] private float spawnTiltAngle = 3f;
 
         private void Awake()
         {
@@ -88,14 +98,8 @@ namespace Script.Entities.Structures.SummondPortal
                 visualAnimator.SetDormant();
             }
 
-            // Gọi shake màn hình
-            /*
-            if (ScreenShakeController.Instance)
-            {
-                ScreenShakeController.Instance.Shake(0.4f, 0.6f);
-            }
-            */
-            Debug.LogWarning("[ScreenShakeController] Shake(0.4f, 0.6f) triggered but temporarily disabled.");
+            // Gọi shake màn hình khi portal lần đầu xuất hiện (dạng dormant)
+            CameraShake.Instance?.RequestShake(transform.position, activationShakeCount, activationInterval, activationTiltAngle);
 
             // Ghi lại ngày sinh ra cổng
             status.spawnDay = GameTimeManager.Instance.GetElapsedDays();
@@ -130,6 +134,9 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 visualAnimator.SetActive();
             }
+
+            // Shake camera mạnh khi portal chính thức kích hoạt
+            CameraShake.Instance?.RequestShake(transform.position, activationShakeCount, activationInterval, activationTiltAngle);
 
             // Hủy đăng ký vì ngày nào sau đó cũng là Active rồi
             if (GameTimeManager.Instance)
@@ -281,6 +288,9 @@ namespace Script.Entities.Structures.SummondPortal
                     {
                         Debug.LogWarning($"[EnemyPortalBehavior] {enemyData.enemyName} thiếu Component EnemyAIController!");
                     }
+
+                    // Shake nhẹ mỗi lần spawn địch
+                    CameraShake.Instance?.RequestShake(transform.position, spawnShakeCount, spawnIntervalRate, spawnTiltAngle);
                 }
                 else
                 {

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8662764022837747294}
   - component: {fileID: 6121017877058568734}
   - component: {fileID: 2011270997367730333}
+  - component: {fileID: 7433200839359645735}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -109,3 +110,19 @@ MonoBehaviour:
   smoothTime: 0.3
   target: {fileID: 0}
   offset: {x: 0, y: 0, z: 0}
+--- !u!114 &7433200839359645735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2621113891650289063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e30ac6436120d4a45b7f122c33db095d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaultShakeCount: 2
+  defaultInterval: 0.2
+  defaultTiltAngle: 4
+  testOffset: 20

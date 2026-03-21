@@ -386,7 +386,10 @@ namespace Script.Game.Item.Coin
         {
             PhysicalItemData itemData = (PhysicalItemData)data;
             transform.position = new Vector3(itemData.positionX, itemData.positionY, 0);
-            floating = itemData.floating;
+            
+            // Ép floating về false khi load để vật phẩm tự động rơi lại nếu đang ở trên không.
+            // Nếu nó đã ở trên đất, logic Falling() sẽ set lại floating = true trong frame đầu tiên.
+            floating = false;
 
             // Retrieve enum type
             if (System.Enum.TryParse(itemData.itemCategory, out ItemType parsedType))
@@ -394,11 +397,8 @@ namespace Script.Game.Item.Coin
                 itemType = parsedType;
             }
 
-            // Khôi phục animation trạng thái
-            if (floating)
-                StartRotate();
-            else
-                StopRotate();
+            // Dừng rotate để check lại ở Falling()
+            StopRotate();
         }
         #endregion
     }
