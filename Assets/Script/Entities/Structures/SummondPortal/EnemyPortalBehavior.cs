@@ -242,6 +242,13 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 for (int i = 0; i < enemyData.count; i++)
                 {
+                    // Kiểm tra prefab trước khi spawn để tránh lỗi null ref
+                    if (enemyData.enemyData.enemyPrefab == null)
+                    {
+                       // Debug.LogWarning($"[EnemyPortalBehavior] Bỏ qua spawn {enemyData.enemyData.enemyName} vì prefab bị NULL .");
+                        continue;
+                    }
+
                     SpawnEnemy(enemyData.enemyData);
                     totalSpawned++;
                     Debug.Log($"[EnemyPortalBehavior - {gameObject.name}] >> Rớt ra quái thứ {totalSpawned}: {enemyData.enemyData.enemyName}");

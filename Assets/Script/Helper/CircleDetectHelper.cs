@@ -35,6 +35,15 @@ namespace Script.Game.Other
 
         // Cache result (Core Logic)
         private List<GameObject> detectedObjects = new List<GameObject>();
+        private ContactFilter2D _filter;
+
+        private void Awake()
+        {
+            _filter = new ContactFilter2D();
+            _filter.useTriggers = true;
+            _filter.useDepth = false;
+            _filter.useLayerMask = true;
+        }
 
         private void Update()
         {
@@ -56,7 +65,7 @@ namespace Script.Game.Other
             {
                 ScanCircle();
             }
-            return new List<GameObject>(detectedObjects);
+            return detectedObjects;
         }
 
         public void ScanCircle()
@@ -69,13 +78,9 @@ namespace Script.Game.Other
                 DrawDebugCircle(detectRadius);
             }
 
-            ContactFilter2D filter = new ContactFilter2D();
-            filter.useTriggers = true;
-            filter.useDepth = false;
-            filter.useLayerMask = true;
-            filter.layerMask = targetLayer; // Quét mọi layer, tự lọc bằng code bên dưới
+            _filter.layerMask = targetLayer; // Quét lớp được chỉ định
             
-            int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, filter, _overlapResults);
+            int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, _filter, _overlapResults);
             
             for (int i = 0; i < hitCount; i++)
             {
@@ -147,14 +152,10 @@ namespace Script.Game.Other
         [ContextMenu("Debug Log All Hits")]
         public void DebugLogAllHits()
         {
-            ContactFilter2D filter = new ContactFilter2D();
-            filter.useTriggers = true;
-            filter.useDepth = false;
-            filter.useLayerMask = true;
-            filter.layerMask = targetLayer;
+            _filter.layerMask = targetLayer;
 
             Collider2D[] results = new Collider2D[500];
-            int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, filter, results);
+            int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, _filter, results);
 
             Script.Utils.DebugUtility.LogPhysicsResults(gameObject.name, "CircleOverlap", transform.position, hitCount, results, tagsToDetect);
         }

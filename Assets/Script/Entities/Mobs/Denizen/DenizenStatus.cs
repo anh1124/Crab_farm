@@ -64,6 +64,10 @@ namespace Script.Data_Model.Status
         [Header("Villager Data")]
         public VillagerState villagerState = VillagerState.Idle;
         public float fearTimer;
+        public bool isInDanger;
+        /// <summary>Cờ chung: Bất cứ role nào (Archer, Vagrant...) có thể bật lên trước khi đổi sang Villager.
+        /// VillagerBehavior sẽ đọc cờ này trong OnEnable và vào Fear ngay lập tức nếu fearTimer > 0.</summary>
+        public bool isFearPending;
         // targetPosition is reused from Vagrant
 
         // Archer Specifics
@@ -134,6 +138,9 @@ namespace Script.Data_Model.Status
 
             // Villager Save Data
             public int villagerState;
+            public bool isFearPending;
+            public bool isInDanger;
+            public float fearTimer;
 
             // Archer Save Data
             public int archerState;
@@ -157,6 +164,21 @@ namespace Script.Data_Model.Status
             CurrentCoins -= amount;
         }
 
+        /// <summary>
+        /// Route dame vào DenizenRoleController để xử lý tập trung.
+        /// Đây là method thường (không phải IDamageable) nên DamageHandler sẽ không
+        /// tự động gọi nó — tránh double-damage.
+        /// Gọi từ CombatUtility hoặc DamageHandler khi target là Denizen.
+        /// </summary>
+        public void RouteDamage(float damage, GameObject instigator)
+        {
+            var roleCtrl = GetComponent<DenizenRoleController>();
+            if (roleCtrl != null)
+            {
+                roleCtrl.ReceiveDamage(damage, instigator);
+            }
+        }
+
 
         public DenizenSaveData CaptureData(Transform t)
         {
@@ -172,6 +194,9 @@ namespace Script.Data_Model.Status
                 startPositionX = startPosition.x,
 
                 villagerState = (int)villagerState,
+                isFearPending = isFearPending,
+                isInDanger = isInDanger,
+                fearTimer = fearTimer,
 
                 archerState = (int)archerState,
                 isLeftFlank = isLeftFlank
@@ -193,6 +218,9 @@ namespace Script.Data_Model.Status
             startPosition = new Vector3(data.startPositionX, data.positionY, 0);
             
             villagerState = (VillagerState)data.villagerState;
+            isFearPending = data.isFearPending;
+            isInDanger = data.isInDanger;
+            fearTimer = data.fearTimer;
 
             archerState = (ArcherState)data.archerState;
             isLeftFlank = data.isLeftFlank;

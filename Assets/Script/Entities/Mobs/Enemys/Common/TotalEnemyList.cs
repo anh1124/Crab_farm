@@ -105,13 +105,12 @@ namespace Script.Game.Enemy
                     if (data.enemyPrefab != null)
                     {
                         readyEnemies.Add(data.enemyName);
+                        EnemyDataList.Add(data); // ✅ CHỈ ADD VÀO LIST CHƠI GAME NẾU CÓ PREFAB
                     }
                     else
                     {
-                        Debug.LogWarning($"Prefab not found for enemy: {data.enemyName}");
+                        Debug.LogWarning($"[TotalEnemyList] Bỏ qua {data.enemyName} vì thiếu prefab (nhưng có trong JSON).");
                     }
-
-                    EnemyDataList.Add(data);
                 }
 
                 Debug.Log($"[EnemyData] Đã load {jsonEnemies.Count} enemy data từ JSON: {string.Join(", ", jsonEnemies)}");
@@ -134,8 +133,11 @@ namespace Script.Game.Enemy
             int monterPowerReturn = 0;
             var selectedMonsters = new List<(EnemyDataBase Data, int Quantity)>();
 
+            if (EnemyDataList == null || EnemyDataList.Count == 0) return selectedMonsters; // Safety check
+
             var sortedEnemies = EnemyDataList.OrderByDescending(e => e.power).ToList();
             int index = 0;
+            int consecutiveFails = 0; // Đếm số lần nhét slot thất bại liên tiếp
 
             while (monterPowerReturn < maxPower)
             {
@@ -144,6 +146,7 @@ namespace Script.Game.Enemy
                 if (monterPowerReturn + enemy.power <= maxPower)
                 {
                     monterPowerReturn += enemy.power;
+                    consecutiveFails = 0; // Reset fail counter vì đã nhét thành công
 
                     var existingMonster = selectedMonsters.FirstOrDefault(m => m.Data == enemy);
                     if (existingMonster != default)
@@ -154,6 +157,15 @@ namespace Script.Game.Enemy
                     else
                     {
                         selectedMonsters.Add((enemy, 1));
+                    }
+                }
+                else
+                {
+                    consecutiveFails++;
+                    // Nếu duyệt qua toàn bộ danh sách quái vật mà không con nào nhét vừa slot Power dư
+                    if (consecutiveFails >= sortedEnemies.Count)
+                    {
+                        break; // 🔥 ANTI INFINITE LOOP: Ngừng vòng lặp vì điểm Power dư quá nhỏ
                     }
                 }
 

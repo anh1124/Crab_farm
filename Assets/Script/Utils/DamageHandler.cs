@@ -23,16 +23,37 @@ namespace Script.Utils
             var dieInterface = target.GetComponent<IDie>();
             if (dieInterface != null && dieInterface.IsDead) return false;
 
-            // Chỉ quan tâm một điều: Mục tiêu có thể nhận sát thương không?
-            var damageable = target.GetComponent<IDamageable>();
-            if (damageable != null)
+            // ✅ Denizen dùng hệ thống route tập trung qua DenizenStatus.RouteDamage
+            // KHÔNG dùng IDamageable loop vì sẽ gây double-damage (DenizenStatus + Behavior đang bật)
+            var denizenStatus = target.GetComponent<Script.Data_Model.Status.DenizenStatus>();
+            if (denizenStatus != null)
             {
-                damageable.ReceiveDamage(damage, instigator);
+                denizenStatus.RouteDamage(damage, instigator);
                 return true;
             }
 
-            // Fallback: Cảnh báo nếu tấn công đối tượng không thể nhận sát thương
-            Debug.LogWarning($"[DamageHandler] {target.name} không có IDamageable. Không thể gây sát thương.");
+            // Fallback cho các entity khác (Enemy, v.v...): loop qua IDamageable active
+            bool damaged = false;
+            var damageables = target.GetComponents<IDamageable>();
+            foreach (var damageable in damageables)
+            {
+                var mb = damageable as MonoBehaviour;
+                if (mb != null && mb.isActiveAndEnabled)
+                {
+                    damageable.ReceiveDamage(damage, instigator);
+                    damaged = true;
+                }
+                else if (mb == null)
+                {
+                    // Interface trên non-MonoBehaviour (hiếm gặp)
+                    damageable.ReceiveDamage(damage, instigator);
+                    damaged = true;
+                }
+            }
+
+            if (damaged) return true;
+
+            Debug.LogWarning($"[DamageHandler] {target.name} không có IDamageable nào đang ACTIVE. Không thể gây sát thương.");
             return false;
         }
     }

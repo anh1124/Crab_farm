@@ -26,6 +26,16 @@ namespace Script.Game.Mobs.Subjects
 
         private float fearEndTime = 0f;
         
+        private string _currentAnimState = "";
+
+        private void SetAnimState(string newState)
+        {
+            if (animator == null) return;
+            if (_currentAnimState == newState) return; // ✅ skip nếu không đổi
+            _currentAnimState = newState;
+            animator.Play(newState);
+        }
+        
         // Movement smoothing
         private Vector3 _moveTarget;
         private float _moveSpeed;
@@ -51,6 +61,7 @@ namespace Script.Game.Mobs.Subjects
     
         private void OnEnable()
         {
+            _currentAnimState = ""; // ✅ Reset cache để ép Animator update khi đổi nghề
             // Re-initialize when role switches back to Vagrant or upon creation
             InitializeVagrant();
             
@@ -77,7 +88,7 @@ namespace Script.Game.Mobs.Subjects
 
             if (animator != null)
             {
-                animator.Play("idle"); // Reset animation
+                SetAnimState("idle"); // Reset animation
             }
         }
 
@@ -240,11 +251,11 @@ namespace Script.Game.Mobs.Subjects
             {
                 if (status.isWalking)
                 {
-                    animator.Play("walk");
+                    SetAnimState("walk");
                 }
                 else
                 {
-                    animator.Play("idle");
+                    SetAnimState("idle");
                 }
             }
 
@@ -254,7 +265,7 @@ namespace Script.Game.Mobs.Subjects
         
         private void HandleFearState()
         {
-            animator.Play("fear");
+            SetAnimState("fear");
             status.roadToTarget = 0;
             _isMovingToTarget = false; // Stop any current movement
             status.isWalking = false;
@@ -289,7 +300,7 @@ namespace Script.Game.Mobs.Subjects
 
             if (animator != null)
             {
-                animator.Play("run");
+                SetAnimState("run");
             }
         }
 

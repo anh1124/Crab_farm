@@ -29,6 +29,13 @@ namespace Script.Utils
         {
             if (hitObject == null) return null;
 
+            // NẾU BẢN THÂN hitObject LÀ IDamageable, KHÔNG CẦN CHUYỂN LÊN PARENT.
+            // (Ví dụ Archer tự có Collider isTrigger, không được nhảy nhầm lên DenizenContainer)
+            if (hitObject.GetComponent<IDamageable>() != null)
+            {
+                return hitObject;
+            }
+
             // 1. Kiểm tra bằng Tag "Trigger" (Được ưu tiên nhất)
             // LƯU Ý: Phải đảm bảo Tag "Trigger" đã được tạo trong Tag Manager của Unity để tránh log lỗi.
             if (hitObject.CompareTag(Script.Utils.GameTags.Trigger))

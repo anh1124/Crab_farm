@@ -7,6 +7,7 @@ using UnityEngine.Serialization;
 
 using Script.Game.Mobs.Subjects;
 using Script.Manager.GamePlayManager;
+using Script.Data_Model;
 
 namespace Script.Game.Mobs.Subjects
 {
@@ -20,6 +21,7 @@ namespace Script.Game.Mobs.Subjects
         Farmer
     }
 
+    [RequireComponent(typeof(DenizenTimeHandler))]
     public class DenizenRoleController : MonoBehaviour, ISaveable, IItemHandle, INPCBehavior
     {
         // Script này quản lý chuyển nghề và thiết lập script cần thiết
@@ -209,6 +211,36 @@ namespace Script.Game.Mobs.Subjects
             if (NPCUpdateManager.Instance != null)
                 NPCUpdateManager.Instance.Register(this);
         }
+
+        #region Time Event Routing (Called by DenizenTimeHandler)
+        public void OnDayStart()
+        {
+            if (CurrentRole == NPCRole.Villager && villagerBehavior != null)
+            {
+                villagerBehavior.OnDayTime();
+            }
+        }
+
+        public void OnArcherHuntingTime()
+        {
+            if (CurrentRole == NPCRole.Archer && archerBehavior != null)
+            {
+                archerBehavior.OnDayBreaks();
+            }
+        }
+
+        public void OnNightStart()
+        {
+            if (CurrentRole == NPCRole.Villager && villagerBehavior != null)
+            {
+                villagerBehavior.OnNightTime();
+            }
+            else if (CurrentRole == NPCRole.Archer && archerBehavior != null)
+            {
+                archerBehavior.OnNightFalls();
+            }
+        }
+        #endregion
 
         // INPCBehavior implementation - delegate to sub-behaviors
         public void UpdateBehavior()
@@ -469,6 +501,78 @@ namespace Script.Game.Mobs.Subjects
                 return itemHandler.HandleItem(item);
             }
             return false;
+        }
+        
+        #endregion
+
+        #region Damage Handling
+        
+        /// <summary>
+        /// Xử lý logic nhận sát thương tập trung cho toàn bộ Denizen.
+        /// Được gọi từ DenizenStatus.ReceiveDamage(damage, instigator).
+        /// </summary>
+        public void ReceiveDamage(float damage, GameObject instigator)
+        {
+            if (damage <= 0) return;
+
+            // 1. Vagrant không nhận sát thương (bỏ qua)
+            if (CurrentRole == NPCRole.Vagrant) return;
+
+            // 2. Logic cho Archer
+            if (CurrentRole == NPCRole.Archer)
+            {
+                if (denizenStatus.CurrentCoins > 1)
+                {
+                    // Dùng 1 coin để chặn dame
+                    denizenStatus.SubtractCoin(1);
+                    if (Spawner.Instance != null)
+                    {
+                        Spawner.Instance.DropByDenizen(transform.position, 1, Vector2.up);
+                    }
+                }
+                else if (denizenStatus.CurrentCoins == 1)
+                {
+                    // Rớt cung
+                    if (Spawner.Instance != null && PrefabData.Instance != null)
+                    {
+                        Spawner.Instance.DropItem(PrefabData.Instance.bow, transform.position,
+                            playerPickupAble: false, denizensPickupAble: true);
+                    }
+
+                    // Kích hoạt cờ Fear cho phần OnEnable của VillagerBehavior nối tiếp
+                    denizenStatus.isFearPending = true;
+                    denizenStatus.fearTimer = 3f; // VillagerBehavior.FEAR_DURATION
+                    denizenStatus.isInDanger = true;
+
+                    // Chuyển nghề xuống Villager
+                    ChangeRole(NPCRole.Villager);
+                }
+            }
+            // 3. Logic cho Villager (hoặc Worker, Farmer chia sẻ chung pattern tài nguyên)
+            else if (CurrentRole == NPCRole.Villager || CurrentRole == NPCRole.Worker || CurrentRole == NPCRole.Farmer)
+            {
+                if (denizenStatus.CurrentCoins > 0)
+                {
+                    // Dùng 1 coin để chặn dame
+                    denizenStatus.SubtractCoin(1);
+                    if (Spawner.Instance != null)
+                    {
+                        Spawner.Instance.DropByDenizen(transform.position, 1, Vector2.up);
+                    }
+
+                    // Kích hoạt hoảng sợ
+                    if (villagerBehavior != null && villagerBehavior.isActiveAndEnabled)
+                    {
+                        villagerBehavior.TriggerFear();
+                    }
+                }
+
+                if (denizenStatus.CurrentCoins <= 0)
+                {
+                    // Hết coin -> Chuyển thành Vagrant
+                    ChangeRole(NPCRole.Vagrant);
+                }
+            }
         }
         
         #endregion

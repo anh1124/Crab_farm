@@ -24,7 +24,7 @@ namespace Script.Game.Mobs.Subjects
     [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(ArcherShooting))]
-    public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker, IDamageable
+    public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker
     {
         // --- IAttacker Interface ---
         public float AttackDame { get => status.attackDame; set => status.attackDame = value; }
@@ -66,7 +66,15 @@ namespace Script.Game.Mobs.Subjects
         private GuardManager guardManager;
 
         // State Tracking
-        private bool isSubscribedToTimeEvents = false;
+        private string _currentAnimState = "";
+
+        private void SetAnimState(string newState)
+        {
+            if (animator == null) return;
+            if (_currentAnimState == newState) return; // ✅ skip nếu không đổi
+            _currentAnimState = newState;
+            animator.Play(newState);
+        }
 
    
 
@@ -76,6 +84,8 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnEnable()
         {
+            _currentAnimState = ""; // ✅ Reset cache để ép Animator update khi đổi nghề
+            
             // Ensure detector is initialized
             InitializeDetector();
 
@@ -86,12 +96,8 @@ namespace Script.Game.Mobs.Subjects
                 circleDetectHelper.OnDetectedObjectsChanged += OnObjectsDetected;
             }
             
-            // Re-subscribe logic from old OnEnable
+            // GuardManager initialization
             if (guardManager == null) guardManager = GuardManager.Instance;
-            SubscribeToTimeEvents();
-
-            if (guardManager == null) guardManager = GuardManager.Instance;
-            SubscribeToTimeEvents();
         }
 
         private void OnDisable()
@@ -185,12 +191,23 @@ namespace Script.Game.Mobs.Subjects
         {
             if (!HasToolShield) return false;
 
-            //Debug.Log($"<color=orange>[ToolShield] {gameObject.name} dùng vũ khí chặn dame thành công!</color>");
             Spawner.Instance?.DropItem(Data_Model.PrefabData.Instance?.bow, transform.position,
                 playerPickupAble: false, denizensPickupAble: true);
 
             var ctrl = GetComponent<DenizenRoleController>();
-            if (ctrl != null) ctrl.ChangeRole(NPCRole.Villager);
+            if (ctrl != null) 
+            {
+                // ✅ Set cờ + prime timer trước khi đổi role.
+                // VillagerBehavior.OnEnable sẽ đọc cờ này và vào Fear ngay lập tức.
+                if (status != null)
+                {
+                    status.isFearPending = true;
+                    status.fearTimer = VillagerBehavior.FEAR_DURATION;
+                    status.isInDanger = true;
+                }
+                
+                ctrl.ChangeRole(NPCRole.Villager);
+            }
 
             return true;
         }
@@ -210,33 +227,7 @@ namespace Script.Game.Mobs.Subjects
             set => status.MaxCoins = value;
         }
 
-        // --- IDamageable Interface Implementation ---
-        /// <summary>
-        /// Điểm tiếp nhận sát thương duy nhất. Archer tự xử lý toàn bộ.
-        /// THỪ tấn công không cần biết logic bên trong.
-        /// </summary>
-        public void ReceiveDamage(float damage, UnityEngine.GameObject instigator)
-        {
-            if (damage <= 0) return;
-
-            // 1. Trừ coin trước nếu > 1
-            if (status.CurrentCoins > 1)
-            {
-                ConsumeCoinShield(); // Mỗi lần hit mất 1 coin
-                return;
-            }
-            
-            // 2. Nếu coin = 1 thì trừ bow và đổi nghề sang Villager
-            if (status.CurrentCoins == 1)
-            {
-                // ConsumeToolShield đã bao gồm logic drop bow và ChangeRole(Villager)
-                ConsumeToolShield();
-                return;
-            }
-
-            // 3. Fallback: Nếu không còn gì (đã là Villager hoặc Vagrant)
-            status.CurrentCoins = Mathf.Max(0, status.CurrentCoins - Mathf.RoundToInt(damage));
-        }
+        // --- IDamageable logic moved to DenizenRoleController ---
 
         private void Awake()
         {
@@ -284,8 +275,7 @@ namespace Script.Game.Mobs.Subjects
                 status.archerState = (DenizenStatus.ArcherState)DenizenStatus.ArcherState.ReturningToBase;
             }
             
-            // Đăng ký sự kiện thời gian
-            SubscribeToTimeEvents();
+            // Tự động được handle time events bởi DenizenRoleController
 
             // Kiểm tra trạng thái ban đầu (nếu chưa được thiết lập)
             if (timeManager != null && !guardManager.isEnemyAttack)
@@ -296,23 +286,7 @@ namespace Script.Game.Mobs.Subjects
         
 
 
-        
-        private void SubscribeToTimeEvents()
-        {
-            if (isSubscribedToTimeEvents || timeManager == null) return;
-            
-            try
-            {
-                // Thời gian Debug: Sáng (7), Tối (19)
-                timeManager.SubscribeToHourlyEvent(19, OnNightFalls);
-                timeManager.SubscribeToHourlyEvent(7, OnDayBreaks);
-                isSubscribedToTimeEvents = true;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"[Archer] Failed to subscribe to time events: {e.Message}");
-            }
-        }
+        // Time events được manage bởi DenizenRoleController - không subscribe ở đây
 
         private void OnDestroy()
         {
@@ -327,19 +301,7 @@ namespace Script.Game.Mobs.Subjects
 
         private void UnsubscribeFromTimeEvents()
         {
-            if (isSubscribedToTimeEvents && timeManager != null)
-            {
-                try
-                {
-                    timeManager.UnsubscribeFromHourlyEvent(19, OnNightFalls);
-                    timeManager.UnsubscribeFromHourlyEvent(7, OnDayBreaks);
-                    isSubscribedToTimeEvents = false;
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"[Archer] Error unsubscribing: {e.Message}");
-                }
-            }
+            // Time events managed by DenizenRoleController
         }
 
 
@@ -536,7 +498,7 @@ namespace Script.Game.Mobs.Subjects
             }
 
             MoveTowardsPosition(currentHuntingTargetPos.Value, status.walkSpeed); // Dùng tốc độ đi bộ khi tuần tra
-            if (animator != null) animator.Play("archerMove");
+            SetAnimState("archerMove");
         }
 
         private void CalculateHuntingPatrolPosition(Vector3 origin, bool directional)
@@ -589,7 +551,7 @@ namespace Script.Game.Mobs.Subjects
                     var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
                     if (!stateInfo.IsName("archerDraw") && !stateInfo.IsName("archerRelease"))
                     {
-                         if (animator != null) animator.Play("archerIdle");
+                         SetAnimState("archerIdle");
                     }
                 }
                 return;
@@ -604,7 +566,7 @@ namespace Script.Game.Mobs.Subjects
             if (distanceToTarget > WALL_ARRIVAL_DISTANCE)
             {
                  MoveTowardsPosition(targetPosition, status.runSpeed);
-                 if (animator != null) animator.Play("archerMove");
+                 SetAnimState("archerMove");
                  return;
             }
             
@@ -612,7 +574,7 @@ namespace Script.Game.Mobs.Subjects
             status.currentSpeed = 0f;
             status.currentTarget = null;
             FaceOutward();
-            if (animator != null) animator.Play("archerIdle");
+            SetAnimState("archerIdle");
         }
         
         private void HandleRetreatingToInnerWallState()
@@ -639,7 +601,7 @@ namespace Script.Game.Mobs.Subjects
             else
             {
                 MoveTowardsPosition(retreatPos, status.runSpeed);
-                if (animator != null) animator.Play("archerMove");
+                SetAnimState("archerMove");
             }
         }
         
@@ -666,7 +628,7 @@ namespace Script.Game.Mobs.Subjects
             if (distance > WALL_ARRIVAL_DISTANCE)
             {
                 MoveTowardsPosition(targetPosition, status.runSpeed);
-                if (animator != null) animator.Play("archerMove");
+                SetAnimState("archerMove");
             }
             else
             {
@@ -712,11 +674,7 @@ namespace Script.Game.Mobs.Subjects
             }
 
             // Bắt đầu chuỗi animation
-            if (animator != null) 
-            {
-                animator.Play("archerDraw");
-               // Debug.Log("[Archer] >>> PLAYING archerDraw animation <<<");
-            }
+            SetAnimState("archerDraw");
             
             lastAttackTime = Time.time;
         }
@@ -724,7 +682,7 @@ namespace Script.Game.Mobs.Subjects
         public void HandleDrawComplete()
         {
            // Debug.Log("[Archer] OnDrawComplete event received");
-            if (animator != null) animator.Play("archerRelease");
+            SetAnimState("archerRelease");
         }
         
         private bool IsPlayingAttackAnimation()
@@ -749,11 +707,7 @@ namespace Script.Game.Mobs.Subjects
             
             // CRITICAL: Force play Idle to prevent Animator from auto-looping back to Draw
             // Only PerformAttack (when cooldown <= 0) should trigger Draw again
-            if (animator != null) 
-            {
-                animator.Play("archerIdle");
-               // Debug.Log("[Archer] >>> Animation FORCED to Idle after arrow release <<<");
-            }
+            SetAnimState("archerIdle");
         }
 
         private void MoveTowardsPosition(Vector3 pos, float speed)
@@ -881,7 +835,8 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
-        private void OnNightFalls()
+        /// <summary>Gọi bởi DenizenRoleController khi đồng hồ chạm giờ 19.</summary>
+        public void OnNightFalls()
         {
             if (status == null) return;
             if (status.archerState == DenizenStatus.ArcherState.Hunting)
@@ -960,7 +915,8 @@ namespace Script.Game.Mobs.Subjects
             return Vector2.Distance(transform.position, targetPos) <= WALL_ARRIVAL_DISTANCE + 0.5f; // Slight buffer
         }
 
-        private void OnDayBreaks()
+        /// <summary>Gọi bởi DenizenRoleController khi đồng hồ chạm giờ 7.</summary>
+        public void OnDayBreaks()
         {
             if (status == null) return;
             if (status.archerState == DenizenStatus.ArcherState.HoldingWall ||
@@ -986,28 +942,12 @@ namespace Script.Game.Mobs.Subjects
 
         public void DropCoins(int amount)
         {
-             for (int i = 0; i < amount; i++)
+            if (Spawner.Instance != null)
             {
-                if (PrefabData.Instance?.coinPrefab != null)
-                {
-                    Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
-                    Vector2 spawnPosition = new Vector2(transform.position.x, transform.position.y + 2f);
-                    
-                    if (Spawner.Instance != null && EntitySaveManager.Instance != null)
-                    {
-                        GameObject coin = Instantiate(Spawner.Instance.coinPrefab, spawnPosition, Quaternion.identity, EntitySaveManager.Instance.coinContainer.transform);
-                        // Coin logic...
-                        PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
-                        if (coinScript != null)
-                        {
-                            coinScript.playerPickupAble = true;
-                            coinScript.denizensPickupAble = false;
-                            coinScript.floating = false;
-                            coinScript.CallFunctionCoolDown("Denizens");
-                            Spawner.Instance.InitializeCoinThrow(coin, dropDirection);
-                        }
-                    }
-                }
+                // ✅ Dùng pool thay Instantiate trực tiếp — tránh heap allocation mỗi lần drop
+                Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
+                Vector2 spawnPosition = new Vector2(transform.position.x, transform.position.y + 2f);
+                Spawner.Instance.DropByDenizen(spawnPosition, amount, dropDirection);
             }
         }
     }

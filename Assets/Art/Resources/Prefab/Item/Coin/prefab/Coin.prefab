@@ -98,7 +98,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 498c80f489db11843a93d2417f2afe66, type: 2}
-  m_CullingMode: 0
+  m_CullingMode: 2
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
@@ -165,15 +165,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f47ede33e442516419d1e4f2f2f648a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemCategory: 0
-  prefabID: coin
-  picked: 0
+  itemType: 0
   pickedBy: {fileID: 0}
-  floating: 0
-  rayLength: 0.6
-  fallSpeed: 10
-  throwGravity: 20
   playerPickupAble: 1
   denizensPickupAble: 1
   enemyPickupAble: 1
   pickupAbleCooldown: 3
+  floating: 0
+  rayLength: 0.6
+  fallSpeed: 10
+  throwGravity: 20

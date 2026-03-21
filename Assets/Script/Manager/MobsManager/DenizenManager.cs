@@ -100,10 +100,9 @@ namespace Script.Game.Mobs.MobsManager
                     if (behavior != null && behavior.enabled)
                     {
                          // Check conditions
-                         bool hasNoTool = behavior.currentTool == null;
-                         bool notInDanger = !behavior.isInDanger;
                          var status = denizen.GetComponent<Script.Data_Model.Status.DenizenStatus>();
-                         
+                         bool hasNoTool = behavior.currentTool == null;
+                         bool notInDanger = !status.isInDanger;
                          // Accept both Idle and MoveBackToTownCenter states
                          // This allows tool assignment even if Villager spawned at night
                          bool isAvailable = status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.Idle ||

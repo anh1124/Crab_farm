@@ -15,8 +15,9 @@ namespace Script.Game.Item.Coin
      * - Chức năng chính: Rơi tự do, ném parabol, tự đăng ký với ToolManager, Save/Load.
      * - Tối ưu hiệu năng: 
      *     + Staggered Update: Check Raycast mỗi 3 frame (chia đều tải CPU theo frame).
-     *     + Early-Exit: Dừng Update ngay khi chạm đất (floating = true).
+     *     + Early-Exit: Dừng rơi khi chạm đất (floating = true).
      *     + Static Caching: Cache LayerMask dùng chung cho tất cả instance.
+     *     + Timer-based Cooldown: Thay thế coroutine bằng float timer — 0 GC alloc.
      */
     public class PhysicalItem : MonoBehaviour, ISaveable, IPickingUpMyItem
     {
@@ -30,7 +31,6 @@ namespace Script.Game.Item.Coin
 
         // IPickingUpMyItem implementation
         #region IPickingUpMyItem implementation
-
 
         public GameObject AssignedCarrier { get; set; }
         public void OnPickedByStranger(GameObject stranger)
@@ -74,10 +74,16 @@ namespace Script.Game.Item.Coin
         private int _raycastFrameOffset;           // offset riêng của từng coin
     
         private Animator _animator;
-       
-        private Coroutine _cooldownCoroutine;
 
-    
+        // --- Timer-based Cooldown (thay thế coroutine WaitForSeconds, 0 GC alloc mỗi spawn) ---
+        [Header("Pickup Cooldown Timers (Debug)")]
+        [SerializeField] private float _playerPickupCooldown  = 0f;
+        [SerializeField] private float _denizenPickupCooldown = 0f;
+        [SerializeField] private float _enemyPickupCooldown   = 0f;
+
+        // Cache Collider2D - tránh GetComponent trong Update
+        private Collider2D _col;
+
         void Start()
         {
             fallSpeed = PrefabData.Instance.fallSpeed;
@@ -99,21 +105,44 @@ namespace Script.Game.Item.Coin
             // Stagger: mỗi coin nhận 1 frame offset riêng để tải raycast trải đều
             // GetInstanceID() đảm bảo mỗi coin có offset khác nhau
             _raycastFrameOffset = Mathf.Abs(GetInstanceID()) % RAYCAST_INTERVAL;
-            
-            // Khởi động lại coroutine sau khi load game
+
+            // Cache Collider2D để tránh GetComponent trong Update()
+            _col = GetComponent<Collider2D>();
+
+            // Khởi động lại timer cooldown nếu load game với pickupAble = false
             RestartCooldownsIfNeeded();
         }
 
         private void OnEnable()
         {
-            // Reset người nhặt mỗi khi object được bật (chống lỗi object pooling)
-            pickedBy = null;
-
+            ResetState();
             
             if (itemType != ItemType.Coin && Script.Manager.MobsManager.ToolManager.Instance != null)
             {
                 Script.Manager.MobsManager.ToolManager.Instance.RegisterTool(this);
             }
+        }
+
+        /// <summary>
+        /// Reset toàn bộ trạng thái của vật phẩm khi được tái sử dụng từ Pool.
+        /// Đảm bảo không còn rác từ "kiếp trước".
+        /// </summary>
+        public void ResetState()
+        {
+            pickedBy = null;
+            floating = false;
+            isThrown = false;
+            throwTime = 0f;
+            
+            // Mặc định cho phép nhặt (Spawner sẽ ghi đè nếu cần cooldown)
+            playerPickupAble = true;
+            denizensPickupAble = true;
+            enemyPickupAble = false;
+
+            // Reset timers: an toàn, không có side-effect như StopAllCoroutines()
+            _playerPickupCooldown  = 0f;
+            _denizenPickupCooldown = 0f;
+            _enemyPickupCooldown   = 0f;
         }
 
         private void OnDisable()
@@ -125,33 +154,23 @@ namespace Script.Game.Item.Coin
         }
 
         /// <summary>
-        /// Khởi động lại các coroutine cooldown nếu các trạng thái pickupAble là false sau khi load game
-        /// Được gọi từ Start() và có thể gọi sau khi restore data
+        /// Khởi động lại timer nếu đang cooldown SAU KHI LOAD GAME.
+        /// KHÔNG set timer cho enemyPickupAble vì false là giá trị mặc định từ design,
+        /// không phải trạng thái cooldown đang chạy.
         /// </summary>
         private void RestartCooldownsIfNeeded()
         {
-            // Khởi động lại coroutine cho player nếu cần
-            if (!playerPickupAble)
-            {
-                StartCoroutine(Cooldown("Player"));
-            }
-            
-            // Khởi động lại coroutine cho denizens nếu cần
-            if (!denizensPickupAble)
-            {
-                StartCoroutine(Cooldown("Denizens"));
-            }
-            
-            // Khởi động lại coroutine cho enemy nếu cần
-            if (!enemyPickupAble)
-            {
-                StartCoroutine(Cooldown("Enemy"));
-            }
+            if (!playerPickupAble)   _playerPickupCooldown  = pickupAbleCooldown;
+            if (!denizensPickupAble) _denizenPickupCooldown = pickupAbleCooldown;
+            // enemyPickupAble = false là default design, KHÔNG cần timer restore
         }
 
         void Update()
         {
-            // Early-exit: khi đã chạm đất, không cần làm gì thêm
+            // Cooldown timer luôn chạy dù floating hay không
+            UpdateCooldowns();
+
+            // Early-exit: khi đã chạm đất, không cần làm gì thêm về physics
             if (floating) return;
 
             // Stagger: chỉ chạy logic vật lý ở frame được phân công
@@ -171,6 +190,67 @@ namespace Script.Game.Item.Coin
             // Chỉ vẽ debug ray trong Editor, không tốn tài nguyên khi build
             Debug.DrawRay(transform.position, Vector2.down * rayLength, Color.red);
 #endif
+        }
+
+        /// <summary>
+        /// Đếm ngược timer cooldown và bật lại pickupAble khi hết hạn.
+        /// Khi hết hạn, toggle collider qua 1-frame coroutine để Unity re-fire OnTriggerEnter2D.
+        /// Không dùng WaitForSeconds → không tạo GC alloc mỗi spawn.
+        /// </summary>
+        private void UpdateCooldowns()
+        {
+            bool anyExpired = false;
+
+            if (_playerPickupCooldown > 0f)
+            {
+                _playerPickupCooldown -= Time.deltaTime;
+                if (_playerPickupCooldown <= 0f)
+                {
+                    _playerPickupCooldown = 0f;
+                    playerPickupAble = true;
+                    anyExpired = true;
+                }
+            }
+
+            if (_denizenPickupCooldown > 0f)
+            {
+                _denizenPickupCooldown -= Time.deltaTime;
+                if (_denizenPickupCooldown <= 0f)
+                {
+                    _denizenPickupCooldown = 0f;
+                    denizensPickupAble = true;
+                    anyExpired = true;
+                }
+            }
+
+            if (_enemyPickupCooldown > 0f)
+            {
+                _enemyPickupCooldown -= Time.deltaTime;
+                if (_enemyPickupCooldown <= 0f)
+                {
+                    _enemyPickupCooldown = 0f;
+                    enemyPickupAble = true;
+                    anyExpired = true;
+                }
+            }
+
+            // Toggle collider qua 1-frame coroutine để không trigger OnTriggerEnter2D ngay lập tức
+            // trong cùng 1 frame (tránh cascade physics freeze).
+            if (anyExpired && _col != null)
+            {
+                StartCoroutine(ToggleColliderNextFrame());
+            }
+        }
+
+        /// <summary>
+        /// Tắt collider 1 frame rồi bật lại → Unity re-fire OnTriggerEnter2D cho entity đứng trong vùng.
+        /// Chỉ 1 alloc hiếm gặp (khi cooldown hết), không phải mỗi spawn.
+        /// </summary>
+        private IEnumerator ToggleColliderNextFrame()
+        {
+            if (_col != null) _col.enabled = false;
+            yield return null; // Chờ 1 frame
+            if (_col != null) _col.enabled = true;
         }
 
         public void StopRotate()
@@ -242,42 +322,30 @@ namespace Script.Game.Item.Coin
         }
         #endregion
     
-       
 
+        /// <summary>
+        /// Đặt cooldown nhặt cho một loại đối tượng.
+        /// Zero allocation — chỉ set float timer.
+        /// </summary>
         public void CallFunctionCoolDown(string characterType)
         {
-            StartCoroutine(Cooldown(characterType));
-        }
-
-        private IEnumerator Cooldown(string characterType)
-        {
-            yield return new WaitForSeconds(pickupAbleCooldown);
-            if (characterType == "Player")
+            switch (characterType)
             {
-                playerPickupAble = true;
-            }
-            else if (characterType == "Denizens")
-            {
-                denizensPickupAble = true;
-            }
-            else if (characterType == "Enemy")
-            {
-                enemyPickupAble = true;
-            }
-
-            // Tắt rồi bật lại Collider để Unity re-fire OnTriggerEnter2D
-            // cho tất cả các denizen đang đứng trong vùng trigger.
-            // Nếu không làm điều này, denizen đã vào trigger trước khi cooldown xong
-            // sẽ không bao giờ nhặt được item.
-            var col = GetComponent<Collider2D>();
-            if (col != null)
-            {
-                col.enabled = false;
-                yield return null; // Chờ 1 frame để Unity process OnTriggerExit2D
-                col.enabled = true; // → Ngay lập tức Unity fire OnTriggerEnter2D lại
+                case "Player":
+                    playerPickupAble = false;
+                    _playerPickupCooldown = pickupAbleCooldown;
+                    break;
+                case "Denizens":
+                    denizensPickupAble = false;
+                    _denizenPickupCooldown = pickupAbleCooldown;
+                    break;
+                case "Enemy":
+                    enemyPickupAble = false;
+                    _enemyPickupCooldown = pickupAbleCooldown;
+                    break;
             }
         }
-        
+
         //loại bỏ handpickup cũ vì không dùng
         
         #region Saveable Implementation

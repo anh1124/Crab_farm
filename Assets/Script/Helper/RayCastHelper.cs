@@ -37,6 +37,15 @@ public class RayCastHelper : MonoBehaviour
     
     // Core logic
     private List<GameObject> hitObjects = new List<GameObject>();
+    private ContactFilter2D _filter;
+
+    private void Awake()
+    {
+        _filter = new ContactFilter2D();
+        _filter.useTriggers = true;
+        _filter.useDepth = false;
+        _filter.useLayerMask = true;
+    }
 
     private void Update()
     {
@@ -63,7 +72,7 @@ public class RayCastHelper : MonoBehaviour
         {
             DrawRay();
         }
-        return new List<GameObject>(hitObjects);
+        return hitObjects;
     }
 
     public void DrawRay()
@@ -77,19 +86,11 @@ public class RayCastHelper : MonoBehaviour
         // Xác định hướng raycast dựa trên scale X
         Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
 
-        
-        // Cấu hình Filter cho phép quét xuyên qua cả Trigger Colliders, đồng thời bỏ qua Layer Matrix ảo
-        ContactFilter2D filter = new ContactFilter2D();
-        filter.useTriggers = true; // Bắt buộc đọc cả các trigger ảo (VD: vùng nhận damage của Player)
-        filter.useDepth = false;
-        
-        // ~0 = tất cả layer, bỏ qua Layer Matrix ảo (nhưng ta sẽ dùng field targetLayer để User cấu chỉnh)
-        filter.useLayerMask = true;
-        filter.layerMask = targetLayer;
+        _filter.layerMask = targetLayer;
 
         // Dùng BoxCast (cao 0.3f) thay Raycast 1 pixel để bắt mục tiêu lệch trục Y nhẹ (VD: ShieldBot cận chiến)
         // Tham số: origin, size box, góc, hướng, contactFilter, kết quả, khoảng cách
-        int hitCount = Physics2D.BoxCast(origin, new Vector2(0.05f, 0.3f), 0f, direction, filter, _raycastResults, raycastDistance);
+        int hitCount = Physics2D.BoxCast(origin, new Vector2(0.05f, 0.3f), 0f, direction, _filter, _raycastResults, raycastDistance);
 
         // ================== DEBUG LOG ==================
         if (showDebugLog)
@@ -174,7 +175,7 @@ public class RayCastHelper : MonoBehaviour
 
     public List<GameObject> GetHitObjects()
     {
-        return new List<GameObject>(hitObjects);
+        return hitObjects;
     }
 
     public void SetRayLength(float length)
@@ -188,14 +189,10 @@ public class RayCastHelper : MonoBehaviour
         Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
         Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
         
-        ContactFilter2D filter = new ContactFilter2D();
-        filter.useTriggers = true;
-        filter.useDepth = false;
-        filter.useLayerMask = true;
-        filter.layerMask = targetLayer;
+        _filter.layerMask = targetLayer;
 
         RaycastHit2D[] results = new RaycastHit2D[500];
-        int hitCount = Physics2D.BoxCast(origin, new Vector2(0.05f, 0.3f), 0f, direction, filter, results, raycastDistance);
+        int hitCount = Physics2D.BoxCast(origin, new Vector2(0.05f, 0.3f), 0f, direction, _filter, results, raycastDistance);
 
         Script.Utils.DebugUtility.LogPhysicsResults(gameObject.name, "Raycast(Box)", origin, hitCount, results, tagsToDetect);
     }
