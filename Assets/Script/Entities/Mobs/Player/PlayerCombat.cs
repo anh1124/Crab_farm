@@ -24,6 +24,30 @@ namespace Script.Game.Player
             playerBehavior = GetComponent<PlayerBehavior>();
         }
 
+        private void Start()
+        {
+            if (status != null && status.HP != null)
+            {
+                status.HP.OnChanged += HandleHPChanged;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (status != null && status.HP != null)
+            {
+                status.HP.OnChanged -= HandleHPChanged;
+            }
+        }
+
+        private void HandleHPChanged(float current, float max)
+        {
+            if (current <= 0 && !IsDead)
+            {
+                Die(null);
+            }
+        }
+
         public float CurrentHp 
         { 
             get => status.HP.Current; 
@@ -102,6 +126,16 @@ namespace Script.Game.Player
             IsDead = true;
             Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
             DropOnDeath();
+            
+            if (Script.GUI_Controller.GameOverHandler.Instance != null)
+            {
+                Script.GUI_Controller.GameOverHandler.Instance.TriggerGameOver();
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerCombat] GameOverHandler.Instance is null! Please add GameOverHandler to the scene.");
+            }
+            
             gameObject.SetActive(false);
         }
 

@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: PlayerConfig
   m_EditorClassIdentifier: 
   maxHp: 10
+  hpRegenRate: 0.1
   moveSpeed: 12
-  maxCoins: 50
-  maxMana: 50
-  manaRegenRate: 1
+  maxCoins: 30
+  maxMana: 10
+  manaRegenRate: 0.1

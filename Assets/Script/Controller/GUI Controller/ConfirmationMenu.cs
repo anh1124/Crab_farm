@@ -39,9 +39,22 @@ public class ConfirmationMenu : MonoBehaviour
         });
     }
 
-    // Đóng menu
+    // Đóng menu và xóa toàn bộ dữ liệu cũ
     private void CloseMenu()
     {
         panel.SetActive(false);
+        ResetMenu();
+    }
+
+    // Hàm Reset chuyên biệt để clear trạng thái trước đó
+    public void ResetMenu()
+    {
+        if (headerText != null) headerText.text = string.Empty;
+        if (contentText != null) contentText.text = string.Empty;
+        
+        confirmAction = null;
+
+        if (cancelButton != null) cancelButton.onClick.RemoveAllListeners();
+        if (confirmButton != null) confirmButton.onClick.RemoveAllListeners();
     }
 }

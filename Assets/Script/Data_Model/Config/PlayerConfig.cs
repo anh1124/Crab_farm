@@ -11,9 +11,9 @@ namespace Script.Data_Model.Config
     {
         [Header("HP")]
         [Tooltip("Máu tối đa khi bắt đầu game mới")]
-        public float maxHp = 50f;
+        public float maxHp = 10f;
         [Tooltip("Lượng máu hồi mỗi giây (phân số)")]
-        public float hpRegenRate = 0.5f;
+        public float hpRegenRate = 0.015f;
 
         [Header("Movement")]
         [Tooltip("Tốc độ di chuyển mặc định")]
@@ -21,12 +21,12 @@ namespace Script.Data_Model.Config
 
         [Header("Inventory")]
         [Tooltip("Số coin tối đa có thể giữ")]
-        public int maxCoins = 100;
+        public int maxCoins = 30;
 
         [Header("Mana")]
         [Tooltip("Mana tối đa")]
-        public float maxMana = 50f;
+        public float maxMana= 10f;
         [Tooltip("Lượng mana hồi mỗi giây")]
-        public float manaRegenRate = 5f;
+        public float manaRegenRate = 0.1f;
     }
 }

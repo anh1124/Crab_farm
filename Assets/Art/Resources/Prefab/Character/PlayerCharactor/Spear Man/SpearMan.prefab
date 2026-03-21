@@ -96,6 +96,11 @@ GameObject:
   - component: {fileID: 8516832215337478737}
   - component: {fileID: 3731640909503210370}
   - component: {fileID: 955563581396219822}
+  - component: {fileID: 3167184854126006450}
+  - component: {fileID: 8865975276689748950}
+  - component: {fileID: 7654288856252759774}
+  - component: {fileID: 3282066763086950246}
+  - component: {fileID: 4566194524667276563}
   m_Layer: 13
   m_Name: SpearMan
   m_TagString: Player
@@ -298,6 +303,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   status: {fileID: 8516832215337478737}
+  defaultConfig: {fileID: 0}
   playerAnim: {fileID: 0}
 --- !u!114 &8516832215337478737
 MonoBehaviour:
@@ -311,16 +317,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5332ac7777feab542803aec4f0bcd6a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  HP:
+    _current: 0
+    _max: 0
+  Mana:
+    _current: 0
+    _max: 0
   maxCoins: 50
   moveSpeed: 12
+  hpRegenRate: 0.1
+  manaRegenRate: 3
   positionX: 0
   positionY: 0
-  attackDame: 1
-  attackSpeed: 1
   isGround: 0
-  currentMana: 50
-  maxMana: 50
-  manaRegenRate: 5
 --- !u!114 &3731640909503210370
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -358,6 +367,66 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canPickupCoin: 1
   canPickupTool: 0
+--- !u!114 &3167184854126006450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d91a2a7fed92c34ab6777e58c08871b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8865975276689748950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07ce9bd235bb74446abfa94357702f8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7654288856252759774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c193cafa79c899d4abe47327b696213d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3282066763086950246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9165f21f6b8399f4c847497b79f546b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4566194524667276563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14ec8e95a6dd1fd4a92413e2eb5387f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6591141932145495929
 GameObject:
   m_ObjectHideFlags: 0

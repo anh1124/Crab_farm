@@ -7,6 +7,8 @@ namespace Script.GUI_Controller
 {
     public class GuiCanvasManager : MonoBehaviour
     {
+        public static GuiCanvasManager Instance { get; private set; }
+        
         //button
         [Header("Button")]
         public Button pauseButton;
@@ -15,18 +17,25 @@ namespace Script.GUI_Controller
         public GameObject pauseMenu;
         public GameObject playerHud;
         public GameObject buildMenu;
-        
+        public ConfirmationMenu confirmationMenu;
         [Header("Resource Bars")]
         public ResourceBarUI healBarUI;
         public ResourceBarUI manaBarUI;
         
         public CoinUI coinUI;
-        
+
+        private void Awake()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+        }
         private void Start()
         {
-            ResumeGame();
+            pauseButton.onClick.RemoveAllListeners();
             pauseButton.onClick.AddListener(ShowPauseMenu);
-            // ShowPauseMenu(); // Xóa để không pause luôn từ đầu
+            ResumeGame();
         }
 
         public void SetupResourceBars(Script.Data_Model.Status.PlayerStatus status)
@@ -41,8 +50,6 @@ namespace Script.GUI_Controller
             else
                 Debug.LogError("[GuiCanvasManager] manaBarUI chưa được gán trong Inspector!");
         }
-
-      
 
         public void ShowPauseMenu()
         {

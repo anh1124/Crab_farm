@@ -240,7 +240,43 @@ namespace Script.Manager.Building
             {
                 string tag = type.ToString();
                 GameObject[] foundObjects = GameObject.FindGameObjectsWithTag(tag);
-                return foundObjects != null ? foundObjects.Length : 0;
+                
+                if (foundObjects == null) return 0;
+                
+                int count = 0;
+                foreach (var obj in foundObjects)
+                {
+                    bool counted = false;
+
+                    switch (type)
+                    {
+                        case BuildingType.Wall:
+                            if (obj.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>() != null)
+                            {
+                                counted = true;
+                            }
+                            break;
+                            
+                        case BuildingType.TownCenter:
+                            if (obj.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>() != null)
+                            {
+                                counted = true;
+                            }
+                            break;
+
+                        default:
+                            // Fallback chung cho các công trình chưa được định nghĩa rõ component
+                            counted = true; 
+                            break;
+                    }
+
+                    if (counted)
+                    {
+                        count++;
+                    }
+                }
+                
+                return count;
             }
             catch (System.Exception e)
             {

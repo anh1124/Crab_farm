@@ -4218,6 +4218,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ConfirmationPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 1899307974243404924, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4409819855247069129, guid: 632ae1773a7a01244ad792c96ea1a211, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

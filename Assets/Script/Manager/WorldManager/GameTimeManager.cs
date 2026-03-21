@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using Script.Save_Controller;
 using UnityEngine;
 using TMPro;
-
+using Script.Manager.SaveManager;
 namespace Script.Manager.WorldManager
 {
+    [RequireComponent(typeof(AutoSaveManager))]
 public class GameTimeManager : MonoBehaviour
 {
     public static GameTimeManager Instance { get; private set; }

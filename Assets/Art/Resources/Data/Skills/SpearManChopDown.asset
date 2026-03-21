@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2c120d3c39c525428094c8f668d35cf, type: 3}
   m_Name: SpearManChopDown
   m_EditorClassIdentifier: 
-  resourceCost: 50
+  resourceType: 0
+  resourceCost: 6
   displayName: 
   icon: {fileID: -2007057588, guid: defd2f148e299c64fb36821d049b3682, type: 3}
   skillName: SpearManChopDown

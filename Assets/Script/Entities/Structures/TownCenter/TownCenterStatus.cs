@@ -15,8 +15,26 @@ namespace Script.Data_Model.Status
 
         [Header("Health")]
         public float maxHp = 500f;
-        public float currentHp = 500f;
+        [SerializeField] private float _currentHp = 500f;
 
+        public event System.Action<float, float> OnHpChanged;
+
+        public float currentHp
+        {
+            get => _currentHp;
+            set
+            {
+                _currentHp = Mathf.Clamp(value, 0, maxHp);
+                OnHpChanged?.Invoke(_currentHp, maxHp);
+            }
+        }
+
+        [ContextMenu("Trừ 100 HP")]
+        public void Deduct100HP()
+        {
+            currentHp -= 100f;
+            Debug.Log($"[TownCenterStatus] Đã trừ 100 HP. HP hiện tại: {currentHp}/{maxHp}");
+        }
     }
 }
 

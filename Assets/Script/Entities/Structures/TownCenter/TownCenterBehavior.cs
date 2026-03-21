@@ -62,8 +62,29 @@ namespace Script.Game.Structures.TownCenter
                 Script.Game.Enemy.EnemyTargetManager.Instance.SetPrimaryTarget(gameObject);
             }
 
+            status.OnHpChanged += HandleHPChanged;
+        }
 
+        private void OnDestroy()
+        {
+            if (status != null)
+            {
+                status.OnHpChanged -= HandleHPChanged;
+            }
+            
+            // Báo Manager clear biến Left/Right của nó
+            if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter == gameObject)
+            {
+                BuildingManager.instance.currentTownCenter = null;
+            }
+        }
 
+        private void HandleHPChanged(float current, float max)
+        {
+            if (current <= 0)
+            {
+                OnTownCenterDestroyed();
+            }
         }
 
         private void Update()
@@ -285,24 +306,32 @@ namespace Script.Game.Structures.TownCenter
         public int GetUpgradeCost() => status.upgradeCost;
 
         // --- IDamageable Implementation ---
+        private bool _isDestroyed;
+        
         public void ReceiveDamage(float damage, GameObject instigator)
         {
-            if (damage <= 0) return;
+            if (damage <= 0 || _isDestroyed) return;
             
             status.currentHp -= damage;
             Debug.Log($"[TownCenter] Received {damage} damage from {instigator?.name ?? "unknown"}. HP: {status.currentHp}/{status.maxHp}");
-            
-            if (status.currentHp <= 0)
-            {
-                status.currentHp = 0;
-                OnTownCenterDestroyed();
-            }
         }
 
         private void OnTownCenterDestroyed()
         {
+            if (_isDestroyed) return;
+            _isDestroyed = true;
+            
             Debug.LogError("[TownCenter] GAME OVER - Town Center has been destroyed!");
-            // Thêm logic Game Over hoặc phá hủy tại đây
+            
+            if (Script.GUI_Controller.GameOverHandler.Instance != null)
+            {
+                Script.GUI_Controller.GameOverHandler.Instance.TriggerGameOver();
+            }
+            else
+            {
+                Debug.LogWarning("[TownCenterBehavior] GameOverHandler.Instance is null! Please add GameOverHandler to the scene.");
+            }
+            
             // Destroy(gameObject); // Thường thì Game Over thay vì biến mất hoàn toàn
         }
   

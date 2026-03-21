@@ -20,9 +20,6 @@ namespace Script.GUI_Controller.PauseMenu
         
         public GameObject pauseMenuPanel;
         
-        
-         public Button pauseButton;
-        
         public Button resumeButton;
         public Button optionBtn;
         public Button saveExitBtn;
@@ -31,15 +28,11 @@ namespace Script.GUI_Controller.PauseMenu
         
         private void Start()
         {
-            guiCanvasManager = gameObject.transform.parent.GetComponent<GuiCanvasManager>();
+            guiCanvasManager = GuiCanvasManager.Instance;
            
-            pauseButton.onClick.AddListener(OpenMenu);
-            resumeButton.onClick.AddListener(Resume);
-            optionBtn.onClick.AddListener(OpenOption);
-            saveExitBtn.onClick.AddListener(SaveAndExit);
-            Resume();
-            gameObject.SetActive(false);//ẩn đi
-            
+            if (resumeButton != null) resumeButton.onClick.AddListener(Resume);
+            if (optionBtn != null) optionBtn.onClick.AddListener(OpenOption);
+            if (saveExitBtn != null) saveExitBtn.onClick.AddListener(SaveAndExit);
         }
 
         public void Resume()
@@ -53,7 +46,6 @@ namespace Script.GUI_Controller.PauseMenu
         {
             Time.timeScale = 0f;
             pauseMenuPanel.SetActive(true);
-            pauseButton.gameObject.SetActive(false);
         }
 
         public void OpenOption()

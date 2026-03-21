@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09553bbec7288484ba5d97bc15cf97c6, type: 3}
   m_Name: SpawnVagrantSkill
   m_EditorClassIdentifier: 
-  resourceCost: 50
+  resourceType: 2
+  resourceCost: 7
   displayName: 
   icon: {fileID: -1242149758, guid: c667a3208f3d40a49930630a8b3acaed, type: 3}
   skillName: SpawnVagrantSkill
   damage: 0
-  cooldown: 3
+  cooldown: 1
   allowMovementDuringSkill: 0
-  hitbox: {fileID: 0}
   useAnimation: 0
   animationTrigger: 
