@@ -248,6 +248,7 @@ namespace Script.GUI_Controller.StartMenu
             optionsPanel.SetActive(false);
             createNewWorldPanel.SetActive(false);
             showWorldInfoPanel.SetActive(false);
+            if (confirmationPanel != null) confirmationPanel.SetActive(false);
         }
 
         #region Open panel metho
@@ -352,12 +353,19 @@ namespace Script.GUI_Controller.StartMenu
         
         public void DeleteCurrentWorldSave()
         {
-            // Tạo instance của confirmationPanel
-            GameObject a = Instantiate(confirmationPanel, this.gameObject.transform);
-            // Lấy component ConfirmationMenu từ instance
-            ConfirmationMenu confirmationMenu = a.GetComponent<ConfirmationMenu>();
+            if (confirmationPanel == null)
+            {
+                Debug.LogError("confirmationPanel is null! Please assign the scene instance in the Inspector.");
+                return;
+            }
+
+            // Lấy component ConfirmationMenu từ instance đã có sẵn trong scene
+            ConfirmationMenu confirmationMenu = confirmationPanel.GetComponent<ConfirmationMenu>();
             if (confirmationMenu != null)
             {
+                // Active panel lên (nếu ConfirmationMenu.Initialize chưa làm việc này cho root object)
+                confirmationPanel.SetActive(true);
+
                 // Hiển thị menu xác nhận
                 confirmationMenu.Initialize(
                     "Delete World",
