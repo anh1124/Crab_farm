@@ -951,11 +951,11 @@ namespace Script.Game.Structures.Wall_And_Stump
         #endregion
         
         #region ICoinReceiver Methods
-        public bool ReceiveCoin(int amount, GameObject player)
+        public bool ReceiveCoin(GameObject player)
         {
             if (coinUser != null)
             {
-                return coinUser.ReceiveCoin(amount, player);
+                return coinUser.ReceiveCoin(player);
             }
             return false;
         }

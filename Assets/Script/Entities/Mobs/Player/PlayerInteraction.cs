@@ -124,5 +124,16 @@ namespace Script.Game.Player
              // without permanently removing it from the physically-in-range list.
              UpdateCurrentInteractable();
         }
+        
+        public void LogCurrentInteractables()
+        {
+            Debug.Log($"[PlayerInteraction-DEBUG] Current interactables in range count: {interactablesInRange.Count}");
+            for (int i = 0; i < interactablesInRange.Count; i++)
+            {
+                var interactable = interactablesInRange[i];
+                var go = (interactable as MonoBehaviour)?.gameObject;
+                Debug.Log($"[PlayerInteraction-DEBUG] [{i}] Name: {go?.name}, InstanceID: {go?.GetInstanceID()}, Pos: {go?.transform.position}");
+            }
+        }
     }
 }

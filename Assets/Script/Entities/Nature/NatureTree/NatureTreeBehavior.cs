@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace Script.Game.Other.Nature
 {   
+    [RequireComponent(typeof(NatureTreeStatus))]
     public class NatureTreeBehavior : MonoBehaviour, IDeathDrop
     {
         [Header("Tree Components")]
@@ -15,16 +16,7 @@ namespace Script.Game.Other.Nature
         [Header("Tree Settings")]
         public int treeChopCost; // biến này ko cần lưu
         
-        [Header("Tree Properties")]
-        public int currentWorkProgress;
-        public int maxWorkProgress;
-        public bool isReadyToChop;
-        
-        [Header("Tree Type")]
-        public string treeType = "Default";
-        public int treeLevel = 1;
-        
-        private bool isSetupCalled = false;
+        private bool _isDead = false; // Guard chống double-process khi bị destroy
         
         private void Awake()
         {
@@ -68,25 +60,26 @@ namespace Script.Game.Other.Nature
             }
             
             InitializeTree();
+            // [BUGFIX] Destroy ghost trees that loaded with 0 progress
+            if (status.currentWorkProgress <= 0)
+            {
+                _isDead = true;
+                Destroy(gameObject);
+            }
         }
         
         private void InitializeTree()
         {
             treeChopCost = PrefabData.Instance.treeChopCost;
-            maxWorkProgress = PrefabData.Instance.treeMaxWorkProgress;
-            UpdateCoinUserData();
             
-            // Nếu hàm SetWorkProgress chưa được gọi thì tức là đây là cây mới(chưa có trong save nên phải set full hp cho nó)
-            if (!isSetupCalled)
+            // Set maxWorkProgress to 8 as requested by user
+            if (!status.isSetupCalled)
             {
-                currentWorkProgress = PrefabData.Instance.treeMaxWorkProgress;
+                status.maxWorkProgress = 8;
+                status.currentWorkProgress = status.maxWorkProgress;
             }
-        }
-        
-        public void SetWorkProgress(int currentWorkProgress)
-        {
-            isSetupCalled = true;
-            this.currentWorkProgress = currentWorkProgress;
+            
+            UpdateCoinUserData();
         }
         
         private void UpdateCoinUserData()
@@ -97,44 +90,49 @@ namespace Script.Game.Other.Nature
         
         public void SetChopFlag()
         {
-            isReadyToChop = true;
-            // Đặt tạm hàm take dame ở đây để test xóa cây
-            Debug.LogWarning("đang test xóa cây sau khi thêm tiền ở hàm SetChopFlag");
-            TakeDame(11);
+            Debug.Log($"[NatureTree-DEBUG] SetChopFlag CALLED on {gameObject.name}. isReadyToChop was {status.isReadyToChop}");
+            status.isReadyToChop = true;
+            // Tắt nhận coin ngay lập tức để cây không bị interact thêm trong frame destroy
+            if (coinUser != null) coinUser.canAcceptCoins = false;
+            TakeDame(status.maxWorkProgress); // Harvest toàn bộ hp của cây
         }
 
         public void TakeDame(int dame)
-        {   
-            Debug.Log("NatureTreeBehavior: take dame " + dame);
-            if (dame <= 0)
-            {
-                return;
-            }
+        {
+            Debug.Log($"[NatureTree-DEBUG] TakeDame CALLED on {gameObject.name}: dame={dame}, currentHP={status.currentWorkProgress}, _isDead={_isDead}");
+            if (_isDead || dame <= 0) return;
             
-            if (dame >= currentWorkProgress)
+            if (dame >= status.currentWorkProgress)
             {
+                Debug.Log($"[NatureTree-DEBUG] {gameObject.name} IS DEAD. Calling Destroy.");
+                _isDead = true;
+                status.currentWorkProgress = 0;
                 DropOnDeath();
                 // Do animation treefall
                 Destroy(gameObject);
             }
             else
             {
-                currentWorkProgress -= dame;
+                status.currentWorkProgress -= dame;
+                Debug.Log($"[NatureTree-DEBUG] {gameObject.name} reduced HP to {status.currentWorkProgress}");
             }
         }
         
         public void DropOnDeath()
         {
-            Spawner.Instance.DropByNature(transform.position,
-                Spawner.Instance.GetRandomNumber(3), 
-                Vector2.zero);
+            // Tỉ lệ rơi coin 80%
+            if (UnityEngine.Random.Range(0, 100) < 80)
+            {
+                int amount = UnityEngine.Random.Range(1, 3); // Rơi 1 hoặc 2 coin
+                Spawner.Instance.DropByNature(transform.position, amount, Vector2.zero);
+            }
         }
         
-        // Public getters for external access
-        public int CurrentWorkProgress => currentWorkProgress;
-        public int MaxWorkProgress => maxWorkProgress;
-        public bool IsReadyToChop => isReadyToChop;
-        public string TreeType => treeType;
-        public int TreeLevel => treeLevel;
+        // Public getters for external access, routing to status
+        public int CurrentWorkProgress => status.currentWorkProgress;
+        public int MaxWorkProgress => status.maxWorkProgress;
+        public bool IsReadyToChop => status.isReadyToChop;
+        public string TreeType => status.treeType;
+        public int TreeLevel => status.treeLevel;
     }
 }

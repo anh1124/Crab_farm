@@ -260,6 +260,7 @@ namespace Script.Game.Item.Coin
 
         private void ClearCoinSlots()
         {
+            Debug.Log($"[CoinUser-DEBUG] ClearCoinSlots called! Destroys {coinSlotParent.transform.childCount} children and sets currentSlotIndex = 0");
             foreach (Transform child in coinSlotParent.transform)
             {
                 Destroy(child.gameObject);
@@ -268,34 +269,68 @@ namespace Script.Game.Item.Coin
             currentSlotIndex = 0;
         }
 
-        public void InsertCoin(int availableCoins, GameObject player)
+        // Thay vì biến cũ nhận số lượng coin dư thừa, giờ lấy trực tiếp PlayerBehavior và trừ tiền
+        public void InsertCoin(GameObject player)
         {
             // Kiểm tra điều kiện nhận xu
-            if (!canAcceptCoins || availableCoins <= 0 || isReadyToUpgrade)
+            if (!canAcceptCoins || isReadyToUpgrade)
             {
                 return;
             }
+            
+            if (currentSlotIndex >= requiredCoins || coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count) 
+            {
+                return; // Hết slot
+            }
+
+            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
+            if (playerBehavior == null || playerBehavior.Coin <= 0)
+            {
+                return; // Hết tiền
+            }
+            
+            playerBehavior.SubtractCoin(1); // Trừ tiền thật sự
             StartCoinTransfer(player);
             isCollectingCoins = true;
             coinCollectionTimer = coinCollectionTimeout;
         }
         
         // Public methods for external access
-        public bool ReceiveCoin(int amount, GameObject player)
+        public bool ReceiveCoin(GameObject player)
         {
-            if (!canAcceptCoins || amount <= 0 || isReadyToUpgrade)
+            if (!canAcceptCoins || isReadyToUpgrade || currentSlotIndex >= requiredCoins)
             {
                 return false;
             }
             
-            InsertCoin(amount, player);
+            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
+            if (playerBehavior == null || playerBehavior.Coin <= 0)
+            {
+                return false; 
+            }
+            
+            InsertCoin(player);
             return true;
         }
         
         public void PerformUpgrade()
         {
+            Debug.Log($"[CoinUser-DEBUG] PerformUpgrade CALLED! isReadyToUpgrade={isReadyToUpgrade}, collected={collectedCoins}, required={requiredCoins}");
+            
             // Fix: Check if already upgraded OR not enough coins
-            if (isReadyToUpgrade || collectedCoins < requiredCoins) return;
+            if (isReadyToUpgrade || collectedCoins < requiredCoins) 
+            {
+                Debug.Log($"[CoinUser-DEBUG] PerformUpgrade Early Return! isReady={isReadyToUpgrade}, collected={collectedCoins} < req {requiredCoins} is {collectedCoins < requiredCoins}");
+                return;
+            }
+            
+            // Đặt cờ TRƯỚC để các coroutine đang chạy song song thoát ngay lập tức
+            isReadyToUpgrade = true;
+            Debug.Log($"[CoinUser-DEBUG] PerformUpgrade executing... set isReadyToUpgrade = {isReadyToUpgrade}");
+            
+            // Dừng tất cả coroutine ngay — ngăn các coin đang bay tiếp tục gọi CheckUpgradeStatus
+            StopAllCoinCoroutines();
+            
             // Finalize coin collection and trigger upgrade
             foreach (GameObject coin in coinsInTransit)
             {
@@ -315,7 +350,6 @@ namespace Script.Game.Item.Coin
             if (coinSlotParent != null) coinSlotParent.SetActive(false);
             currentSlotIndex = 0;
             isCollectingCoins = false;
-            isReadyToUpgrade = true;
             onUpgradeComplete?.Invoke();
         }
         
@@ -382,7 +416,13 @@ namespace Script.Game.Item.Coin
             SetCoinProperties(coin);
             
             coinsInTransit.Add(coin);
-            Coroutine coroutine = StartCoroutine(MoveCoinToSlot(coin, targetPosition));
+            
+            // --- DEBUG LOGGING ---
+            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
+            int playerCoins = playerBehavior != null ? playerBehavior.Coin : -1;
+            Debug.Log($"[CoinUser-DEBUG] SPAWN COIN: {coin.name} at {coin.transform.position} to fly to slot {currentSlotIndex} at {targetPosition}. Target collectedCoins {collectedCoins + 1}/{requiredCoins}. Player current coin: {playerCoins}. Transit list count: {coinsInTransit.Count}");
+
+            Coroutine coroutine = StartCoroutine(MoveCoinToSlot(coin, targetPosition, currentSlotIndex, player));
             coinMoveCoroutines.Add(coroutine);
 
             currentSlotIndex++;
@@ -399,7 +439,9 @@ namespace Script.Game.Item.Coin
             }
         }
 
-        private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition)
+        private HashSet<GameObject> arrivedCoins = new HashSet<GameObject>();
+
+        private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition, int slotIndex, GameObject player)
         {
             Vector3 startPosition = coin.transform.position;
             float elapsedTime = 0f;
@@ -407,56 +449,52 @@ namespace Script.Game.Item.Coin
             while (elapsedTime < coinMoveSpeed)
             {
                 if (coin == null) yield break; // Safety check
+                // Nếu upgrade đã xảy ra (do coroutine khác kích hoạt trước), thoát ngay
+                if (isReadyToUpgrade) yield break;
                 coin.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / coinMoveSpeed);
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
 
-            if (coin != null) coin.transform.position = targetPosition;
+            // Guard cuối: nếu đã upgrade rồi thì không tăng coin nữa
+            if (isReadyToUpgrade || coin == null) yield break;
+
+            coin.transform.position = targetPosition;
+            
+            // Đánh dấu coin đã vào vị trí
+            arrivedCoins.Add(coin);
+            
+            // --- DEBUG LOGGING ---
+            PlayerBehavior pb = player != null ? player.GetComponent<PlayerBehavior>() : null;
+            int playerCoins = pb != null ? pb.Coin : -1;
+            Debug.Log($"[CoinUser-DEBUG] ARRIVED COIN: {coin.name} arrived at slot {slotIndex} with position {targetPosition}. Player current coin: {playerCoins}. Arrived array count: {arrivedCoins.Count}, Transit array count: {coinsInTransit.Count}");
+            
             collectedCoins++;
             CheckUpgradeStatus();
         }
 
         private void CheckUpgradeStatus()
         {
+            Debug.Log($"[CoinUser-DEBUG] CheckUpgradeStatus: collected={collectedCoins}, required={requiredCoins}");
             if (collectedCoins >= requiredCoins)
             {
                 PerformUpgrade();
             }
         }
 
-     
         private void ReleaseCoins()
         {   
-            
-            //    Debug.LogWarning("đã gọi hàm ReleaseCoins");
-            
-            
+            Debug.Log($"[CoinUser-DEBUG] ReleaseCoins called! IsReadyToUpgrade: {isReadyToUpgrade}, collected={collectedCoins}");
             foreach (GameObject transitCoin in coinsInTransit)
             {
                 if (transitCoin != null)
                 {
-                    ReleaseCoin(transitCoin);
+                    ReleaseCoin(transitCoin); // Nhả vật lý cho chính coin đó, không tạo coin mới
                 }
             }
             StopAllCoinCoroutines();
             ClearTransitCoins();
             isCollectingCoins = false;
-            
-            GameObject droppedCoin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(PrefabData.Instance.coinPrefab, Script.Manager.EntitySaveManager.Instance.coinContainer.transform);
-            if (droppedCoin != null)
-            {
-                droppedCoin.transform.position = transform.position;
-            
-                PhysicalItem coinScript = droppedCoin.GetComponent<PhysicalItem>();
-                if (coinScript != null)
-                {
-                    coinScript.floating = false;
-                    coinScript.playerPickupAble = true;
-                    coinScript.denizensPickupAble = true;
-                }
-            }
-            currentSlotIndex = 0;
         }
         
         private void ReleaseCoin(GameObject coin)
@@ -484,8 +522,11 @@ namespace Script.Game.Item.Coin
 
         private void ClearTransitCoins()
         {
+            Debug.Log($"[CoinUser-DEBUG] ClearTransitCoins called! previous transit count={coinsInTransit.Count}");
             coinsInTransit.Clear();
+            arrivedCoins.Clear();
             collectedCoins = 0;
+            currentSlotIndex = 0;
         }
 
         public void OnPlayerEnter(PlayerBehavior player)
@@ -495,6 +536,11 @@ namespace Script.Game.Item.Coin
 
         public void OnPlayerExit(PlayerBehavior player)
         {
+            if (coinsInTransit.Count > 0 && !isReadyToUpgrade)
+            {
+                ReleaseCoins();
+            }
+            
             PlayerTriggerOff();
         }
 

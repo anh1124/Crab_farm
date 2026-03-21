@@ -134,6 +134,16 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
                 return;
             }
             
+            if (string.IsNullOrEmpty(animationTrigger))
+            {
+                Debug.LogWarning($"[SpearManAnimationController] TriggerSkillAnimation called with empty trigger for slot {slotIndex}! Calling OnSkillAnimationEnd immediately.");
+                if (skillManager != null && slotIndex >= 0)
+                {
+                    skillManager.OnSkillAnimationEnd(slotIndex);
+                }
+                return;
+            }
+            
             IsSkillAnimationPlaying = true;
             currentExecutingSkillSlot = slotIndex;
             currentSkillTrigger = animationTrigger; // Lưu trigger để reset sau

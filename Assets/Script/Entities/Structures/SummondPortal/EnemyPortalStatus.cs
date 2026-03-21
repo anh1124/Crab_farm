@@ -18,8 +18,16 @@ namespace Script.Entities.Structures.SummondPortal
         public int spawnDay;
 
         [Header("Health")]
-        [SerializeField] private float maxHp = 1000f;
+        [SerializeField] private float maxHp = 100f;
         [SerializeField] private float currentHp;
+
+        private void Awake()
+        {
+            if (currentHp <= 0f)
+            {
+                currentHp = maxHp;
+            }
+        }
 
         public float CurrentHp 
         { 

@@ -168,6 +168,12 @@ namespace Script.Controller.PlayerController
                 if (Time.time - coinLogTimer >= 0.5f)
                 {
                     coinLogTimer = Time.time;
+                    
+                    if (playerBehavior != null)
+                    {
+                        var interaction = playerBehavior.GetComponent<PlayerInteraction>();
+                        if (interaction != null) interaction.LogCurrentInteractables();
+                    }
 
                     if (currentStructureShowCoinSlot != null)
                     {
@@ -178,8 +184,7 @@ namespace Script.Controller.PlayerController
                             {
                                 if (playerBehavior != null && playerBehavior.Coin > 0)
                                 {
-                                    coinUser.InsertCoin(playerBehavior.Coin, player);
-                                    playerBehavior.Coin--;
+                                    coinUser.InsertCoin(player);
                                 }
                                 else
                                 {

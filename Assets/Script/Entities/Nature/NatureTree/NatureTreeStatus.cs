@@ -1,29 +1,15 @@
-﻿using Script.Data_Model.Interfaces;
+using Script.Data_Model.Interfaces;
 using Script.Data_Model;
 using UnityEngine;
 using Newtonsoft.Json;
 
 namespace Script.Game.Other.Nature
 {   
-    /// <summary>
-    /// Main component for tree. Logic and data are handled by NatureTreeBehavior.
-    /// </summary>
+    [RequireComponent(typeof(NatureTreeBehavior))]
     public class NatureTreeStatus : MonoBehaviour, ISaveable
     {
-        [Header("Tree Components")]
-        [SerializeField] private NatureTreeBehavior behavior;
-        
         public int type;
-        
-        private void Awake()
-        {
-            // Get or add required components
-            if (behavior == null)
-                behavior = GetComponent<NatureTreeBehavior>();
-            if (behavior == null)
-                behavior = gameObject.AddComponent<NatureTreeBehavior>();
-        }
-
+       
         private void Start()
         {
             // Auto-detect type if it's default (0), fixing headerless trees form chunks
@@ -50,17 +36,13 @@ namespace Script.Game.Other.Nature
             }
         }
         
-        // Public getters for external access
-        public NatureTreeBehavior Behavior => behavior;
-        
-        // Convenience methods that delegate to behavior
-        public void SetWorkProgress(int currentWorkProgress) => behavior?.SetWorkProgress(currentWorkProgress);
-        public void TakeDame(int dame) => behavior?.TakeDame(dame);
-        public int CurrentWorkProgress => behavior?.CurrentWorkProgress ?? 0;
-        public int MaxWorkProgress => behavior?.MaxWorkProgress ?? 0;
-        public bool IsReadyToChop => behavior?.IsReadyToChop ?? false;
-        public string TreeType => behavior?.TreeType ?? "Default";
-        public int TreeLevel => behavior?.TreeLevel ?? 1;
+        // State Properties previously in Behavior
+        public int currentWorkProgress;
+        public int maxWorkProgress;
+        public bool isReadyToChop;
+        public string treeType = "Default";
+        public int treeLevel = 1;
+        public bool isSetupCalled = false;
 
         public string GetPrefabID()
         {
@@ -76,9 +58,9 @@ namespace Script.Game.Other.Nature
                 positionX = position.x,
                 positionY = position.y, 
                 type = this.type,
-                currentWorkProgress = this.CurrentWorkProgress,
-                maxWorkProgress = this.MaxWorkProgress,
-                isReadyToChop = this.IsReadyToChop
+                currentWorkProgress = this.currentWorkProgress,
+                maxWorkProgress = this.maxWorkProgress,
+                isReadyToChop = this.isReadyToChop
             };
         }
 
@@ -111,12 +93,10 @@ namespace Script.Game.Other.Nature
                 transform.position = new Vector3(treeData.positionX, treeData.positionY, 0);
                 type = treeData.type;
                 
-                if (behavior != null)
-                {
-                    behavior.SetWorkProgress(treeData.currentWorkProgress);
-                    behavior.maxWorkProgress = treeData.maxWorkProgress;
-                    behavior.isReadyToChop = treeData.isReadyToChop;
-                }
+                currentWorkProgress = treeData.currentWorkProgress;
+                maxWorkProgress = treeData.maxWorkProgress;
+                isReadyToChop = treeData.isReadyToChop;
+                isSetupCalled = true;
             }
         }
         

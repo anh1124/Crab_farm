@@ -712,6 +712,20 @@ public class ChunkManager : MonoBehaviour
                 
                 if (newChunkObject != null)
                 {
+                    // [BUGFIX] Remove any pre-planted trees/bushes from the instantiated chunk 
+                    // so we don't duplicate objects that will be loaded by EntitySaveManager
+                    Transform[] childTransforms = newChunkObject.GetComponentsInChildren<Transform>(true);
+                    foreach (Transform child in childTransforms)
+                    {
+                        if (child != null && child.gameObject != newChunkObject)
+                        {
+                            if (child.CompareTag(Script.Utils.GameTags.Tree))
+                            {
+                                Destroy(child.gameObject);
+                            }
+                        }
+                    }
+
                     EntitySaveManager.Instance.MoveChildrenToContainers(newChunkObject);
                 }
                 else
