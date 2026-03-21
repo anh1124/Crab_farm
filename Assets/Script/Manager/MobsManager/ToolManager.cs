@@ -126,7 +126,12 @@ namespace Script.Manager.MobsManager
 
         private void CleanUnservedList()
         {
-            unservedTools.RemoveAll(t => t == null || t.pickedBy != null);
+            // SAU — tránh lambda allocation, dùng for loop ngược
+            for (int i = unservedTools.Count - 1; i >= 0; i--)
+            {
+                if (unservedTools[i] == null || !unservedTools[i].IsAvailable())
+                    unservedTools.RemoveAt(i);
+            }
         }
 
         private PhysicalItem GetNearestFrom(List<PhysicalItem> list, Vector3 pos)
@@ -144,7 +149,12 @@ namespace Script.Manager.MobsManager
         public PhysicalItem GetNearestTool(Vector3 position, ItemType? specificType = null)
         {
             // Filter out nulls or picked tools first
-            availableTools.RemoveAll(t => t == null || t.pickedBy != null);
+            // SAU — tránh lambda allocation, dùng for loop ngược
+            for (int i = availableTools.Count - 1; i >= 0; i--)
+            {
+                if (availableTools[i] == null || !availableTools[i].IsAvailable())
+                    availableTools.RemoveAt(i);
+            }
 
             PhysicalItem nearestTool = null;
             float minDistance = float.MaxValue;

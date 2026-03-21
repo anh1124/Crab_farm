@@ -23,6 +23,8 @@ namespace Script.Game.Item.Coin
     {
         public ItemType itemType = ItemType.Coin;
         public GameObject pickedBy = null;
+        public bool IsAvailable() => pickedBy == null; // Added to avoid lambda allocation in ToolManager
+
         public bool playerPickupAble = true;
         public bool denizensPickupAble  = true;
         public bool enemyPickupAble = false;

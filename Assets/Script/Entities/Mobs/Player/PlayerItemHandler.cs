@@ -2,6 +2,7 @@ using Script.Game.Item.Coin;
 using Script.Interfaces;
 using Script.Data_Model.Interfaces;
 using UnityEngine;
+using Script.Utils;
 
 namespace Script.Game.Player
 {
@@ -22,7 +23,7 @@ namespace Script.Game.Player
         public bool HandleItem(GameObject item)
         {
             // 1. Kiểm tra nhanh loại item bằng tag/name trước khi GetComponent để tối ưu
-            if (item.name.ToLower().Contains("coin"))
+            if (item.CompareTag(GameTags.Coin))
             {
                 // Nếu túi đầy thì không nhặt, trả về false ngay lập tức mà không cần GetComponent PhysicalItem
                 if (playerBehavior.Coin >= playerBehavior.MaxCoins) return false;
