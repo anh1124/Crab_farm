@@ -7,7 +7,8 @@ using UnityEngine;
 namespace Script.Game.Other.Nature
 {   
     [RequireComponent(typeof(NatureTreeStatus))]
-    public class NatureTreeBehavior : MonoBehaviour, IDeathDrop
+    [RequireComponent(typeof(CoinUser))]
+    public class NatureTreeBehavior : MonoBehaviour, IDeathDrop, ICoinUserOwner
     {
         [Header("Tree Components")]
         [SerializeField] private CoinUser coinUser;
@@ -78,22 +79,31 @@ namespace Script.Game.Other.Nature
                 status.maxWorkProgress = 8;
                 status.currentWorkProgress = status.maxWorkProgress;
             }
-            
-            UpdateCoinUserData();
         }
         
-        private void UpdateCoinUserData()
+        // --- ICoinUserOwner Implementation ---
+        public int GetRequiredCoinCount()
         {
-            coinUser.requiredCoins = treeChopCost;
-            coinUser.onUpgradeComplete = SetChopFlag;
+            return treeChopCost;
         }
+
+        public bool CanReceiveCoins()
+        {
+            return !status.isReadyToChop; // Cây chưa sẵn sàng bị chặt thì nhận được coin
+        }
+
+        public void OnAllCoinsCollected()
+        {
+            SetChopFlag();
+        }
+        // -----------------------------------
         
         public void SetChopFlag()
         {
             Debug.Log($"[NatureTree-DEBUG] SetChopFlag CALLED on {gameObject.name}. isReadyToChop was {status.isReadyToChop}");
             status.isReadyToChop = true;
-            // Tắt nhận coin ngay lập tức để cây không bị interact thêm trong frame destroy
-            if (coinUser != null) coinUser.canAcceptCoins = false;
+            // CoinUser sẽ tự gọi CanReceiveCoins() và trả về false do isReadyToChop = true
+            //dùng cách này để test vì chưa tạo job denizen worker
             TakeDame(status.maxWorkProgress); // Harvest toàn bộ hp của cây
         }
 

@@ -9,10 +9,11 @@ using Script.Game.Other;
 using UnityEngine;
 using System.Linq;
 using Script.Manager.Building;
+using Script.Interfaces;
 
 namespace Script.Game.Structures.SellingShop
 {
-    public class ItemSeller : MonoBehaviour, ISaveable
+    public class ItemSeller : MonoBehaviour, ISaveable, ICoinUserOwner
     {
         public enum ItemType
         {
@@ -26,7 +27,6 @@ namespace Script.Game.Structures.SellingShop
         public ItemType itemType; // Loại vật phẩm đang bán
         public bool isFull = false; // Kệ hàng có đầy không
         private CoinUser coinUser;
-        public bool canAcceptCoins = true; // Kiểm soát việc nhận xu
         
         // New fields for JSON configuration
         [JsonIgnore]
@@ -59,8 +59,6 @@ namespace Script.Game.Structures.SellingShop
         private void InitializeComponents()
         {
             coinUser = gameObject.GetComponent<CoinUser>();
-            coinUser.onUpgradeComplete -= OnUpgradeComplete; // Prevent duplicate subscription
-            coinUser.onUpgradeComplete += OnUpgradeComplete;
             
             // Set building type information for the CoinUser
             BuildingType buildingType;
@@ -126,22 +124,37 @@ namespace Script.Game.Structures.SellingShop
 
         private void GetItemValueFromPrefabDataUseItemTypeName()
         {
-            if (PrefabData.Instance.productPrices.TryGetValue(itemType.ToString(), out var price))
-            {
-                coinUser.requiredCoins = price;
-            }
-            else
+            if (!PrefabData.Instance.productPrices.ContainsKey(itemType.ToString()))
             {
                 Debug.LogError($"Giá của {itemType} không tồn tại trong productPrices!");
             }
         }
         
-        private void OnUpgradeComplete()
+        // --- ICoinUserOwner Implementation ---
+        public int GetRequiredCoinCount()
+        {
+            if (PrefabData.Instance.productPrices.TryGetValue(itemType.ToString(), out var price))
+            {
+                return price;
+            }
+            return 999; // Fallback an toàn
+        }
+
+        public bool CanReceiveCoins()
+        {
+            return !isFull;
+        }
+
+        public void OnAllCoinsCollected()
         {
             AddItem();
-            // Reset CoinUser state after adding item
-            coinUser.ResetUpgradeState();
+            // Báo CoinUser reset để chuẩn bị item tiếp theo (nếu kệ chưa đầy)
+            if (coinUser != null)
+            {
+                coinUser.ResetUpgradeState();
+            }
         }
+        // -------------------------------------
         
         public void AddItem()
         {
@@ -197,7 +210,6 @@ namespace Script.Game.Structures.SellingShop
             return null;
         }
 
-        [ContextMenu("CheckInventory")]
         public void CheckInventory()
         {
             // Loại bỏ các item bị null (đã bị destroy) một cách an toàn cho Inspector
@@ -210,17 +222,11 @@ namespace Script.Game.Structures.SellingShop
             }
 
             isFull = currentItems.Count >= itemSlot.Count;
-            canAcceptCoins = !isFull; // Nếu kệ đầy, không nhận xu
-            coinUser.canAcceptCoins = canAcceptCoins; // Cập nhật CoinUser
-            
-            // Log trạng thái của ItemSeller và CoinUser
-            //Debug.Log($"[CheckInventory] ItemSeller: {itemType} | Items: {currentItems.Count}/{itemSlot.Count} | isFull: {isFull} | canAcceptCoins: {canAcceptCoins}\n" +
-             //         $"[CheckInventory] CoinUser: {coinUser.gameObject.name} | canAcceptCoins: {coinUser.canAcceptCoins} | playerTrigger: {coinUser.playerTrigger} | isReadyToUpgrade: {coinUser.isReadyToUpgrade} | requiredCoins: {coinUser.requiredCoins}");
             
             // Cập nhật lại UI hiển thị coin (nếu player đang đứng trong trigger)
             if (coinUser != null)
             {
-                coinUser.RefreshActiveState();
+                coinUser.RefreshSlotVisibility();
             }
         }
 

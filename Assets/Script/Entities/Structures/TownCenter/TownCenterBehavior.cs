@@ -15,7 +15,9 @@ namespace Script.Game.Structures.TownCenter
     /*
      hiện tại,dùng tạm data trong TownCenterDataList,chưa táoave như bên  wall vì bên wall cần collider
      */
-    public class TownCenterBehavior : MonoBehaviour, IUpgradeable, ISaveable, IDamageable
+    [RequireComponent(typeof(TownCenterStatus))]    
+    [RequireComponent(typeof(CoinUser))]    
+    public class TownCenterBehavior : MonoBehaviour, ISaveable, IDamageable, ICoinUserOwner
     {
         
         public TownCenterStatus status ;
@@ -126,11 +128,7 @@ namespace Script.Game.Structures.TownCenter
             // Khởi tạo coinUser sau khi status đã sẵn sàng
             if (coinUser != null)
             {
-                coinUser.requiredCoins = status.upgradeCost;
-                coinUser.onUpgradeComplete = Upgrade;
                 coinUser.SetBuildingInfo(BuildingType.TownCenter, status.tier);
-                
-              //  Debug.Log($"[TownCenterBehavior] Initialized CoinUser. Tier: {status.tier}, Required: {status.upgradeCost}, Can accept: {coinUser.canAcceptCoins}");
             }
             else
             {
@@ -189,6 +187,24 @@ namespace Script.Game.Structures.TownCenter
             curentPrefab = data.curentPrefab;
             Debug.Log($"[TownCenterBehavior] Data loaded. Tier: {status.tier}, UpgradeCost: {status.upgradeCost}");
         }
+
+        // --- ICoinUserOwner Implementation ---
+        public int GetRequiredCoinCount()
+        {
+            return status.upgradeCost;
+        }
+
+        public bool CanReceiveCoins()
+        {
+            var nextTier = TownCenterDataList.Instance.GetByTier(status.tier + 1);
+            return nextTier != null;
+        }
+
+        public void OnAllCoinsCollected()
+        {
+            Upgrade();
+        }
+        // -------------------------------------
 
         private void Upgrade()
         {
@@ -289,7 +305,6 @@ namespace Script.Game.Structures.TownCenter
         {
             if (coinUser == null) return;
             
-            coinUser.requiredCoins = data.upgradeCost;
             coinUser.SetBuildingInfo(BuildingType.TownCenter, data.tier);
             coinUser.ResetUpgradeState();
             Debug.Log("[TownCenterBehavior] CoinUser reset để có thể nhận coin tiếp");
@@ -386,11 +401,8 @@ namespace Script.Game.Structures.TownCenter
             status.readyToUpgrade = d.readyToUpgrade;
             status.buildProgress = d.buildProgress;
             status.buildProgressMax = d.buildProgressMax;
-            if (coinUser == null) coinUser = GetComponent<CoinUser>();
             if (coinUser != null)
             {
-                coinUser.requiredCoins = status.upgradeCost;
-                coinUser.onUpgradeComplete = Upgrade;
                 coinUser.SetBuildingInfo(BuildingType.TownCenter, status.tier);
             }
             // Thông báo BuildingManager tham chiếu lại currentTownCenter nếu cần

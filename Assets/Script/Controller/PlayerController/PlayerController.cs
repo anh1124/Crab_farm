@@ -178,23 +178,13 @@ namespace Script.Controller.PlayerController
                     if (currentStructureShowCoinSlot != null)
                     {
                         coinUser = currentStructureShowCoinSlot.GetComponent<CoinUser>();
-                        if (coinUser != null && !coinUser.isReadyToUpgrade)
+                        if (coinUser != null)
                         {
-                            if (coinUser.collectedCoins <= coinUser.requiredCoins)
+                            bool success = coinUser.ReceiveCoin(player);
+                            if (!success)
                             {
-                                if (playerBehavior != null && playerBehavior.Coin > 0)
-                                {
-                                    coinUser.InsertCoin(player);
-                                }
-                                else
-                                {
-                                    Debug.Log("đang nâng cấp nhưng không đủ tiền ");
-                                }
+                                Debug.Log("Không thể nạp xu (công trình đã đầy/không nhận hoặc player hết tiền/đang bận)");
                             }
-                        }
-                        else if (coinUser != null && coinUser.isReadyToUpgrade)
-                        {
-                            Debug.LogWarning("Công trình đã sẵn sàng nâng cấp");
                         }
                     }
                 }

@@ -18,7 +18,7 @@ namespace Script.Game.Structures.Wall_And_Stump
 {
     //wall tier 0 không nhận dame
     // Chứa logic behavior của Wall, sử dụng WallStatus để quản lý state
-    public class WallBehavior : MonoBehaviour, IMinimumDistance, ISaveable, IUpgradeable, IDamageable
+    public class WallBehavior : MonoBehaviour, IMinimumDistance, ISaveable, IDamageable, ICoinUserOwner
     {
         // wall có 2 trạng thái là wall và stump
         //khi trở thành stump sẽ unactive gameobejct chứa collider chặn enemy
@@ -64,17 +64,11 @@ namespace Script.Game.Structures.Wall_And_Stump
         // IMinimumDistance Implementation
         public float MinimumDistance => status.minimumDistance;
         
-        // IUpgradeable Implementation
+        // Upgrade State Properties
         public int Tier { get => status.tier; set => status.tier = value; }
         public int UpgradeCost { get => status.upgradeCost; set => status.upgradeCost = value; }
        public bool ReadyToUpgrade { get => status.readyToUpgrade; set => status.readyToUpgrade = value; }
         public bool MaxTier { get => status.isMaxTier; set => status.isMaxTier = value; }
-        
-        // ICoinReceiver Implementation
-        public int CurrentCoin { get => coinUser != null ? coinUser.collectedCoins : 0; set { if (coinUser != null) coinUser.collectedCoins = value; } }
-        public int RequiredCoin { get => coinUser != null ? coinUser.requiredCoins : 0; set { if (coinUser != null) coinUser.requiredCoins = value; } }
-        public bool CanAcceptCoins => coinUser != null && coinUser.canAcceptCoins;
-        public bool IsReadyToUpgrade => coinUser != null && coinUser.isReadyToUpgrade;
         
         // Helper properties
         public int RebuildCost => status.rebuildCost;
@@ -102,7 +96,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             RegisterWithManager(); // Đăng ký với manager (đã bao gồm sync tag và list)
             
             SubscribeToWorldInfoChanges(); // Đăng ký buff máu từ thế giới
-            UpdateCoinUserData(); // Đồng bộ trạng thái khe cắm tiền
+            if (coinUser != null) coinUser.RefreshSlotVisibility(); // Đồng bộ trạng thái khe cắm tiền
 
             // Đăng ký nhận sự kiện máu từ Status
             status.OnDeath += OnDeathHandler;
@@ -135,10 +129,8 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             if (other.CompareTag("Player"))
             {
-                // Khi player trigger wall, cập nhật lại trạng thái coin user
-                // để đảm bảo check town center level một lần nữa
-                UpdateCoinUserData();
-              //  Debug.Log($"[Wall] Player triggered wall - rechecking upgrade capability");
+                // Khi player trigger wall, CoinUser sẽ tự gọi GetRequiredCoinCount()
+                // và CanReceiveCoins() từ ICoinUserOwner interface
             }
         }
         
@@ -181,11 +173,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 Debug.LogError($"[WallBehavior] No tier data found for tier {status.tier}");
             }
 
-            // Cập nhật thêm (nếu cần): Update maxHp dựa trên world info
+            // Cập nhật maxHp dựa trên world info (coinUser tự reset lại data)
             UpdateMaxHp();
-
-            // Cập nhật coinUser nếu cần
-            UpdateCoinUserData();
 
          //   Debug.Log($"[WallBehavior] Applied status from input. New tier: {status.tier}, State: {status.state}");
 
@@ -550,7 +539,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             ConvertToStump();
             
              // Cập nhật CoinUser cho chế độ sửa chữa
-             UpdateCoinUserData();
+             if (coinUser != null) coinUser.RefreshSlotVisibility();
 
              // Thông báo cho WallAndStumpManager: đồng bộ lại state mới (chuyển sang Stump list)
              SyncRegistrationWithManager();
@@ -606,8 +595,11 @@ namespace Script.Game.Structures.Wall_And_Stump
                 childBlocker.SetActive(true);
             }
 
-            // Cập nhật CoinUser cho chế độ nâng cấp
-            UpdateCoinUserData();
+            // Gọi ResetUpgradeState để CoinUser setup lại slot nếu đang trong trigger
+            if (coinUser != null)
+            {
+                coinUser.ResetUpgradeState();
+            }
 
             // Thông báo cho manager
             OnWallRepaired?.Invoke(this);
@@ -615,42 +607,51 @@ namespace Script.Game.Structures.Wall_And_Stump
             // [Flow] Đồng bộ lại state mới (chuyển về Wall list)
             SyncRegistrationWithManager();
         }
-        /// <summary>
-        /// hàm này được gọi sau khi wall vừa chuyển từ wall thành stump và ngược lại
-        /// Cập nhật CoinUser theo WallState: Wall = nâng cấp, Stump = sửa chữa
-
-        private void UpdateCoinUserData()
+        // --- ICoinUserOwner Implementation ---
+        public int GetRequiredCoinCount()
         {
-            if (coinUser == null) return;
+            if (status.state == WallState.Wall)
+            {
+                return status.upgradeCost;
+            }
+            else // WallState.Stump
+            {
+                return status.rebuildCost;
+            }
+        }
 
+        public bool CanReceiveCoins()
+        {
             if (status.state == WallState.Wall)
             {
                 // Wall: Chế độ nâng cấp
-                coinUser.requiredCoins = status.upgradeCost;
-                coinUser.onUpgradeComplete = OnCoinCollectionComplete; // Gọi hàm xử lý chung
-                coinUser.SetBuildingInfo(BuildingType.Wall, status.tier);
-
-                // Kiểm tra khả năng nâng cấp thực tế thay vì dùng cached value
+                // Kiểm tra khả năng nâng cấp thực tế
                 bool canActuallyUpgrade = CanUpgradeByTownCenterLevel();
-                bool isMaxTierForWall = status.isMaxTier;
+                return canActuallyUpgrade && !status.isMaxTier;
+            }
+            else // WallState.Stump
+            {
+                // Stump: Chế độ sửa chữa, luôn có thể nhận coin để sửa chữa
+                return true;
+            }
+        }
 
-                coinUser.canAcceptCoins = canActuallyUpgrade && !isMaxTierForWall;
+        public void OnAllCoinsCollected()
+        {
+            if (status.state == WallState.Wall)
+            {
+                // Gọi tới hàm nâng cấp thực sự (script bên ngoài tự implement)
+                // Theo codebase gốc thì delegate đc gán vào `OnCoinCollectionComplete`, 
+                // nhưng do đang refactor, đảm bảo hàm đó có chạy logic nâng cấp.
+                OnCoinCollectionComplete(); 
             }
             else if (status.state == WallState.Stump)
             {
-                // Stump: Chế độ sửa chữa
-                coinUser.requiredCoins = status.rebuildCost;
-                coinUser.onUpgradeComplete = OnCoinCollectionComplete; // Gọi hàm xử lý chung
-                coinUser.SetBuildingInfo(BuildingType.Wall, status.tier);
-
-                // Stump luôn có thể nhận coin để sửa chữa
-                coinUser.canAcceptCoins = true;
+                RepairStump();
             }
-
-
-           // Debug.Log($"[Wall] Updated CoinUser for {status.state}. Required coins: {coinUser.requiredCoins}, Can accept: {coinUser.canAcceptCoins}");
-
         }
+        // -------------------------------------
+        
         #endregion
         
         //sau khi thêm 2 hàm trên xong,tiếp tục phần đổi coinuser theo wallstate
@@ -915,7 +916,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 }
 
                 // Cập nhật CoinUser với cost mới
-                UpdateCoinUserData();
+                if (coinUser != null) coinUser.RefreshSlotVisibility();
 
                 OnWallUpgraded?.Invoke(this);
             }
@@ -950,33 +951,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         
         #endregion
         
-        #region ICoinReceiver Methods
-        public bool ReceiveCoin(GameObject player)
-        {
-            if (coinUser != null)
-            {
-                return coinUser.ReceiveCoin(player);
-            }
-            return false;
-        }
 
-        public void PerformUpgrade()
-        {
-            if (coinUser != null)
-            {
-                coinUser.PerformUpgrade();
-            }
-        }
-
-        public void ResetUpgradeState()
-        {
-            if (coinUser != null)
-            {
-                coinUser.ResetUpgradeState();
-            }
-        }
-
-        #endregion
         
         #region Save System Implementation
         [System.Serializable]
@@ -1075,16 +1050,16 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
 
             // Cập nhật coinUser với trạng thái tạm thời
-            UpdateCoinUserData();
+            if (coinUser != null) coinUser.RefreshSlotVisibility();
 
             // Debug log trạng thái sau khi cập nhật
-            // Debug.Log($"[WallBehavior] After UpdateCoinUserData - canAcceptCoins: {coinUser?.canAcceptCoins}");
+            // Debug.Log($"[WallBehavior] After RefreshSlotVisibility");
 
             // Đảm bảo coinUser có thể nhận coin nếu readyToUpgrade là true
             if (coinUser != null)
             {
-                coinUser.canAcceptCoins = status.readyToUpgrade;
-               // Debug.Log($"[WallBehavior] Final set - canAcceptCoins: {coinUser.canAcceptCoins}, readyToUpgrade: {status.readyToUpgrade}");
+                coinUser.RefreshSlotVisibility();
+               // Debug.Log($"[WallBehavior] Final set - readyToUpgrade: {status.readyToUpgrade}");
             }
             else
             {
@@ -1103,7 +1078,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             // Schedule update sau khi TownCenter được load xong
             StartCoroutine(DelayedUpgradeCheck());
 
-           // Debug.Log($"[WallBehavior] Restored from save. Tier: {status.tier}, State: {status.state}, HP: {status.currentHp}/{status.maxHp}, ReadyToUpgrade: {status.readyToUpgrade}, CanAcceptCoins: {coinUser?.canAcceptCoins}");
+           // Debug.Log($"[WallBehavior] Restored from save. Tier: {status.tier}, State: {status.state}, HP: {status.currentHp}/{status.maxHp}, ReadyToUpgrade: {status.readyToUpgrade}");
         }
         #endregion
         
@@ -1144,7 +1119,7 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
 
             UpdateMaxHp();  // Update maxHp dựa trên world info
-            UpdateCoinUserData();  // Update coin theo state
+            if (coinUser != null) coinUser.RefreshSlotVisibility();  // Update coin theo state
         }
 
         /// Coroutine để kiểm tra upgrade status sau khi TownCenter đã được load xong
@@ -1162,8 +1137,8 @@ namespace Script.Game.Structures.Wall_And_Stump
                 // Cập nhật CoinUser với trạng thái chính xác
                 if (coinUser != null)
                 {
-                    coinUser.canAcceptCoins = canActuallyUpgrade;
-                  //  Debug.Log($"[WallBehavior] Delayed upgrade check - Can upgrade: {canActuallyUpgrade}, CanAcceptCoins: {coinUser.canAcceptCoins}");
+                    coinUser.RefreshSlotVisibility();
+                  //  Debug.Log($"[WallBehavior] Delayed upgrade check - Can upgrade: {canActuallyUpgrade}");
                 }
             }
             // Stump không cần kiểm tra lại vì luôn có thể nhận coin
@@ -1191,10 +1166,10 @@ namespace Script.Game.Structures.Wall_And_Stump
             string coinUserInfo = "NULL";
             if (coinUser != null)
             {
-                coinUserInfo = $"Accept:{coinUser.canAcceptCoins}, Req:{coinUser.requiredCoins}, Collected:{coinUser.collectedCoins}, Ready:{coinUser.isReadyToUpgrade}, Trigger:{coinUser.playerTrigger}";
+                coinUserInfo = coinUser.GetTriggerDebugInfo(out _);
             }
 
-            return $"WALL[{gameObject.name}]: Pos{transform.position}, State:{status.state}, Tier:{status.tier}, HP:{status.currentHp}/{status.maxHp}, ReadyUpgrade:{status.readyToUpgrade}, MaxTier:{status.isMaxTier}, UpgradeCost:{status.upgradeCost}, RebuildCost:{status.rebuildCost}, TC:{tcInfo}, CanUpgradeByTC:{canUpgradeByTC}, CoinUser:{coinUserInfo}, CanAccept:{CanAcceptCoins}, IsReady:{IsReadyToUpgrade}";
+            return $"WALL[{gameObject.name}]: Pos{transform.position}, State:{status.state}, Tier:{status.tier}, HP:{status.currentHp}/{status.maxHp}, ReadyUpgrade:{status.readyToUpgrade}, MaxTier:{status.isMaxTier}, UpgradeCost:{status.upgradeCost}, RebuildCost:{status.rebuildCost}, TC:{tcInfo}, CanUpgradeByTC:{canUpgradeByTC}, CoinUser:{coinUserInfo}";
         }
         #endregion
         

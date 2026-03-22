@@ -1,553 +1,234 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Script.Data_Model;
-using Script.Data_Model.Interfaces;
+using UnityEngine;
 using Script.Game.Player;
 using Script.Interfaces;
-using Script.Manager.Building;
-using Script.Game.Other;
-using UnityEngine;
 
 namespace Script.Game.Item.Coin
 {
+    /*
+    =========================================================
+      COIN USER - ORCHESTRATOR
+    =========================================================
+      Luồng hoạt động:
+      1. Player bước vào trigger → OnPlayerEntered() 
+         → Hỏi ICoinUserOwner số coin cần thiết → CoinSlotVisual.SetupCoinSlots()
+      2. PlayerController gọi HandlePlayerCoinInput() → TryInsertCoin()
+      3. Bay coin: CoinSlotVisual sinh coin bay tới slot.
+         Khi coin đến đích → TrackCoinArrival() → OnCollectionProgress()
+      4. Khi đủ coin → *** FinalizeCollection() được gọi ***
+                    → ICoinUserOwner.OnAllCoinsCollected() được gọi
+      5. Behavior (Tree/Wall/ItemSeller/...) xử lý logic riêng (chặt cây, nâng cấp, v.v.)
+    =========================================================
+    */
+
+    [RequireComponent(typeof(CoinSlotVisual))]
+    [RequireComponent(typeof(CoinCollectionTracker))]
     public class CoinUser : MonoBehaviour, IPlayerInteractable
     {
-        /// <summary>
-        /// khi player va chạm với collider của gameobject chứa coinUser thì se kiểm tra :
-        /// -có đang va chạm với player không?
-        /// -script CoinUser.isReadyToUpgrade có false không thì mới hiện các coin slot
-        /// </summary>
-        
-        [Header("Coins Acceptance")]
-        public bool canAcceptCoins = true; // kiểm soát việc nhận xu
-        
-        [Header("OnUpgradeComplete Settings")]
-        public int requiredCoins; // tổng số coin cần để thực hiện hành động upgrade
-        public Action onUpgradeComplete; // cái này sẽ được gọi khi nhét đủ coin
+        [Header("Components")]
+        [SerializeField] private CoinSlotVisual visual;
+        [SerializeField] private CoinCollectionTracker tracker;
+        [SerializeField] private ICoinUserOwner owner;
 
-        [Header("Coin Collection")]
-        public int collectedCoins ; // số coin hiện tại đã lấy được
-        public float coinCollectionTimeout ; // Time before coin collection resets
-        public float coinCollectionTimer; //  biến đếm ngược
-        [SerializeField] private GameObject coinSlotParent; // Parent object for coin slots
+        [Header("State")]
+        [SerializeField] private bool playerTrigger;
+        [SerializeField] private int cachedRequiredCoins;
 
-        [Header("OnUpgradeComplete Status")]
-        public bool isReadyToUpgrade; // Indicates if enough coins have been collected for upgrade
-        
-        [Header("Building Info")]
-        [SerializeField] private BuildingType buildingType; // Type of building this CoinUser is attached to
-        [SerializeField] private int currentTier; // Current tier/tier of the building
-        
-        // Public properties for external access
-        public int CurrentCoin => collectedCoins;
-        public int RequiredCoin => requiredCoins;
-        public bool CanAcceptCoins => canAcceptCoins;
-        public bool IsReadyToUpgrade => isReadyToUpgrade;
+        public bool playerTriggerActive => playerTrigger;
 
-        [Header("Coin Prefabs")]
-        [SerializeField] private GameObject coinPrefab;
+        private void Awake()
+        {
+            visual = GetComponent<CoinSlotVisual>();
+            tracker = GetComponent<CoinCollectionTracker>();
+        }
 
-        [SerializeField] private List<GameObject> coinSlots = new List<GameObject>(); // List of coin slot positions
-        [SerializeField] private List<GameObject> coinsInTransit = new List<GameObject>(); // List of coins being moved
-         private List<Coroutine> coinMoveCoroutines = new List<Coroutine>();
-
-        private float coinMoveSpeed;
-        private int currentSlotIndex ;
-        private bool isCollectingCoins ;
-
-        private IUpgradeable upgradeableComponent;
-
-        public bool playerTrigger;
         private void Start()
         {
-            InitializeCoinUser();
-        }
-
-        private void InitializeCoinUser()
-        {
-            coinPrefab = PrefabData.Instance.coinPrefab;
-            coinMoveSpeed = PrefabData.Instance.coinMoveSpeed;
-            coinCollectionTimeout = PrefabData.Instance.timeMaxFloatCoin;
-
-            if (coinSlotParent == null)
+            // Auto-find owner on this GameObject
+            owner = GetComponent<ICoinUserOwner>();
+            if (owner == null)
             {
-                // Prioritize finding "CoinSlotLocation" (standard for some prefabs)
-                var child = transform.Find("CoinSlotLocation");
-
-                if (child != null)
-                {
-                    coinSlotParent = child.gameObject;
-                }
-                else
-                {
-                    // Create new if not found -> Default to "CoinSlotLocation"
-                    var newObj = new GameObject("CoinSlotLocation");
-                    newObj.transform.SetParent(transform, false);
-                    coinSlotParent = newObj;
-                }
+                Debug.LogWarning($"[CoinUser] {gameObject.name} missing ICoinUserOwner component!");
             }
-            coinSlotParent.SetActive(false);
-            
-            // Check if this building has an IUpgradeable component
-            upgradeableComponent = GetComponent<IUpgradeable>();
+
+            // Subscribe to tracker events
+            tracker.OnTimeout += HandleCollectionTimeout;
+            tracker.OnCollectionProgress += CheckUpgradeStatus;
         }
+
+        private void OnDestroy()
+        {
+            if (tracker != null)
+            {
+                tracker.OnTimeout -= HandleCollectionTimeout;
+                tracker.OnCollectionProgress -= CheckUpgradeStatus;
+            }
+        }
+
+        // --- IPlayerInteractable ---
         
-        // For backwards compatibility, keep this method
-        public void SetBuildingInfo(BuildingType type, int tier)
-        {
-            buildingType = type;
-            currentTier = tier;
-        }
-
-        /// <summary>
-        /// Debug method để tạo string thông tin CoinUser trigger
-        /// </summary>
-        public string GetTriggerDebugInfo(out bool shouldShowSlots)
-        {
-            shouldShowSlots = false;
-            string result = $"CoinUser[{gameObject.name}]: AcceptCoins={canAcceptCoins}, ReadyToUpgrade={isReadyToUpgrade}, PlayerTrigger={playerTrigger}";
-
-            // If component implements IUpgradeable, check if it's upgradeable based on owner's canAcceptCoins value
-            var upgradeableComponent = GetComponent<IUpgradeable>();
-            if (upgradeableComponent != null)
-            {
-                result += " | Has IUpgradeable";
-                // Ready to upgrade will be determined by parent component (Wall, TownCenter, etc.)
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    result += " | Conditions met - WILL SHOW SLOTS";
-                    shouldShowSlots = true;
-                }
-                else if (!canAcceptCoins)
-                {
-                    result += " | Cannot accept coins";
-                }
-                else
-                {
-                    result += " | Already ready or other condition";
-                }
-            }
-            else
-            {
-                result += " | No IUpgradeable - Fallback";
-                // Fallback for non-IUpgradeable components
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    result += " | Fallback: Conditions met - WILL SHOW SLOTS";
-                    shouldShowSlots = true;
-                }
-                else
-                {
-                    result += " | Fallback: Cannot setup slots";
-                }
-            }
-
-            return result;
-        }
-
-        public void PlayerTriggerOn()
-        {
-            bool shouldShowSlots = false;
-
-            // If component implements IUpgradeable, check if it's upgradeable based on owner's canAcceptCoins value
-            if (upgradeableComponent != null)
-            {
-                // Ready to upgrade will be determined by parent component (Wall, TownCenter, etc.)
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    shouldShowSlots = true;
-                }
-            }
-            else
-            {
-                // Fallback for non-IUpgradeable components
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    shouldShowSlots = true;
-                }
-            }
-
-            // Debug.Log($"[CoinUser-Debug] {gameObject.name}: PlayerTriggerOn. CanAccept={canAcceptCoins}, Ready={isReadyToUpgrade}, Required={requiredCoins}, SlotParent={coinSlotParent?.name}, Active={coinSlotParent?.activeSelf}");
-
-            playerTrigger = true;
-            if (shouldShowSlots)
-            {
-                SetupCoinSlots();
-            }
-        }
-        
-        public void PlayerTriggerOff()
-        {
-            ClearCoinSlots();
-            playerTrigger = false;
-        }
-        
-        public void RefreshActiveState()
-        {
-            if (!playerTrigger) return;
-            
-            bool shouldShowSlots = false;
-
-            if (upgradeableComponent != null)
-            {
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    shouldShowSlots = true;
-                }
-            }
-            else
-            {
-                if (canAcceptCoins && !isReadyToUpgrade)
-                {
-                    shouldShowSlots = true;
-                }
-            }
-
-            if (shouldShowSlots)
-            {
-                SetupCoinSlots();
-            }
-            else
-            {
-                if (coinSlotParent != null)
-                {
-                    coinSlotParent.SetActive(false);
-                }
-            }
-        }
-      
-
-        private void SetupCoinSlots()
-        {
-            if (coinSlotParent != null)
-            {
-                // Debug.Log($"[CoinUser-Debug] {gameObject.name}: SetupCoinSlots. Parent={coinSlotParent.name}, ChildCount={coinSlotParent.transform.childCount}, Required={requiredCoins}");
-                coinSlotParent.SetActive(true);
-                
-                // Check existing slots
-                int currentSlotCount = coinSlotParent.transform.childCount;
-                
-                // If we have enough children, reuse them
-                if (currentSlotCount >= requiredCoins && requiredCoins > 0)
-                {
-                    // Ensure coinSlots list is populated with these children
-                    if (coinSlots.Count != currentSlotCount)
-                    {
-                        coinSlots.Clear();
-                        foreach (Transform child in coinSlotParent.transform)
-                        {
-                            coinSlots.Add(child.gameObject);
-                        }
-                    }
-                }
-                else
-                {
-                    // Not enough slots or none at all, recreate them
-                    // This handles the case where CoinSlotLocation exists but is empty
-                    ClearCoinSlots();
-                    if (InstanceCoinSlot.Instance != null)
-                    {
-                         coinSlots = InstanceCoinSlot.Instance.CreateCoinSlot(requiredCoins, coinSlotParent);
-                    }
-                    else
-                    {
-                        Debug.LogError("InstanceCoinSlot.Instance is null");
-                    }
-                }
-            }
-        }
-
-        private void ClearCoinSlots()
-        {
-            Debug.Log($"[CoinUser-DEBUG] ClearCoinSlots called! Destroys {coinSlotParent.transform.childCount} children and sets currentSlotIndex = 0");
-            foreach (Transform child in coinSlotParent.transform)
-            {
-                Destroy(child.gameObject);
-            }
-            coinSlots.Clear();
-            currentSlotIndex = 0;
-        }
-
-        // Thay vì biến cũ nhận số lượng coin dư thừa, giờ lấy trực tiếp PlayerBehavior và trừ tiền
-        public void InsertCoin(GameObject player)
-        {
-            // Kiểm tra điều kiện nhận xu
-            if (!canAcceptCoins || isReadyToUpgrade)
-            {
-                return;
-            }
-            
-            if (currentSlotIndex >= requiredCoins || coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count) 
-            {
-                return; // Hết slot
-            }
-
-            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
-            if (playerBehavior == null || playerBehavior.Coin <= 0)
-            {
-                return; // Hết tiền
-            }
-            
-            playerBehavior.SubtractCoin(1); // Trừ tiền thật sự
-            StartCoinTransfer(player);
-            isCollectingCoins = true;
-            coinCollectionTimer = coinCollectionTimeout;
-        }
-        
-        // Public methods for external access
-        public bool ReceiveCoin(GameObject player)
-        {
-            if (!canAcceptCoins || isReadyToUpgrade || currentSlotIndex >= requiredCoins)
-            {
-                return false;
-            }
-            
-            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
-            if (playerBehavior == null || playerBehavior.Coin <= 0)
-            {
-                return false; 
-            }
-            
-            InsertCoin(player);
-            return true;
-        }
-        
-        public void PerformUpgrade()
-        {
-            Debug.Log($"[CoinUser-DEBUG] PerformUpgrade CALLED! isReadyToUpgrade={isReadyToUpgrade}, collected={collectedCoins}, required={requiredCoins}");
-            
-            // Fix: Check if already upgraded OR not enough coins
-            if (isReadyToUpgrade || collectedCoins < requiredCoins) 
-            {
-                Debug.Log($"[CoinUser-DEBUG] PerformUpgrade Early Return! isReady={isReadyToUpgrade}, collected={collectedCoins} < req {requiredCoins} is {collectedCoins < requiredCoins}");
-                return;
-            }
-            
-            // Đặt cờ TRƯỚC để các coroutine đang chạy song song thoát ngay lập tức
-            isReadyToUpgrade = true;
-            Debug.Log($"[CoinUser-DEBUG] PerformUpgrade executing... set isReadyToUpgrade = {isReadyToUpgrade}");
-            
-            // Dừng tất cả coroutine ngay — ngăn các coin đang bay tiếp tục gọi CheckUpgradeStatus
-            StopAllCoinCoroutines();
-            
-            // Finalize coin collection and trigger upgrade
-            foreach (GameObject coin in coinsInTransit)
-            {
-                if (coin != null)
-                {
-                    if (CoinPool.Instance != null)
-                    {
-                        CoinPool.Instance.ReturnCoin(coin);
-                    }
-                    else
-                    {
-                        Destroy(coin);
-                    }
-                }
-            }
-            ClearTransitCoins();
-            if (coinSlotParent != null) coinSlotParent.SetActive(false);
-            currentSlotIndex = 0;
-            isCollectingCoins = false;
-            onUpgradeComplete?.Invoke();
-        }
-        
-        // Restore CoinUser state so it can accept coins again (used by walls, sellers, etc.)
-        public void ResetUpgradeState()
-        {
-            isReadyToUpgrade = false;
-            isCollectingCoins = false;
-            collectedCoins = 0;
-            // Clear any coins in transit visual state if needed
-            StopAllCoinCoroutines();
-            ClearTransitCoins();
-            // KHÔNG GỌI ClearCoinSlots() ở đây. Việc xoá và gọi ngay SetupCoinSlots() 
-            // trong cùng 1 frame khiến lệnh Destroy() của Unity bị lag 1 frame, sinh ra lỗi mất hình.
-            // Chỉ cần Reset lại trạng thái là đủ.
-            currentSlotIndex = 0;
-            // Only show coin slots if player is still in trigger area and this object can accept coins
-            if (playerTrigger && canAcceptCoins)
-            {
-                SetupCoinSlots();
-            }
-            else
-            {
-                if (coinSlotParent != null)
-                {
-                    coinSlotParent.SetActive(false);
-                }
-            }
-        }
-        
-        
-        private void Update()
-        {
-            // Kiểm tra và giảm dần giá trị đếm ngược
-            if (isCollectingCoins && canAcceptCoins && !isReadyToUpgrade)
-            {
-                coinCollectionTimer -= Time.deltaTime;
-                if (coinCollectionTimer <= 0)
-                {
-                    ReleaseCoins();
-                }
-            }
-        }
-        private void StartCoinTransfer(GameObject player)
-        {
-            if (coinSlots.Count == 0 || currentSlotIndex >= coinSlots.Count)
-            {
-                Debug.LogWarning("No available coin slots.");
-                return;
-            }
-
-            if (coinSlots[currentSlotIndex] == null)
-            {
-                 // Handle stale slot case
-                 // Debug.LogWarning("Target Coin Slot is null/destroyed.");
-                 return;
-            }
-
-            Vector3 playerPosition = player.transform.position;
-            Vector3 targetPosition = coinSlots[currentSlotIndex].transform.position;
-
-            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab);
-            if (coin != null) coin.transform.position = playerPosition;
-            SetCoinProperties(coin);
-            
-            coinsInTransit.Add(coin);
-            
-            // --- DEBUG LOGGING ---
-            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
-            int playerCoins = playerBehavior != null ? playerBehavior.Coin : -1;
-            Debug.Log($"[CoinUser-DEBUG] SPAWN COIN: {coin.name} at {coin.transform.position} to fly to slot {currentSlotIndex} at {targetPosition}. Target collectedCoins {collectedCoins + 1}/{requiredCoins}. Player current coin: {playerCoins}. Transit list count: {coinsInTransit.Count}");
-
-            Coroutine coroutine = StartCoroutine(MoveCoinToSlot(coin, targetPosition, currentSlotIndex, player));
-            coinMoveCoroutines.Add(coroutine);
-
-            currentSlotIndex++;
-        }
-
-        private void SetCoinProperties(GameObject coin)
-        {
-            PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
-            if (coinScript != null)
-            {
-                coinScript.playerPickupAble = false;
-                coinScript.denizensPickupAble = false;
-                coinScript.floating = true;
-            }
-        }
-
-        private HashSet<GameObject> arrivedCoins = new HashSet<GameObject>();
-
-        private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition, int slotIndex, GameObject player)
-        {
-            Vector3 startPosition = coin.transform.position;
-            float elapsedTime = 0f;
-
-            while (elapsedTime < coinMoveSpeed)
-            {
-                if (coin == null) yield break; // Safety check
-                // Nếu upgrade đã xảy ra (do coroutine khác kích hoạt trước), thoát ngay
-                if (isReadyToUpgrade) yield break;
-                coin.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / coinMoveSpeed);
-                elapsedTime += Time.deltaTime;
-                yield return null;
-            }
-
-            // Guard cuối: nếu đã upgrade rồi thì không tăng coin nữa
-            if (isReadyToUpgrade || coin == null) yield break;
-
-            coin.transform.position = targetPosition;
-            
-            // Đánh dấu coin đã vào vị trí
-            arrivedCoins.Add(coin);
-            
-            // --- DEBUG LOGGING ---
-            PlayerBehavior pb = player != null ? player.GetComponent<PlayerBehavior>() : null;
-            int playerCoins = pb != null ? pb.Coin : -1;
-            Debug.Log($"[CoinUser-DEBUG] ARRIVED COIN: {coin.name} arrived at slot {slotIndex} with position {targetPosition}. Player current coin: {playerCoins}. Arrived array count: {arrivedCoins.Count}, Transit array count: {coinsInTransit.Count}");
-            
-            collectedCoins++;
-            CheckUpgradeStatus();
-        }
-
-        private void CheckUpgradeStatus()
-        {
-            Debug.Log($"[CoinUser-DEBUG] CheckUpgradeStatus: collected={collectedCoins}, required={requiredCoins}");
-            if (collectedCoins >= requiredCoins)
-            {
-                PerformUpgrade();
-            }
-        }
-
-        private void ReleaseCoins()
-        {   
-            Debug.Log($"[CoinUser-DEBUG] ReleaseCoins called! IsReadyToUpgrade: {isReadyToUpgrade}, collected={collectedCoins}");
-            foreach (GameObject transitCoin in coinsInTransit)
-            {
-                if (transitCoin != null)
-                {
-                    ReleaseCoin(transitCoin); // Nhả vật lý cho chính coin đó, không tạo coin mới
-                }
-            }
-            StopAllCoinCoroutines();
-            ClearTransitCoins();
-            isCollectingCoins = false;
-        }
-        
-        private void ReleaseCoin(GameObject coin)
-        {
-            PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
-            if (coinScript != null)
-            {
-                coinScript.floating = false;
-                coinScript.playerPickupAble = true;
-                coinScript.denizensPickupAble = true;
-            }
-        }
-        
-        private void StopAllCoinCoroutines()
-        {
-            foreach (Coroutine coroutine in coinMoveCoroutines)
-            {
-                if (coroutine != null)
-                {
-                    StopCoroutine(coroutine);
-                }
-            }
-            coinMoveCoroutines.Clear();
-        }
-
-        private void ClearTransitCoins()
-        {
-            Debug.Log($"[CoinUser-DEBUG] ClearTransitCoins called! previous transit count={coinsInTransit.Count}");
-            coinsInTransit.Clear();
-            arrivedCoins.Clear();
-            collectedCoins = 0;
-            currentSlotIndex = 0;
-        }
-
         public void OnPlayerEnter(PlayerBehavior player)
         {
-            PlayerTriggerOn();
+            OnPlayerEntered();
         }
 
         public void OnPlayerExit(PlayerBehavior player)
         {
-            if (coinsInTransit.Count > 0 && !isReadyToUpgrade)
+            if (tracker.IsCollectingCoins)
             {
-                ReleaseCoins();
+                ReleaseInsertedCoins();
             }
-            
-            PlayerTriggerOff();
+            OnPlayerExited();
         }
 
         public bool CanInteract()
         {
-            return canAcceptCoins && !isReadyToUpgrade;
+            return owner != null ? owner.CanReceiveCoins() : true;
         }
 
+        // --- Core Logic ---
+
+        private void OnPlayerEntered()
+        {
+            playerTrigger = true;
+            RefreshSlotVisibility();
+        }
+
+        private void OnPlayerExited()
+        {
+            playerTrigger = false;
+            visual.HideSlots();
+        }
+
+        public void RefreshSlotVisibility()
+        {
+            if (!playerTrigger) return;
+
+            if (owner != null)
+            {
+                cachedRequiredCoins = owner.GetRequiredCoinCount();
+                
+                if (owner.CanReceiveCoins() && cachedRequiredCoins > 0)
+                {
+                    visual.SetupCoinSlots(cachedRequiredCoins);
+                }
+                else
+                {
+                    visual.HideSlots();
+                }
+            }
+        }
+
+        // Called by PlayerController
+        public bool ReceiveCoin(GameObject player)
+        {
+            return HandlePlayerCoinInput(player);
+        }
+
+        public bool HandlePlayerCoinInput(GameObject player)
+        {
+            if (owner == null) return false;
+
+            cachedRequiredCoins = owner.GetRequiredCoinCount();
+
+            if (!owner.CanReceiveCoins()) return false;
+            if (!visual.HasAvailableSlot(cachedRequiredCoins)) return false;
+
+            PlayerBehavior playerBehavior = player.GetComponent<PlayerBehavior>();
+            if (playerBehavior == null || playerBehavior.Coin <= 0) return false;
+
+            return TryInsertCoin(playerBehavior);
+        }
+
+        private bool TryInsertCoin(PlayerBehavior playerBehavior)
+        {
+            playerBehavior.SubtractCoin(1);
+            
+            // Start the visual transfer
+            visual.SpawnAndMoveCoin(playerBehavior.gameObject, OnCoinArrivedAtSlot);
+            
+            // Start the collection timeout tracker
+            tracker.StartCollection();
+            
+            return true;
+        }
+
+        private void OnCoinArrivedAtSlot(GameObject coin)
+        {
+            // Khi visual báo coin đã đáp vào slot, ta báo cho tracker biết
+            tracker.TrackCoinArrival();
+        }
+
+        private void CheckUpgradeStatus(int totalCollectedData)
+        {
+            if (owner != null) cachedRequiredCoins = owner.GetRequiredCoinCount();
+            
+            if (totalCollectedData >= cachedRequiredCoins)
+            {
+                FinalizeCollection();
+            }
+        }
+
+        private void FinalizeCollection()
+        {
+            visual.StopAllCoinCoroutines();
+            visual.ClearTransitVisuals();
+            visual.HideSlots();
+            
+            tracker.ResetCollection();
+
+            if (owner != null)
+            {
+                owner.OnAllCoinsCollected();
+            }
+        }
+
+        private void ReleaseInsertedCoins()
+        {
+            visual.StopAllCoinCoroutines();
+            visual.ReleaseFloatingCoins();
+            tracker.ResetCollection();
+        }
+
+        private void HandleCollectionTimeout()
+        {
+            ReleaseInsertedCoins();
+            // Optional: Hide slots or refresh visibility
+            RefreshSlotVisibility();
+        }
+
+        // Được gọi bởi các Behavior (như Wall, ItemSeller) khi chúng đã xử lý xong và muốn mở lại CoinUser
+        public void ResetUpgradeState()
+        {
+            visual.StopAllCoinCoroutines();
+            visual.ClearTransitVisuals();
+            tracker.ResetCollection();
+            
+            RefreshSlotVisibility();
+        }
+
+        // Backward compatibility method
+        public void SetBuildingInfo(Script.Manager.Building.BuildingType type, int tier)
+        {
+            // Can be left empty or log for debug purposes since we don't store BuildingType locally anymore
+            // Variables needed for building upgrades should naturally be accessed inside the relevant Behavior
+        }
+
+        public string GetTriggerDebugInfo(out bool shouldShowSlots)
+        {
+            shouldShowSlots = false;
+            bool canRecv = owner != null && owner.CanReceiveCoins();
+            int req = owner != null ? owner.GetRequiredCoinCount() : 0;
+            
+            string result = $"CoinUser[{gameObject.name}]: CanRecv={canRecv}, Required={req}, PlayerTrigger={playerTrigger}";
+
+            if (canRecv && req > 0)
+            {
+                shouldShowSlots = true;
+                result += " | WILL SHOW SLOTS";
+            }
+            
+            return result;
+        }
     }
 }
