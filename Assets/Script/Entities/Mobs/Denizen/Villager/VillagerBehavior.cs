@@ -19,6 +19,7 @@ using Script.Utils; // For Utility helper
 namespace Script.Game.Mobs.Subjects
 {
     // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
+    [RequireComponent(typeof(DenizenCoinSharing))]
     public class VillagerBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle
     {
         #region Variables and Properties
@@ -54,10 +55,8 @@ namespace Script.Game.Mobs.Subjects
             animator.Play(newState);
         }
 
-        [Header("Coin Drop Settings")]
-        [Tooltip("Thời gian tối thiểu giữa các lần drop coin khi gặp player (giây)")]
-        public float COIN_DROP_COOLDOWN = 0.7f;
-        private float lastCoinDropTime = 0f;
+        [Header("Coin Sharing Context")]
+        private DenizenCoinSharing coinSharing;
 
         // Kiểm tra tool định kỳ khi Idle
         
@@ -111,11 +110,14 @@ namespace Script.Game.Mobs.Subjects
             {
                 rayCastHelper = gameObject.AddComponent<RayCastHelper>();
             }
+
+            coinSharing = GetComponent<DenizenCoinSharing>();
         }
     
         private void OnEnable()
         {
             _currentAnimState = ""; // ✅ Reset cache để ép Animator update khi đổi nghề
+            if (coinSharing == null) coinSharing = GetComponent<DenizenCoinSharing>(); // Fallback nếu Awake chưa chạy
             InitializeVillager();
             
             // Check cross-role fear flag: Nếu role trước đó đã set cờ này, vào Fear ngay
@@ -188,8 +190,8 @@ namespace Script.Game.Mobs.Subjects
             {
                 if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
                 {
-                    // Nếu gặp player và có trên 1 coin, đứng lại xin tiền
-                    if (!status.isInDanger && status.CurrentCoins > 1 && status.villagerState == DenizenStatus.VillagerState.Idle)
+                    // Nếu gặp player, đang không sợ hãi và có đủ tiền thì đứng lại thả tiền (Mọi thao tác khác sẽ bị xếp sau)
+                    if (status.villagerState != DenizenStatus.VillagerState.Fear && coinSharing != null && coinSharing.CanDropCoin())
                     {
                         status.villagerState = DenizenStatus.VillagerState.DropCoinToPlayer;
                     }
@@ -401,8 +403,10 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
 
-            // 2. Ưu tiên nhì: Được giao đi lấy Tool -> Chạy đi lấy
-            if (currentTool != null && !status.isInDanger && status.villagerState != DenizenStatus.VillagerState.RunToGetTool)
+            // 2. Ưu tiên nhì: Được giao đi lấy Tool -> Chạy đi lấy (Trừ khi đang nhả coin cho Player)
+            if (currentTool != null && !status.isInDanger && 
+                status.villagerState != DenizenStatus.VillagerState.RunToGetTool &&
+                status.villagerState != DenizenStatus.VillagerState.DropCoinToPlayer)
             {
                 status.villagerState = DenizenStatus.VillagerState.RunToGetTool;
                 return;
@@ -423,10 +427,8 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
 
-            // 4. Ưu tiên bốn: Gặp Player và có nhiều tiền -> Đứng lại thả tiền
-
-            // 5. Mặc định: Ban ngày ko có việc gì thì đi lang thang (Idle)
-            // Failsafe: Bắt trường hợp kẹt state Fear khi load game hoặc đổi nghề mà không còn nguy hiểm
+            // 4. Ưu tiên bốn: Gặp Player và có nhiều tiền -> Đứng lại thả tiền (Đã được chuyển từ component Sensor, tự duy trì trong UpdateStateHandler dựa trên Detect)
+            // Failsafe: Tránh kẹt state do các yếu tố đổi nghề hoặc save load
             bool canReturnToIdle = (status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter || 
                                     status.villagerState == DenizenStatus.VillagerState.Fear);
                                     
@@ -557,21 +559,16 @@ namespace Script.Game.Mobs.Subjects
 
         private void HandleDropCoinToPlayerState()
         {
-            // Kiểm tra số coin, nếu chỉ còn 1 thì chuyển sang trạng thái khác
-            if (status.CurrentCoins <= 1)
+            // Kiểm tra component chia coin
+            if (coinSharing == null || !coinSharing.CanDropCoin())
             {
-                // Debug.Log($"[VillagerBehavior] {gameObject.name} rời khỏi DropCoinToPlayer vì chỉ còn {status.CurrentCoins} coin");
                 if (GameTimeManager.Instance != null)
                 {
                     int currentHour = GameTimeManager.Instance.GameHour;
                     if (currentHour >= 19 || currentHour < 6)
-                    {
                         status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
-                    }
                     else
-                    {
                         TransitionToIdle();
-                    }
                 }
                 else
                 {
@@ -591,33 +588,25 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
 
-            float currentTime = Time.time;
             if (playerInRange)
             {
-                // Nếu cooldown đã hết và còn coin thì drop coin
-                if (currentTime - lastCoinDropTime >= COIN_DROP_COOLDOWN && status.CurrentCoins > 1) // Đảm bảo luôn còn ít nhất 1 coin
-                {
-                    InternalDropCoins(1, false); // Rõ ràng là đang thả cho player
-                    lastCoinDropTime = currentTime;
-                }
+                // Gọi tới component chia coin để xử lý cooldown và drop
+                coinSharing.TryDropCoin();
+                
                 // Chuyển animation sang idle khi đứng chờ player
                 isMoving = false; // Ngừng di chuyển lập tức để đứng yên thả coin
                 SetAnimState("idle");
-                // Giữ nguyên state DropCoinToPlayer cho đến khi player rời khỏi vùng quét
                 return;
             }
-            // Nếu player không còn trong vùng quét, chuyển về state phù hợp
+            
+            // Nếu player không còn trong vùng quét, chuyển về state phù hợp (hoặc tự UpdateStateHandler lo nhờ Tool/Time)
             if (GameTimeManager.Instance != null)
             {
                 int currentHour = GameTimeManager.Instance.GameHour;
                 if (currentHour >= 19 || currentHour < 6)
-                {
                     status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
-                }
                 else
-                {
                     TransitionToIdle();
-                }
             }
             else
             {

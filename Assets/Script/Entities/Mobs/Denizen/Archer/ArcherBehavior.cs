@@ -24,6 +24,7 @@ namespace Script.Game.Mobs.Subjects
     [RequireComponent(typeof(Script.Game.Other.CircleDetectHelper))]
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(ArcherShooting))]
+    [RequireComponent(typeof(DenizenCoinSharing))]
     public class ArcherBehavior : MonoBehaviour, ICoinShield, IToolShield, INPCBehavior, IItemHandle, IAttacker
     {
         // --- IAttacker Interface ---
@@ -64,6 +65,7 @@ namespace Script.Game.Mobs.Subjects
         private GameTimeManager timeManager;
         private WallAndStumpManager wallManager;
         private GuardManager guardManager;
+        private DenizenCoinSharing coinSharing;
 
         // State Tracking
         private string _currentAnimState = "";
@@ -243,6 +245,7 @@ namespace Script.Game.Mobs.Subjects
             
             animator = GetComponent<Animator>();
             archerShooting = GetComponent<ArcherShooting>();
+            coinSharing = GetComponent<DenizenCoinSharing>();
             
             InitializeDetector();
         }
@@ -255,10 +258,17 @@ namespace Script.Game.Mobs.Subjects
             {
                 circleDetectHelper.SetDetectRadius(status.archerDetectRange);
                 
-                // [SYNC SCAN SETTINGS] Archer quét theo danh sách tags được định nghĩa
-                circleDetectHelper.tagsToDetect = targetTags != null && targetTags.Count > 0 
-                    ? new List<string>(targetTags) 
-                    : new List<string>(Script.Utils.TargetLists.ArcherTargets);
+                // [COMBAT TAGS] targetTags chỉ chứa các tag được định nghĩa trong ArcherTargets (Enemy, EnemyPortal, Animal)
+                // Player KHOONG được thêm ở đây — tránh Archer coi Player là mục tiêu tấn công
+                targetTags = new List<string>(Script.Utils.TargetLists.ArcherTargets);
+
+                // [DETECT TAGS] Detector cần thấy cả Player để lògic DropCoin hoạt động
+                // Nhưng đây là list riêng, TACH BIỆT với targetTags chiến đấu
+                var detectorTags = new List<string>(targetTags);
+                if (!detectorTags.Contains(Script.Utils.GameTags.Player))
+                    detectorTags.Add(Script.Utils.GameTags.Player);
+                    
+                circleDetectHelper.tagsToDetect = detectorTags;
             }
         }
         
@@ -362,7 +372,7 @@ namespace Script.Game.Mobs.Subjects
             try
             {
                 // Kiểm tra trạng thái báo động từ GuardManager
-                // Ưu tiên rõ ràng: Nếu báo động -> Returning/Holding
+                // Ưu tiên rõ ràng: Nếu báo động -> Returning/Holding (Nhưng NOT khi đang nhả coin - player ưu tiên hơn)
                 if (guardManager != null && guardManager.isEnemyAttack && 
                     status.archerState == DenizenStatus.ArcherState.Hunting)
                 {
@@ -389,6 +399,10 @@ namespace Script.Game.Mobs.Subjects
                         
                     case DenizenStatus.ArcherState.ReturningToBase:
                         HandleReturningToBaseState();
+                        break;
+                        
+                    case DenizenStatus.ArcherState.DropCoinToPlayer:
+                        HandleDropCoinToPlayerState();
                         break;
                         
                     default:
@@ -635,6 +649,43 @@ namespace Script.Game.Mobs.Subjects
                 // Đã đến nơi
                 TransitionToState(DenizenStatus.ArcherState.HoldingWall);
             }
+        }  // ← đóng HandleReturningToBaseState
+
+        private void HandleDropCoinToPlayerState()
+        {
+            if (coinSharing == null || !coinSharing.CanDropCoin())
+            {
+                // Hết coin hoặc mất component -> quay về state cũ
+                TransitionToState(status.previousArcherState);
+                return;
+            }
+
+            // Kiểm tra xem player còn trong vùng radar không
+            bool playerInRange = false;
+            if (circleDetectHelper != null)
+            {
+                foreach (var hitObject in circleDetectHelper.GetListDetectedObjects())
+                {
+                    if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
+                    {
+                        playerInRange = true;
+                        break;
+                    }
+                }
+            }
+
+            if (playerInRange)
+            {
+                coinSharing.TryDropCoin();
+                // Luôn giữ idle khi thả coin
+                SetAnimState("archerIdle");
+                status.currentSpeed = 0f;
+            }
+            else
+            {
+                // Player đi mất -> Hồi phục state cũ
+                TransitionToState(status.previousArcherState);
+            }
         }
         
         #endregion
@@ -643,11 +694,39 @@ namespace Script.Game.Mobs.Subjects
         
         public void OnObjectsDetected(List<GameObject> detectedObjects)
         {
-            // 2. Chọn mục tiêu và Báo cáo Enemy
-            GameObject target = SelectTargetAndReportThreats(detectedObjects);
+            // Nếu đang trong DropCoinToPlayer, HandleDropCoinToPlayerState() tự xử lý
+            // Không để detection gọi tiếp, tránh xung đột state
+            if (status.archerState == DenizenStatus.ArcherState.DropCoinToPlayer) return;
+
+            // --- Ưu tiên 1: Tìm Enemy/Target chiến đấu trước ---
+            GameObject combatTarget = SelectTargetAndReportThreats(detectedObjects);
             
-            // 3. Cập nhật Target hiện tại
-            status.currentTarget = target;
+            if (combatTarget != null)
+            {
+                // Có enemy → gán target, hủy DropCoin nếu đang chờ
+                status.currentTarget = combatTarget;
+                return;
+            }
+
+            // --- Ưu tiên 2: Không có enemy → Kiểm tra Player để DropCoin ---
+            status.currentTarget = null;
+            
+            // Nếu Archer đang trong quá trình thực hiện animation tấn công, không chuyển state để tránh ngắt quãng
+            if (IsPlayingAttackAnimation()) return;
+            
+            foreach (var hitObject in detectedObjects)
+            {
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
+                {
+                    if (coinSharing != null && coinSharing.CanDropCoin())
+                    {
+                        status.previousArcherState = status.archerState;
+                        TransitionToState(DenizenStatus.ArcherState.DropCoinToPlayer);
+                        return;
+                    }
+                    break; // Tìm thấy player nhưng không thể drop → thôi
+                }
+            }
         }
 
 
@@ -800,6 +879,10 @@ namespace Script.Game.Mobs.Subjects
                     status.currentSpeed = status.walkSpeed; 
                     currentHuntingTargetPos = null;
                     break;
+                case DenizenStatus.ArcherState.DropCoinToPlayer:
+                    status.currentSpeed = 0f;
+                    SetAnimState("archerIdle");
+                    break;
             }
         }
 
@@ -850,7 +933,12 @@ namespace Script.Game.Mobs.Subjects
         /// </summary>
         private GameObject SelectTargetAndReportThreats(List<GameObject> allHits)
         {
-            if (targetTags == null || targetTags.Count == 0) return null;
+            // [SYNC] Đảm bảo targetTags luôn được khởi tạo từ GameTags.ArcherTargets
+            if (targetTags == null || targetTags.Count == 0) 
+            {
+                InitializeDetector();
+                if (targetTags == null || targetTags.Count == 0) return null;
+            }
 
             // 1. Phân loại mục tiêu dựa trên danh sách ưu tiên
             string priorityTag = targetTags[0]; // Ưu tiên cao nhất (thường là Enemy)
@@ -862,16 +950,32 @@ namespace Script.Game.Mobs.Subjects
             {
                 if (obj == null || !obj.activeInHierarchy) continue;
 
-                if (obj.CompareTag(priorityTag))
+                // Bỏ qua Ally (Player, Villager, Archer...) — không bao giờ tấn công Ally
+                bool isAlly = false;
+                foreach (var allyTag in Script.Utils.TargetLists.AllyTags)
+                {
+                    if (!string.IsNullOrEmpty(allyTag) && obj.CompareTag(allyTag))
+                    {
+                        isAlly = true;
+                        break;
+                    }
+                }
+                if (isAlly) continue;
+
+                // Kiểm tra Priority Tag (thường là Enemy)
+                if (!string.IsNullOrEmpty(priorityTag) && obj.CompareTag(priorityTag))
                 {
                     enemies.Add(obj);
                 }
                 else 
                 {
-                    // Kiểm tra các tag còn lại trong danh sách
+                    // Kiểm tra các tag còn lại (Secondary Targets)
                     for (int i = 1; i < targetTags.Count; i++)
                     {
-                        if (obj.CompareTag(targetTags[i]))
+                        string t = targetTags[i];
+                        if (string.IsNullOrEmpty(t)) continue;
+
+                        if (obj.CompareTag(t))
                         {
                             secondaryTargets.Add(obj);
                             break;

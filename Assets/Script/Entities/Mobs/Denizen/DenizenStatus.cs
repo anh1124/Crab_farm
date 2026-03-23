@@ -33,7 +33,8 @@ namespace Script.Data_Model.Status
             Hunting,
             HoldingWall,
             RetreatingToInnerWall,
-            ReturningToBase
+            ReturningToBase,
+            DropCoinToPlayer
         }
 
        
