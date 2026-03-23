@@ -863,6 +863,7 @@ GameObject:
   - component: {fileID: 1023114066770394473}
   - component: {fileID: 6490999052333895481}
   - component: {fileID: 8825931610287078424}
+  - component: {fileID: 4044038164879194610}
   m_Layer: 0
   m_Name: Celestial
   m_TagString: Untagged
@@ -923,6 +924,18 @@ MonoBehaviour:
   backgroundRenderer: {fileID: 0}
   waypoints: []
   config: {fileID: 0}
+--- !u!114 &4044038164879194610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8356058680024437741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c315bb3d97baa404eaa0c6c4c744b9a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8561453029835615655
 GameObject:
   m_ObjectHideFlags: 0

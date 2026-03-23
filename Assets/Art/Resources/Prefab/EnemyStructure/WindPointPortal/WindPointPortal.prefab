@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2226101205737045314}
   - component: {fileID: 9023780707935053511}
   - component: {fileID: 5780412298064932211}
-  m_Layer: 0
+  m_Layer: 16
   m_Name: WindPointPortal
   m_TagString: EnemyPortal
   m_Icon: {fileID: 0}
@@ -49,6 +49,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnInterval: 2
+  activationShakeCount: 3
+  activationInterval: 0.15
+  activationTiltAngle: 5
+  spawnShakeCount: 2
+  spawnIntervalRate: 0.2
+  spawnTiltAngle: 3
 --- !u!114 &2226101205737045314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -194,7 +200,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: -0.3465023, y: 1.3329021}

@@ -43,7 +43,7 @@ namespace Script.Controller
 
         /// <summary>
         /// True nếu có phím keyboard nào đó đã được bấm trong session này.
-        /// SkillButtonUI dùng để quyết định có hiện key hint không.
+        /// Các script UI như UIKeyHint hay SkillButtonUI sẽ tự đọc cờ này.
         /// </summary>
         public bool AnyKeyUsed { get; private set; }
 
@@ -80,14 +80,14 @@ namespace Script.Controller
             MoveLeft  = _mobileMoveLeft  || _kbMoveLeft;
             MoveRight = _mobileMoveRight || _kbMoveRight;
 
-            if (_kbMoveLeft || _kbMoveRight) AnyKeyUsed = true;
+            if (_kbMoveLeft || _kbMoveRight) SetAnyKeyUsed();
 
             // ── Keyboard Coin (gọi trực tiếp — tránh vấn đề timing với FixedUpdate) ──
             var pc = PlayerController.PlayerController.Instance;
             if (pc != null)
             {
-                if (Input.GetKeyDown(keyMap.useCoin)) { pc.UseCoinDownAction(); AnyKeyUsed = true; }
-                if (Input.GetKeyUp(keyMap.useCoin))   { pc.UseCoinUpAction();   AnyKeyUsed = true; }
+                if (Input.GetKeyDown(keyMap.useCoin)) { pc.UseCoinDownAction(); SetAnyKeyUsed(); }
+                if (Input.GetKeyUp(keyMap.useCoin))   { pc.UseCoinUpAction();   SetAnyKeyUsed(); }
             }
 
             // ── Keyboard Skills (gọi trực tiếp — cần instigator nên lấy từ PlayerController) ──
@@ -97,11 +97,32 @@ namespace Script.Controller
                 var instigator = pc.playerBehavior.gameObject;
                 if (sm != null)
                 {
-                    if (Input.GetKeyDown(keyMap.skill1)) { sm.ExecuteSkill(0, instigator); AnyKeyUsed = true; }
-                    if (Input.GetKeyDown(keyMap.skill2)) { sm.ExecuteSkill(1, instigator); AnyKeyUsed = true; }
-                    if (Input.GetKeyDown(keyMap.skill3)) { sm.ExecuteSkill(2, instigator); AnyKeyUsed = true; }
+                    if (Input.GetKeyDown(keyMap.skill1)) { sm.ExecuteSkill(0, instigator); SetAnyKeyUsed(); }
+                    if (Input.GetKeyDown(keyMap.skill2)) { sm.ExecuteSkill(1, instigator); SetAnyKeyUsed(); }
+                    if (Input.GetKeyDown(keyMap.skill3)) { sm.ExecuteSkill(2, instigator); SetAnyKeyUsed(); }
                 }
             }
+
+            // ── Global Hotkeys ──
+            if (Input.GetKeyDown(keyMap.openPauseMenu))
+            {
+                Script.GUI_Controller.GuiCanvasManager.Instance?.TogglePauseMenu();
+                SetAnyKeyUsed();
+            }
+
+            // ── Keyboard Menus & UI ──
+            if (Input.GetKeyDown(keyMap.openBuildMenu) || 
+                Input.GetKeyDown(keyMap.accept)        || 
+                Input.GetKeyDown(keyMap.cancel))
+            {
+                SetAnyKeyUsed();
+            }
+        }
+
+        private void SetAnyKeyUsed()
+        {
+            if (AnyKeyUsed) return;
+            AnyKeyUsed = true;
         }
 
         // ── Mobile Movement Hooks (được gọi từ PlayerGui UI buttons) ──────────

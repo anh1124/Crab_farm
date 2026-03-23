@@ -18,5 +18,9 @@ MonoBehaviour:
   moveRightAlt: 275
   useCoin: 102
   skill1: 113
-  skill2: 101
-  skill3: 114
+  skill2: 119
+  skill3: 101
+  openBuildMenu: 98
+  openPauseMenu: 27
+  accept: 118
+  cancel: 99

@@ -72,5 +72,16 @@ namespace Script.GUI_Controller
             buildMenu.gameObject.SetActive(true);
             pauseButton.gameObject.SetActive(true);
         }
+
+        /// <summary>
+        /// Bật nếu đang tắt, tắt nếu đang bật. Dùng cho hotkey ESC.
+        /// </summary>
+        public void TogglePauseMenu()
+        {
+            if (pauseMenu != null && pauseMenu.activeSelf)
+                ResumeGame();
+            else
+                ShowPauseMenu();
+        }
     }
 }

@@ -31,5 +31,15 @@ namespace Script.Controller
         public KeyCode skill2 = KeyCode.E;
         [Tooltip("Skill slot 2")]
         public KeyCode skill3 = KeyCode.R;
+
+        [Header("Menus & UI")]
+        [Tooltip("Mở menu xây dựng")]
+        public KeyCode openBuildMenu = KeyCode.B;
+        [Tooltip("Mở menu tạm dừng")]
+        public KeyCode openPauseMenu = KeyCode.Escape;
+        [Tooltip("Chấp nhận / Đồng ý")]
+        public KeyCode accept        = KeyCode.C;
+        [Tooltip("Hủy / Đóng")]
+        public KeyCode cancel        = KeyCode.V;
     }
 }
