@@ -153,24 +153,34 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
         }
 
         /// <summary>
+        /// Được gọi từ Animation Event tại frame đầu tiên (Frame 0) để kiểm tra độ trễ.
+        /// </summary>
+        public void DebugAnimationStart(int slotIndex)
+        {
+            Debug.Log($"<color=blue>[{System.DateTime.Now:HH:mm:ss.fff}] [SpearManAnimationController] Frame 0 reached for slot {slotIndex}</color>");
+        }
+
+        /// <summary>
+        /// Được gọi từ Animation Event tại frame thứ 2 để xác nhận animation đang chạy thực sự.
+        /// </summary>
+        public void DebugAnimationNextFrame(int slotIndex)
+        {
+            Debug.Log($"<color=orange>[{System.DateTime.Now:HH:mm:ss.fff}] [SpearManAnimationController] Frame 2 reached for slot {slotIndex}</color>");
+        }
+
+        /// <summary>
         /// Được gọi từ Animation Event tại frame damage
         /// </summary>
-        /// <param name="slotIndex">Index của skill slot</param>
         public void OnSkillAttackHit(int slotIndex)
         {
-            Debug.Log($"[SpearManAnimationController] OnSkillAttackHit (formerly OnSkillDamageFrame) called for slot {slotIndex}");
             if (skillManager != null && slotIndex >= 0)
             {
                 skillManager.OnSkillAnimationDamageFrame(slotIndex);
             }
-            else
-            {
-                Debug.LogError($"[SpearManAnimationController] Cannot process damage frame - skillManager null or invalid slot: {slotIndex}");
-            }
         }
 
         /// <summary>
-        /// Hàm này được gọi từ Animation Event trong Unity Editor khi animation kỹ năng kết thúc.
+        /// Được gọi từ Animation Event khi animation kỹ năng kết thúc.
         /// </summary>
         /// <param name="slotIndex">Index của skill slot</param>
         public void OnAnimationFinish(int slotIndex)
