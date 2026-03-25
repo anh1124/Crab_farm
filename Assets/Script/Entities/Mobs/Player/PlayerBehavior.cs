@@ -23,7 +23,7 @@ namespace Script.Game.Player
     [RequireComponent(typeof(PlayerItemHandler))]
     [RequireComponent(typeof(PlayerUISetup))]
     [RequireComponent(typeof(PlayerStatRegenerator))]
-    public class PlayerBehavior : MonoBehaviour, ISaveable
+    public class PlayerBehavior : MonoBehaviour
     {
         [Header("Player Status Data")]
         public PlayerStatus status;
@@ -38,24 +38,6 @@ namespace Script.Game.Player
         // Components References (Cached for bridge properties)
         private PlayerCombat _combat;
         private PlayerInteraction _interaction;
-
-        // Flag: true nếu RestoreData() đã chạy thành công → bỏ qua ApplyConfig trong Awake
-        private bool _dataRestoredFromSave = false;
-
-        [Serializable]
-        public class PlayerStatusData
-        {
-            public float maxHp;
-            public float currentHp;
-            public int coin;
-            public float moveSpeed;
-            public float positionX;
-            public float positionY;
-            public bool isGround;
-            
-            // NEW: Resource data for save/load
-            public float currentMana;
-        }
 
         private void Awake()
         {
@@ -89,7 +71,7 @@ namespace Script.Game.Player
             }
 
             // Khởi tạo giá trị mặc định từ Config — chỉ khi chưa load từ save.
-            if (!_dataRestoredFromSave)
+            if (!status.isDataRestoredFromSave)
             {
                 if (defaultConfig != null)
                 {
@@ -147,7 +129,8 @@ namespace Script.Game.Player
                 case ResourceType.Coin:
                     return status.coin >= amount;
                 case ResourceType.Health:
-                    return status.HP.Current >= amount; // Tránh dùng HP làm cost nếu chết
+                    // Logic mới: Yêu cầu máu hiện tại > 1 + cost (để sau khi dùng còn > 1 HP)
+                    return status.HP.Current > 1f + amount;
                 default:
                     return false;
             }
@@ -164,12 +147,14 @@ namespace Script.Game.Player
                     SubtractCoin(Mathf.RoundToInt(amount));
                     break;
                 case ResourceType.Health:
-                    float reduceAmount = amount;
-                    if (status.HP.Current - amount < 0.1f)
+                    // Đã check CanAfford trước đó, nhưng vẫn giữ bảo hiểm để không bao giờ chết do dùng skill
+                    float targetHp = status.HP.Current - amount;
+                    if (targetHp < 1.0f)
                     {
-                        reduceAmount = status.HP.Current - 0.1f;
+                        // Nếu lỡ gọi mà không đủ (logic game lỗi), thì chỉ giảm đến mức tối thiểu là 1.0f
+                        amount = Mathf.Max(0, status.HP.Current - 1.0f);
                     }
-                    if (reduceAmount > 0) status.HP.Reduce(reduceAmount);
+                    if (amount > 0) status.HP.Reduce(amount);
                     break;
             }
         }
@@ -207,55 +192,6 @@ namespace Script.Game.Player
             if (amount <= 0) return;
             status.coin += amount;
         }
-
-
-        public string GetPrefabID() => "player";
-
-        public object CaptureData()
-        {
-            // Resource data is now in status, no need for ResourceManager
-            
-            return new PlayerStatusData
-            {
-                maxHp = status.HP.Max,
-                currentHp = status.HP.Current,
-                coin = status.coin,
-                moveSpeed = status.moveSpeed,
-                positionX = transform.position.x,
-                positionY = transform.position.y,
-                isGround = status.isGround,
-                
-                // Save current resources directly from status
-                currentMana = status.Mana.Current
-            };
-        }
-
-        public void RestoreData(object data)
-        {
-            PlayerStatusData loaded = data as PlayerStatusData;
-            if (loaded == null) return;
-
-            // Đánh dấu đã load từ save — Awake sẽ bỏ qua ApplyConfig
-            _dataRestoredFromSave = true;
-
-            status.HP.SetMax(loaded.maxHp, true);
-            if (loaded.currentHp < loaded.maxHp)
-                status.HP.Reduce(loaded.maxHp - loaded.currentHp);
-
-            status.coin         = loaded.coin;
-            status.moveSpeed    = loaded.moveSpeed;
-            status.isGround     = loaded.isGround;
-            transform.position  = new Vector3(loaded.positionX, loaded.positionY, 0);
-            
-            // Mana chỉ lưu currentMana trong save, maxMana dùng từ config mặc định
-            float maxMana = defaultConfig != null ? defaultConfig.maxMana : 50f;
-            status.Mana.SetMax(maxMana, true);
-            if (loaded.currentMana < maxMana)
-                status.Mana.Reduce(maxMana - loaded.currentMana);
-
-            Debug.Log($"[PlayerBehavior] Restored save data. HP={status.HP.Current}/{status.HP.Max}, Mana={status.Mana.Current}/{status.Mana.Max}");
-        }
-
 
 
     }

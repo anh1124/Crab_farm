@@ -123,10 +123,10 @@ namespace Script.Game.Mobs.MobsManager
             foreach(var archer in allArchers)
             {
                 if(archer == null) continue;
-                var behavior = archer.GetComponent<ArcherBehavior>();
-                if(behavior != null)
+                var core = archer.GetComponent<Script.Game.Mobs.Denizen.Core.DenizenCore>();
+                if(core != null)
                 {
-                    behavior.OnGuardManagerStatusChanged(isAttack);
+                    core.OnGuardManagerStatusChanged(isAttack);
                 }
             }
         }
@@ -157,12 +157,12 @@ namespace Script.Game.Mobs.MobsManager
             foreach (var archer in flank)
             {
                 if (archer == null) continue;
-                var behavior = archer.GetComponent<ArcherBehavior>();
-                if (behavior != null)
+                var core = archer.GetComponent<Script.Game.Mobs.Denizen.Core.DenizenCore>();
+                if (core != null)
                 {
                     if (safeWall != null)
                     {
-                        behavior.ForceRetreat(safeWall);
+                        core.ForceRetreat(safeWall);
                     }
                     else if (guardManager)
                     {

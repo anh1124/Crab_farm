@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Script.Game.Mobs.Subjects; // DenizenRoleController, NPCRole
+using Script.Game.Mobs.Subjects; 
+using Script.Game.Mobs.Denizen.Core;
+using Script.Game.Mobs.Denizen.Jobs.Villager;
+using Script.Data_Model.Status;
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -70,8 +73,8 @@ namespace Script.Game.Mobs.MobsManager
             foreach (var denizen in allDenizens)
             {
                 if (denizen == null) continue;
-                var controller = denizen.GetComponent<DenizenRoleController>();
-                if (controller != null && controller.CurrentRole == role)
+                var core = denizen.GetComponent<DenizenCore>();
+                if (core != null && core.CurrentRole == role)
                 {
                     filtered.Add(denizen);
                 }
@@ -82,31 +85,28 @@ namespace Script.Game.Mobs.MobsManager
         /// Find the nearest Villager that can be assigned a tool.
         /// Accepts Villagers in Idle OR MoveBackToTownCenter states (e.g., spawned at night).
         /// </summary>
-        public Script.Game.Mobs.Subjects.VillagerBehavior GetNearestIdleVillager(Vector3 position)
+        public VillagerJob GetNearestIdleVillager(Vector3 position)
         {
-            Script.Game.Mobs.Subjects.VillagerBehavior nearestVillager = null;
+            VillagerJob nearestVillager = null;
             float minDistance = float.MaxValue;
-            int checkedCount = 0;
 
             foreach (var denizen in allDenizens)
             {
                 if (denizen == null) continue;
-                checkedCount++;
 
-                var controller = denizen.GetComponent<DenizenRoleController>();
-                if (controller != null && controller.CurrentRole == NPCRole.Villager)
+                var core = denizen.GetComponent<DenizenCore>();
+                if (core != null && core.CurrentRole == NPCRole.Villager)
                 {
-                    var behavior = denizen.GetComponent<Script.Game.Mobs.Subjects.VillagerBehavior>();
-                    if (behavior != null && behavior.enabled)
+                    var job = denizen.GetComponent<VillagerJob>();
+                    if (job != null && job.enabled)
                     {
-                         // Check conditions
-                         var status = denizen.GetComponent<Script.Data_Model.Status.DenizenStatus>();
-                         bool hasNoTool = behavior.currentTool == null;
-                         bool notInDanger = !status.isInDanger;
-                         // Accept both Idle and MoveBackToTownCenter states
-                         // This allows tool assignment even if Villager spawned at night
-                         bool isAvailable = status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.Idle ||
-                                           status.villagerState == Script.Data_Model.Status.DenizenStatus.VillagerState.MoveBackToTownCenter;
+                         var status = denizen.GetComponent<DenizenStatus>();
+                         bool hasNoTool = (status != null && status.currentTool == null);
+                         bool notInDanger = (status != null && !status.isInDanger);
+                         
+                         // Kiểm tra Availability dựa trên State pattern mới
+                         bool isAvailable = status != null && (job.CurrentState is VillagerIdleState || 
+                                            job.CurrentState is VillagerToTownState);
 
                          if (hasNoTool && notInDanger && isAvailable)
                          {
@@ -114,20 +114,12 @@ namespace Script.Game.Mobs.MobsManager
                             if (dist < minDistance)
                             {
                                 minDistance = dist;
-                                nearestVillager = behavior;
+                                nearestVillager = job;
                             }
-                         }
-                         else
-                         {
-                             // Debug.Log($"[DenizenManager] Skip {denizen.name}: NoTool={hasNoTool}, Danger={!notInDanger}, Available={isAvailable} (State: {status.villagerState})");
                          }
                     }
                 }
             }
-            
-            // if (nearestVillager != null) Debug.Log($"[DenizenManager] Found idle villager for tool: {nearestVillager.name}");
-            // else Debug.Log($"[DenizenManager] No idle villager found among {checkedCount} denizens.");
-            
             return nearestVillager;
         }
     }

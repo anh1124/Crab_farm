@@ -1,0 +1,805 @@
+```csharp
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Script.Data_Model.Interfaces;
+using Script.Data_Model.Status;
+using UnityEditor.Experimental.GraphView;
+using UnityEngine;
+using Script.Game.Other;
+using Script.Data_Model;
+using Script.Interfaces;
+using Script.Game.Item;
+using Script.Game.Item.Coin;
+using Script.Game.Mobs.MobsManager;
+using Script.Manager;
+using Script.Manager.WorldManager;
+using Script.Manager.GamePlayManager;
+using Script.Utils; // For Utility helper
+
+namespace Script.Game.Mobs.Subjects
+{
+    // Renamed from VillagerController to VillagerBehavior to reflect Behavior + Status architecture
+    [RequireComponent(typeof(DenizenCoinSharing))]
+    public class VillagerBehavior : MonoBehaviour, ICoinShield, INPCBehavior, IItemHandle
+    {
+        #region Variables and Properties
+        private DenizenStatus status;
+
+        [Header("State")]
+        // status.villagerState is the source of truth now
+        
+        public Vector3 targetPosition;
+   
+        public bool isMoving;
+        public const float FEAR_DURATION = 3f; // Giảm xuống 3 giây
+
+        [Header("Tool")]
+        [Tooltip("Công cụ được giao để đi lấy")]
+        public PhysicalItem currentTool;//dùng để xác nhận công cụ này có còn không hoặc lấy tọa độ chạy đến
+        
+        [Header("Debug")]
+        [SerializeField] private bool isDebugGoPlace = false;
+
+        // Component References
+        private Animator animator;
+        private RayCastHelper rayCastHelper;
+        private Coroutine fearRoutine;
+        
+        private string _currentAnimState = "";
+
+        private void SetAnimState(string newState)
+        {
+            if (animator == null) return;
+            if (_currentAnimState == newState) return; // ✅ skip nếu không đổi
+            _currentAnimState = newState;
+            animator.Play(newState);
+        }
+
+        [Header("Coin Sharing Context")]
+        private DenizenCoinSharing coinSharing;
+
+        // Kiểm tra tool định kỳ khi Idle
+        
+        [Header("Idle tool check")]
+        public float _lastToolCheckTime = -999f;
+        private const float TOOL_CHECK_INTERVAL = 2f;
+
+        // Properties
+        public int CurrentCoins => status.CurrentCoins;
+        public int CurrentCoin { get => status.CurrentCoins; set => status.CurrentCoins = value; }
+        public int MaxCoins => status.MaxCoins;
+        
+        // --- ICoinShield Implementation ---
+        public bool HasCoinShield => status.CurrentCoins > 0;
+
+        public bool ConsumeCoinShield()
+        {
+            if (HasCoinShield)
+            {
+                OnCoinDamage(true); // Drop coin
+                return true;
+            }
+            return false;
+        }
+
+        // --- IDamageable Interface Implementation moved to DenizenRoleController ---
+
+        [ContextMenu("Debug / Simulate Damage")]
+        private void SimulateDamage()
+        {
+            Debug.Log($"<color=orange>[VillagerBehavior] Simulating 1 damage on {gameObject.name}. coins={status?.CurrentCoins}</color>");
+            Script.Utils.DamageHandler.ApplyDamage(gameObject, 1, gameObject);
+        }
+
+        #endregion
+
+        #region Unity Lifecycle Methods
+        private void Awake()
+        {
+            gameObject.tag = Script.Utils.GameTags.Villager;
+            status = GetComponent<DenizenStatus>();
+            if (status == null)
+            {
+                // Debug.LogWarning($"{gameObject.name} have no script DenizenStatus, has auto add");
+                status = gameObject.AddComponent<DenizenStatus>();
+            }
+            
+            
+            rayCastHelper = GetComponent<RayCastHelper>();
+            if (rayCastHelper == null)
+            {
+                rayCastHelper = gameObject.AddComponent<RayCastHelper>();
+            }
+
+            coinSharing = GetComponent<DenizenCoinSharing>();
+        }
+    
+        private void OnEnable()
+        {
+            _currentAnimState = ""; // ✅ Reset cache để ép Animator update khi đổi nghề
+            if (coinSharing == null) coinSharing = GetComponent<DenizenCoinSharing>(); // Fallback nếu Awake chưa chạy
+            InitializeVillager();
+            
+            // Check cross-role fear flag: Nếu role trước đó đã set cờ này, vào Fear ngay
+            if (status != null && status.isFearPending)
+            {
+                status.isFearPending = false; // tẩy cờ
+                // Giữ nguyên fearTimer và isInDanger do role trước đã set
+                status.villagerState = DenizenStatus.VillagerState.Fear;
+            }
+
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.isActive = true;
+                rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected; // Prev double sub
+                rayCastHelper.OnDetectedObjectsChanged += OnObjectsDetected;
+            }
+
+            // Reset tool check timer to trigger immediately
+            _lastToolCheckTime = -999f;
+            // Time events được manage bởi DenizenRoleController - không subscribe ở đây
+        }
+
+        private void Start()
+        {
+            CheckForToolsOnSpawn();
+        }
+
+        private void OnDisable()
+        {
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.OnDetectedObjectsChanged -= OnObjectsDetected;
+                rayCastHelper.isActive = false;
+            }
+            // Time events managed by DenizenRoleController
+            // StopCheckRoutine(); // Removed
+            
+            if (rayCastHelper != null) rayCastHelper.isActive = false;
+            
+            if (currentTool != null && currentTool.pickedBy == null)
+            {
+                currentTool.AssignedCarrier = null;
+            }
+            currentTool = null;
+        }
+
+        private void OnDestroy()
+        {
+            // Cleanup handled in OnDisable
+        }
+
+
+
+        public void OnObjectsDetected(List<GameObject> detectedObjects)
+        {
+            // Check for enemies (Priority 1)
+            foreach (var hitObject in detectedObjects)
+            {
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Enemy))
+                {
+                    status.isInDanger = true;
+                    status.fearTimer = FEAR_DURATION;
+                    status.villagerState = DenizenStatus.VillagerState.Fear;
+                    return; // Found danger, prioritize it over anything else
+                }
+            }
+
+            // Check for Player (Priority 2 - Drop Coin if rich)
+            foreach (var hitObject in detectedObjects)
+            {
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
+                {
+                    // Nếu gặp player, đang không sợ hãi và có đủ tiền thì đứng lại thả tiền (Mọi thao tác khác sẽ bị xếp sau)
+                    if (status.villagerState != DenizenStatus.VillagerState.Fear && coinSharing != null && coinSharing.CanDropCoin())
+                    {
+                        status.villagerState = DenizenStatus.VillagerState.DropCoinToPlayer;
+                    }
+                    return;
+                }
+            }
+        }
+
+        public void UpdateBehavior()
+        {
+            // Debug call frequency
+            // Debug.Log($"[VillagerBehavior] UpdateBehavior for {gameObject.name} | State: {status.villagerState} | status.isInDanger: {status.isInDanger}");
+
+            // [SCAN] Chủ động quét
+            if (rayCastHelper != null && rayCastHelper.isActive)
+            {
+                rayCastHelper.DrawRay();
+            }
+
+            // Safety: Nếu tool đã bị ai đó lượm mất thì bỏ qua
+            if (currentTool != null && currentTool.pickedBy != null)
+            {
+                currentTool = null;
+            }
+
+            // Kiểm tra tool định kỳ khi đang Idle hoặc đang về TownCenter (mỗi 2 giây)
+            if (currentTool == null && !status.isInDanger &&
+                (status.villagerState == DenizenStatus.VillagerState.Idle || status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter) &&
+                Time.time - _lastToolCheckTime >= TOOL_CHECK_INTERVAL)
+            {
+                _lastToolCheckTime = Time.time;
+                // Debug.Log($"[VillagerBehavior] Running periodic tool check for {gameObject.name} | curX: {transform.position.x}");
+                CheckForToolsOnSpawn();
+            }
+
+            // Debug Visualization
+            if (isDebugGoPlace && isMoving)
+            {
+                Debug.DrawLine(transform.position, targetPosition, Color.yellow);
+            }
+
+            // Update fear timer
+            if (status.fearTimer > 0)
+            {
+                status.fearTimer -= Time.deltaTime;
+                if (status.fearTimer <= 0)
+                {
+                    status.isInDanger = false;
+                    // Nếu đang trong trạng thái Fear thì mới cần chọn lại state
+                    if (status.villagerState == DenizenStatus.VillagerState.Fear)
+                    {
+                        if (GameTimeManager.Instance != null)
+                        {
+                            int currentHour = GameTimeManager.Instance.GameHour;
+                            if (currentHour >= 19 || currentHour < 6)
+                                status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                            else
+                                status.villagerState = DenizenStatus.VillagerState.Idle;
+                        }
+                        else
+                        {
+                            status.villagerState = DenizenStatus.VillagerState.Idle;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Failsafe: Bắt trường hợp `status.fearTimer` đã = 0 từ đầu (do load save game) nhưng `status.isInDanger` vẫn kẹt true.
+                if (status.isInDanger)
+                {
+                    status.isInDanger = false;
+                }
+            }
+
+            UpdateStateHandler();
+        }
+
+        public void AssignTool(PhysicalItem tool)
+        {
+            if (tool == null || currentTool != null || status.isInDanger) return;
+            
+            if (status.villagerState == DenizenStatus.VillagerState.Idle || 
+                status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter)
+            {
+                currentTool = tool;
+                status.villagerState = DenizenStatus.VillagerState.RunToGetTool;
+                // Debug.Log($"[VillagerBehavior] Tool assigned by Manager: {tool.name}");
+            }
+        }
+
+
+        #endregion
+
+        #region Initialization
+     
+        private void InitializeVillager()
+        {
+            if (status == null) status = GetComponent<DenizenStatus>();
+            if (rayCastHelper == null) rayCastHelper = GetComponent<RayCastHelper>();
+            
+            if (rayCastHelper != null)
+            {
+                rayCastHelper.SetRayLength(status.detectRangeRaycast);
+                // [SYNC SCAN SETTINGS]
+                rayCastHelper.tagsToDetect = new List<string>(Script.Utils.TargetLists.VillagerTargets);
+            }
+
+            animator = GetComponent<Animator>();
+
+            // Kiểm tra thời gian ngay khi khởi tạo
+            if (GameTimeManager.Instance != null)
+            {
+                int currentHour = GameTimeManager.Instance.GameHour;
+                // Nếu là ban đêm (19h-6h), set state về MoveBackToTownCenter
+                if (currentHour >= 19 || currentHour < 6)
+                {
+                    status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                }
+                else
+                {
+                    // Force Idle state during day for initialization to ensure tool check runs
+                    status.villagerState = DenizenStatus.VillagerState.Idle;
+                }
+            }
+            else
+            {
+                // Default to Idle if time manager missing
+                status.villagerState = DenizenStatus.VillagerState.Idle;
+            }
+            
+            isMoving = false;
+            status.fearTimer = 0f;
+        }
+
+        /// <summary>
+        /// Check for available tools when Villager spawns.
+        /// Called from Start() to ensure ToolManager is initialized.
+        /// </summary>
+        private void CheckForToolsOnSpawn()
+        {
+            // Only check if we don't have a tool and aren't in danger
+            if (currentTool != null || status.isInDanger) return;
+
+            // Allow tool check for Idle or MoveBackToTownCenter states
+            if (status.villagerState != DenizenStatus.VillagerState.Idle && 
+                status.villagerState != DenizenStatus.VillagerState.MoveBackToTownCenter)
+            {
+                return;
+            }
+
+            if (Script.Manager.MobsManager.ToolManager.Instance != null)
+            {
+                var tool = Script.Manager.MobsManager.ToolManager.Instance.GetNearestTool(transform.position);
+                //Debug.Log($"[VillagerBehavior] CheckForToolsOnSpawn: {gameObject.name} at {transform.position}. Found tool: {(tool != null ? tool.name : "null")}");
+                
+                if (tool != null)
+                {
+                    Debug.Log($"[VillagerBehavior] Assigning tool {tool.name} to {gameObject.name}");
+                    AssignTool(tool);
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[VillagerBehavior] ToolManager Instance is null during CheckForToolsOnSpawn!");
+            }
+        }
+        #endregion
+
+        #region Time Management
+        /// <summary>Gọi bừi DenizenRoleController khi đồng hồ chạm giờ 19.</summary>
+        public void OnNightTime()
+        {
+            if (status.villagerState != DenizenStatus.VillagerState.RunToGetTool)
+            {
+                status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+            }
+        }
+
+        /// <summary>Gọi bừi DenizenRoleController khi đồng hồ chạm giờ 6.</summary>
+        public void OnDayTime()
+        {
+            if (status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter)
+            {
+                status.villagerState = DenizenStatus.VillagerState.Idle;
+            }
+        }
+        #endregion
+
+        #region State Management
+        /// <summary>
+        /// Điều phối trạng thái của Villager dựa trên độ ưu tiên (Priority):
+        /// 1. Nguy hiểm (Fear) - Cao nhất.
+        /// 2. Ban đêm (Về nhà) - Nếu không nguy hiểm.
+        /// 3. Gặp Player (Xin tiền) - Nếu có nhiều coin.
+        /// 4. Lấy Tool (Làm việc) - Nếu được giao việc.
+        /// 5. Idle (Lang thang) - Mặc định ban ngày.
+        /// </summary>
+        private void UpdateStateHandler()
+        {
+            // 1. Ưu tiên cao nhất: Gặp nguy hiểm -> Chạy trốn ngay
+            if (status.isInDanger)
+            {
+                if (status.villagerState != DenizenStatus.VillagerState.Fear)
+                {
+                    // Debug.Log($"[VillagerBehavior] {gameObject.name} chuyển sang FEAR do status.isInDanger = true (UpdateStateHandler)");
+                    status.villagerState = DenizenStatus.VillagerState.Fear;
+                    return;
+                }
+            }
+
+            // 2. Ưu tiên nhì: Được giao đi lấy Tool -> Chạy đi lấy (Trừ khi đang nhả coin cho Player)
+            if (currentTool != null && !status.isInDanger && 
+                status.villagerState != DenizenStatus.VillagerState.RunToGetTool &&
+                status.villagerState != DenizenStatus.VillagerState.DropCoinToPlayer)
+            {
+                status.villagerState = DenizenStatus.VillagerState.RunToGetTool;
+                return;
+            }
+
+            // 3. Ưu tiên ba: Ban đêm (19h - 6h) -> Về nhà an toàn (CHỈ KHI KHÔNG CÓ TOOL)
+            if (GameTimeManager.Instance != null)
+            {
+                int currentHour = GameTimeManager.Instance.GameHour;
+                if ((currentHour >= 19 || currentHour < 6) && 
+                    !status.isInDanger && 
+                    currentTool == null && 
+                    status.villagerState != DenizenStatus.VillagerState.MoveBackToTownCenter &&
+                    status.villagerState != DenizenStatus.VillagerState.DropCoinToPlayer) // Don't interrupt coin dropping
+                {
+                    status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                    return;
+                }
+            }
+
+            // 4. Ưu tiên bốn: Gặp Player và có nhiều tiền -> Đứng lại thả tiền (Đã được chuyển từ component Sensor, tự duy trì trong UpdateStateHandler dựa trên Detect)
+            // Failsafe: Tránh kẹt state do các yếu tố đổi nghề hoặc save load
+            bool canReturnToIdle = (status.villagerState == DenizenStatus.VillagerState.MoveBackToTownCenter || 
+                                    status.villagerState == DenizenStatus.VillagerState.Fear);
+                                    
+            if (!status.isInDanger && currentTool == null && canReturnToIdle)
+            {
+                if (GameTimeManager.Instance != null)
+                {
+                    int currentHour = GameTimeManager.Instance.GameHour;
+                    if (currentHour >= 6 && currentHour < 19)
+                    {
+                        status.villagerState = DenizenStatus.VillagerState.Idle;
+                    }
+                }
+            }
+
+            // Thực thi logic của từng trạng thái cụ thể
+            switch (status.villagerState)
+            {
+                case DenizenStatus.VillagerState.Idle:
+                    HandleIdleState();
+                    break;
+                case DenizenStatus.VillagerState.MoveBackToTownCenter:
+                    HandleMoveToTownCenterState(false);
+                    break;
+                case DenizenStatus.VillagerState.RunToGetTool:
+                    HandleRunToGetToolState();
+                    break;
+                case DenizenStatus.VillagerState.Fear:
+                    HandleFearState();
+                    break;
+                case DenizenStatus.VillagerState.DropCoinToPlayer:
+                    HandleDropCoinToPlayerState();
+                    break;
+            }
+        }
+        #endregion
+
+        #region State Handlers
+        private void HandleIdleState()
+        {
+            if (!isMoving)
+            {
+                // Get random position in plaza area
+                float randomX = Utility.GetRandomPlazaPos();
+                targetPosition = new Vector3(randomX, transform.position.y, transform.position.z);
+                isMoving = true;
+            }
+            
+            if (isMoving)
+            {
+                MoveTowardsTarget(targetPosition, "walk");
+            }
+
+            // Check if it's night time
+            if (GameTimeManager.Instance != null && GameTimeManager.Instance.GameHour >= 19)
+            {
+                status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+            }
+        }
+
+        private void HandleMoveToTownCenterState(bool isRunning)
+        {
+            if (!isMoving || Vector2.Distance(transform.position, targetPosition) < 0.1f)
+            {
+                // Get random position in plaza area
+                float randomX = Utility.GetRandomPlazaPos();
+                targetPosition = new Vector3(randomX, transform.position.y, transform.position.z);
+                isMoving = true;
+            }
+
+            if (isMoving)
+            {
+                MoveTowardsTarget(targetPosition, isRunning ? "run" : "walk");
+            }
+        }
+
+        private void HandleRunToGetToolState()
+        {
+            if (currentTool == null)
+            {
+                TransitionToIdle();
+                return;
+            }
+
+            // Kiểm tra xem tool có bị picked trước không
+            if (currentTool.pickedBy != null)
+            {
+                currentTool = null;
+                TransitionToIdle();
+                return;
+            }
+
+            // Nếu đang trong trạng thái di chuyển
+            // Di chuyển đến vị trí của tool với animation chạy
+            if (isMoving)
+            {
+                MoveTowardsTarget(currentTool.transform.position, "run");
+            }
+            else
+            {
+                // Force move start if somehow stopped
+                isMoving = true; 
+                MoveTowardsTarget(currentTool.transform.position, "run");
+            }
+        }
+
+        public void TransitionToIdle()
+        {
+            status.villagerState = DenizenStatus.VillagerState.Idle;
+            Script.Manager.MobsManager.ToolManager.Instance?.OnVillagerBecameIdle(this);
+        }
+
+        private void HandleFearState()
+        {
+            if (!isMoving || Vector2.Distance(transform.position, targetPosition) < 0.1f)
+            {
+                float randomX = Utility.GetRandomPlazaPos();
+                targetPosition = new Vector3(randomX, transform.position.y, transform.position.z);
+                isMoving = true;
+            }
+
+            if (isMoving)
+            {
+                _currentMoveSpeed = status.RunSpeed;
+                SetAnimState("run");
+            }
+        }
+
+        private void HandleDropCoinToPlayerState()
+        {
+            // Kiểm tra component chia coin
+            if (coinSharing == null || !coinSharing.CanDropCoin())
+            {
+                if (GameTimeManager.Instance != null)
+                {
+                    int currentHour = GameTimeManager.Instance.GameHour;
+                    if (currentHour >= 19 || currentHour < 6)
+                        status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                    else
+                        TransitionToIdle();
+                }
+                else
+                {
+                    TransitionToIdle();
+                }
+                return;
+            }
+
+            // Kiểm tra player còn trong vùng quét không
+            bool playerInRange = false;
+            foreach (var hitObject in rayCastHelper.GetListHitObjects())
+            {
+                if (hitObject != null && hitObject.CompareTag(Script.Utils.GameTags.Player))
+                {
+                    playerInRange = true;
+                    break;
+                }
+            }
+
+            if (playerInRange)
+            {
+                // Gọi tới component chia coin để xử lý cooldown và drop
+                coinSharing.TryDropCoin();
+                
+                // Chuyển animation sang idle khi đứng chờ player
+                isMoving = false; // Ngừng di chuyển lập tức để đứng yên thả coin
+                SetAnimState("idle");
+                return;
+            }
+            
+            // Nếu player không còn trong vùng quét, chuyển về state phù hợp (hoặc tự UpdateStateHandler lo nhờ Tool/Time)
+            if (GameTimeManager.Instance != null)
+            {
+                int currentHour = GameTimeManager.Instance.GameHour;
+                if (currentHour >= 19 || currentHour < 6)
+                    status.villagerState = DenizenStatus.VillagerState.MoveBackToTownCenter;
+                else
+                    TransitionToIdle();
+            }
+            else
+            {
+                TransitionToIdle();
+            }
+        }
+        #endregion
+
+        #region Movement
+        private float _currentMoveSpeed = 0f;
+
+        private void MoveTowardsTarget(Vector3 target, string animationName)
+        {
+            _currentMoveSpeed = animationName == "run" ? status.RunSpeed : status.WalkSpeed;
+            targetPosition = target;
+            isMoving = true;
+            
+            SetAnimState(animationName);
+        }
+
+        private void Update()
+        {
+            if (!isMoving) return;
+
+            bool hasReachedTarget = Utility.MoveTowardsTarget(gameObject, targetPosition, _currentMoveSpeed);
+
+            if (hasReachedTarget)
+            {
+                isMoving = false;
+                SetAnimState("idle");
+            }
+        }
+        #endregion
+
+        #region Coin System
+        public void OnCoinDamage()
+        {
+            OnCoinDamage(true);
+        }
+
+        public void OnCoinDamage(bool isScared = true)
+        {
+            if (status.CurrentCoins > 0)
+            {
+                InternalDropCoins(1, true); // Rõ ràng là đang bị tấn công
+                
+                if (isScared)
+                {
+                    TriggerFear();
+                }
+            }
+        }
+
+        public void TriggerFear()
+        {
+            if (this == null || !gameObject.activeInHierarchy) return;
+            
+            if (status.villagerState != DenizenStatus.VillagerState.RunToGetTool)
+            {
+                status.isInDanger = true;
+                status.fearTimer = FEAR_DURATION;
+                status.isFearPending = true; // ✅ Set cờ để bất kỳ role nào tiếp theo cũng có thể đọc
+                status.villagerState = DenizenStatus.VillagerState.Fear;
+            }
+        }
+
+        // Interface implementation - chỉ dùng khi bị tấn công
+        public void DropCoins(int amount)
+        {
+            InternalDropCoins(amount, true);
+        }
+
+        // Phương thức nội bộ để xử lý logic drop coin
+        private void InternalDropCoins(int amount, bool isAttacked)
+        {
+            // Kiểm tra điều kiện giữ lại coin
+            int minCoinsToKeep = isAttacked ? 0 : 1;
+            
+            // Nếu số coin hiện tại <= số coin cần giữ lại, không làm gì cả
+            if (status.CurrentCoins <= minCoinsToKeep) return;
+            
+            // Luôn chỉ drop 1 coin
+            amount = 1;
+            // Debug.Log($"[VillagerBehavior] {gameObject.name} chuẩn bị drop {amount} coin(s). CurrentCoins trước drop: {status.CurrentCoins}, isAttacked: {isAttacked}");
+            
+            status.CurrentCoins -= amount;
+            // Debug.Log($"[VillagerBehavior] {gameObject.name} đã drop {amount} coin(s). CurrentCoins sau drop: {status.CurrentCoins}");
+            
+            if (Spawner.Instance != null)
+            {
+                // ✅ Dùng pool thay Instantiate trực tiếp — tránh heap allocation mỗi lần drop
+                Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
+                Vector2 spawnPosition = new Vector2(transform.position.x, transform.position.y + 2f);
+                Spawner.Instance.DropByDenizen(spawnPosition, amount, dropDirection);
+            }
+            // Việc mất role sẽ được event OnCoinChangedHandler đảm nhận.
+        }
+
+        private IEnumerator ConvertToVagrantAfterCoins()
+        {
+            // Wait for any ongoing coin drops to complete
+            yield return new WaitForSeconds(0.5f);
+            
+            // Double check to prevent duplicate conversion
+            if (this == null || !gameObject || !gameObject.activeInHierarchy) yield break;
+            if (status.CurrentCoins > 0) yield break;
+            
+            ConvertToVagrant();
+        }
+
+        private void ConvertToVagrant()
+        {
+            if (this == null || !gameObject || !gameObject.activeInHierarchy) return;
+
+            var controller = GetComponent<DenizenRoleController>();
+            if (controller != null)
+            {
+                controller.ChangeRole(NPCRole.Vagrant);
+                return;
+            }
+            Debug.LogError("[VillagerBehavior] DenizenRoleController missing!");
+        }
+        #endregion
+
+        #region Save System
+        // Removed explicit ISaveable implementation as DenizenRoleController handles it via DenizenStatus
+        // However, if there are transient fields like currentTool that need saving, they should be moved to DenizenStatus.
+        // For now, assuming currentTool is not persisted or handled elsewhere (ToolManager handles tool assignment).
+        #endregion
+
+        #region INPCBehavior Implementation
+
+        public bool HandleItem(GameObject other)
+        {
+            // Only active if enabled
+            if (!this.enabled) return false;
+
+            var item = other.GetComponent<PhysicalItem>();
+            if (item == null) return false;
+
+            // 1. Logic nhặt Tool để đổi nghề
+            if (item.itemType != ItemType.Coin)
+            {
+                // LootPickupTrigger đã đảm bảo an toàn cho pickedBy, ở đây ta chỉ cần check logic
+                if (item.AssignedCarrier != null && item.AssignedCarrier != gameObject)
+                {
+                    item.OnPickedByStranger(gameObject);
+                }
+
+                // Xử lý tool bị bỏ rơi TRƯỚC KHI đổi nghề
+                if (currentTool != null && currentTool != item)
+                {
+                    var abandonedTool = currentTool;
+                    currentTool = null;
+                    abandonedTool.AssignedCarrier = null;
+                    abandonedTool.OnAssigneeAbandoned(); 
+                }
+                else
+                {
+                    currentTool = null;
+                }
+                
+                // Đổi nghề
+                ChangeRoleByTool(item.itemType);
+                return true;
+            }
+            // 2. Logic nhặt Coin
+            else
+            {
+                if (!item.denizensPickupAble) return false;
+
+                var coinStorage = GetComponent<ICoinable>();
+                if (coinStorage != null && coinStorage.Coin < coinStorage.MaxCoins)
+                {
+                    coinStorage.AddCoin(1);
+                    return true;
+                }
+                return false;
+            }
+        }
+        #endregion
+        
+        
+        // Đã xóa PickUpCoinInternal vì logic cộng tiền đã được gộp trực tiếp vào HandleItem.
+        // Hủy bỏ việc sử dụng ProcessCoinPickup vì LootPickupTrigger sẽ lo phần tiêu hủy.
+
+        private void ChangeRoleByTool(ItemType type)
+        {
+            var ctrl = GetComponent<DenizenRoleController>();
+            if (ctrl == null) return;
+            // ... logic to change role
+        }
+    }
+}
+```

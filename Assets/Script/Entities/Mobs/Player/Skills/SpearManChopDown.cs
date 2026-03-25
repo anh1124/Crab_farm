@@ -19,6 +19,11 @@ namespace Script.Game.PlayerCharacter.Skills
         // ScriptableObject PHẢI phi trạng thái (stateless) để nhiều nhân vật
         // có thể dùng chung 1 skill mà không ghi đè dữ liệu của nhau.
 
+        private void LogBlue(string message)
+        {
+            Debug.Log($"<color=blue>[{System.DateTime.Now:HH:mm:ss.fff}] {message}</color>");
+        }
+
         public override void Initialize(Transform parent)
         {
             if (hitboxPrefab == null)
@@ -44,12 +49,14 @@ namespace Script.Game.PlayerCharacter.Skills
         
         public override void OnStart(GameObject owner)
         {
+            LogBlue($"[SpearManChopDown] OnStart - Skill Execution started (animation trigger should happen now)");
             // Called khi skill bắt đầu execute
             // Empty for now - có thể thêm VFX, sound effects sau
         }
         
         public override void OnHit(GameObject owner)
         {
+            LogBlue($"[SpearManChopDown] OnHit - Animation Event Damage Frame reached");
             // Tìm container chứa hitbox
             Transform container = owner.transform.Find("SkillContainer");
             if (container == null)
@@ -78,6 +85,7 @@ namespace Script.Game.PlayerCharacter.Skills
         
         public override void OnEnd(GameObject owner)
         {
+            LogBlue($"[SpearManChopDown] OnEnd - Skill finished");
             // Called khi animation kết thúc
             // Empty for now
         }

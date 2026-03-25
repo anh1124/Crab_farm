@@ -61,10 +61,18 @@ namespace Script.Game.PlayerCharacter
         // ── Animation Event Bridges (giữ lại để Animation Event trong Animator vẫn hoạt động) ──
 
         /// <summary>
-        /// Gọi từ Animation Event tại frame damage. Giữ nguyên chữ ký cũ để không cần sửa Animator.
+        /// Gọi từ Animation Event tại frame gây damage. Giữ nguyên chữ ký cũ để không cần sửa Animator.
+        /// Cộng thêm bonus damage từ player.status.damage trước khi OnHit().
         /// </summary>
         public void OnSkillAnimationDamageFrame(int slotIndex)
         {
+            // Inject bonus damage từ player stats vào skill trước khi gọi OnHit
+            if (playerBehavior != null)
+            {
+                var skill = GetSkill(slotIndex);
+                if (skill != null)
+                    skill.SetBonusDamage(playerBehavior.status.damage);
+            }
             OnSkillAnimationDamageFrame(slotIndex, playerBehavior != null ? playerBehavior.gameObject : gameObject);
         }
 

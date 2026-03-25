@@ -5,12 +5,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.IO;
 using Script.Manager;
+using Script.Manager.GamePlayManager;
 using System.Linq;
 using Script.Controller.PlayerController;
 using Script.Data_Model.Interfaces;
 
 namespace Script.Game.Other
 {
+    [RequireComponent(typeof(CheatManager))]
     public class StartGameScrene : MonoBehaviour
     {
         public GameObject pauseMenuPanel;
@@ -377,7 +379,7 @@ namespace Script.Game.Other
                     if (savedObjects != null && savedObjects.Count > 0)
                     {
                         // Đọc trực tiếp vị trí từ PlayerStatusData mà không cần tạo temporary player
-                        var playerData = savedObjects[0].data as Script.Game.Player.PlayerBehavior.PlayerStatusData;
+                        var playerData = savedObjects[0].data as Script.Data_Model.Status.PlayerStatus.PlayerStatusData;
                         if (playerData != null)
                         {
                             spawnPosition = new Vector2(playerData.positionX, playerData.positionY);
@@ -434,11 +436,11 @@ namespace Script.Game.Other
                 return;
             }
 
-            //add some coin for player test
-            PlayerController.Instance.playerBehavior.Coin += 50;
-
-            // Cho phép gây damage lên đồng minh khi test
-            PlayerController.Instance.damageAlly = true;
+            // Áp dụng tất cả dev cheats từ CheatManager (coin, damageAlly, v.v.)
+            if (CheatManager.Instance != null)
+                CheatManager.Instance.ApplyDevCheats();
+            else
+                Debug.LogWarning("[DevelopTest] CheatManager.Instance chưa sẵn sàng.");
 
             // Kiểm tra và log thông tin WorldInfo hiện tại
             if (WorldFileManager.Instance != null && WorldFileManager.Instance.worldInfo != null)

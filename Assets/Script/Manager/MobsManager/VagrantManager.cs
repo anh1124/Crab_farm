@@ -8,6 +8,7 @@ using Script.Manager;
 using Script.Manager.Building;
 using Script.Manager.WorldManager;
 using Script.Game.Mobs.Subjects;
+using Script.Game.Mobs.Denizen.Core;
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -270,13 +271,11 @@ namespace Script.Game.Mobs.MobsManager
                     vagrantObj.tag = "Vagrant";
                     EntitySaveManager.Instance?.MoveObjectToContainer(vagrantObj);
 
-                    var controller = vagrantObj.GetComponent<DenizenRoleController>();
-                    if (controller == null)
+                    var core = vagrantObj.GetComponent<DenizenCore>();
+                    if (core != null)
                     {
-                        controller = vagrantObj.AddComponent<DenizenRoleController>();
+                        core.ChangeRole(NPCRole.Vagrant);
                     }
-                    // ChangeRole về Vagrant (no-op nếu mặc định), đảm bảo ApplyRole chạy và đồng bộ trạng thái
-                    controller.ChangeRole(NPCRole.Vagrant);
                 }
             
                 if (vagrantObj != null)

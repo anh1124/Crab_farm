@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Script.Data_Model.Interfaces;
 using Script.Game.Mobs.Subjects;
+using Script.Game.Item.Coin;
 
 namespace Script.Data_Model.Status
 {
@@ -60,11 +61,14 @@ namespace Script.Data_Model.Status
         public Vector3 startPosition;
         public Vector3 currentIdleWalkTarget;
         public bool isWalking;
+        public PhysicalItem currentTool; // Added for Villager/Tool logic
 
         // Villager Specifics
         [Header("Villager Data")]
         public VillagerState villagerState = VillagerState.Idle;
         public float fearTimer;
+        [Tooltip("Thời gian bị hoảng sợ tối đa (như 3s)")]
+        public float maxFearDuration = 3f;
         public bool isInDanger;
         /// <summary>Cờ chung: Bất cứ role nào (Archer, Vagrant...) có thể bật lên trước khi đổi sang Villager.
         /// VillagerBehavior sẽ đọc cờ này trong OnEnable và vào Fear ngay lập tức nếu fearTimer > 0.</summary>
@@ -79,10 +83,10 @@ namespace Script.Data_Model.Status
         public float detectRangeRaycast = 10f; // Was detectRange
 
         [Tooltip("Phạm vi tấn công/phát hiện của Archer (Dùng Circular Check)")]
-        public float archerDetectRange = 18f; // Was attackRange & huntingRange
+        public float archerDetectRange = 25f; // Was attackRange & huntingRange
 
         public float attackDame = 1f;
-        public float attackSpeed = 2.0f; // Control attack frequency / debug log frequency
+        public float attackSpeed = 2.5f; // Control attack frequency / debug log frequency
         public float lastAttackTime = 0f;
         public bool isLeftFlank;
         public GameObject assignedWall;
@@ -113,11 +117,16 @@ namespace Script.Data_Model.Status
             }
         }
 
+        public bool IsAlive => true; // Simple implementation for now
+        public float AttackCooldown => attackSpeed;
+
         public int MaxCoins
         {
              get => maxCoins;
              set => maxCoins = value;
         }
+
+        public bool IsFull => currentCoins >= maxCoins;
 
         // Basic helper properties
         public float WalkSpeed => walkSpeed;
@@ -173,10 +182,10 @@ namespace Script.Data_Model.Status
         /// </summary>
         public void RouteDamage(float damage, GameObject instigator)
         {
-            var roleCtrl = GetComponent<DenizenRoleController>();
-            if (roleCtrl != null)
+            var core = GetComponent<Script.Game.Mobs.Denizen.Core.DenizenCore>();
+            if (core != null)
             {
-                roleCtrl.ReceiveDamage(damage, instigator);
+                core.ReceiveDamage(damage, instigator);
             }
         }
 

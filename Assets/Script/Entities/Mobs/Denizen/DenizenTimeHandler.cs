@@ -1,4 +1,5 @@
 using UnityEngine;
+using Script.Game.Mobs.Denizen.Core;
 using Script.Manager.WorldManager;
 
 namespace Script.Game.Mobs.Subjects
@@ -9,14 +10,14 @@ namespace Script.Game.Mobs.Subjects
     /// </summary>
     public class DenizenTimeHandler : MonoBehaviour
     {
-        private DenizenRoleController _roleController;
+        private DenizenCore _core;
 
         private void Awake()
         {
-            _roleController = GetComponent<DenizenRoleController>();
+            _core = GetComponent<DenizenCore>();
         }
 
-        private void Start()
+        private void OnEnable()
         {
             var timeManager = GameTimeManager.Instance;
             if (timeManager != null)
@@ -27,7 +28,7 @@ namespace Script.Game.Mobs.Subjects
             }
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             var timeManager = GameTimeManager.Instance;
             if (timeManager != null)
@@ -40,17 +41,17 @@ namespace Script.Game.Mobs.Subjects
 
         private void OnHour6()
         {
-            if (_roleController != null) _roleController.OnDayStart();
+            if (_core != null) _core.OnDayStart();
         }
 
         private void OnHour7()
         {
-            if (_roleController != null) _roleController.OnArcherHuntingTime();
+            if (_core != null) _core.OnArcherHuntingTime();
         }
 
         private void OnHour19()
         {
-            if (_roleController != null) _roleController.OnNightStart();
+            if (_core != null) _core.OnNightStart();
         }
     }
 }

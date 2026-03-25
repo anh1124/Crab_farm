@@ -31,8 +31,22 @@ namespace Script.Game.PlayerCharacter.Skills
         /// <summary>Tên skill</summary>
         public string skillName;
         
-        /// <summary>Damage gây ra (float để đồng bộ với HP)</summary>
+        /// <summary>Damage gây ra từ skill config (float để đồng bộ với HP)</summary>
         public float damage;
+        
+        // ── Runtime: được set bởi PlayerSkillManager ngay trước OnHit() ──
+        private float _bonusDamage = 0f;
+
+        /// <summary>
+        /// Tổng damage = damage (config) + bonus damage (từ player.status.damage).
+        /// Dùng giá trị này trong OnHit() khi gọi ReceiveDamage().
+        /// </summary>
+        public float TotalDamage => damage + _bonusDamage;
+
+        /// <summary>
+        /// Được PlayerSkillManager gọi ngay trước OnHit() để inject bonus từ player stats.
+        /// </summary>
+        public void SetBonusDamage(float bonus) => _bonusDamage = bonus;
         
         /// <summary>Thời gian cooldown (giây) sau khi skill kết thúc</summary>
         public float cooldown;

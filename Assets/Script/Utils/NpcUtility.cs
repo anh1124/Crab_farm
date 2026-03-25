@@ -2,6 +2,8 @@ using Script.Data_Model;
 using Script.Data_Model.Status;
 using UnityEngine;
 using Script.Game.Mobs.Subjects;
+using Script.Game.Mobs.Denizen.Core;
+using Script.Game.Mobs.Denizen.Jobs.Villager;
 
 namespace Script.Utils
 {
@@ -27,8 +29,8 @@ namespace Script.Utils
 
             if (go != null)
             {
-                var controller = go.GetComponent<DenizenRoleController>() ?? go.AddComponent<DenizenRoleController>();
-                controller.ChangeRole(role);
+                var core = go.GetComponent<DenizenCore>() ?? go.AddComponent<DenizenCore>();
+                core.ChangeRole(role);
             }
 
             return go;
@@ -60,21 +62,13 @@ namespace Script.Utils
                     {
                         denizen.transform.rotation = rotation;
                         denizen.transform.localScale = scale;
-                        var controller = denizen.GetComponent<DenizenRoleController>() ?? denizen.AddComponent<DenizenRoleController>();
-                        controller.ChangeRole(NPCRole.Villager);
+                        var core = denizen.GetComponent<DenizenCore>() ?? denizen.AddComponent<DenizenCore>();
+                        core.ChangeRole(NPCRole.Villager);
 
-                        VillagerBehavior villagerBehavior = denizen.GetComponent<VillagerBehavior>();
-                        if (villagerBehavior != null)
+                        DenizenStatus villagerStatus = denizen.GetComponent<DenizenStatus>();
+                        if (villagerStatus != null)
                         {
-                            DenizenStatus villagerStatus = denizen.GetComponent<DenizenStatus>();
-                            if (villagerStatus != null)
-                            {
-                                villagerStatus.CurrentCoins = currentCoins;
-                            }
-                            else
-                            {
-                                Debug.LogWarning("[Utility] Villager does not have DenizenStatus component.");
-                            }
+                            villagerStatus.CurrentCoins = currentCoins;
                         }
                     }
                 }
@@ -82,20 +76,13 @@ namespace Script.Utils
                 {
                     Debug.LogError("[Utility] Spawner instance not found! Cannot spawn using Spawner, using Instantiate fallback.");
                     GameObject denizenInstance = GameObject.Instantiate(PrefabData.Instance.denizen, archerObject.transform.position, Quaternion.identity);
-                    var controller = denizenInstance.GetComponent<DenizenRoleController>() ?? denizenInstance.AddComponent<DenizenRoleController>();
-                    controller.ChangeRole(NPCRole.Villager);
-                    VillagerBehavior villagerBehavior = denizenInstance.GetComponent<VillagerBehavior>();
-                    if (villagerBehavior != null)
+                    var core = denizenInstance.GetComponent<DenizenCore>() ?? denizenInstance.AddComponent<DenizenCore>();
+                    core.ChangeRole(NPCRole.Villager);
+                    
+                    DenizenStatus villagerStatus = denizenInstance.GetComponent<DenizenStatus>();
+                    if (villagerStatus != null)
                     {
-                        DenizenStatus villagerStatus = denizenInstance.GetComponent<DenizenStatus>();
-                        if (villagerStatus != null)
-                        {
-                            villagerStatus.CurrentCoins = currentCoins;
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[Utility] Villager does not have DenizenStatus component.");
-                        }
+                        villagerStatus.CurrentCoins = currentCoins;
                     }
                 }
 

@@ -4,6 +4,8 @@ using Script.Game.Item;
 using System.Linq;
 using Script.Game.Mobs.MobsManager; // Added this
 using Script.Game.Item.Coin;
+using Script.Game.Mobs.Denizen.Jobs.Villager;
+using Script.Game.Mobs.Denizen.Core;
 
 namespace Script.Manager.MobsManager
 {
@@ -13,6 +15,7 @@ namespace Script.Manager.MobsManager
 
         [SerializeField] private List<PhysicalItem> availableTools = new List<PhysicalItem>();
         private List<PhysicalItem> unservedTools = new List<PhysicalItem>(); 
+        public int GetTotalUnservedTools() => unservedTools.Count;
 
         private void Awake()
         {
@@ -32,15 +35,13 @@ namespace Script.Manager.MobsManager
 
             availableTools.Add(tool);
 
-            if (!tool.floating) // Wait, maybe picked or pickedBy == null. Assuming floating or picked isn't removed. Let's keep !tool.picked. Wait, I'll use !tool.picked if it exists, else tool.pickedBy == null. Since the user didn't complain about tool.picked error in ToolManager, it must still be there. I'll just change ItemCategory.
-            {
-                var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
+            // [FIX] Bỏ logic check !tool.floating vì vũ khí lượm được/load từ save vẫn cần chủ!
+            var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
 
-                if (villager != null)
-                    AssignToolToVillager(tool, villager);
-                else
-                    unservedTools.Add(tool);
-            }
+            if (villager != null)
+                AssignToolToVillager(tool, villager);
+            else
+                unservedTools.Add(tool);
         }
 
         public void UnregisterTool(PhysicalItem tool)
@@ -60,10 +61,11 @@ namespace Script.Manager.MobsManager
         {
             if (stolenTool.AssignedCarrier != null && stolenTool.AssignedCarrier != thief)
             {
-                var lostVillager = stolenTool.AssignedCarrier.GetComponent<Script.Game.Mobs.Subjects.VillagerBehavior>();
+                var lostVillager = stolenTool.AssignedCarrier.GetComponent<VillagerJob>();
                 if (lostVillager != null)
                 {
-                    lostVillager.currentTool = null;
+                    // VillagerJob does not have currentTool (it's in DenizenStatus via Context)
+                    // but we can call TransitionToIdle
                     lostVillager.TransitionToIdle();
                 }
                 stolenTool.AssignedCarrier = null;
@@ -92,7 +94,7 @@ namespace Script.Manager.MobsManager
         /// Gọi từ VillagerBehavior.TransitionToIdle().
         /// Nếu có tool đang chờ trong unservedTools thì assign ngay.
         /// </summary>
-        public void OnVillagerBecameIdle(Script.Game.Mobs.Subjects.VillagerBehavior villager)
+        public void OnVillagerBecameIdle(VillagerJob villager)
         {
             CleanUnservedList();
             if (unservedTools.Count == 0) return;
@@ -105,7 +107,7 @@ namespace Script.Manager.MobsManager
             }
         }
 
-        private void AssignToolToVillager(PhysicalItem tool, Script.Game.Mobs.Subjects.VillagerBehavior villager)
+        private void AssignToolToVillager(PhysicalItem tool, VillagerJob villager)
         {
             tool.AssignedCarrier = villager.gameObject;
             villager.AssignTool(tool);

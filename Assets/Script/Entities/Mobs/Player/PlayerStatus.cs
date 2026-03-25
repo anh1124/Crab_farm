@@ -11,8 +11,26 @@ namespace Script.Data_Model.Status
     /// KHÔNG chứa logic khởi tạo — giá trị mặc định được quản lý bởi PlayerConfig.
     /// PlayerBehavior chịu trách nhiệm điều phối: load từ save → dùng Config mặc định.
     /// </summary>
-    public class PlayerStatus : MonoBehaviour
+    public class PlayerStatus : MonoBehaviour, ISaveable
     {
+        // Flag: true nếu RestoreData() đã chạy thành công → bỏ qua ApplyConfig trong PlayerBehavior Awake
+        [HideInInspector]
+        public bool isDataRestoredFromSave = false;
+
+        [Serializable]
+        public class PlayerStatusData
+        {
+            public float maxHp;
+            public float currentHp;
+            public int coin;
+            public float moveSpeed;
+            public float positionX;
+            public float positionY;
+            public bool isGround;
+            
+            // NEW: Resource data for save/load
+            public float currentMana;
+        }
         // Event bắn ra mỗi khi số coin thay đổi — UI lắng nghe event này
         public event Action<int> OnCoinChanged;
 
@@ -24,6 +42,10 @@ namespace Script.Data_Model.Status
         public float moveSpeed;
         public float hpRegenRate;
         public float manaRegenRate;
+
+        [Header("Combat")]
+        [Tooltip("Bonus damage cộng thêm vào mọi skill. CheatManager set 100000 khi instanceKill bật.")]
+        public float damage = 0f;
         
         // TODO: Chuyển isGround, positionX, positionY về PlayerMovement.
         // Các field này là physics state, không phải player resource.
@@ -66,6 +88,54 @@ namespace Script.Data_Model.Status
         {
             HP.Add(HP.Max);
             Debug.Log($"[PlayerStatus] Đã hồi đầy máu. HP hiện tại: {HP.Current}/{HP.Max}");
+        }
+
+        // ==========================================
+        // ISaveable Implementation
+        // ==========================================
+        public string GetPrefabID() => "player";
+
+        public object CaptureData()
+        {
+            return new PlayerStatusData
+            {
+                maxHp = HP.Max,
+                currentHp = HP.Current,
+                coin = this.coin,
+                moveSpeed = this.moveSpeed,
+                positionX = transform.position.x,
+                positionY = transform.position.y,
+                isGround = this.isGround,
+                currentMana = Mana.Current
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            PlayerStatusData loaded = data as PlayerStatusData;
+            if (loaded == null) return;
+
+            // Đánh dấu đã load từ save — Awake sẽ bỏ qua ApplyConfig
+            isDataRestoredFromSave = true;
+
+            HP.SetMax(loaded.maxHp, true);
+            if (loaded.currentHp < loaded.maxHp)
+                HP.Reduce(loaded.maxHp - loaded.currentHp);
+
+            this.coin = loaded.coin;
+            this.moveSpeed = loaded.moveSpeed;
+            this.isGround = loaded.isGround;
+            transform.position = new Vector3(loaded.positionX, loaded.positionY, 0);
+
+            // Fetch default config if possible
+            var behavior = GetComponent<Script.Game.Player.PlayerBehavior>();
+            float maxMana = (behavior != null && behavior.defaultConfig != null) ? behavior.defaultConfig.maxMana : 50f;
+            
+            Mana.SetMax(maxMana, true);
+            if (loaded.currentMana < maxMana)
+                Mana.Reduce(maxMana - loaded.currentMana);
+
+            Debug.Log($"[PlayerStatus] Restored save data. HP={HP.Current}/{HP.Max}, Mana={Mana.Current}/{Mana.Max}");
         }
     }
 }

@@ -47,7 +47,12 @@ namespace Script.Game.Other
 
         private void Update()
         {
-            // [REFECTOR] Logic Update đã được chuyển sang NPC Behavior chủ động gọi.
+            // [REFECTOR] Logic Scan thực tế vẫn do Behavior gọi (GetListDetectedObjects/ScanCircle).
+            // Ta chỉ cập nhật Gizmo mỗi frame để người dùng thấy mượt mà (60Hz).
+            if (isShowGizmo && isShowGizmoUser)
+            {
+                DrawDebugCircle(detectRadius);
+            }
         }
 
         public List<GameObject> GetListDetectedObjects(float? overrideRadius = null)
@@ -67,6 +72,8 @@ namespace Script.Game.Other
             }
             return detectedObjects;
         }
+
+        public List<GameObject> GetDetectedObjects() => detectedObjects;
 
         public void ScanCircle()
         {

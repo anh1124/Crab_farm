@@ -1,7 +1,7 @@
-using System;
 using Script.Data_Model;
 using Script.Game.Item.Coin;
 using Script.Interfaces;
+using Script.Manager.GamePlayManager;
 using UnityEngine;
 
 namespace Script.Game.Other.Nature
@@ -102,19 +102,26 @@ namespace Script.Game.Other.Nature
         {
             Debug.Log($"[NatureTree-DEBUG] SetChopFlag CALLED on {gameObject.name}. isReadyToChop was {status.isReadyToChop}");
             status.isReadyToChop = true;
-            // CoinUser sẽ tự gọi CanReceiveCoins() và trả về false do isReadyToChop = true
-            //dùng cách này để test vì chưa tạo job denizen worker
-            TakeDame(status.maxWorkProgress); // Harvest toàn bộ hp của cây
+
+            // [TEMP] Chờ Denizen Builder: hỏi CheatManager có chặt cây ngay không
+            if (CheatManager.Instance != null)
+                CheatManager.Instance.TrySimulateChop(this);
+            else
+                Debug.LogWarning("[NatureTree] CheatManager not found in scene — tree will wait for a Denizen Builder.");
         }
 
-        public void TakeDame(int dame)
+        /// <summary>
+        /// Denizen Builder gọi hàm này để cộng tiến độ chặt cây mỗi lần cuốc.
+        /// Khi tổng tiến độ >= maxWorkProgress, cây sẽ ngã.
+        /// </summary>
+        public void AddWorkProcess(int amount)
         {
-            Debug.Log($"[NatureTree-DEBUG] TakeDame CALLED on {gameObject.name}: dame={dame}, currentHP={status.currentWorkProgress}, _isDead={_isDead}");
-            if (_isDead || dame <= 0) return;
+            Debug.Log($"[NatureTree-DEBUG] AddWorkProcess CALLED on {gameObject.name}: amount={amount}, currentProgress={status.currentWorkProgress}, _isDead={_isDead}");
+            if (_isDead || amount <= 0) return;
             
-            if (dame >= status.currentWorkProgress)
+            if (amount >= status.currentWorkProgress)
             {
-                Debug.Log($"[NatureTree-DEBUG] {gameObject.name} IS DEAD. Calling Destroy.");
+                Debug.Log($"[NatureTree-DEBUG] {gameObject.name} work complete. Tree falling.");
                 _isDead = true;
                 status.currentWorkProgress = 0;
                 DropOnDeath();
@@ -123,11 +130,14 @@ namespace Script.Game.Other.Nature
             }
             else
             {
-                status.currentWorkProgress -= dame;
-                Debug.Log($"[NatureTree-DEBUG] {gameObject.name} reduced HP to {status.currentWorkProgress}");
+                status.currentWorkProgress -= amount;
+                Debug.Log($"[NatureTree-DEBUG] {gameObject.name} remaining progress: {status.currentWorkProgress}");
             }
         }
-        
+        public void OnDestroy()
+        {
+            DropOnDeath();
+        }
         public void DropOnDeath()
         {
             // Tỉ lệ rơi coin 80%
@@ -144,5 +154,6 @@ namespace Script.Game.Other.Nature
         public bool IsReadyToChop => status.isReadyToChop;
         public string TreeType => status.treeType;
         public int TreeLevel => status.treeLevel;
+      
     }
 }

@@ -49,8 +49,14 @@ public class RayCastHelper : MonoBehaviour
 
     private void Update()
     {
-        // [REFECTOR] Logic Update đã được chuyển sang NPC Behavior (Vagrant, Archer, Enemy) chủ động gọi.
-        // Helper này giờ chỉ đóng vai trò là công cụ Scan thuần túy.
+        // [REFECTOR] Logic Scan thực tế vẫn do Behavior gọi (GetListHitObjects/DrawRay).
+        // Tuy nhiên, ta cần cập nhật Gizmo mỗi frame để người dùng thấy tia quay theo hướng Denizen mượt mà (60Hz).
+        if (isActive && isDrawRay && isShowGizmoUser)
+        {
+            Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
+            Vector2 direction = transform.lossyScale.x > 0 ? Vector2.right : Vector2.left;
+            Debug.DrawRay(origin, direction * raycastDistance, rayColor);
+        }
     }
 
     /// <summary>
@@ -83,8 +89,8 @@ public class RayCastHelper : MonoBehaviour
         // Lấy vị trí hiện tại của đối tượng và thay đổi y thành y + raycastOffsetY
         Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
 
-        // Xác định hướng raycast dựa trên scale X
-        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+        // Xác định hướng raycast dựa trên scale X (world scale/lossyScale để bắt kịp cha bị flip)
+        Vector2 direction = transform.lossyScale.x > 0 ? Vector2.right : Vector2.left;
 
         _filter.layerMask = targetLayer;
 
@@ -168,7 +174,7 @@ public class RayCastHelper : MonoBehaviour
         if (isDrawRay && isShowGizmoUser)
         {
             Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
-            Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+            Vector2 direction = transform.lossyScale.x > 0 ? Vector2.right : Vector2.left;
             Debug.DrawRay(origin, direction * objDst, rayColor);
         }
     }
@@ -187,7 +193,7 @@ public class RayCastHelper : MonoBehaviour
     public void DebugLogAllHits()
     {
         Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
-        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+        Vector2 direction = transform.lossyScale.x > 0 ? Vector2.right : Vector2.left;
         
         _filter.layerMask = targetLayer;
 
@@ -201,7 +207,7 @@ public class RayCastHelper : MonoBehaviour
         if (isDrawRay && isShowGizmoUser)
         {
             Vector2 origin = new Vector2(transform.position.x, transform.position.y + raycastOffsetY);
-            Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+            Vector2 direction = transform.lossyScale.x > 0 ? Vector2.right : Vector2.left;
             
             Gizmos.color = rayColor;
             Gizmos.DrawRay(origin, direction * raycastDistance);
