@@ -1,104 +1,73 @@
 using Script.Game.Enemy.Core;
 using UnityEngine;
+using System.Linq;
+using Script.Utils;
 
 namespace Script.Game.Enemy.States
 {
     /// <summary>
-    /// Trạng thái rút lui về Portal (thường kích hoạt khi đã đầy "Greed")
+    /// Trạng thái rút lui về Portal ban Đêm.
+    /// CHỈ XỬ LÝ: Radar cản đường và logic Despawn khi sát đích.
     /// </summary>
-    public class ReturnToPortalState : CombatState
+    public class ReturnToPortalState : EnemyState
     {
-        public override void Enter(EnemyContext ctx)
-        {
-            // Rút lui có thể quét thưa hơn một chút
-            _rescanDistance = 0.2f;
-            base.Enter(ctx);
-        }
+        protected override bool AllowMovementInState => true;
+        public override void Enter(EnemyContext ctx) { }
 
-        public override void Update(EnemyContext ctx)
+        public override void UpdateBehavior(EnemyContext ctx)
         {
-            // 1. Kiểm tra Portal 
-            if (ctx.HomePortal == null || !ctx.HomePortal.activeSelf)
+            base.UpdateBehavior(ctx); // Chạy base để đồng bộ _moveTarget
+
+            if (ctx.Status == null) return;
+
+            // 1. Kiểm tra Portal mục tiêu (Đích đến ban đêm)
+            var portal = ctx.HomePortal;
+            if (portal == null || !portal.activeInHierarchy)
             {
-                _isMoving = false;
-                ctx.Controller.ChangeState(ctx.Controller.IdleStateInstance);
+                _moveTarget = null;
+                ctx.Controller.ChangeState(ctx.Controller.IdleStateInstance); 
                 return;
             }
 
-            // 2. Scan các vật cản (Khi rút lui chỉ ưu tiên phá Wall chắn đường)
-            GameObject obstacle = ScanForObstacleInternal(ctx);
-            if (obstacle != null)
-            {
-                if (_isAttacking)
-                {
-                    _isMoving = false;
-                    return;
-                }
+            // Gán đích lùi về cho Base và Context Inspector
+            _moveTarget = portal;
+            ctx.CurrentTarget = portal;
 
-                // Chặn đường -> Phải phá hủy vật cản
-                if (_attackTimer >= ctx.Status.AttackCooldown)
-                {
-                    _isAttacking = true;
-                    _isWaitingForCooldown = false;
-                    PerformAttack(ctx, obstacle);
-                }
-                else
-                {
-                    // Chờ hồi chiêu (Anim Idle)
-                    if (!_isWaitingForCooldown)
-                    {
-                        _isWaitingForCooldown = true;
-                        if (ctx.Animator != null) ctx.Animator.SetTrigger("Idle");
-                    }
-                }
-                _isMoving = false;
-                return; 
-            }
+            // kiểm tra kết thúc hành trình
+            if (CheckDespawnCondition(ctx)) return;
 
-            // 3. Không có vật cản -> Di chuyển về phía Portal
-            if (_isWaitingForCooldown)
-            {
-                _isWaitingForCooldown = false;
-                if (ctx.Animator != null) ctx.Animator.SetTrigger("Walk");
-            }
-
-            _isMoving = true;
-        }
-
-        protected override void HandleMovement(EnemyContext ctx)
-        {
-            if (ctx.HomePortal != null)
-            {
-                Script.Utils.MovementUtility.MoveTowardsTarget(ctx.Self, ctx.HomePortal.transform.position, ctx.Status.MoveSpeed);
-            }
-        }
-
-        protected override Vector3 GetMoveTargetPosition(EnemyContext ctx)
-        {
-            return ctx.HomePortal != null ? ctx.HomePortal.transform.position : ctx.Self.transform.position;
-        }
-
-        protected override void PerformAttack(EnemyContext ctx, GameObject obstacle)
-        {
-            if (obstacle == null) return;
-            // Sử dụng DamageHandler trung tâm để giải quyết sát thương đồng nhất
-            base.PerformAttack(ctx, obstacle);
+            // 2. [OBSTACLE DETECTION] Quét Radar cản đường rút
+            var detected = (ctx.RaycastHelper != null) ? ctx.RaycastHelper.GetListHitObjects() : null;
             
-            if (ctx.Animator != null) ctx.Animator.SetTrigger("Attack");
+            if (detected != null && detected.Any(obj => obj != null && TargetLists.EnemyRetreatTargets.Any(tag => obj.CompareTag(tag))))
+            {
+                ctx.Controller.ChangeState(ctx.Controller.AttackStateInstance);
+                return;
+            }
         }
 
-        protected override bool IsTargetValidForState(EnemyContext ctx, GameObject target)
+        /// <summary>
+        /// Logic chuyên biệt để kiểm tra xem quái vật đã bước chân vào portal chưa.
+        /// </summary>
+        private bool CheckDespawnCondition(EnemyContext ctx)
         {
-            // Chỉ đánh phá Tường (Wall) khi đang trên đường rút lui
-            return target.CompareTag(Script.Utils.GameTags.Wall) && 
-                   (ctx.TargetManager != null ? ctx.TargetManager.IsValidRetreatTarget(target) : true);
+            if (_moveTarget == null) return false;
+
+            float xDistance = Mathf.Abs(ctx.Transform.position.x - _moveTarget.transform.position.x);
+            
+            // Nếu sát sạt tọa độ X (0.5 đơn vị) -> Tiến hành biến mất (Pool)
+            if (xDistance < 0.5f)
+            {
+                ctx.Controller.Despawn(); 
+                ctx.ReturnToPoolAction?.Invoke(ctx.Self);
+                return true; 
+            }
+
+            return false;
         }
 
-        protected override GameObject PerformFallbackScan(EnemyContext ctx, int layerMask)
+        public override void Exit(EnemyContext ctx)
         {
-            // Ép quét vào Wall Layer khi rút lui để phá rào chắn
-            int wallLayer = 1 << LayerMask.NameToLayer(Script.Utils.GameTags.Wall);
-            return base.PerformFallbackScan(ctx, wallLayer);
         }
     }
 }

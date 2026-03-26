@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4124811994334157215}
   - component: {fileID: 5405317899469418437}
   - component: {fileID: 7219006188980822234}
-  m_Layer: 12
+  m_Layer: 15
   m_Name: Stump_Spike_1
   m_TagString: Stump
   m_Icon: {fileID: 0}
@@ -140,7 +140,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3281834008535163269}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: CoinSlotLocation
   m_TagString: Untagged
   m_Icon: {fileID: 0}

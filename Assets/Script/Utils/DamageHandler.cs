@@ -19,13 +19,16 @@ namespace Script.Utils
         {
             if (target == null) return false;
 
-            // Kiểm tra cờ chết trước (tránh đánh vào xác chết)
-            var dieInterface = target.GetComponent<IDie>();
+            // 1. Resolve effective target (lấy parent 1 cấp )
+            GameObject effectiveTarget = CombatUtility.ResolveTargetFromTrigger(target);
+            if (effectiveTarget == null) return false;
+
+            // 2. Kiểm tra cờ chết trước (tránh đánh vào xác chết)
+            var dieInterface = effectiveTarget.GetComponent<IDie>();
             if (dieInterface != null && dieInterface.IsDead) return false;
 
             // ✅ Denizen dùng hệ thống route tập trung qua DenizenStatus.RouteDamage
-            // KHÔNG dùng IDamageable loop vì sẽ gây double-damage (DenizenStatus + Behavior đang bật)
-            var denizenStatus = target.GetComponent<Script.Data_Model.Status.DenizenStatus>();
+            var denizenStatus = effectiveTarget.GetComponent<Script.Data_Model.Status.DenizenStatus>();
             if (denizenStatus != null)
             {
                 denizenStatus.RouteDamage(damage, instigator);
@@ -34,7 +37,7 @@ namespace Script.Utils
 
             // Fallback cho các entity khác (Enemy, v.v...): loop qua IDamageable active
             bool damaged = false;
-            var damageables = target.GetComponents<IDamageable>();
+            var damageables = effectiveTarget.GetComponents<IDamageable>();
             foreach (var damageable in damageables)
             {
                 var mb = damageable as MonoBehaviour;
@@ -45,7 +48,6 @@ namespace Script.Utils
                 }
                 else if (mb == null)
                 {
-                    // Interface trên non-MonoBehaviour (hiếm gặp)
                     damageable.ReceiveDamage(damage, instigator);
                     damaged = true;
                 }
@@ -53,7 +55,11 @@ namespace Script.Utils
 
             if (damaged) return true;
 
-            Debug.LogWarning($"[DamageHandler] {target.name} không có IDamageable nào đang ACTIVE. Không thể gây sát thương.");
+            // Không in log nếu trúng Tilemap (tránh spam khi arrow bắn xuống đất)
+            if (!effectiveTarget.name.Contains("Tilemap") && effectiveTarget.GetComponent<UnityEngine.Tilemaps.Tilemap>() == null)
+            {
+                Debug.LogWarning($"[DamageHandler] {effectiveTarget.name} (from {target.name}) không có IDamageable nào đang ACTIVE. Không thể gây sát thương.");
+            }
             return false;
         }
     }

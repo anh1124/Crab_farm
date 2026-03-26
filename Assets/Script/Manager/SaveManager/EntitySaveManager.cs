@@ -6,6 +6,8 @@ using Script.Controller.PlayerController;
 using Script.Data_Model;
 using Script.Data_Model.Status;
 using Script.Data_Model.Interfaces;
+using Script.Game.Enemy;
+using Script.Game.Enemy.Core;
 using UnityEngine;
 // using Script.Manager.BuildingManager; // Avoid importing this namespace here to prevent name conflict with class BuildingManager
 
@@ -95,6 +97,13 @@ namespace Script.Manager
                 natureContainer = SetupContainerHelper("NatureContainer", ref natureContainer);
                 chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
                 enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
+                
+                if (enemyContainer != null && enemyContainer.GetComponent<Script.Game.Enemy.EnemyPool>() == null)
+                {
+                    Debug.LogWarning("[EntitySaveManager] EnemyPool đã được thêm tự động vào EnemyContainer vì hệ thống Save/Load container chịu trách nhiệm khởi tạo node này.");
+                    enemyContainer.AddComponent<Script.Game.Enemy.EnemyPool>();
+                }
+
                 animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
                 denizenContainer = SetupContainerHelper("DenizenContainer", ref denizenContainer);
                 statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
@@ -426,6 +435,13 @@ namespace Script.Manager
                 natureContainer = EnsureContainerExists("NatureContainer", ref natureContainer);
                 chunkContainer = EnsureContainerExists("ChunkContainer", ref chunkContainer);
                 enemyContainer = EnsureContainerExists("EnemyContainer", ref enemyContainer);
+                
+                if (enemyContainer != null && enemyContainer.GetComponent<Script.Game.Enemy.EnemyPool>() == null)
+                {
+                    Debug.LogWarning("[EntitySaveManager] EnemyPool đã được thêm tự động vào EnemyContainer khi Refresh.");
+                    enemyContainer.AddComponent<Script.Game.Enemy.EnemyPool>();
+                }
+
                 animalsContainer = EnsureContainerExists("AnimalsContainer", ref animalsContainer);
                 denizenContainer = EnsureContainerExists("DenizenContainer", ref denizenContainer);
                 statuesContainer = EnsureContainerExists("StatuesContainer", ref statuesContainer);
@@ -668,46 +684,29 @@ namespace Script.Manager
             try
             {
                 var savedObjects = new List<SavedObject>();
-                // Lấy danh sách con an toàn để tránh lỗi khi iterable thay đổi trong quá trình lặp
-                List<Transform> childrenToSave = new List<Transform>();
-                foreach (Transform child in container.transform)
-                {
-                    if (child != null)
-                    {
-                        childrenToSave.Add(child);
-                    }
-                }
+                // Quét toàn bộ ISaveable ở MỌI ĐỘ SÂU trong container (bao gồm cả trong các sub-folders của Pool)
+                // Chỉ lấy những đối tượng ĐANG ACTIVE (GetComponentsInChildren(false) sẽ tự bỏ qua inactive mặc định nếu tham số là false)
+                var saveables = container.GetComponentsInChildren<ISaveable>(false);
                 
-                foreach (Transform child in childrenToSave)
+                foreach (var saveable in saveables)
                 {
-                    // Kiểm tra null để tránh lỗi với objects đã bị destroy
-                    if (child == null || child.gameObject == null)
-                    {
-                        continue;
-                    }
+                    MonoBehaviour mb = saveable as MonoBehaviour;
+                    if (mb == null || mb.gameObject == null) continue;
+
+                    // Chỉ save những object đang hoạt động (không phải pool members đang ẩn)
+                    if (!mb.gameObject.activeInHierarchy) continue;
                     
-                    // Bỏ qua các object inactive — chúng là pool objects (VD: CoinPool preload).
-                    // Coin đang nằm trong pool luôn inactive; chỉ save coin active (đang có trong thế giới).
-                    if (!child.gameObject.activeSelf)
+                    try
                     {
-                        continue;
+                        savedObjects.Add(new SavedObject
+                        {
+                            prefabID = saveable.GetPrefabID(),
+                            data = saveable.CaptureData()
+                        });
                     }
-                    
-                    var saveable = child.GetComponent<ISaveable>();
-                    if (saveable != null)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            savedObjects.Add(new SavedObject
-                            {
-                                prefabID = saveable.GetPrefabID(),
-                                data = saveable.CaptureData()
-                            });
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogError($"Error saving object {child.name}: {e.Message}");
-                        }
+                        Debug.LogError($"Error saving object {mb.name} in {container.name}: {e.Message}");
                     }
                 }
 
@@ -773,21 +772,41 @@ namespace Script.Manager
 
                 if (isDebug) Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
 
-                // Xóa toàn bộ object cũ trong container
-                //RemoveAllChildObjects(container);
+                // [POOL INITIALIZATION] Đảm bảo Pool đã được bơm đầy trước khi Load quái vật 
+                if (container == enemyContainer)
+                {
+                    if (Script.Game.Enemy.TotalEnemyList.Instance != null)
+                        Script.Game.Enemy.TotalEnemyList.Instance.InitializeEnemyData();
+                            
+                    if (Script.Game.Enemy.EnemyPool.Instance != null)
+                        Script.Game.Enemy.EnemyPool.Instance.InitializePools();
+                }
 
                 // Load và tạo object mới
                 foreach (var savedObject in savedObjects)
                 {
                     if (isDebug) Debug.Log($"Attempting to load prefab with ID: {savedObject.prefabID}");
-                    // Kiểm tra PrefabData.Instance tồn tại
-                    if (PrefabData.Instance == null)
-                    {
-                        Debug.LogError("PrefabData.Instance là null, không thể load prefab");
-                        continue;
-                    }
                     
-                    var prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
+                    GameObject prefab = null;
+
+                    // ƯU TIÊN: Lấy trực tiếp từ TotalEnemyList nếu là EnemyContainer
+                    if (container == enemyContainer && TotalEnemyList.Instance != null && TotalEnemyList.Instance.EnemyDataList != null)
+                    {
+                        var enemyData = TotalEnemyList.Instance.EnemyDataList.Find(d => 
+                            string.Equals(d.enemyName, savedObject.prefabID, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (enemyData != null)
+                        {
+                            prefab = enemyData.enemyPrefab;
+                        }
+                    }
+
+                    // Nếu không phải Enemy hoặc không tìm thấy trong list Mob, mới dùng PrefabData
+                    if (prefab == null && PrefabData.Instance != null)
+                    {
+                        prefab = PrefabData.Instance.GetPrefabByID(savedObject.prefabID);
+                    }
+
                     if (prefab == null)
                     {
                         // Fallback cho "stump" nếu chưa có prefab riêng: dùng "wall" làm base
@@ -826,7 +845,53 @@ namespace Script.Manager
                     }
 
                     if (isDebug) Debug.Log($"Creating instance of prefab: {prefab.name}");
-                    var instance = Instantiate(prefab, container.transform);
+                    
+                    GameObject instance = null;
+                    
+                    // LOGIC POOLING KHI LOAD: 
+                    if (container == enemyContainer && Script.Game.Enemy.EnemyPool.Instance != null)
+                    {
+                        // Đã xử lý Case-Insensitive bên trong GetEnemy
+                        instance = Script.Game.Enemy.EnemyPool.Instance.GetEnemy(savedObject.prefabID);
+                    }
+                    else if (container == coinContainer && Script.Game.Item.Coin.CoinPool.Instance != null)
+                    {
+                        instance = Script.Game.Item.Coin.CoinPool.Instance.GetCoin();
+                    }
+
+                    // Nếu không có pool hoặc pool không trả về được, fallback về Instantiate truyền thống
+                    if (instance == null)
+                    {
+                        instance = Instantiate(prefab, container.transform);
+                        if (isDebug) Debug.Log($"[EntitySaveManager] Created NEW entity {savedObject.prefabID} (No pool match)");
+                    }
+                    else
+                    {
+                        instance.transform.SetParent(container.transform);
+                        if (isDebug) Debug.Log($"[EntitySaveManager] Retrieved pooled entity {savedObject.prefabID}");
+                    }
+
+                    // --- KÍCH HOẠT AI SAU KHI LOAD ---
+                    if (container == enemyContainer)
+                    {
+                        var controller = instance.GetComponent<Script.Game.Enemy.Core.EnemyAIController>();
+                        if (controller != null)
+                        {
+                            // Tìm Portal chính xác từ EnemyPortalManager thay vì quét bừa Tag
+                            GameObject homePortal = null;
+                            if (Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
+                            {
+                                var portalMgr = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
+                                var townCenter = Script.Utility.GetTownCenter();
+                                if (townCenter != null)
+                                {
+                                    bool isRightSide = instance.transform.position.x > townCenter.transform.position.x;
+                                    homePortal = isRightSide ? portalMgr.portalR : portalMgr.portalL;
+                                }
+                            }
+                            controller.ResetEnemy(homePortal);
+                        }
+                    }
 
                     // Special handling: if this is a TownCenter prefab, infer and set tier from prefabID before RestoreData
                     // (Giữ nguyên cho TownCenter, nhưng bỏ nếu prefabID không còn tier)

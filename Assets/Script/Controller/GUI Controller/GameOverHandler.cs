@@ -9,6 +9,9 @@ namespace Script.GUI_Controller
     public class GameOverHandler : MonoBehaviour
     {
         public static GameOverHandler Instance { get; private set; }
+        
+        /// <summary>Cờ đánh dấu đang trong trạng thái Game Over để khóa InputManager</summary>
+        public static bool IsActive { get; private set; }
 
         [Header("UI Components")]
         [SerializeField, Tooltip("Bảng UI thông báo thua cuộc")] 
@@ -35,6 +38,7 @@ namespace Script.GUI_Controller
                 return;
             }
 
+            IsActive = false; // Đảm bảo cờ reset khi scene (chứa GameOverHandler) mới load lên
             EnsureReferences();
         }
 
@@ -59,46 +63,58 @@ namespace Script.GUI_Controller
 
         public void TriggerGameOver()
         {
+            IsActive = true;
             EnsureReferences();
             
             int survivedDays = GameTimeManager.Instance != null ? GameTimeManager.Instance.GetElapsedDays() : 0;
-            
-            if (panel != null) panel.SetActive(true);
-
-            if (headerText != null) headerText.text = "Bạn đã thua";
-            if (contentText != null) contentText.text = $"Bạn đã sống sót {survivedDays} ngày.\nBạn đã làm rất tốt!";
-
-            // Nút bên trái: Load save lần cuối
-            if (cancelButton != null) 
-            {
-                cancelButton.gameObject.SetActive(true);
-                var btnText = cancelButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null) btnText.text = "Load save lần cuối";
-                
-                cancelButton.onClick.RemoveAllListeners();
-                cancelButton.onClick.AddListener(() => {
-                    Time.timeScale = 1f;
-                    // Tải lại Scene hiện tại sẽ kích hoạt LoadFromSave lần nữa với path đã lưu trong Prefs
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
-                });
-            }
-
-            // Nút bên phải: Về Menu chính
-            if (confirmButton != null)
-            {
-                confirmButton.gameObject.SetActive(true);
-                var btnText = confirmButton.GetComponentInChildren<TextMeshProUGUI>();
-                if (btnText != null) btnText.text = "Về Menu chính";
-                
-                confirmButton.onClick.RemoveAllListeners();
-                confirmButton.onClick.AddListener(() =>
-                {
-                    Time.timeScale = 1f; // Bỏ pause trước khi load lại menu
-                    SceneManager.LoadScene("MainMenuScene");
-                });
-            }
-
             Time.timeScale = 0f; // Pause game
+
+            if (GuiCanvasManager.Instance != null && GuiCanvasManager.Instance.confirmationMenu != null)
+            {
+                GuiCanvasManager.Instance.confirmationMenu.Show(
+                    "Bạn đã thua",
+                    $"Bạn đã sống sót {survivedDays} ngày.\nBạn đã làm rất tốt!",
+                    onConfirm: () =>
+                    {
+                        Time.timeScale = 1f; // Bỏ pause trước khi load lại menu
+                        // Gọi CloseMenu với isCriticalDestroy = true để dọn dẹp hàng đợi
+                        GuiCanvasManager.Instance.confirmationMenu.CloseMenu(true);
+                        SceneManager.LoadScene("MainMenuScene");
+                    },
+                    onCancel: () =>
+                    {
+                        Time.timeScale = 1f;
+                        // Gọi CloseMenu với isCriticalDestroy = true để dọn dẹp hàng đợi
+                        GuiCanvasManager.Instance.confirmationMenu.CloseMenu(true);
+                        // Tải lại Scene hiện tại sẽ kích hoạt LoadFromSave lần nữa với path đã lưu trong Prefs
+                        SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
+                    },
+                    priority: ConfirmationMenu.MenuPriority.Critical,
+                    debugOwner: "GameOverHandler"
+                );
+
+                // Ghi đè chữ trên nút Cancel thành Load Save
+                if (cancelButton != null)
+                {
+                    var btnText = cancelButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (btnText != null) btnText.text = "Load save lần cuối";
+                }
+
+                // Ghi đè chữ trên nút Confirm thành Về Menu chính
+                if (confirmButton != null)
+                {
+                    var btnText = confirmButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (btnText != null) btnText.text = "Về Menu chính";
+                }
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                IsActive = false;
+            }
         }
     }
 }

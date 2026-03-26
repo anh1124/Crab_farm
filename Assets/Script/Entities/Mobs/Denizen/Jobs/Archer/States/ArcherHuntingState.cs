@@ -10,8 +10,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         private float _lastPatrolMoveTime;
         private Vector3 _currentPatrolTarget;
         private bool _hasPatrolTarget;
-        private bool _isAttacking;
-        private float _attackCooldownTimer;
 
         // Interval tuần tra (port từ legacy HUNTING_PATROL_INTERVAL = 5s)
         private const float PATROL_INTERVAL = 5f;
@@ -25,8 +23,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         {
             _hasPatrolTarget = false;
             _lastPatrolMoveTime = -PATROL_INTERVAL; // Trigger chọn điểm ngay lập tức
-            _isAttacking = false;
-            _attackCooldownTimer = ctx.Status.AttackCooldown; // Sẵn sàng bắn ngay
         }
 
         public override void Update(DenizenContext ctx)
@@ -68,23 +64,18 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             Animator anim = _job.GetAnimator();
             if (anim == null) return;
 
-            // Hồi cooldown mỗi frame (chỉ đếm KHI KHÔNG ĐANG BẮN)
-            if (!_isAttacking && _attackCooldownTimer < ctx.Status.AttackCooldown)
-                _attackCooldownTimer += Time.deltaTime;
-
             // Nếu có target và cooldown xong → bắn
             if (ctx.Status.currentTarget != null)
             {
-                if (!_isAttacking && _attackCooldownTimer >= ctx.Status.AttackCooldown)
+                if (ctx.ArcherShooting != null && ctx.ArcherShooting.CanShoot(ctx.Status.AttackCooldown))
                 {
-                    _isAttacking = true;
-                    _attackCooldownTimer = 0f; // Reset lại về 0, và giữ cứng không đếm trong suốt lúc giương cung
+                    ctx.ArcherShooting.StartShooting();
                     anim.Play("archerDraw");
                 }
             }
 
             // Tránh đè animation khi đang bắn (Draw/Release)
-            if (_isAttacking || 
+            if ((ctx.ArcherShooting != null && ctx.ArcherShooting.IsAttacking) || 
                 anim.GetCurrentAnimatorStateInfo(0).IsName("archerRelease") || 
                 anim.GetCurrentAnimatorStateInfo(0).IsName("archerDraw"))
                 return;
@@ -112,7 +103,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         // Animation event: Tên bay → Bắn
         public void OnArrowRelease(DenizenContext ctx)
         {
-            _isAttacking = false;
             if (ctx.Status.currentTarget != null && ctx.ArcherShooting != null)
             {
                 ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3288081392546131592}
   - component: {fileID: 8024802097094593828}
   - component: {fileID: 7233424117442376579}
+  - component: {fileID: 2553195277133583850}
   m_Layer: 7
   m_Name: shieldBot
   m_TagString: Enemy
@@ -37,7 +38,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4478183548275962320}
-  - {fileID: 108553796410189565}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3069805905706225877
@@ -184,6 +184,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _currentHp: 0
   <MaxHp>k__BackingField: 0
+  _enemyID: 
   <Coin>k__BackingField: 0
   <MaxCoins>k__BackingField: 999
   <MoveSpeed>k__BackingField: 0
@@ -191,6 +192,8 @@ MonoBehaviour:
   <AttackCooldown>k__BackingField: 0
   <AttackDamage>k__BackingField: 0
   debugEnemy: 0
+  <CanMove>k__BackingField: 1
+  <CanAction>k__BackingField: 1
 --- !u!114 &3288081392546131592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -206,7 +209,6 @@ MonoBehaviour:
   currentStateName: None
   currentTarget: {fileID: 0}
   currentPortal: {fileID: 0}
-  currentAttackTimer: 0
   shockAttackCollider: {fileID: 8997399569110945392}
 --- !u!50 &8024802097094593828
 Rigidbody2D:
@@ -264,95 +266,22 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 45569
   debugHitObjects: []
---- !u!1 &297064708596671372
-GameObject:
+--- !u!114 &2553195277133583850
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 108553796410189565}
-  - component: {fileID: 3427930872139210684}
-  m_Layer: 14
-  m_Name: Trigger
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &108553796410189565
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 297064708596671372}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7997938008479590276}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!60 &3427930872139210684
-PolygonCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 297064708596671372}
+  m_GameObject: {fileID: 132874606585159244}
   m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0}
-    oldSize: {x: 9, y: 3.1}
-    newSize: {x: 0.9, y: 0.31}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 0.000678584, y: 2.5034182}
-      - {x: -0.30102485, y: 2.2034545}
-      - {x: -0.29793644, y: 1.1982703}
-      - {x: -0.90438324, y: 0.5050698}
-      - {x: -0.90651155, y: 0.20470566}
-      - {x: -0.69833696, y: -0.0019856691}
-      - {x: 1.0044713, y: -0.00486169}
-      - {x: 1.100955, y: 0.10039325}
-      - {x: 1.1009753, y: 0.50178903}
-      - {x: 0.5013747, y: 1.2032183}
-      - {x: 0.5042143, y: 2.2036824}
-      - {x: 0.19988534, y: 2.5024111}
-  m_UseDelaunayMesh: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 871fcbf45ab9a5447bf1782ba9bf0e27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skillSlots:
+  - skill: {fileID: 11400000, guid: b695168b6e8a0684aae14873579fee50, type: 2}
+    state: 0
+    cooldownTimer: 0
 --- !u!1 &8997399569110945392
 GameObject:
   m_ObjectHideFlags: 0
@@ -363,7 +292,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4478183548275962320}
   - component: {fileID: 3910854810072550475}
-  m_Layer: 14
+  m_Layer: 22
   m_Name: shockcollider
   m_TagString: Untagged
   m_Icon: {fileID: 0}

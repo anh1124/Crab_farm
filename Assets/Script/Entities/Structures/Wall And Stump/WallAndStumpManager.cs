@@ -44,7 +44,6 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 InitializeSingleton();
                 InitializeReferences();
-                SortAndNotify(); // Sắp xếp và thông báo ngay lập tức
             }
         }
 
@@ -68,7 +67,6 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             InitializeSingleton();
             InitializeReferences();
-            SortAndNotify(); // Sắp xếp và thông báo ngay lập tức
             // Debug.Log("[WallAndStumpManager] Initialized via Bootstrap");
         }
         #endregion
@@ -140,7 +138,14 @@ namespace Script.Game.Structures.Wall_And_Stump
         /// </summary>
         public void SortAndNotify()
         {
-            if (townCenter == null) townCenter = Utility.GetTownCenter();
+            if (townCenter == null)
+            {
+                // Mute error log if BuildingManager hasn't loaded TownCenter yet
+                if (Script.Manager.Building.BuildingManager.instance != null && Script.Manager.Building.BuildingManager.instance.currentTownCenter != null)
+                {
+                    townCenter = Utility.GetTownCenter();
+                }
+            }
             if (townCenter == null) return;
 
             if (leftWalls.Count > 0)

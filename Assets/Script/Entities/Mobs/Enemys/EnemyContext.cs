@@ -7,9 +7,11 @@ namespace Script.Game.Enemy
     {
         // References
         public GameObject Self;
+        public Transform Transform;
         public Animator Animator;
         public EnemyAIController Controller;
         public EnemyStatus Status;
+        public Script.Game.PlayerCharacter.Skills.SkillManager SkillManager;
 
         // Managers
         public EnemyTargetManager TargetManager;
@@ -17,6 +19,17 @@ namespace Script.Game.Enemy
 
         // States
         public GameObject CurrentTarget;
+        // [BRIDGED FLAGS]: Trỏ thẳng vào Status để đồng bộ dữ liệu
+        public bool IsSkillCasting 
+        { 
+            get => Status != null && Status.IsSkillCasting; 
+            set { if (Status != null) Status.IsSkillCasting = value; } 
+        }
+        public bool SkillAllowsMovement 
+        { 
+            get => Status == null || Status.SkillAllowsMovement; 
+            set { if (Status != null) Status.SkillAllowsMovement = value; } 
+        }
         public GameObject HomePortal;
         
         public float GreedThreshold;

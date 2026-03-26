@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7991996051335892987}
   - component: {fileID: 59855691160345436}
   - component: {fileID: 4438516948853595001}
-  m_Layer: 12
+  m_Layer: 15
   m_Name: Stump_Iron_5
   m_TagString: Stump
   m_Icon: {fileID: 0}
@@ -140,7 +140,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7221433065474205502}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: CoinSlotLocation
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -217,6 +217,42 @@ namespace Script.Utils
             }
             return BuildingManager.instance.currentTownCenter.gameObject;
         }
+
+        public static bool IsInKingdomSafeZone(float posX)
+        {
+            var wallManager = Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance;
+            if (wallManager == null) return false;
+
+            float townCenterX = 0f;
+            var tc = BuildingManager.instance?.currentTownCenter;
+            if (tc != null) townCenterX = tc.transform.position.x;
+
+            // Tìm tường an toàn xa nhất bên trái
+            float leftBound = townCenterX - 0.1f;
+            for (int i = wallManager.leftWalls.Count - 1; i >= 0; i--)
+            {
+                var wall = wallManager.leftWalls[i];
+                if (wallManager.IsWallDefendable(wall))
+                {
+                    leftBound = wall.transform.position.x;
+                    break;
+                }
+            }
+
+            // Tìm tường an toàn xa nhất bên phải
+            float rightBound = townCenterX + 0.1f;
+            for (int i = wallManager.rightWalls.Count - 1; i >= 0; i--)
+            {
+                var wall = wallManager.rightWalls[i];
+                if (wallManager.IsWallDefendable(wall))
+                {
+                    rightBound = wall.transform.position.x;
+                    break;
+                }
+            }
+
+            return posX >= leftBound && posX <= rightBound;
+        }
     }
 }
 

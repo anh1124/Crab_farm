@@ -74,7 +74,7 @@ namespace Script.Game.Mobs.Denizen.Core
         protected virtual void OnEnterJob() { }
         protected virtual void OnExitJob() { }
 
-        public void UpdateBehavior()
+        public virtual void UpdateBehavior()
         {
             // [SCAN INTEGRATION] Chủ động quét tia và vòng tròn (do Helper đã gỡ Update loop)
             if (Context != null)

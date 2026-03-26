@@ -91,7 +91,7 @@ namespace Script.Utils
         /// hiện tại hàm gây dame chỉ mới sử dụng cho player
         /// khi enemy dùng sẽ cần thêm logic và chuyển isAlly thành false 
         /// </summary>
-        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, float damageAmount)
+        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, float damageAmount, bool isEnemyAttack = false)
         {
             bool allowDamageAlly = false;
             // Xác định xem instigator có được chém đồng minh không
@@ -149,12 +149,22 @@ namespace Script.Utils
                         }
                     }
 
-                    // 3. Ally Check
-                    bool isTargetAlly = IsAlly(effectiveTarget);
-                    if (!allowDamageAlly && isTargetAlly)
+                    // 3. Phân biệt phe phái (Ally/Enemy)
+                    if (isEnemyAttack)
                     {
-                        Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {effectiveTarget.name} - IsAlly: {isTargetAlly}");
-                        continue;
+                        // Nếu AI Enemy đánh: Ta KHÔNG skip đồng minh 
+                        // Vì danh sách IsAlly (Player/Wall/Archer) chính là kẻ thù của nó.
+                        // Lưu ý: Đồng minh của Enemy (Enemy khác) đã được lọc qua Layer Collision từ trước.
+                    }
+                    else
+                    {
+                        // Nếu Player hoặc Archer đánh: Ta cần tránh đánh trúng đồng minh
+                        bool isTargetAlly = IsAlly(effectiveTarget);
+                        if (isTargetAlly && !allowDamageAlly)
+                        {
+                            Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {effectiveTarget.name} - IsAlly: {isTargetAlly}");
+                            continue;
+                        }
                     }
 
                     // 4. Gây sát thương

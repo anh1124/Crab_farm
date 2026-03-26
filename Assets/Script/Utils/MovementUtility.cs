@@ -19,7 +19,7 @@ namespace Script.Utils
         }
 
         /// <summary>
-        /// Xoay hướng GameObject dựa vào vị trí mục tiêu
+        /// Xoay hướng GameObject dựa vào vị trí mục tiêu (Lật Scale)
         /// </summary>
         public static void FlipDirection(GameObject objectToFlip, Vector3 target)
         {
@@ -30,6 +30,13 @@ namespace Script.Utils
                 currentScale.z
             );
         }
+
+        /// <summary>
+        /// Quay mặt về phía mục tiêu (Sử dụng cho logic AI)
+        /// </summary>
+        public static void FaceTarget(GameObject self, Vector3 target)
+        {
+            FlipDirection(self, target);
+        }
     }
 }
-

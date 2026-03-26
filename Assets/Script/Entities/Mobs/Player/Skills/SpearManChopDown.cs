@@ -77,10 +77,10 @@ namespace Script.Game.PlayerCharacter.Skills
             Collider2D hitbox = runtimeHitboxTransform.GetComponent<Collider2D>();
             if (hitbox == null) return;
             
-            Debug.Log($"[SpearManChopDown] Calling ActivateHitbox with damage={damage}");
+            Debug.Log($"[SpearManChopDown] Calling ActivateHitbox with damage={TotalDamage} (Base: {damage})");
             
             // Use HitboxController để process damage
-            HitboxController.ActivateHitbox(hitbox, damage, owner);
+            HitboxController.ActivateHitbox(hitbox, TotalDamage, owner);
         }
         
         public override void OnEnd(GameObject owner)

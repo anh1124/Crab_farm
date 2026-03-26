@@ -8,6 +8,9 @@ namespace Script.Game.Combat
     [RequireComponent(typeof(SpriteRenderer))]
     public class ArrowController : MonoBehaviour
     {
+        /*
+        chú ý , arrow sticky với mọi thứ trong physic2d
+        */
         #region References
         private Rigidbody2D rb;
         private Collider2D col; // Added Collider reference
@@ -244,8 +247,9 @@ namespace Script.Game.Combat
         {
             if (target == null) return;
 
-            // Resolve target (e.g., if hit a trigger/blocker child)
-            GameObject effectiveTarget = CombatUtility.ResolveTargetFromTrigger(target);
+            // Arrow tấn công trực tiếp vào đối tượng va chạm (không tìm parent cho trigger/blocker nữa)
+            // Việc Resolve (nếu cần) sẽ để DamageHandler tự quyết định dựa trên tính chất đối tượng.
+            GameObject effectiveTarget = target;
 
             // 1. Check Ally Tags (Friendly Fire Prevention)
             if (PrefabData.Instance != null && !PrefabData.Instance.allowAllyDamage)

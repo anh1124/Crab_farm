@@ -1,47 +1,41 @@
+using System;
+using System.Collections.Generic; 
 using System.Linq;
-using System.Collections.Generic;
-using UnityEngine;
 using Script.Game.Enemy.Core;
 using Script.Game.Enemy.States;
 using Script.Data_Model.Interfaces;
 using Script.Manager.GamePlayManager;
+using UnityEngine;
 
-namespace Script.Game.Enemy
+namespace Script.Game.Enemy.Core
 {
-    [RequireComponent(typeof(EnemyStatus), typeof(Animator))]
+    [RequireComponent(typeof(Script.Game.PlayerCharacter.Skills.SkillManager))]
     public class EnemyAIController : MonoBehaviour, INPCBehavior
     {
-        protected EnemyState _currentState;
-        protected EnemyContext _ctx;
-        protected string[] _animatorTriggers;
-
-        // Pre-allocated states
-        private Script.Game.Enemy.States.IdleState _idleState;
-        private Script.Game.Enemy.States.MoveToTargetState _moveState;
-        private Script.Game.Enemy.States.ReturnToPortalState _returnState;
-        private Script.Game.Enemy.States.DeadState _deadState;
-
-        public Script.Game.Enemy.States.IdleState IdleStateInstance => _idleState;
-        public Script.Game.Enemy.States.MoveToTargetState MoveStateInstance => _moveState;
-        public Script.Game.Enemy.States.ReturnToPortalState ReturnStateInstance => _returnState;
-        public Script.Game.Enemy.States.DeadState DeadStateInstance => _deadState;
-
         [Header("Debug Info")]
-        [SerializeField] private string currentStateName = "None";
-        [SerializeField] private GameObject currentTarget;
-        [SerializeField] private GameObject currentPortal;
-        [SerializeField] private float currentAttackTimer;
+        public bool isDebug = false;
+        public string currentStateName;
+        public GameObject currentTarget;
+        public GameObject currentPortal;
 
-        public float DebugAttackTimer 
-        { 
-            get => currentAttackTimer; 
-            set => currentAttackTimer = value; 
-        }
+        public event Action<EnemyAIController> OnDespawn;
 
-        // Sự kiện báo hiệu bị tiêu diệt hoặc thu hồi vào pool (cho GuardManager)
-        public event System.Action<EnemyAIController> OnDespawn;
+        protected EnemyContext _ctx;
+        protected EnemyState _currentState;
 
+        // Pre-allocated States
+        protected IdleState _idleState;
+        protected MoveToTargetState _moveState;
+        protected ReturnToPortalState _returnState;
+        protected AttackState _attackState;
+        protected DeadState _deadState;
 
+        public EnemyState IdleStateInstance => _idleState;
+        public EnemyState MoveStateInstance => _moveState;
+        public EnemyState ReturnStateInstance => _returnState;
+        public EnemyState AttackStateInstance => _attackState;
+
+        [SerializeField] protected string[] _animatorTriggers;
 
         private void Awake()
         {
@@ -49,246 +43,238 @@ namespace Script.Game.Enemy
             Animator animator = GetComponent<Animator>();
             RayCastHelper rch = GetComponent<RayCastHelper>();
             
+            // Xóa bỏ dòng overwrite isDebug để giữ nguyên giá trị bạn tích ở Inspector
+            
             _ctx = new EnemyContext
             {
                 Self           = gameObject,
+                Transform      = transform,
                 Animator       = animator,
                 Controller     = this,
                 Status         = status,
-                // Fallback nếu không có Pool inject (Test mode)
                 TargetManager  = EnemyTargetManager.Instance, 
-                ReturnToPoolAction = null,
                 RaycastHelper  = rch,
+                SkillManager   = GetComponent<Script.Game.PlayerCharacter.Skills.SkillManager>(),
                 IsAlive        = true
             };
 
             // Pre-allocate instances
-            _idleState   = new Script.Game.Enemy.States.IdleState();
-            _moveState   = GetMoveState() as Script.Game.Enemy.States.MoveToTargetState;
-            _returnState = new Script.Game.Enemy.States.ReturnToPortalState();
-            _deadState   = new Script.Game.Enemy.States.DeadState();
+            _idleState   = new IdleState();
+            _moveState   = GetMoveState() as MoveToTargetState;
+            _returnState = new ReturnToPortalState();
+            _attackState = GetAttackState(); 
+            _deadState   = new DeadState();
 
-            // Cache Trigger names để tránh memory allocation lặp lại trong ChangeState
-            if (animator != null && animator.runtimeAnimatorController != null)
+            _currentState = _idleState;
+            UpdateAnimatorTriggers();
+
+            if (status != null) status.OnDieEvent += OnDeath;
+        }
+
+        public void UpdateAnimatorTriggers()
+        {
+            if (_ctx.Animator != null && _ctx.Animator.runtimeAnimatorController != null)
             {
-                _animatorTriggers = animator.parameters
+                _animatorTriggers = _ctx.Animator.parameters
                     .Where(p => p.type == AnimatorControllerParameterType.Trigger)
                     .Select(p => p.name)
                     .ToArray();
-            }
-            else
-            {
-                _animatorTriggers = new string[0];
-            }
-
-            // Đăng ký Event Lắng nghe cái chết
-            if (status != null)
-            {
-                status.OnDieEvent += OnDeath;
+                if (isDebug) Debug.Log($"[EnemyAIController] Đã nạp {_animatorTriggers.Length} triggers cho {gameObject.name}: {string.Join(", ", _animatorTriggers)}");
             }
         }
 
-        private void OnEnable()
-        {
-            NPCUpdateManager.Instance?.Register(this);
-        }
-
-        private void OnDisable()
-        {
-            NPCUpdateManager.Instance?.Unregister(this);
-            // Khi bị tắt (vào pool) hoặc bị hủy, báo cho GuardManager gỡ khỏi danh sách theo dõi
-            OnDespawn?.Invoke(this); 
-        }
-
-        private void Start()
-        {
-            // Bắt đầu bằng Idle state
-            ChangeState(_idleState);
-
-            // Đăng ký Event Scanner nếu Enemy này có mang công cụ quét RayCastHelper (như ShieldBot)
-            var rch = GetComponent<RayCastHelper>();
-            if (rch != null)
-            {
-                // [SYNC TAGS] Đồng bộ danh sách Tag cần phát hiện từ TargetManager
-                if (EnemyTargetManager.Instance != null)
-                {
-                    rch.tagsToDetect = new List<string>(EnemyTargetManager.Instance.advanceTags);
-                    rch.targetLayer = EnemyTargetManager.Instance.detectionLayer;
-                }
-                
-                rch.OnDetectedObjectsChanged += OnObjectsDetected;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            var rch = GetComponent<RayCastHelper>();
-            if (rch != null)
-            {
-                rch.OnDetectedObjectsChanged -= OnObjectsDetected;
-            }
-            
-            if (_ctx != null && _ctx.Status != null)
-            {
-                _ctx.Status.OnDieEvent -= OnDeath;
-            }
-        }
-
-        // Event Receiver: Được gọi tự động mỗi khi máy dò RayCast quét được đồ
-        public virtual void OnObjectsDetected(System.Collections.Generic.List<GameObject> detectedObjects)
-        {
-            if (!_ctx.IsAlive || detectedObjects == null || detectedObjects.Count == 0) return;
-
-            // Chỉ dùng sự kiện phát hiện mục tiêu để "Đánh thức" AI đang đứng chơi
-            bool shouldChangeState = false;
-
-            if (_currentState is IdleState || _currentState is ReturnToPortalState) 
-            {
-                shouldChangeState = true;
-            }
-
-            if (shouldChangeState)
-            {
-                ChangeState(GetMoveState());
-            }
-        }
-
-        public void InjectDependencies(EnemyTargetManager targetManager, System.Action<GameObject> returnToPoolAction)
-        {
-            if (_ctx != null)
-            {
-                _ctx.TargetManager = targetManager;
-                _ctx.ReturnToPoolAction = returnToPoolAction;
-            }
-        }
+        private void OnEnable() => NPCUpdateManager.Instance?.Register(this);
+        private void OnDisable() => NPCUpdateManager.Instance?.Unregister(this);
 
         public virtual void UpdateBehavior()
         {
-            if (!_ctx.IsAlive) return;
-
-            // Đồng bộ dữ liệu Greed từ EnemyStatus vào Context để State có thể nhận biết
-            if (_ctx.Status != null)
+            // [LIVE CHECK]: Nếu chết, nhảy ngay về DeadState (chạy Anim Die một lần)
+            if (!_ctx.IsAlive) 
             {
-                _ctx.CurrentGreed = _ctx.Status.Coin;
+                if (!(_currentState is Script.Game.Enemy.States.DeadState)) 
+                    ChangeState(_deadState);
+                return;
+            }
+            
+            // [HÀNG RÀO BẢO VỆ CẤP CAO]: Nếu đang dở dang chiêu thức, CHỈ UPDATE STATE HIỆN TẠI, không cho phép đổi State
+            if (_ctx.IsSkillCasting)
+            {
+                if (isDebug) Debug.Log($"<color=white>[AI Controller]</color> {gameObject.name} Casting locked - Skipping high-level logic");
+                _currentState?.UpdateBehavior(_ctx);
+                return;
             }
 
-            // [SCAN] Chủ động quét tia để cập nhật danh sách vật cản (do Helper đã gỡ Update loop)
-            _ctx.RaycastHelper?.DrawRay();
+            // [TIME-BASED STATE TRANSITION]
+            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
+            {
+                bool isDay = Script.Manager.WorldManager.GameTimeManager.Instance.IsDaytime;
+                if (!(_currentState is Script.Game.Enemy.States.AttackState))
+                {
+                    // [CORRECTED]: Đêm thì Tiến công, Ngày thì Rút lui
+                    if (!isDay)
+                    {
+                        var target = _ctx.TargetManager?.GetTarget(gameObject);
+                        _ctx.CurrentTarget = target;
+                        
+                        if (target != null && !(_currentState is Script.Game.Enemy.States.MoveToTargetState)) 
+                        {
+                            ChangeState(_moveState);
+                        }
+                        else if (target == null && !(_currentState is Script.Game.Enemy.States.IdleState)) ChangeState(_idleState);
+                    }
+                    else
+                    {
+                        // Ngày: Tìm Portal rút về
+                        if (_ctx.HomePortal == null && Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
+                        {
+                            var portalMgr = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
+                            var townCenter = Script.Utility.GetTownCenter();
+                            if (townCenter != null)
+                                _ctx.HomePortal = _ctx.Transform.position.x > townCenter.transform.position.x ? portalMgr.portalR : portalMgr.portalL;
+                        }
 
-            if (_ctx.Status != null && _ctx.Status.debugEnemy) 
-                Debug.Log($"[EnemyAI] {gameObject.name} ticking in state: {(_currentState != null ? _currentState.GetType().Name : "NULL")}");
+                        _ctx.CurrentTarget = _ctx.HomePortal;
 
-            // Cập nhật giá trị hiển thị Debug
-            if (_currentState != null)
-                currentStateName = _currentState.GetType().Name;
+                        if (_ctx.HomePortal != null && !(_currentState is Script.Game.Enemy.States.ReturnToPortalState)) 
+                        {
+                            ChangeState(_returnState);
+                        }
+                        else if (_ctx.HomePortal == null && !(_currentState is Script.Game.Enemy.States.IdleState)) ChangeState(_idleState);
+                    }
+                }
+            }
+
+            // Đồng bộ debug cho Editor
             currentTarget = _ctx.CurrentTarget;
             currentPortal = _ctx.HomePortal;
+            if (isDebug && _currentState != null) currentStateName = _currentState.GetType().Name;
 
-            _currentState?.Update(_ctx);
+            // [HÀNG RÀO QUAY ĐẦU]: Đảm bảo luôn nhìn về hướng đích đến cuối cùng
+            if (_ctx.CurrentTarget != null && !(_currentState is Script.Game.Enemy.States.DeadState))
+            {
+                Script.Utils.MovementUtility.FaceTarget(gameObject, _ctx.CurrentTarget.transform.position);
+            }
+
+            _currentState?.UpdateBehavior(_ctx);
         }
 
-        private void Update()
+        // --- ANIMATION EVENTS ---
+        
+        /// <summary>
+        /// Frame Event cuối cùng trong hoạt ảnh "Die" (Gắn tại Animator)
+        /// </summary>
+        public void AnimEvent_OnDieComplete()
         {
-            if (!_ctx.IsAlive) return;
-
-            // Interpolation movement liên tục ở cấp độ Frame (60Hz) thay vì Tick (5Hz)
-            _currentState?.FrameUpdate(_ctx);
+            _currentState?.OnDieAnimationComplete(_ctx);
         }
+
+        public void OnObjectsDetected(List<GameObject> detectedObjects) { }
+
+        public void Update() => _currentState?.Update(_ctx);
 
         public void ChangeState(EnemyState newState)
         {
+            if (newState == null || _currentState == newState) return;
+
             _currentState?.Exit(_ctx);
-
-            // Xóa sạch trigger cũ để không bị pending sai state
-            if (_animatorTriggers != null)
-            {
-                foreach (var t in _animatorTriggers)
-                {
-                    _ctx.Animator.ResetTrigger(t);
-                }
-            }
-
             _currentState = newState;
+            
+            // [CỰC KỲ QUAN TRỌNG]: Đặt lại cờ hiệu di chuyển để State mới có thể gọi Trigger Animator
+            _currentState.ResetFlags();
+            
             _currentState.Enter(_ctx);
+            if (isDebug) currentStateName = _currentState.GetType().Name;
         }
 
-        // Gọi từ Event OnDieEvent của EnemyStatus
-        public virtual void OnDeath(GameObject deadObject)
+        public void ResetEnemy(GameObject portal)
         {
-            if (!_ctx.IsAlive) return; // Guard double-call
-
-            _ctx.IsAlive = false;
-            OnDespawn?.Invoke(this); // Gọi event báo tử
-            ChangeState(_deadState);
-        }
-
-        // Gọi từ pool khi lấy enemy ra để tái sử dụng
-        public void ResetEnemy(GameObject homePortal)
-        {
-            _currentState?.Exit(_ctx);
-            _currentState = null;
-
-            _ctx.IsAlive        = true;
-            _ctx.CurrentGreed   = 0;
-            _ctx.CurrentTarget  = null;
-            _ctx.HomePortal     = homePortal;
-            _ctx.PendingRecycle = false;
-
-            // Reset Animation Triggers để tránh quái vừa spawn đã tung đòn của kiếp trước
-            if (_ctx.Animator != null && _animatorTriggers != null)
-            {
-                foreach (var t in _animatorTriggers)
-                {
-                    _ctx.Animator.ResetTrigger(t);
-                }
-            }
-
-            // Sync lại GreedThreshold từ Status nếu có (hoặc set default)
-            if (_ctx.Status != null)
-            {
-                _ctx.GreedThreshold = _ctx.Status.MaxCoins;
-            }
-
+            _ctx.IsAlive = true;
+            _ctx.HomePortal = portal;
+            _ctx.CurrentTarget = null;
+            UpdateAnimatorTriggers(); // Đảm bảo trigger luôn sẵn sàng khi spawn lại
             ChangeState(_idleState);
         }
 
-        // Factory Method để các Enemy đặc thù (như ShieldBot) có thể ghi đè (Override)
-        // và trả về Custom State của riêng nó.
-        public virtual EnemyState GetMoveState()
-        {
-            return new MoveToTargetState();
+        public void InjectDependencies(EnemyTargetManager targetMgr, Action<GameObject> returnAction) 
+        { 
+            _ctx.TargetManager = targetMgr;
+            _ctx.ReturnToPoolAction = returnAction;
         }
 
-        // ==========================================
-        // ANIMATION EVENTS
-        // ==========================================
-        public void AnimEvent_DeathComplete()
+        public void Despawn() => OnDespawn?.Invoke(this);
+
+        private void OnDeath(GameObject go)
         {
-            // Trả xác về pool NGAY LẬP TỨC sau khi diễn xong animation gục ngã
-            if (_ctx.ReturnToPoolAction != null)
-            {
-                _ctx.ReturnToPoolAction(_ctx.Self);
-            }
-            else
-            {
-                gameObject.SetActive(false);
-            }
+            _ctx.IsAlive = false; // Đánh dấu đã chết để UpdateBehavior nhận diện
+            ChangeState(_deadState);
         }
 
-        public void AnimEvent_EndAttack()
+        public virtual EnemyState GetMoveState() => new MoveToTargetState();
+        public virtual AttackState GetAttackState() => new AttackState(); 
+
+        [ContextMenu("Print Detailed Debug")]
+        public virtual void PrintDetailedDebug()
         {
-            if (_currentState is MoveToTargetState moveState)
+            if (_ctx == null) return;
+            
+            string statusInfo = _ctx.Status != null ? $"HP: {_ctx.Status.CurrentHp}/{_ctx.Status.MaxHp}, Spd: {_ctx.Status.MoveSpeed}" : "NULL";
+            string targetInfo = _ctx.CurrentTarget != null ? $"{_ctx.CurrentTarget.name} (Tag: {_ctx.CurrentTarget.tag})" : "None";
+            
+            string skillInfo = "";
+            if (_ctx.SkillManager != null)
             {
-                moveState.OnAttackAnimationComplete(_ctx);
+                for (int i = 0; i < _ctx.SkillManager.SlotCount; i++)
+                {
+                    var skill = _ctx.SkillManager.GetSkill(i);
+                    skillInfo += $"\n   - Slot {i}: {(skill != null ? skill.skillName : "Empty")} | State: {_ctx.SkillManager.GetState(i)} | CD: {_ctx.SkillManager.GetCooldownRemaining(i):F1}s";
+                }
             }
-            // For other attack states if they arise in the base AI
+
+            string allDetected = "";
+            if (_ctx.RaycastHelper != null)
+            {
+                var hits = _ctx.RaycastHelper.GetListHitObjects();
+                allDetected = hits != null ? string.Join(", ", hits.Select(h => h == null ? "NULL" : $"{h.name}({h.tag})")) : "None";
+            }
+
+            // Thêm thông tin Animator thực tế
+            string currentAnim = "Unknown";
+            if (_ctx.Animator != null)
+            {
+                var info = _ctx.Animator.GetCurrentAnimatorStateInfo(0);
+                if (info.IsName("idle")) currentAnim = "idle";
+                else if (info.IsName("walk")) currentAnim = "walk";
+                else if (info.IsName("shock attack")) currentAnim = "shock attack";
+                else if (info.IsName("Die")) currentAnim = "Die";
+            }
+
+            // Thêm danh sách Trigger để soi lỗi hoa thường
+            string availableTriggers = _animatorTriggers != null ? string.Join(", ", _animatorTriggers) : "None";
+
+            Debug.Log($"<color=orange>[AI FULL REPORT: {gameObject.name}]</color>\n" +
+                      $" - State: {currentStateName}\n" +
+                      $" - Animator: {currentAnim}\n" +
+                      $" - Triggers Available: [{availableTriggers}]\n" +
+                      $" - Casting: {_ctx.IsSkillCasting} | MoveAllowed: {_ctx.SkillAllowsMovement}\n" +
+                      $" - Target: {targetInfo}\n" +
+                      $" - Detected All: [{allDetected}]\n" +
+                      $" - Status: {statusInfo}\n" +
+                      $" - Skills: {skillInfo}");
         }
 
-        public void AnimEvent_EndAttack_Return()
+        public void SetTriggerSafely(string triggerName)
         {
-            if (_currentState is ReturnToPortalState returnState)
+            if (_ctx.Animator == null) return;
+            
+            // Xóa khoảng trắng thừa (Tránh lỗi 'shock attack ' so với 'shock attack')
+            string cleanTrigger = triggerName.Trim();
+
+            // Tìm chính xác tên Trigger trong list (Lấy cái tên 'xịn' có chữ hoa chữ thường đúng chuẩn Animator)
+            string exactTrigger = _animatorTriggers?.FirstOrDefault(t => t.Equals(cleanTrigger, StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrEmpty(exactTrigger))
             {
-                returnState.OnAttackAnimationComplete(_ctx);
+                _ctx.Animator.SetTrigger(exactTrigger);
             }
         }
     }

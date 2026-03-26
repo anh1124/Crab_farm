@@ -5,33 +5,18 @@ namespace Script.Game.Enemy.States
 {
     public class IdleState : EnemyState
     {
-        private float _lastCheckTime = -999f; // -999 để đảm bảo check ngay lập tức khi mới Enter
-        private const float CHECK_INTERVAL = 0.5f;
+       protected override bool AllowMovementInState => false;
 
+        //không có gì ở đây cả ,chỉ chạy anim thôi
         public override void Enter(EnemyContext ctx)
         {
-            if (ctx.Animator != null)
-                ctx.Animator.SetTrigger("Idle");
-
-            // Reset để enemy mới spawn được check target ngay lập tức
-            _lastCheckTime = -999f;
+            if (ctx.Controller != null)
+                ctx.Controller.SetTriggerSafely("Idle");
         }
 
-        public override void Update(EnemyContext ctx)
+        public override void UpdateBehavior(EnemyContext ctx)
         {
-            // Dùng Time.time thay vì cộng dồn deltaTime
-            // Vì UpdateBehavior chỉ được gọi mỗi tickInterval (0.2s), dùng deltaTime sẽ tính sai
-            if (Time.time - _lastCheckTime < CHECK_INTERVAL) return;
-            _lastCheckTime = Time.time;
-
-            // Hỏi EnemyTargetManager để xin reference tới TownCenter
-            var target = ctx.TargetManager?.GetTarget(ctx.Self);
-
-            if (target != null)
-            {
-                ctx.CurrentTarget = target;
-                ctx.Controller.ChangeState(ctx.Controller.MoveStateInstance);
-            }
+            base.UpdateBehavior(ctx);
         }
 
         public override void Exit(EnemyContext ctx)

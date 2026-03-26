@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Script.Game.Enemy;
+using Script.Game.Enemy.Core;
 using UnityEngine;
 using Script.Manager.WorldManager;
 using Script.Entities.Structures.SummondPortal;

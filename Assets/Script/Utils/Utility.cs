@@ -86,5 +86,10 @@ namespace Script
             // Success callback
             onPickupSuccess?.Invoke();
         }
+
+        public static bool IsInKingdomSafeZone(float posX)
+        {
+            return WorldUtility.IsInKingdomSafeZone(posX);
+        }
     }
 }

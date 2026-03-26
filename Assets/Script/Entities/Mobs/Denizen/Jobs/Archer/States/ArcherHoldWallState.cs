@@ -8,8 +8,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
     {
         private readonly ArcherJob _job;
         private Vector3 _defensePosition;
-        private float _attackCooldownTimer;
-        private bool _isAttacking;
 
         public ArcherHoldWallState(ArcherJob job)
         {
@@ -19,9 +17,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         public override void Enter(DenizenContext ctx)
         {
             _defensePosition = CalculateDefensePosition(ctx);
-            // Đặt cooldown đầy đủ để có thể bắn ngay khi vào state (giống legacy lastAttackTime = -100f)
-            _attackCooldownTimer = ctx.Status.AttackCooldown;
-            _isAttacking = false;
 
             ctx.Movement.StopMovement();
             Animator anim = _job.GetAnimator();
@@ -57,26 +52,21 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public override void FrameUpdate(DenizenContext ctx)
         {
-            // FrameUpdate (60Hz): Xử lý Cooldown và Tấn công để đảm bảo bắn ngay lập tức khi sẵn sàng
+            // FrameUpdate (60Hz): Xử lý Tấn công để đảm bảo bắn ngay lập tức khi sẵn sàng
             Animator anim = _job.GetAnimator();
             if (anim == null) return;
 
-            // Hồi Cooldown liên tục dựa trên Frame-rate independent time (KHI KHÔNG ĐANG BẮN)
-            if (!_isAttacking && _attackCooldownTimer < ctx.Status.AttackCooldown)
-                _attackCooldownTimer += Time.deltaTime;
-
             if (ctx.Status.currentTarget != null)
             {
-                if (!_isAttacking && _attackCooldownTimer >= ctx.Status.AttackCooldown)
+                if (ctx.ArcherShooting != null && ctx.ArcherShooting.CanShoot(ctx.Status.AttackCooldown))
                 {
-                    _isAttacking = true;
-                    _attackCooldownTimer = 0f; // Reset về 0, và nằm im không đếm trong luồng giương cung
+                    ctx.ArcherShooting.StartShooting();
                     anim.Play("archerDraw");
                 }
             }
 
             // Tránh đè animation khi đang bắn (Draw/Release)
-            if (_isAttacking || 
+            if ((ctx.ArcherShooting != null && ctx.ArcherShooting.IsAttacking) || 
                 anim.GetCurrentAnimatorStateInfo(0).IsName("archerRelease") || 
                 anim.GetCurrentAnimatorStateInfo(0).IsName("archerDraw"))
                 return;
@@ -111,7 +101,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public void OnArrowRelease(DenizenContext ctx)
         {
-            _isAttacking = false;
             if (ctx.Status.currentTarget != null && ctx.ArcherShooting != null)
             {
                 ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);
@@ -120,8 +109,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public override string GetDebugInfo(DenizenContext ctx)
         {
-            return $"Target: {(ctx.Status.currentTarget != null ? ctx.Status.currentTarget.name : "None")} | " +
-                   $"CD: {_attackCooldownTimer:F2}s/{ctx.Status.AttackCooldown:F2}s";
+            return $"Target: {(ctx.Status.currentTarget != null ? ctx.Status.currentTarget.name : "None")}";
         }
     }
 }

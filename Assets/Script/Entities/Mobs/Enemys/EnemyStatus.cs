@@ -6,11 +6,12 @@ using static Script.Game.Enemy.TotalEnemyList;
 
 namespace Script.Game.Enemy
 {
-    public class EnemyStatus : MonoBehaviour, IHealth, IDie, ICoinable, IDamageable
+    public class EnemyStatus : MonoBehaviour, IHealth, IDie, ICoinable, IDamageable, ISaveable
     {
         [Header("Debug Stats")]
         [SerializeField] private float _currentHp;
         [field: SerializeField] public float MaxHp { get; set; }
+        [SerializeField] private string _enemyID; // Lưu định danh loại enemy (shieldBot, circleHead, v.v.)
 
         // ICoinable implementation
         [field: SerializeField] public int Coin { get; set; }
@@ -31,6 +32,14 @@ namespace Script.Game.Enemy
         [field: SerializeField] public float AttackDamage { get; private set; }
         public bool debugEnemy; // Biến kiểm soát debug cho Enemy
 
+        // Flags quản lý khả năng hành động (Tận dụng để khóa khi đang dùng Skill hoặc bị choáng)
+        [field: SerializeField] public bool CanMove { get; set; } = true;
+        [field: SerializeField] public bool CanAction { get; set; } = true;
+        public bool IsMoving { get; set; } = false;
+        // --- COMBAT FLAGS (Hiện lên Inspector để soi lỗi) ---
+        [field: SerializeField] public bool IsSkillCasting { get; set; } = false;
+        [field: SerializeField] public bool SkillAllowsMovement { get; set; } = true;
+
         public event System.Action<GameObject> OnDieEvent;
 
         private void Awake()
@@ -44,6 +53,7 @@ namespace Script.Game.Enemy
             MaxHp = data.hp;
             CurrentHp = MaxHp;
             IsDead = false;
+            _enemyID = data.enemyName; // Lưu ID loại enemy từ database
             
             MoveSpeed = data.speed;
             AttackCooldown = data.attackSpeed;
@@ -88,6 +98,59 @@ namespace Script.Game.Enemy
             {
                 Die();
             }
+        }
+
+        // --- ISaveable Implementation ---
+        public string GetPrefabID() => _enemyID; 
+
+        public object CaptureData()
+        {
+            return new EnemySaveData
+            {
+                enemyID = _enemyID,
+                currentHp = _currentHp,
+                posX = transform.position.x,
+                posY = transform.position.y
+            };
+        }
+
+        public void RestoreData(object data)
+        {
+            if (data is Newtonsoft.Json.Linq.JObject jObj)
+            {
+                data = jObj.ToObject<EnemySaveData>();
+            }
+
+            if (data is EnemySaveData save)
+            {
+                _enemyID = save.enemyID;
+
+                // QUAN TRỌNG: Re-setup stats cơ bản từ TotalEnemyList dựa trên ID trước khi áp dụng máu hiện tại
+                if (TotalEnemyList.Instance != null && TotalEnemyList.Instance.EnemyDataList != null)
+                {
+                    var baseData = TotalEnemyList.Instance.EnemyDataList.Find(d => d.enemyName == _enemyID);
+                    if (baseData != null)
+                    {
+                        Setup(baseData);
+                        if (debugEnemy) Debug.Log($"[EnemyStatus] Restored base stats for {_enemyID} from TotalEnemyList");
+                    }
+                }
+
+                _currentHp = save.currentHp;
+                transform.position = new Vector3(save.posX, save.posY, 0);
+                
+                // Cập nhật lại flag chết dựa trên hp
+                IsDead = (_currentHp <= 0);
+            }
+        }
+
+        [System.Serializable]
+        public class EnemySaveData
+        {
+            public string enemyID;
+            public float currentHp;
+            public float posX;
+            public float posY;
         }
 
         // --- IDamageable Implementation ---

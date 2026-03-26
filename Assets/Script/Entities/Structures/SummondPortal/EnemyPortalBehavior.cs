@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Script.Game.Enemy;
 using Script.Interfaces;
+using Script.Game.Enemy.Core;
 using Script.Game.Enemy.Interfaces;
 using Script.Data_Model.Interfaces;
 using System;
@@ -244,6 +245,23 @@ namespace Script.Entities.Structures.SummondPortal
 
         private IEnumerator SpawnEnemies()
         {
+            // Kiểm tra xem thực tế có con quái nào sẽ đẻ ra không trước khi rung màn hình
+            int totalToSpawn = 0;
+            if (enemyWaveData != null)
+            {
+                foreach (var wave in enemyWaveData)
+                {
+                    if (wave.enemyData.enemyPrefab != null && wave.count > 0)
+                        totalToSpawn += wave.count;
+                }
+            }
+
+            if (totalToSpawn > 0)
+            {
+                // Shake camera một lần duy nhất trước đợt spawn của portal này
+                CameraShake.Instance?.RequestShake(transform.position, spawnShakeCount, spawnIntervalRate, spawnTiltAngle);
+            }
+
             int totalSpawned = 0;
             foreach (var enemyData in enemyWaveData)
             {
@@ -288,9 +306,6 @@ namespace Script.Entities.Structures.SummondPortal
                     {
                         Debug.LogWarning($"[EnemyPortalBehavior] {enemyData.enemyName} thiếu Component EnemyAIController!");
                     }
-
-                    // Shake nhẹ mỗi lần spawn địch
-                    CameraShake.Instance?.RequestShake(transform.position, spawnShakeCount, spawnIntervalRate, spawnTiltAngle);
                 }
                 else
                 {

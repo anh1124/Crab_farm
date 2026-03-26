@@ -40,14 +40,6 @@ namespace Script.Game.Structures.Wall_And_Stump
         #endregion
         
         
-        //các biến dùng để logic tham chiếu
-        public Collider2D triggerCollider2D;//collider dùng để player va chạm
-        public Collider2D blockerCollider2D;//collider chặn enemy đi xuyên
-        public SpriteRenderer spriteRenderer;//hiển thị hình ảnh 
-        
-        public GameObject childBlocker;//child chứa collier chặn enemy
-        
-        
         [SerializeField] public WallDataList wallDataList;
        
         // Events cho wall manager
@@ -213,14 +205,9 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
         #region Load new sprite and collider to current
     
-        /// Load các component từ WallTierData.prefabWall và trích xuất collider/sprite renderer
         private void LoadWallComponents(WallTierData tierData,WallState wallState)
         {
-            if (tierData?.prefabWall == null)
-            {
-                Debug.LogError("[Wall] WallTierData prefabWall is null", this);
-                return;
-            }
+            if (tierData == null) return;
             
             CopySpriteRenderer(tierData, status.state);
             ChangeColliders(tierData, status.state);
@@ -229,188 +216,91 @@ namespace Script.Game.Structures.Wall_And_Stump
         /// Copy sprite renderer từ prefab
         private void CopySpriteRenderer(WallTierData tierData,WallState currentState)
         {
-            SpriteRenderer prefabSpriteRenderer = null;
-            if (currentState == WallState.Wall)
+            SpriteRenderer targetRenderer = GetComponent<SpriteRenderer>();
+            if (targetRenderer == null) return;
+
+            // Lấy prefab tương ứng với state
+            GameObject prefab = (currentState == WallState.Wall) ? tierData.prefabWall : tierData.prefabStump;
+            if (prefab != null)
             {
-                prefabSpriteRenderer = tierData.prefabWall.GetComponent<SpriteRenderer>();
-            }
-            else if (currentState == WallState.Stump)
-            {
-                prefabSpriteRenderer = tierData.prefabStump.GetComponent<SpriteRenderer>();
-            }
-            
-            if (prefabSpriteRenderer != null && this.spriteRenderer != null)
-            {
-                this.spriteRenderer.sprite = prefabSpriteRenderer.sprite;
-                this.spriteRenderer.color = prefabSpriteRenderer.color;
-                this.spriteRenderer.sortingOrder = prefabSpriteRenderer.sortingOrder;
-                this.spriteRenderer.sortingLayerName = prefabSpriteRenderer.sortingLayerName;
-                
-               // Debug.Log($"[Wall] Copied sprite renderer from tier {tierData.tier}");
-                
+                SpriteRenderer prefabRenderer = prefab.GetComponent<SpriteRenderer>();
+                if (prefabRenderer != null)
+                {
+                    targetRenderer.sprite = prefabRenderer.sprite;
+                    targetRenderer.color = prefabRenderer.color;
+                    targetRenderer.sortingOrder = prefabRenderer.sortingOrder;
+                    targetRenderer.sortingLayerName = prefabRenderer.sortingLayerName;
+                }
             }
         }
         
-        /// Đổi colliders từ prefabdata vào collider hiện tại
-        /// Theo logic mới: xóa collider cũ -> setup trigger -> setup blocker (nếu tier > 0)
+        private Coroutine _swapColliderCoroutine;
+        
         private void ChangeColliders(WallTierData tierData, WallState currentState)
         {
-           // Debug.Log($"[Wall-Debug] Bắt đầu ChangeColliders cho {gameObject.name}. State: {currentState}, Tier: {tierData.tier}");
-
-            // Bước 1: Lấy data từ tier hiện tại
             WallTierData currentTierData = GetCurrentTier();
-            if (currentTierData == null || currentTierData.prefabWall == null)
-            {
-                Debug.LogError("[Wall-Debug] Không thể lấy data tier hoặc prefabWall null");
-                return;
-            }
+            if (currentTierData == null) return;
 
-            // Bước 2: Xóa tất cả collider cũ trong gameObject và children
-            RemoveAllColliders();
+            GameObject prefab = (currentState == WallState.Wall) ? currentTierData.prefabWall : currentTierData.prefabStump;
+            if (prefab == null) return;
 
-            // Bước 3: Lấy collider từ prefab data
-            Collider2D sourceCollider = GetTriggerColliderFromPrefab(currentTierData.prefabWall);
-            if (sourceCollider == null)
-            {
-                Debug.LogWarning("[Wall-Debug] Không tìm thấy trigger collider trong prefab");
-                return;
-            }
+            Collider2D sourceCollider = GetTriggerColliderFromPrefab(prefab);
+            if (sourceCollider == null) return;
 
-            // Bước 4: Setup TRIGGER COLLIDER - luôn có cho mọi tier
-            SetupTriggerCollider(sourceCollider);
-
-            // Bước 5: Setup BLOCKER COLLIDER - chỉ cho tier > 0 (wall chặn được enemy)
-            if (status.tier > 0)
-            {
-                SetupBlockerCollider(sourceCollider);
-            }
-            else
-            {
-                // Tier 0: không có blocker collider
-                blockerCollider2D = null;
-             //   Debug.Log($"[Wall-Debug] Tier {status.tier} không cần blocker collider");
-            }
-
-            // Đảm bảo childBlocker được setup đúng
-            if (childBlocker != null)
-            {
-                childBlocker.transform.localPosition = Vector3.zero;
-                childBlocker.transform.localRotation = Quaternion.identity;
-                childBlocker.transform.localScale = Vector3.one;
-            }
-            //Debug.Log($"[Wall-Debug] Hoàn tất ChangeColliders cho {gameObject.name}.");
+            if (_swapColliderCoroutine != null) StopCoroutine(_swapColliderCoroutine);
+            _swapColliderCoroutine = StartCoroutine(SwapColliderNextFrame(sourceCollider, currentState));
         }
 
-        /// Xóa tất cả Collider2D trong gameObject chính và tất cả children
+        private System.Collections.IEnumerator SwapColliderNextFrame(Collider2D sourceCollider, WallState wallState)
+        {
+            // Disable + Destroy collider cũ (Destroy là deferred, phải chờ 1 frame)
+            foreach (var col in GetComponents<Collider2D>())
+            {
+                if (col != null) { col.enabled = false; Destroy(col); }
+            }
+
+            yield return null; // Chờ 1 frame để Unity dọn xong
+
+            // Add collider mới với đúng isTrigger
+            Collider2D newCol = CreateColliderFromPrefab(sourceCollider);
+            if (newCol != null)
+            {
+                CopyColliderProperties(sourceCollider, newCol);
+                // Wall luôn là solid (không trigger); Stump copy từ prefab
+                if (wallState == WallState.Wall) newCol.isTrigger = false;
+            }
+            
+            _swapColliderCoroutine = null;
+        }
+
         private void RemoveAllColliders()
         {
-            //Debug.Log($"[Wall-Debug] Bắt đầu RemoveAllColliders cho {gameObject.name}");
-            
-            // Xóa collider trong gameObject chính
-            Collider2D[] mainColliders = GetComponents<Collider2D>();
-            //Debug.Log($"[Wall-Debug] Tìm thấy {mainColliders.Length} colliders trên Main Object ({gameObject.name})");
-            foreach (var collider in mainColliders)
+            Collider2D[] colliders = GetComponents<Collider2D>();
+            foreach (var col in colliders)
             {
-                if (collider != null)
+                if (col != null)
                 {
-                    //Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {gameObject.name}");
-                    Destroy(collider); // Sử dụng Destroy thay vì DestroyImmediate để tránh lỗi trong physics callback
+                    col.enabled = false;
+                    Destroy(col);
                 }
             }
-
-            // Xóa collider trong childBlocker Explicitly
-            if (childBlocker != null)
-            {
-                Collider2D[] blockerColliders = childBlocker.GetComponents<Collider2D>();
-               // Debug.Log($"[Wall-Debug] Tìm thấy {blockerColliders.Length} colliders trên ChildBlocker ({childBlocker.name})");
-                foreach (var collider in blockerColliders)
-                {
-                    if (collider != null)
-                    {
-                        //Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {childBlocker.name}");
-                        Destroy(collider);
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogError($"[Wall-Debug] ChildBlocker là null trên {gameObject.name}!");
-            }
-
-            // Xóa collider trong tất cả children khác (quét dọn sạch sẽ)
-            foreach (Transform child in transform)
-            {
-                // Skip childBlocker vì đã xử lý ở trên
-                if (childBlocker != null && child == childBlocker.transform) continue;
-
-                Collider2D[] childColliders = child.GetComponents<Collider2D>();
-                if (childColliders.Length > 0)
-                {
-                   // Debug.Log($"[Wall-Debug] Tìm thấy {childColliders.Length} colliders trên Child khác ({child.name})");
-                    foreach (var collider in childColliders)
-                    {
-                        if (collider != null)
-                        {
-                            //Debug.Log($"[Wall-Debug] >> Đánh dấu DESTROY collider: {collider.GetType().Name} trên {child.name}");
-                            Destroy(collider);
-                        }
-                    }
-                }
-            }
-
-            // Reset references
-            triggerCollider2D = null;
-            blockerCollider2D = null;
-            
-            // Verify sau khi xóa
-            int remainingColliders = GetComponentsInChildren<Collider2D>(true).Length;
-          //  Debug.Log($"[Wall-Debug] Kết thúc RemoveAllColliders. Tổng số collider còn active (lưu ý: Destroy sẽ thực hiện cuối frame nên số lượng chưa giảm ngay): {remainingColliders}");
         }
 
-        /// Lấy collider đầu tiên từ root của prefab (không cần là trigger)
+        /// Lấy collider đầu tiên từ root của prefab
         private Collider2D GetTriggerColliderFromPrefab(GameObject prefab)
         {
             if (prefab == null) return null;
-            // Trả về collider đầu tiên tìm thấy trên root — không yêu cầu isTrigger
-            // Script sẽ tự set isTrigger=true / false sau khi copy xong
             return prefab.GetComponent<Collider2D>();
         }
 
-        /// Setup trigger collider trên gameObject chính (luôn trigger = true)
-        private void SetupTriggerCollider(Collider2D sourceCollider)
+        /// Setup collider trên gameObject chính
+        private void SetupCollider(Collider2D sourceCollider)
         {
-            triggerCollider2D = CreateColliderFromPrefab(sourceCollider);
-            if (triggerCollider2D != null)
+            Collider2D newCol = CreateColliderFromPrefab(sourceCollider);
+            if (newCol != null)
             {
-                CopyColliderProperties(sourceCollider, triggerCollider2D);
-                triggerCollider2D.isTrigger = true;
-               // Debug.Log($"[Wall-Debug] Đã tạo mới Trigger Collider ({triggerCollider2D.GetType().Name}) trên {gameObject.name}");
-            }
-            else
-            {
-                Debug.LogError($"[Wall-Debug] Thất bại khi tạo Trigger Collider trên {gameObject.name}");
-            }
-        }
-
-        /// Setup blocker collider trên childBlocker (trigger = false, chỉ cho tier > 0)
-        private void SetupBlockerCollider(Collider2D sourceCollider)
-        {
-            if (childBlocker == null)
-            {
-                Debug.LogWarning("[Wall-Debug] childBlocker null, không thể setup blocker collider");
-                return;
-            }
-
-            blockerCollider2D = CreateColliderOnChild(sourceCollider, childBlocker);
-            if (blockerCollider2D != null)
-            {
-                CopyColliderProperties(sourceCollider, blockerCollider2D);
-                blockerCollider2D.isTrigger = false;
-               // Debug.Log($"[Wall-Debug] Đã tạo mới Blocker Collider ({blockerCollider2D.GetType().Name}) trên {childBlocker.name}");
-            }
-            else
-            {
-                Debug.LogError($"[Wall-Debug] Thất bại khi tạo Blocker Collider trên {childBlocker.name}");
+                // Tự động copy isTrigger và các thuộc tính khác từ source
+                CopyColliderProperties(sourceCollider, newCol);
             }
         }
         
@@ -554,25 +444,12 @@ namespace Script.Game.Structures.Wall_And_Stump
         private void ConvertToStump()
         {
             LoadWallComponents(GetCurrentTier(),status.state);
-            
-            //sau khi load component mới của stump, vô hiệu hóa child gameobject blocker
-          
-            // Disable blocker object nếu có
-            if (childBlocker != null)
-            {
-                childBlocker.SetActive(false);
-            }
         }
         
         /// Chuyển đổi components để trở thành wall
         private void ConvertToWall()
         {
             LoadWallComponents(GetCurrentTier(),status.state);
-            // Enable blocker object nếu có
-            if (childBlocker != null)
-            {
-                childBlocker.SetActive(true);
-            }
         }
         
         /// <summary>
@@ -588,12 +465,6 @@ namespace Script.Game.Structures.Wall_And_Stump
             gameObject.tag = Script.Utils.GameTags.Wall;
 
             LoadWallComponents(GetCurrentTier(), status.state);
-
-            // Explicitly re-enable childBlocker to ensure physics blocker is active
-            if (childBlocker != null)
-            {
-                childBlocker.SetActive(true);
-            }
 
             // Gọi ResetUpgradeState để CoinUser setup lại slot nếu đang trong trigger
             if (coinUser != null)
@@ -660,6 +531,15 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             coinUser = this.DebugUtilityGetRequiredComponent<CoinUser>();
             status = this.DebugUtilityGetRequiredComponent<WallStatus>();
+            
+            SpriteRenderer sr = GetComponent<SpriteRenderer>();
+            if (sr == null) sr = gameObject.AddComponent<SpriteRenderer>();
+
+            // Xóa legacy children: Blocker, Visual
+            Transform blocker = transform.Find("Blocker");
+            if (blocker != null) Destroy(blocker.gameObject);
+            Transform visual = transform.Find("Visual");
+            if (visual != null) Destroy(visual.gameObject);
         }
         private void RegisterWithManager()
         {
@@ -1086,12 +966,6 @@ namespace Script.Game.Structures.Wall_And_Stump
         private void UpdateVisualAndPhysics(WallTierData tierData, WallState currentState)
         {
             LoadWallComponents(tierData, currentState);
-
-            // Set active blocker dựa trên state
-            if (childBlocker != null)
-            {
-                childBlocker.SetActive(currentState == WallState.Wall);
-            }
         }
         
         /// Khởi tạo từ tier data và state. Giảm lặp ở Awake và RestoreData.

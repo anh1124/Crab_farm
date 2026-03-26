@@ -242,6 +242,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8862165295465698764}
   - component: {fileID: 7567741772578441490}
+  - component: {fileID: 5832753685871575959}
   m_Layer: 0
   m_Name: GM
   m_TagString: Untagged
@@ -282,6 +283,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pauseMenuPanel: {fileID: 0}
+--- !u!114 &5832753685871575959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1595070778010574993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cfd9000d98abed449c4881f2031a243, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isInstanceChopTree: 1
+  addCurrentCoin: 50
+  damageAlly: 1
+  instanceKill: 0
+  infiniteMp: 1
+  infiniteHp: 1
+  infiniteCoin: 0
 --- !u!1 &2692076870354972573
 GameObject:
   m_ObjectHideFlags: 0
@@ -294,7 +314,6 @@ GameObject:
   - component: {fileID: 7614116793088755009}
   - component: {fileID: 8206099037918200606}
   - component: {fileID: 1182911642445597191}
-  - component: {fileID: 3257729280555218338}
   - component: {fileID: 6442943352986191126}
   m_Layer: 0
   m_Name: EnemyWave
@@ -367,18 +386,6 @@ MonoBehaviour:
   portalR: {fileID: 0}
   minSpawnDistance: 40
   maxSpawnDistance: 80
---- !u!114 &3257729280555218338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2692076870354972573}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c33a2bb9fe60c74468c8aa6bd10ce90e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &6442943352986191126
 MonoBehaviour:
   m_ObjectHideFlags: 0

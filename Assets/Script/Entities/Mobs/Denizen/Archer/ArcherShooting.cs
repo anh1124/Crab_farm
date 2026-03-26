@@ -6,6 +6,7 @@ namespace Script.Game.Mobs.Subjects
 {
     public class ArcherShooting : MonoBehaviour
     {
+        #region Fields & Settings
         [Header("References")]
         [SerializeField] private Transform firePoint;
         [SerializeField] private ArrowPool arrowPool;
@@ -35,15 +36,46 @@ namespace Script.Game.Mobs.Subjects
         
         [Header("Visuals")]
         [SerializeField] private float stickImpactOffset = 0.4f;
-        
+        #endregion
+
+        #region Internal State & Cache
         // Cache kết quả tính toán
         private float lastSolveTime = -999f;
         private Vector2 lastTargetPos;
         private float cachedAngle;
         private float cachedSpeed;
+
+        // Quản lý Cooldown & Trạng thái tấn công
+        private float _attackCooldownTimer = 999f;
+        public bool IsAttacking { get; private set; }
+        #endregion
+
+        #region Unity Lifecycle
+        private void Update()
+        {
+            if (!IsAttacking)
+            {
+                _attackCooldownTimer += Time.deltaTime;
+            }
+        }
+        #endregion
+
+        #region Public API
+        public bool CanShoot(float attackCooldown)
+        {
+            return !IsAttacking && _attackCooldownTimer >= attackCooldown;
+        }
+
+        public void StartShooting()
+        {
+            IsAttacking = true;
+            _attackCooldownTimer = 0f;
+        }
         
         public void ShootAt(Vector2 targetPosition)
         {
+            IsAttacking = false; // Tên đã bắn ra -> Kết thúc tấn công, bắt đầu đếm lại cooldown
+            
             // 0. Auto-find pool if missing
             if (arrowPool == null)
             {
@@ -94,7 +126,9 @@ namespace Script.Game.Mobs.Subjects
                 arrow.Initialize(velocity, finalAngle, gravityScale, stickImpactOffset, gameObject);
             }
         }
+        #endregion
         
+        #region Internal Logic
         /// <summary>
         /// Logic chọn góc 2 tầng:
         /// TẦNG 1: Thử góc thấp (30–45°) – mũi tên bay nhanh, tới đích sớm nhất.
@@ -146,7 +180,7 @@ namespace Script.Game.Mobs.Subjects
 
             if (highAngles.Count > 0)
             {
-                // Chọn ngẫu nhiên trong danh sách góc cao để có sự đa dạng
+                // Chọn ngẫu nhiên trong danh sách góc cao để có sự dđa dạng
                 cachedAngle = highAngles[Random.Range(0, highAngles.Count)];
                 cachedSpeed = TrajectoryPredictor.CalculateLaunchSpeed(
                     firePoint.position, targetPosition, cachedAngle, actualGravity
@@ -184,5 +218,6 @@ namespace Script.Game.Mobs.Subjects
             
             return dir;
         }
+        #endregion
     }
 }

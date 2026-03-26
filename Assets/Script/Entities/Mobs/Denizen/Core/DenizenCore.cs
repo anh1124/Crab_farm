@@ -195,7 +195,17 @@ namespace Script.Game.Mobs.Denizen.Core
         public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0) return;
-            if (CurrentRole == NPCRole.Vagrant) return;
+
+            // Vagrant không có coin để rơi, nhưng vẫn bị hoảng sợ khi bị đánh (từ Player hoặc Quái)
+            if (CurrentRole == NPCRole.Vagrant)
+            {
+                if (_currentJob is VagrantJob vagrant)
+                {
+                    if (vagrant.CurrentState == vagrant.FearState) vagrant.FearState.RefreshFear(_context);
+                    else vagrant.ChangeState(vagrant.FearState);
+                }
+                return;
+            }
 
             if (CurrentRole == NPCRole.Archer)
             {

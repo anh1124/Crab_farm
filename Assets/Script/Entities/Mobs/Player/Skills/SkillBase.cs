@@ -53,6 +53,9 @@ namespace Script.Game.PlayerCharacter.Skills
         
         /// <summary>Cho phép di chuyển trong lúc skill đang chạy hay không</summary>
         public bool allowMovementDuringSkill;
+
+        /// <summary>Yêu cầu ĐANG CÓ KHẢ NĂNG di chuyển mới được phép kích hoạt skill (VD: lướt, nhảy)</summary>
+        public bool moveRequired = false;
         
         [Header("Animation")]
         /// <summary>Nếu true, skill sẽ đợi Animation Event gọi OnEnd. Nếu false, skill kết thúc ngay sau OnStart.</summary>

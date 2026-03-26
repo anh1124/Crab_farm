@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Script.Game.Enemy.Core;
 
 namespace Script.Game.Enemy
 {

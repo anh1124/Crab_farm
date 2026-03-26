@@ -5,7 +5,11 @@ using UnityEngine;
 
 namespace Script.Game.Enemy
 {
-    // anim:
+    /// <summary>
+    /// ShieldBot AI: Sử dụng kiến trúc Executor-Decision chung.
+    /// Đặc thù: Tấn công diện rộng (Shock Attack) và có lá chắn.
+    /// </summary>
+    ///   // anim:
     /*
     -death
     -hit
@@ -15,7 +19,6 @@ namespace Script.Game.Enemy
     -shock attack
     -walk
     */
-
     public class ShieldBotAIController : EnemyAIController
     {
         [Header("ShieldBot Settings")]
@@ -24,48 +27,53 @@ namespace Script.Game.Enemy
 
         public GameObject ShockAttackCollider => shockAttackCollider;
 
-        public override EnemyState GetMoveState()
+        // [MỚI] Không cần ghi đè GetMoveState nữa vì MoveToTargetState cơ bản đã cực kỳ chuẩn theo Base.
+        
+        // [MỚI] Ghi đè chỉ để chọn đúng State Tấn công đặc thù
+        public override AttackState GetAttackState()
         {
-            return new ShieldBotAttackState(); // Chạy State riêng của ShieldBot
+            return new ShieldBotAttackState();
         }
 
         // ==========================================
-        // ANIMATION EVENTS - Cần Add Event vào Animation
+        // ANIMATION EVENTS - Được điều hướng từ Skill hoặc State quan tâm
         // ==========================================
 
-        // 1. Gọi hàm này vào frame bắt đầu vung búa để BẬT vùng damage child lên
         public void AnimEvent_EnableShockCollider()
         {
             if (shockAttackCollider != null)
-            {
                 shockAttackCollider.SetActive(true);
+
+            // [MỚI]: Thông báo cho SkillManager rằng đã tới frame gây sát thương
+            // Điều này sẽ kích hoạt hàm OnHit trong EnemyAttackSkill
+            if (_ctx.SkillManager != null)
+            {
+                // Slot 0 thường là ShockAttack của ShieldBot
+                _ctx.SkillManager.OnSkillAnimationDamageFrame(0, _ctx.Self);
             }
         }
 
-        // 2. Gắn hàm này vào cái frame CUỐI CÙNG (hoặc frame đập nát) của animation "shock attack"
-        // Gọi 1 phát là nó sẽ tự TÍNH SÁT THƯƠNG, TẮT CHILD COLLIDER, và hoàn thành đòn chém.
         public void AnimEvent_EndShockAttack()
         {
-            if (_currentState is ShieldBotAttackState attackState)
+            // Trả quyền xử lý về cho State hiện tại (AttackState sẽ nhận được callback OnAttackAnimationComplete)
+            if (_currentState != null)
             {
-                // Áp dụng sát thương
-                attackState.DealDamageFromEvent(_ctx);
-                
-                // Tắt child collider
-                ForceDisableShockCollider();
-                
-                // Trả cờ tấn công về false, tiếp tục đi bộ
-                attackState.EndAttackEvent(_ctx);
+                _currentState.OnAttackAnimationComplete(_ctx);
             }
+            
+            ForceDisableShockCollider();
         }
 
-        // Tính năng an toàn: Gọi từ script AttackState.Exit() nếu AI tự dưng đổi mục tiêu hoặc dính án tử (DeadState)
         public void ForceDisableShockCollider()
         {
             if (shockAttackCollider != null)
-            {
                 shockAttackCollider.SetActive(false);
-            }
+        }
+
+        [ContextMenu("Print Detailed Debug (ShieldBot)")]
+        public override void PrintDetailedDebug()
+        {
+            base.PrintDetailedDebug();
         }
     }
 }

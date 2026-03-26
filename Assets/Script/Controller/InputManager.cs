@@ -104,6 +104,8 @@ namespace Script.Controller
             }
 
             // ── Global Hotkeys ──
+            if (Script.GUI_Controller.GameOverHandler.IsActive) return; // Chặn các input UI/Menus nếu Game Over đang bật
+
             if (Input.GetKeyDown(keyMap.openPauseMenu))
             {
                 Script.GUI_Controller.GuiCanvasManager.Instance?.TogglePauseMenu();

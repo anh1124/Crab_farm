@@ -18,7 +18,7 @@ namespace Script.Utils
         /// <param name="hitbox">Collider2D của skill</param>
         /// <param name="damage">Damage gây ra</param>
         /// <param name="instigator">GameObject gây damage (player)</param>
-        public static void ActivateHitbox(Collider2D hitbox, float damage, GameObject instigator)
+        public static void ActivateHitbox(Collider2D hitbox, float damage, GameObject instigator, bool isEnemyAttack = false)
         {
             if (hitbox == null)
             {
@@ -37,8 +37,13 @@ namespace Script.Utils
             // Enable hitbox collider
             hitbox.enabled = true;
             
-            // NonAlloc overlap detection
-            ContactFilter2D filter = new ContactFilter2D().NoFilter();
+            // [MỚI]: Cấu hình bộ lọc dựa trên Layer của chính Collider (vd: enemyskilllayer)
+            // Unity sẽ tự động lọc dựa trên Layer Collision Matrix đã setting trong Project
+            ContactFilter2D filter = new ContactFilter2D();
+            filter.useLayerMask = true;
+            filter.layerMask = Physics2D.GetLayerCollisionMask(hitbox.gameObject.layer);
+            filter.useTriggers = false; // Chỉ đánh các vật thể thực, bỏ qua trigger khác
+            
             int hitCount = Physics2D.OverlapCollider(hitbox, filter, buffer);
             
             Debug.Log($"[HitboxController] HitCount: {hitCount}");
@@ -51,7 +56,7 @@ namespace Script.Utils
             }
             
             // Process damage thông qua CombatUtility (existing system)
-            CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage);
+            CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage, isEnemyAttack);
             
             // Disable hitbox ngay sau khi xử lý
             hitbox.enabled = false;

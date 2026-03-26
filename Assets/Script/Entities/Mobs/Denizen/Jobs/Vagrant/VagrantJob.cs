@@ -52,6 +52,37 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             }
         }
 
+        public override void UpdateBehavior()
+        {
+            // 1. Gọi base để thực hiện quét tia/vòng tròn (sẽ kích hoạt OnObjectsDetected nếu thấy đồ)
+            base.UpdateBehavior();
+
+            // 2. CHỐT CHẶN FEAR: Kiểm tra cờ sợ hãi (có thể bật do sát thương hoặc cảm biến khác)
+            if (Context != null && Context.Status != null && Context.Status.isFearPending)
+            {
+                Context.Status.isFearPending = false;
+                if (CurrentState != FearState)
+                {
+                    ChangeState(FearState);
+                }
+                else
+                {
+                    FearState.RefreshFear(Context);
+                }
+                return; // Đã đổi state hoặc gia hạn fear -> Không xử lý tiếp bên dưới
+            }
+
+            // 3. TASK VALIDATION: Kiểm tra tính hợp lệ của nhiệm vụ nhặt xu
+            if (CurrentState == GetCoinState)
+            {
+                if (Context.Status.coinTarget == null || !Context.Status.coinTarget.gameObject.activeInHierarchy)
+                {
+                    Context.Status.coinTarget = null;
+                    ChangeState(IdleState);
+                }
+            }
+        }
+
         public override void OnObjectsDetected(List<GameObject> objects)
         {
             if (!enabled || CurrentState == null) return;
@@ -68,19 +99,12 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 
             if (enemy != null)
             {
-                if (CurrentState == FearState)
-                {
-                    // Đang sợ mà vẫn thấy enemy -> gia hạn thêm thời gian sợ (theo ctx.Status.maxFearDuration)
-                    FearState.RefreshFear(Context);
-                }
-                else
-                {
-                    ChangeState(FearState);
-                }
+                // Thay vì tự ChangeState ở đây, ta gạt cờ Fear để UpdateBehavior xử lý tập trung
+                Context.Status.isFearPending = true;
             }
             else if (coin != null && CurrentState == IdleState)
             {
-                // Chỉ nhặt coin khi đang Idle (không nhặt khi đang sợ)
+                // Chỉ nhặt coin khi đang Idle (không nhặt khi đang sợ) - Giữ logic này vì nó đặc thù cho Vagrant
                 Context.Status.coinTarget = coin;
                 ChangeState(GetCoinState);
             }

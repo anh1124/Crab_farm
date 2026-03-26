@@ -1,11 +1,9 @@
 using System;
 using UnityEngine;
 using Script.Game.Enemy.Interfaces;
-
 namespace Script.Data_Model.Status
 {
     // Chỉ chứa data và state của Wall, không có logic behavior
-    
     public class WallStatus : MonoBehaviour, IHealth
     {
         [Header("Basic Info")]

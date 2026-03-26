@@ -26,15 +26,12 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 
         public override void Update(DenizenContext ctx)
         {
-            if (ctx.Status.coinTarget == null || !ctx.Status.coinTarget.gameObject.activeInHierarchy)
+            // State hiện tại chỉ thuần túy thực thi di chuyển theo lệnh từ Job
+            if (ctx.Status.coinTarget != null)
             {
-                ctx.Status.coinTarget = null;
-                _job.ChangeState(_job.IdleState);
-                return;
+                ctx.Movement.FaceTarget(ctx.Status.coinTarget.transform.position);
+                ctx.Movement.MoveTo(ctx.Status.coinTarget.transform.position, ctx.Status.RunSpeed);
             }
-
-            ctx.Movement.FaceTarget(ctx.Status.coinTarget.transform.position);
-            ctx.Movement.MoveTo(ctx.Status.coinTarget.transform.position, ctx.Status.RunSpeed);
         }
 
         public override void FrameUpdate(DenizenContext ctx)

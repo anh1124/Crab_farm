@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Script.Game.Enemy;
+using Script.Game.Enemy.Core;
 using Script.Manager.WorldManager;
 
 namespace Script.Game.Mobs.MobsManager

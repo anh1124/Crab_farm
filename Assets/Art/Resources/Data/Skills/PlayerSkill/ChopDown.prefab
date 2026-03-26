@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1576682184158411000}
   - component: {fileID: 7390544792056086237}
-  m_Layer: 13
+  m_Layer: 0
   m_Name: ChopDown
   m_TagString: Untagged
   m_Icon: {fileID: 0}

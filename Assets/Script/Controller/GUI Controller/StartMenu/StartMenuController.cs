@@ -367,7 +367,7 @@ namespace Script.GUI_Controller.StartMenu
                 confirmationPanel.SetActive(true);
 
                 // Hiển thị menu xác nhận
-                confirmationMenu.Initialize(
+                confirmationMenu.Show(
                     "Delete World",
                     $"Are you sure you want to delete the world \"{worldName.text}\"?",
                     () => PerformDelete(worldName.text) // Hàm được gọi khi xác nhận
