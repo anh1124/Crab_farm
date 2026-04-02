@@ -42,6 +42,11 @@ namespace Script
             return WorldUtility.GetRandomKingdomSafePos();
         }
 
+        public static float GetRandomHuntingPos()
+        {
+            return WorldUtility.GetRandomHuntingPos();
+        }
+
         public static Vector3 GetRandomOutsideSafePos(bool isRight, float minDistance, float maxDistance, float noWallFallbackDistance = 30f)
         {
             return WorldUtility.GetRandomOutsideSafePos(isRight, minDistance, maxDistance, noWallFallbackDistance);

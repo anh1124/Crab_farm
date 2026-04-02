@@ -1,71 +1,69 @@
 using UnityEngine;
+using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
     /// <summary>
-    /// DenizenMovement: Tách biệt logic di chuyển ra khỏi Behavior.
-    /// Là component duy nhất được phép ghi transform.position mỗi frame.
+    /// DenizenMovement: Thành phần tự trị xử lý di chuyển vật lý.
+    /// CHỈ: Di chuyển và flip — KHÔNG set animation.
+    /// Animation do từng State quyết định.
     /// </summary>
     public class DenizenMovement : MonoBehaviour
     {
-        private Vector3 _moveTarget;
-        private float _moveSpeed;
-        private bool _isMovingToTarget;
+        [Header("Movement State")]
+        [SerializeField] private Vector3 _moveTargetPos;
+        public Vector3 MoveTargetPos => _moveTargetPos;
+        public float CurrentSpeed { get; private set; }
 
-        public const float REACHED_THRESHOLD = 0.15f;
-        public bool HasReachedTarget => !_isMovingToTarget || Vector3.Distance(transform.position, _moveTarget) < REACHED_THRESHOLD;
-        public bool IsMoving => _isMovingToTarget;
+        /// <summary>Readonly: có đang yêu cầu di chuyển không.</summary>
+        public bool IsMoving => _context != null && _context.Status != null && _context.Status.isMoving;
 
-        /// <summary>
-        /// Bắt đầu di chuyển tới vị trí đích.
-        /// </summary>
-        public void MoveTo(Vector3 target, float speed)
+        private DenizenContext _context;
+        private float _currentAssignedSpeed = -1f;
+
+        private void Awake()
         {
-            _moveTarget = new Vector3(target.x, transform.position.y, transform.position.z);
-            _moveSpeed = speed;
-            _isMovingToTarget = true;
+            _context = GetComponent<DenizenContext>();
         }
 
-        /// <summary>
-        /// Dừng di chuyển ngay lập tức.
-        /// </summary>
-        public void StopMovement()
+        public void SetTarget(Vector3 target, float speed = -1f)
         {
-            _isMovingToTarget = false;
+            if (_context != null && _context.Status != null)
+                _context.Status.isMoving = true;
+
+            _moveTargetPos = target;
+            _currentAssignedSpeed = speed;
         }
 
-        /// <summary>
-        /// Quay mặt về phía target.
-        /// </summary>
-        public void FaceTarget(Vector3 targetPos)
+        public void Stop()
         {
-            float dir = targetPos.x - transform.position.x;
-            if (Mathf.Abs(dir) < 0.01f) return;
-
-            Vector3 scale = transform.localScale;
-            scale.x = dir > 0 ? Mathf.Abs(scale.x) : -Mathf.Abs(scale.x);
-            transform.localScale = scale;
-        }
-
-        /// <summary>
-        /// Quay mặt ra phía ngoài (Dành cho Archer đứng thủ Wall).
-        /// </summary>
-        public void FaceOutward(bool isLeftFlank)
-        {
-            Vector3 scale = transform.localScale;
-            scale.x = isLeftFlank ? -Mathf.Abs(scale.x) : Mathf.Abs(scale.x);
-            transform.localScale = scale;
+            if (_context != null && _context.Status != null)
+                _context.Status.isMoving = false;
+            _currentAssignedSpeed = -1f;
         }
 
         private void Update()
         {
-            if (!_isMovingToTarget) return;
+            if (_context == null || _context.Status == null) return;
 
-            transform.position = Vector3.MoveTowards(transform.position, _moveTarget, _moveSpeed * Time.deltaTime);
+            bool skillAllows = !_context.IsSkillCasting || _context.SkillAllowsMovement;
+            bool statusAllows = _context.Status.isMovementAllowed;
+            bool isMoving    = _context.Status.isMoving;
 
-            if (Vector3.Distance(transform.position, _moveTarget) < REACHED_THRESHOLD)
+            if (isMoving && skillAllows && statusAllows)
             {
-                _isMovingToTarget = false;
+                float speed = _currentAssignedSpeed > 0f ? _currentAssignedSpeed : _context.Status.walkSpeed;
+                CurrentSpeed = speed;
+                MovementUtility.MoveTowardsTarget(gameObject, _moveTargetPos, speed);
+
+                // Flip theo hướng di chuyển
+                float dir = _moveTargetPos.x - transform.position.x;
+                if (Mathf.Abs(dir) > 0.05f)
+                    transform.localScale = new Vector3(dir > 0 ? 1 : -1, 1, 1);
+            }
+            else
+            {
+                CurrentSpeed = 0f;
             }
         }
     }

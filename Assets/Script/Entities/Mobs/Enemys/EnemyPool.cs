@@ -28,14 +28,20 @@ namespace Script.Game.Enemy
             _poolParent.SetParent(transform);
         }
 
+        private bool _isInitialized = false;
+
         // Gọi sau khi TotalEnemyList load xong (từ Start() hoặc EnemyWaveManager)
         public void InitializePools()
         {
+            if (_isInitialized) return;
+
             if (TotalEnemyList.Instance == null || TotalEnemyList.Instance.EnemyDataList == null)
             {
                 Debug.LogError("[EnemyPool] TotalEnemyList.Instance is null or empty!");
                 return;
             }
+            
+            _isInitialized = true;
 
             // Luồng tạo Pool:
             // 1. TotalEnemyList đọc json EnemyDataConfig.

@@ -11,9 +11,7 @@ namespace Script.Game.Mobs.MobsManager
     {
         public static DenizenManager Instance { get; private set; }
 
-        //script này lưu danh sách các cư dân (trừ kẻ lang thang )
-        //lưu animcontroller
-         [SerializeField]
+        [SerializeField]
         private List<GameObject> allDenizens = new List<GameObject>();
 
         [Header("Animator Controllers")]
@@ -38,33 +36,23 @@ namespace Script.Game.Mobs.MobsManager
 
         private void Start()
         {
-             // Validate Animator Controllers
             if (vagrantAnimatorController == null) Debug.LogError($"[DenizenManager] Vagrant Animator Controller is missing!");
             if (villagerAnimatorController == null) Debug.LogError($"[DenizenManager] Villager Animator Controller is missing!");
             if (archerAnimatorController == null) Debug.LogError($"[DenizenManager] Archer Animator Controller is missing!");
-            // Worker and Farmer checks optional
         }
 
-        // API chung để đăng ký 1 Denizen
         public void RegisterDenizen(GameObject denizen)
         {
             if (denizen == null || allDenizens.Contains(denizen)) return;
-
             allDenizens.Add(denizen);
-            
-            // Debug.Log($"[DenizenManager] Registered {denizen.name}");
         }
 
-        // API chung để hủy đăng ký 1 Denizen
         public void UnregisterDenizen(GameObject denizen)
         {
             if (denizen == null) return;
             allDenizens.Remove(denizen);
-
-            // Debug.Log($"[DenizenManager] Unregistered {denizen.name}");
         }
 
-        // Helpers
         public int GetTotalDenizens() => allDenizens.Count;
 
         public List<GameObject> GetDenizensByRole(NPCRole role)
@@ -73,18 +61,15 @@ namespace Script.Game.Mobs.MobsManager
             foreach (var denizen in allDenizens)
             {
                 if (denizen == null) continue;
-                var core = denizen.GetComponent<DenizenCore>();
-                if (core != null && core.CurrentRole == role)
+                var roleCtrl = denizen.GetComponent<DenizenRoleController>();
+                if (roleCtrl != null && roleCtrl.CurrentRole == role)
                 {
                     filtered.Add(denizen);
                 }
             }
             return filtered;
         }
-        /// <summary>
-        /// Find the nearest Villager that can be assigned a tool.
-        /// Accepts Villagers in Idle OR MoveBackToTownCenter states (e.g., spawned at night).
-        /// </summary>
+
         public VillagerJob GetNearestIdleVillager(Vector3 position)
         {
             VillagerJob nearestVillager = null;
@@ -94,8 +79,8 @@ namespace Script.Game.Mobs.MobsManager
             {
                 if (denizen == null) continue;
 
-                var core = denizen.GetComponent<DenizenCore>();
-                if (core != null && core.CurrentRole == NPCRole.Villager)
+                var roleCtrl = denizen.GetComponent<DenizenRoleController>();
+                if (roleCtrl != null && roleCtrl.CurrentRole == NPCRole.Villager)
                 {
                     var job = denizen.GetComponent<VillagerJob>();
                     if (job != null && job.enabled)
@@ -104,7 +89,6 @@ namespace Script.Game.Mobs.MobsManager
                          bool hasNoTool = (status != null && status.currentTool == null);
                          bool notInDanger = (status != null && !status.isInDanger);
                          
-                         // Kiểm tra Availability dựa trên State pattern mới
                          bool isAvailable = status != null && (job.CurrentState is VillagerIdleState || 
                                             job.CurrentState is VillagerToTownState);
 
@@ -121,6 +105,32 @@ namespace Script.Game.Mobs.MobsManager
                 }
             }
             return nearestVillager;
+        }
+
+        public int GetIdleVillagerCount()
+        {
+            int count = 0;
+            foreach (var denizen in allDenizens)
+            {
+                if (denizen == null) continue;
+                var roleCtrl = denizen.GetComponent<DenizenRoleController>();
+                if (roleCtrl != null && roleCtrl.CurrentRole == NPCRole.Villager)
+                {
+                    var job = denizen.GetComponent<VillagerJob>();
+                    if (job != null && job.enabled)
+                    {
+                         var status = denizen.GetComponent<DenizenStatus>();
+                         if (status == null) continue;
+                         
+                         bool hasNoTool = status.currentTool == null;
+                         bool notInDanger = !status.isInDanger;
+                         bool isAvailable = job.CurrentState is VillagerIdleState || job.CurrentState is VillagerToTownState;
+
+                         if (hasNoTool && notInDanger && isAvailable) count++;
+                    }
+                }
+            }
+            return count;
         }
     }
 }

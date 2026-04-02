@@ -788,9 +788,10 @@ namespace Script.Manager
                     if (isDebug) Debug.Log($"Attempting to load prefab with ID: {savedObject.prefabID}");
                     
                     GameObject prefab = null;
+                    bool isEnemy = false;
 
-                    // ƯU TIÊN: Lấy trực tiếp từ TotalEnemyList nếu là EnemyContainer
-                    if (container == enemyContainer && TotalEnemyList.Instance != null && TotalEnemyList.Instance.EnemyDataList != null)
+                    // ƯU TIÊN: Lấy trực tiếp từ TotalEnemyList để định tính Enemy
+                    if (TotalEnemyList.Instance != null && TotalEnemyList.Instance.EnemyDataList != null)
                     {
                         var enemyData = TotalEnemyList.Instance.EnemyDataList.Find(d => 
                             string.Equals(d.enemyName, savedObject.prefabID, StringComparison.OrdinalIgnoreCase));
@@ -798,6 +799,7 @@ namespace Script.Manager
                         if (enemyData != null)
                         {
                             prefab = enemyData.enemyPrefab;
+                            isEnemy = true;
                         }
                     }
 
@@ -823,23 +825,6 @@ namespace Script.Manager
                         else
                         {
                             Debug.LogError($"Prefab not found: {savedObject.prefabID}");
-                            // Log all keys in the prefab dictionary for debugging (giữ nguyên)
-                            if (isDebug)
-                            {
-                                var prefabDictType = PrefabData.Instance.GetType().GetField("_prefabDict", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                                if (prefabDictType != null)
-                                {
-                                    var prefabDict = prefabDictType.GetValue(PrefabData.Instance) as Dictionary<string, GameObject>;
-                                    if (prefabDict != null)
-                                    {
-                                        Debug.Log("Available prefab IDs:");
-                                        foreach (var key in prefabDict.Keys)
-                                        {
-                                            Debug.Log($"- {key}");
-                                        }
-                                    }
-                                }
-                            }
                             continue;
                         }
                     }
@@ -849,8 +834,13 @@ namespace Script.Manager
                     GameObject instance = null;
                     
                     // LOGIC POOLING KHI LOAD: 
-                    if (container == enemyContainer && Script.Game.Enemy.EnemyPool.Instance != null)
+                    if (isEnemy && Script.Game.Enemy.EnemyPool.Instance != null)
                     {
+                        // Đảm bảo pool sẵn sàng (tránh trường hợp Enemy không nằm trong EnemyContainer nên miss initialization array trước đó)
+                        if (Script.Game.Enemy.EnemyPool.Instance.GetPoolCount() == 0)
+                        {
+                            Script.Game.Enemy.EnemyPool.Instance.InitializePools();
+                        }
                         // Đã xử lý Case-Insensitive bên trong GetEnemy
                         instance = Script.Game.Enemy.EnemyPool.Instance.GetEnemy(savedObject.prefabID);
                     }
@@ -867,12 +857,14 @@ namespace Script.Manager
                     }
                     else
                     {
-                        instance.transform.SetParent(container.transform);
+                        // QUAN TRỌNG: Không được gọi SetParent ở đây với các object lấy từ Pool!
+                        // Việc ép SetParent sẽ kéo object ra khỏi cấu trúc thư mục của Pool (EnemyPool_Container/Pool_xyz)
+                        // khiến người xem Hierarchy tưởng lầm là object bị rớt khỏi Pool.
                         if (isDebug) Debug.Log($"[EntitySaveManager] Retrieved pooled entity {savedObject.prefabID}");
                     }
 
                     // --- KÍCH HOẠT AI SAU KHI LOAD ---
-                    if (container == enemyContainer)
+                    if (isEnemy)
                     {
                         var controller = instance.GetComponent<Script.Game.Enemy.Core.EnemyAIController>();
                         if (controller != null)

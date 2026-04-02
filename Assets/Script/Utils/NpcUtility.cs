@@ -3,7 +3,6 @@ using Script.Data_Model.Status;
 using UnityEngine;
 using Script.Game.Mobs.Subjects;
 using Script.Game.Mobs.Denizen.Core;
-using Script.Game.Mobs.Denizen.Jobs.Villager;
 
 namespace Script.Utils
 {
@@ -17,7 +16,7 @@ namespace Script.Utils
                 return null;
             }
 
-            GameObject go = null;
+            GameObject go;
             if (Spawner.Instance != null)
             {
                 go = Spawner.Instance.SpawnMob(position, PrefabData.Instance.denizen);
@@ -29,8 +28,15 @@ namespace Script.Utils
 
             if (go != null)
             {
-                var core = go.GetComponent<DenizenCore>() ?? go.AddComponent<DenizenCore>();
-                core.ChangeRole(role);
+                var roleCtrl = go.GetComponent<DenizenRoleController>();
+                if (roleCtrl != null)
+                {
+                    roleCtrl.ChangeRole(role);
+                }
+                else
+                {
+                    Debug.LogWarning("[NpcUtility] DenizenRoleController not found on spawned denizen!");
+                }
             }
 
             return go;
@@ -46,40 +52,33 @@ namespace Script.Utils
                 {
                     GameObject.Instantiate(PrefabData.Instance.bow, archerObject.transform.position, Quaternion.identity);
                 }
-                else
-                {
-                    Debug.LogWarning("Bow prefabWall is missing in PrefabData. Cannot drop bow.");
-                }
 
                 Vector3 position = archerObject.transform.position;
                 Quaternion rotation = archerObject.transform.rotation;
                 Vector3 scale = archerObject.transform.localScale;
 
+                GameObject denizen = null;
                 if (Spawner.Instance != null)
                 {
-                    GameObject denizen = Spawner.Instance.SpawnMob(position, PrefabData.Instance.denizen);
-                    if (denizen != null)
-                    {
-                        denizen.transform.rotation = rotation;
-                        denizen.transform.localScale = scale;
-                        var core = denizen.GetComponent<DenizenCore>() ?? denizen.AddComponent<DenizenCore>();
-                        core.ChangeRole(NPCRole.Villager);
-
-                        DenizenStatus villagerStatus = denizen.GetComponent<DenizenStatus>();
-                        if (villagerStatus != null)
-                        {
-                            villagerStatus.CurrentCoins = currentCoins;
-                        }
-                    }
+                    denizen = Spawner.Instance.SpawnMob(position, PrefabData.Instance.denizen);
                 }
                 else
                 {
-                    Debug.LogError("[Utility] Spawner instance not found! Cannot spawn using Spawner, using Instantiate fallback.");
-                    GameObject denizenInstance = GameObject.Instantiate(PrefabData.Instance.denizen, archerObject.transform.position, Quaternion.identity);
-                    var core = denizenInstance.GetComponent<DenizenCore>() ?? denizenInstance.AddComponent<DenizenCore>();
-                    core.ChangeRole(NPCRole.Villager);
+                    denizen = GameObject.Instantiate(PrefabData.Instance.denizen, position, Quaternion.identity);
+                }
+
+                if (denizen != null)
+                {
+                    denizen.transform.rotation = rotation;
+                    denizen.transform.localScale = scale;
                     
-                    DenizenStatus villagerStatus = denizenInstance.GetComponent<DenizenStatus>();
+                    var roleCtrl = denizen.GetComponent<DenizenRoleController>();
+                    if (roleCtrl != null)
+                    {
+                        roleCtrl.ChangeRole(NPCRole.Villager);
+                    }
+
+                    DenizenStatus villagerStatus = denizen.GetComponent<DenizenStatus>();
                     if (villagerStatus != null)
                     {
                         villagerStatus.CurrentCoins = currentCoins;
@@ -88,12 +87,6 @@ namespace Script.Utils
 
                 GameObject.Destroy(archerObject);
             }
-            else
-            {
-                Debug.LogError("[Utility] denizen not found in PrefabData! Cannot transform Archer to Villager.");
-            }
         }
     }
 }
-
-

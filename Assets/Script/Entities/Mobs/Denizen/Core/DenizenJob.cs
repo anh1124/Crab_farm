@@ -1,138 +1,70 @@
 using UnityEngine;
-using Script.Data_Model.Interfaces;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
     /// <summary>
-    /// Base class cho các Job (VagrantJob, VillagerJob, ArcherJob).
-    /// Quản lý State Machine và vòng đời của Role.
+    /// DenizenJob: Linh hồn (Soul) của cư dân.
+    /// CHỈ: Điều phối trạng thái (State Machine) và tham chiếu Context.
+    /// KHÔNG: Giữ logic chiến đấu, kinh tế trực tiếp. Logic nằm ở State hoặc Job con.
     /// </summary>
-    public abstract class DenizenJob : MonoBehaviour, INPCBehavior, IItemHandle
+    public abstract class DenizenJob : MonoBehaviour
     {
-        protected DenizenContext Context;
         public DenizenState CurrentState { get; protected set; }
+        
+        [Tooltip("Optional: Animator riêng của từng Job. Nếu để trống sẽ tự lấy mặc định từ DenizenManager.")]
+        public RuntimeAnimatorController JobController; 
 
-        [Header("Animation Settings")]
-        [SerializeField] private RuntimeAnimatorController jobController; // Slot để kéo .controller vào
+        [Header("Runtime Context")]
+        [Tooltip("Tài liệu tham khảo chung của cư dân (Cơ thể, Status, Animator...)")]
+        public DenizenContext Context;
 
-        [Header("Debug Info")]
-        [SerializeField] private string currentStateName; // Hiển thị state hiện tại trên Inspector
+        [Header("Debug")]
+        public string currentStateName;
 
-        public RuntimeAnimatorController JobController => jobController;
-
-        #region Context & Lifecycle
         public void InjectContext(DenizenContext ctx)
         {
             Context = ctx;
         }
 
-        public Animator GetAnimator() => Context != null ? Context.Animator : null;
-        #endregion
-
-        protected abstract DenizenState GetInitialState();
-        protected abstract void PreAllocateStates();
-
-        public void ChangeState(DenizenState next)
+        /// <summary>
+        /// Logic chung cho mọi ChangeState: Exit → Reset Anim → Assign → Enter.
+        /// Từng Job gọi hàm này bên trong ChangeState() riêng của nó.
+        /// </summary>
+        protected void DoChangeState(DenizenState newState)
         {
-            if (next == CurrentState) return;
+            if (newState == null || CurrentState == newState) return;
 
             CurrentState?.Exit(Context);
-            ResetAnimatorParams();
-            CurrentState = next;
-            
-            // Cập nhật tên state để User quan sát trên Inspector
-            currentStateName = next != null ? next.GetType().Name : "None";
-            
-            CurrentState?.Enter(Context);
+            ResetAllAnimatorParams();
+
+            CurrentState = newState;
+            currentStateName = newState.GetType().Name;
+            if (Context?.Status != null)
+                Context.Status.currentStateName = currentStateName;
+
+            CurrentState.Enter(Context);
         }
 
-        [ContextMenu("Debug: Print State Info")]
-        public void PrintStateDebug()
+        private void ResetAllAnimatorParams()
         {
-            if (CurrentState == null)
+            if (Context?.Animator == null) return;
+            foreach (var p in Context.Animator.parameters)
             {
-                Debug.Log($"[DEBUG] Job: {GetType().Name} | State: NULL");
-                return;
-            }
-
-            string info = CurrentState.GetDebugInfo(Context);
-            Debug.Log($"<color=cyan>[DEBUG]</color> <b>Job: {GetType().Name}</b> | <b>State: {CurrentState.GetType().Name}</b>\nDetails: {info}");
-        }
-
-        protected virtual void ResetAnimatorParams()
-        {
-            Animator anim = GetAnimator();
-            if (anim == null) return;
-            
-            foreach (var p in anim.parameters)
-            {
-                if (p.type == AnimatorControllerParameterType.Bool) anim.SetBool(p.name, false);
-                if (p.type == AnimatorControllerParameterType.Trigger) anim.ResetTrigger(p.name);
+                if (p.type == AnimatorControllerParameterType.Bool)
+                    Context.Animator.SetBool(p.name, false);
+                if (p.type == AnimatorControllerParameterType.Trigger)
+                    Context.Animator.ResetTrigger(p.name);
             }
         }
 
-        protected virtual void OnEnterJob() { }
-        protected virtual void OnExitJob() { }
-
-        public virtual void UpdateBehavior()
-        {
-            // [SCAN INTEGRATION] Chủ động quét tia và vòng tròn (do Helper đã gỡ Update loop)
-            if (Context != null)
-            {
-                if (Context.RayCaster != null && Context.RayCaster.isActive)
-                {
-                    Context.RayCaster.DrawRay();
-                }
-
-                if (Context.CircleDetect != null && Context.CircleDetect.isActive)
-                {
-                    Context.CircleDetect.ScanCircle();
-                }
-            }
-
-            CurrentState?.Update(Context);
-        }
-
-        private void Update()
-        {
-            CurrentState?.FrameUpdate(Context);
-        }
-
-        protected virtual void OnEnable()
-        {
-            // [DETECTOR RESET] Unactive cả 2 detect trước khi Job mới bật lại cái nó cần
-            if (Context != null)
-            {
-                if (Context.RayCaster != null)
-                {
-                    Context.RayCaster.isActive = false;
-                    Context.RayCaster.isDrawRay = false;
-                }
-                if (Context.CircleDetect != null)
-                {
-                    Context.CircleDetect.isActive = false;
-                    Context.CircleDetect.isShowGizmoUser = false;
-                }
-            }
-
-            OnEnterJob();
-            ChangeState(GetInitialState());
-        }
-
-        protected virtual void OnDisable()
-        {
-            CurrentState?.Exit(Context);
-            CurrentState = null;
-            currentStateName = "Disabled";
-            OnExitJob();
-        }
-
-        public virtual void OnObjectsDetected(System.Collections.Generic.List<GameObject> detectedObjects) { }
+        // Virtual hooks for routing (satisfied by job-specific implementations)
+        public virtual void ReceiveDamage(float damage, GameObject instigator) { }
         public virtual void HandleAnimationEvent(string eventName) { }
-        
-        // IItemHandle implementation - Đẩy logic xuống các Job cụ thể
         public virtual bool HandleItem(GameObject item) => false;
+        public virtual void UpdateBehavior() { }
 
-        protected abstract void Awake();
+        // Tactical Hooks for Global Managers (GuardManager, SquadSystem, etc.)
+        public virtual void OnGuardManagerStatusChanged(bool isAttack) { }
+        public virtual void ForceRetreat(GameObject safeWall) { }
     }
 }

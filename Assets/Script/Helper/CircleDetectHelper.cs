@@ -17,7 +17,17 @@ namespace Script.Game.Other
         public bool isShowGizmoUser = true;//user có cho debug không
         
         [Header("Behavior Settings")]
-        public bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
+        [SerializeField] private bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
+        public bool IsActive
+        {
+            get => isActive;
+            set 
+            {
+                isActive = value;
+                isShowGizmo = value;
+                isShowGizmoUser = value;
+            }
+        }
         
 
         [Header("Tag Settings")]

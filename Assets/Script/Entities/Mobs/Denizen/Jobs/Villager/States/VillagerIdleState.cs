@@ -6,94 +6,101 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
 {
     public class VillagerIdleState : DenizenState
     {
-        private readonly VillagerJob _job;
         private float _nextRandomWalkTime;
-        private Vector3 _currentWalkTarget;
-        private float _lastToolCheckTime = -999f;
+        private Vector3 _walkTarget;
+        private bool _hasTarget;
+        private float _lastToolCheck;
         private const float TOOL_CHECK_INTERVAL = 3f;
-
-        public VillagerIdleState(VillagerJob job)
-        {
-            _job = job;
-        }
 
         public override void Enter(DenizenContext ctx)
         {
             _nextRandomWalkTime = Time.time + Random.Range(2f, 5f);
+            _lastToolCheck = -999f;
+            _hasTarget = false;
             
-            // Ép quét Tool ngay khi vừa vào rảnh rỗi (giống legacy start)
-            _lastToolCheckTime = -999f;
-            
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("idle");
+            if (ctx.Animator != null) 
+                ctx.Animator.Play("idle");
+
+            if (ctx.Movement != null)
+                ctx.Movement.Stop();
         }
 
-        public override void Update(DenizenContext ctx)
+        public override void UpdateBehavior(DenizenContext ctx)
         {
-            if (ctx.Status.isInDanger)
+            if (ctx.IsSkillCasting) return;
+            var vSoul = ctx.VillagerJob;
+            if (vSoul == null) return;
+
+            // Kiểm tra các điều kiện chuyển trạng thái khẩn cấp
+            if (ctx.Status.isFearPending)
             {
-                _job.ChangeState(_job.FearState);
+                vSoul.ChangeState(vSoul.FearState);
                 return;
             }
 
             if (ctx.Status.currentTool != null)
             {
-                _job.ChangeState(_job.RunToolState);
+                vSoul.ChangeState(vSoul.RunToolState);
                 return;
             }
-
+            
+            // 3. Đang đêm → về thành (ToTownState) — CHỈ khi chưa ở gần Plaza
             if (ctx.TimeManager != null && !ctx.TimeManager.IsDaytime)
             {
-                _job.ChangeState(_job.ToTownState);
-                return;
-            }
-
-            // [FIX] Liên tục hỏi ToolManager mỗi 3 giây nếu rảnh rỗi
-            if (Time.time - _lastToolCheckTime >= TOOL_CHECK_INTERVAL)
-            {
-                _lastToolCheckTime = Time.time;
-                if (Script.Manager.MobsManager.ToolManager.Instance != null && 
-                    Script.Manager.MobsManager.ToolManager.Instance.GetTotalUnservedTools() > 0)
+                // Nếu chưa ở gần tâm thành phố (Plaza), mới phải đi về
+                if (!vSoul.HasReachedPosition(Vector3.zero, 4.0f))
                 {
-                    Script.Manager.MobsManager.ToolManager.Instance.OnVillagerBecameIdle(_job);
+                    vSoul.ChangeState(vSoul.ToTownState);
+                    return;
                 }
             }
 
-            if (!ctx.Movement.IsMoving && Time.time >= _nextRandomWalkTime)
+            // Kiểm tra xem có công cụ nào mới không (định kỳ)
+            if (Time.time - _lastToolCheck >= TOOL_CHECK_INTERVAL)
             {
-                // Sử dụng Plaza Position thay vì wander tại chỗ
-                float randomX = Utility.GetRandomPlazaPos();
-                _currentWalkTarget = new Vector3(randomX, ctx.Transform.position.y, 0f);
-                
-                ctx.Movement.FaceTarget(_currentWalkTarget);
-                ctx.Movement.MoveTo(_currentWalkTarget, ctx.Status.WalkSpeed);
-                _nextRandomWalkTime = Time.time + Random.Range(5f, 12f);
+                _lastToolCheck = Time.time;
+                if (Script.Manager.MobsManager.ToolManager.Instance?.GetTotalUnservedTools() > 0)
+                {
+                    Script.Manager.MobsManager.ToolManager.Instance.OnVillagerBecameIdle(vSoul);
+                }
+            }
+
+            // Logic đi dạo ngẫu nhiên
+            if (!_hasTarget && Time.time >= _nextRandomWalkTime)
+            {
+                _walkTarget = new Vector3(Script.Utility.GetRandomPlazaPos(), ctx.Transform.position.y, 0f);
+                _hasTarget = true;
+                vSoul.SetMoveTarget(_walkTarget);
             }
         }
 
-        public override void FrameUpdate(DenizenContext ctx)
+        public override void Update(DenizenContext ctx)
         {
-            Animator anim = _job.GetAnimator();
-            if (anim == null) return;
+            if (ctx.Animator == null) return;
 
-            if (ctx.Movement.IsMoving)
+            if (_hasTarget)
             {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("walk"))
-                    anim.Play("walk");
+                // Nếu đã đến đích thì dừng lại và chờ lần đi dạo tiếp theo
+                if (ctx.VillagerJob.HasReachedPosition(_walkTarget))
+                {
+                    _hasTarget = false;
+                    _nextRandomWalkTime = Time.time + Random.Range(5f, 12f);
+                    ctx.Movement?.Stop();
+                    ctx.Animator.Play("idle");
+                }
+                else
+                {
+                    // Luôn đảm bảo chơi walk khi đang di chuyển
+                    if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("walk"))
+                        ctx.Animator.Play("walk");
+                }
             }
             else
             {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("idle"))
-                    anim.Play("idle");
+                // Luôn đảm bảo chơi idle khi đứng yên
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("idle"))
+                    ctx.Animator.Play("idle");
             }
-        }
-
-        public override string GetDebugInfo(DenizenContext ctx)
-        {
-            return $"NextWalkIn: {(_nextRandomWalkTime - Time.time):F1}s | " +
-                   $"IsMoving: {ctx.Movement.IsMoving} | " +
-                   $"Target: {_currentWalkTarget} | " +
-                   $"Dist: {Vector3.Distance(ctx.Transform.position, _currentWalkTarget):F1}m";
         }
     }
 }

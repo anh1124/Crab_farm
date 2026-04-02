@@ -46,7 +46,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb6712c2fafbbfe41bc0486ce3e6a823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jobController: {fileID: 9100000, guid: 9ed78963ace87684cb2b21fd66341b30, type: 2}
+  JobController: {fileID: 0}
+  Context: {fileID: 743453135300643699}
   currentStateName: 
 --- !u!114 &8719448940933799011
 MonoBehaviour:
@@ -60,8 +61,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5ea99d71535819418a18b7220e2df91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jobController: {fileID: 9100000, guid: 31cd6837cf250b446bc498f5895f6dbb, type: 2}
+  JobController: {fileID: 0}
+  Context: {fileID: 743453135300643699}
   currentStateName: 
+  ignoreGuardManagerCommand: 0
 --- !u!114 &220828774696625131
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,7 +77,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54cb890257d56834891e1f6cf4c8426b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jobController: {fileID: 9100000, guid: c6ad815e1a9aa014b839538879eda4db, type: 2}
+  JobController: {fileID: 0}
+  Context: {fileID: 743453135300643699}
   currentStateName: 
 --- !u!1 &2283940659204368908
 GameObject:
@@ -127,8 +131,8 @@ MonoBehaviour:
   lowMinAngle: 30
   lowMaxAngle: 45
   lowAngleStep: 5
-  highMinAngle: 60
-  highMaxAngle: 80
+  highMinAngle: 68
+  highMaxAngle: 88
   highAngleStep: 10
   accuracy: 0.5
   wallLayer:
@@ -136,6 +140,7 @@ MonoBehaviour:
     m_Bits: 32768
   showDebugInfo: 0
   stickImpactOffset: 0.4
+  trajectorySimSteps: 24
 --- !u!1 &3886413513261598691
 GameObject:
   m_ObjectHideFlags: 0
@@ -161,7 +166,7 @@ Transform:
   m_GameObject: {fileID: 3886413513261598691}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.691, y: 0.631, z: 0}
+  m_LocalPosition: {x: -0.11, y: 0.631, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -180,14 +185,14 @@ GameObject:
   - component: {fileID: 8569259466168091585}
   - component: {fileID: 740260275655050489}
   - component: {fileID: 7222628233924619537}
-  - component: {fileID: 8875481444471248291}
   - component: {fileID: 743453135300643699}
   - component: {fileID: 6225672696307269319}
-  - component: {fileID: 5798688921794525603}
   - component: {fileID: 4413473331933051345}
   - component: {fileID: 7991245862322258220}
   - component: {fileID: 953656452186265397}
   - component: {fileID: 8239587643228990362}
+  - component: {fileID: 3103056739924324461}
+  - component: {fileID: 2416144875155933858}
   m_Layer: 9
   m_Name: Denizen
   m_TagString: Denizen
@@ -359,20 +364,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &8875481444471248291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5039406809920019329}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4006c06686de9248a8c772549181557, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  CurrentRole: 0
-  _context: {fileID: 743453135300643699}
 --- !u!114 &743453135300643699
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -386,10 +377,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Status: {fileID: 6225672696307269319}
-  Core: {fileID: 8875481444471248291}
-  Movement: {fileID: 4413473331933051345}
+  RoleController: {fileID: 3103056739924324461}
   Animator: {fileID: 8569259466168091585}
   SpriteRenderer: {fileID: 8393409496004937706}
+  Movement: {fileID: 4413473331933051345}
   RayCaster: {fileID: 1113228248691594019}
   CircleDetect: {fileID: 1185670117520309985}
   ArcherShooting: {fileID: 1048503647585264020}
@@ -401,6 +392,7 @@ MonoBehaviour:
   TimeManager: {fileID: 0}
   WallManager: {fileID: 0}
   NPCUpdateManager: {fileID: 0}
+  SkillManager: {fileID: 2416144875155933858}
 --- !u!114 &6225672696307269319
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -413,6 +405,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a6005dce0ab8f242bcff0e212097635, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentStateName: Idle
+  isSkillCasting: 0
+  skillAllowsMovement: 1
+  debugDenizen: 0
+  isMovementAllowed: 1
+  isMoving: 0
   role: 0
   currentCoins: 0
   maxCoins: 6
@@ -420,22 +418,11 @@ MonoBehaviour:
   runSpeed: 3.5
   huntingMoveSpeed: 1.2
   currentSpeed: 0
-  vagrantState: 1
-  maxIdleWalkDistance: 3
-  roadToTarget: 0
-  targetPosition: {x: 0, y: 0}
-  coinTarget: {fileID: 0}
-  startPosition: {x: 0, y: 0, z: 0}
-  currentIdleWalkTarget: {x: 0, y: 0, z: 0}
-  isWalking: 0
   currentTool: {fileID: 0}
-  villagerState: 0
   fearTimer: 0
   maxFearDuration: 3
   isInDanger: 0
   isFearPending: 0
-  archerState: 0
-  previousArcherState: 0
   detectRangeRaycast: 10
   archerDetectRange: 25
   attackDame: 1
@@ -445,18 +432,8 @@ MonoBehaviour:
   assignedWall: {fileID: 0}
   previousWall: {fileID: 0}
   currentTarget: {fileID: 0}
---- !u!114 &5798688921794525603
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5039406809920019329}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae14c750c588b324ebf5995850c065cb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  coinTarget: {fileID: 0}
+  archerState: 0
 --- !u!114 &4413473331933051345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -469,6 +446,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45e7bd13333905c4182e53cb611ecb0a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _moveTargetPos: {x: 0, y: 0, z: 0}
 --- !u!114 &7991245862322258220
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -496,6 +474,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canPickupCoin: 1
   canPickupTool: 1
+  isDebug: 0
 --- !u!114 &8239587643228990362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -508,6 +487,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 674f38cd7b7aaa04c823095087291bc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  context: {fileID: 743453135300643699}
+--- !u!114 &3103056739924324461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 134a966b33bb9724c9b876aaeb9a7e78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CurrentRole: 0
+  _context: {fileID: 0}
+--- !u!114 &2416144875155933858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5039406809920019329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 871fcbf45ab9a5447bf1782ba9bf0e27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skillSlots:
+  - skill: {fileID: 11400000, guid: f2523d94d73e5634382e5b10a52ad402, type: 2}
+    state: 0
+    cooldownTimer: 0
 --- !u!1 &5452678090401275911
 GameObject:
   m_ObjectHideFlags: 0

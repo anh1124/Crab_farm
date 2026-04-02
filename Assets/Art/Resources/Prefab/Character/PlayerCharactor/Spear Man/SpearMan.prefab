@@ -369,6 +369,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canPickupCoin: 1
   canPickupTool: 0
+  isDebug: 0
 --- !u!114 &3167184854126006450
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -441,7 +442,7 @@ GameObject:
   - component: {fileID: 2545118302023694903}
   m_Layer: 14
   m_Name: Trigger
-  m_TagString: Player
+  m_TagString: Trigger
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

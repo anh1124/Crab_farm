@@ -37,24 +37,15 @@ namespace Script.Utils
             // Enable hitbox collider
             hitbox.enabled = true;
             
-            // [MỚI]: Cấu hình bộ lọc dựa trên Layer của chính Collider (vd: enemyskilllayer)
-            // Unity sẽ tự động lọc dựa trên Layer Collision Matrix đã setting trong Project
+            // Cấu hình bộ lọc dựa trên Layer Collision Matrix
             ContactFilter2D filter = new ContactFilter2D();
             filter.useLayerMask = true;
-            filter.layerMask = Physics2D.GetLayerCollisionMask(hitbox.gameObject.layer);
-            filter.useTriggers = false; // Chỉ đánh các vật thể thực, bỏ qua trigger khác
-            
+            int hitboxLayer = hitbox.gameObject.layer;
+            int collisionMask = Physics2D.GetLayerCollisionMask(hitboxLayer);
+            filter.layerMask = collisionMask;
+            filter.useTriggers = true; // Cho phép đánh trúng các NPC sử dụng Trigger Collider
+
             int hitCount = Physics2D.OverlapCollider(hitbox, filter, buffer);
-            
-            Debug.Log($"[HitboxController] HitCount: {hitCount}");
-            for (int i = 0; i < hitCount; i++)
-            {
-                if (buffer[i] != null)
-                {
-                    Debug.Log($"[HitboxController] Hit[{i}]: {buffer[i].name} (Tag: {buffer[i].tag})");
-                }
-            }
-            
             // Process damage thông qua CombatUtility (existing system)
             CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage, isEnemyAttack);
             

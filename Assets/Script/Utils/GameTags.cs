@@ -81,6 +81,11 @@ namespace Script.Utils
             GameTags.TownCenter 
         };
 
+        public static readonly System.Collections.Generic.List<string> FleeTargets = new System.Collections.Generic.List<string> 
+        { 
+            GameTags.Enemy 
+        };
+
         public static readonly System.Collections.Generic.List<string> ToolTags = new System.Collections.Generic.List<string>
         {
             GameTags.Hammer,

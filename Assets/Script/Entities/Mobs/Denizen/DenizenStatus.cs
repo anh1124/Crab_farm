@@ -9,36 +9,17 @@ namespace Script.Data_Model.Status
     [System.Serializable]
     public class DenizenStatus : MonoBehaviour, INPCStatus, ICoinable
     {
-        // Enums for distinct role states
-        public enum VagrantState
-        {
-            Fear,
-            Idle,
-            GetCoin
-        }
+        [Header("Runtime State")]
+        public string currentStateName = "Idle";
+        public bool isSkillCasting = false;
+        public bool skillAllowsMovement = true;
+        public bool debugDenizen = false;  // Bật để xem log chi tiết cho entity này
 
+        public enum ArcherState { Idle, Hunting, Attack, HoldWall, Retreat, ReturningToBase, DropCoin }
 
+        public bool isMovementAllowed = true;
+        public bool isMoving = false;
 
-        public enum VillagerState
-        {
-            Idle,                   // Wandering around kingdom
-            MoveBackToTownCenter,   // Walking back to town center at night
-            RunToGetTool,           // Running to get tools (highest priority)
-            Fear,                   // Running away from danger
-            DropCoinToPlayer        // Drop coin when seeing player
-        }
-
-        public enum ArcherState
-        {
-            Idle,
-            Hunting,
-            HoldingWall,
-            RetreatingToInnerWall,
-            ReturningToBase,
-            DropCoinToPlayer
-        }
-
-       
         [SerializeField] private NPCRole role = NPCRole.Vagrant;
         [Header("General Settings")]
         [SerializeField] private int currentCoins = 0;
@@ -52,20 +33,9 @@ namespace Script.Data_Model.Status
         public float currentSpeed;
 
         // Vagrant Specifics
-        [Header("Vagrant Data")]
-        public VagrantState vagrantState = VagrantState.Idle;
-        public float maxIdleWalkDistance = 3.0f;
-        public float roadToTarget = 0f;
-        public Vector2 targetPosition; // Shared with Villager?
-        public GameObject coinTarget;
-        public Vector3 startPosition;
-        public Vector3 currentIdleWalkTarget;
-        public bool isWalking;
         public PhysicalItem currentTool; // Added for Villager/Tool logic
 
         // Villager Specifics
-        [Header("Villager Data")]
-        public VillagerState villagerState = VillagerState.Idle;
         public float fearTimer;
         [Tooltip("Thời gian bị hoảng sợ tối đa (như 3s)")]
         public float maxFearDuration = 3f;
@@ -76,9 +46,6 @@ namespace Script.Data_Model.Status
         // targetPosition is reused from Vagrant
 
         // Archer Specifics
-        [Header("Archer Data")]
-        public ArcherState archerState = ArcherState.Idle;
-        public ArcherState previousArcherState = ArcherState.Idle;
         [Tooltip("Phạm vi phát hiện kẻ thù bằng RaycastHelper (Dùng cho Villager/Vagrant)")]
         public float detectRangeRaycast = 10f; // Was detectRange
 
@@ -92,6 +59,10 @@ namespace Script.Data_Model.Status
         public GameObject assignedWall;
         public GameObject previousWall;
         public GameObject currentTarget;
+        public GameObject coinTarget; // Added for Vagrant/Coin logic
+
+        [Header("Legacy / Squad Tracking")]
+        public ArcherState archerState; // For GuardSquadSystem compatibility
 
         // Events
         public event Action<int> OnCoinChanged;
@@ -182,10 +153,11 @@ namespace Script.Data_Model.Status
         /// </summary>
         public void RouteDamage(float damage, GameObject instigator)
         {
-            var core = GetComponent<Script.Game.Mobs.Denizen.Core.DenizenCore>();
-            if (core != null)
+            var ctx = GetComponent<Script.Game.Mobs.Denizen.Core.DenizenContext>();
+            if (ctx != null && ctx.CurrentJob != null)
             {
-                core.ReceiveDamage(damage, instigator);
+                // Route directly to the job brain
+                ctx.CurrentJob.ReceiveDamage(damage, instigator);
             }
         }
 
@@ -200,15 +172,9 @@ namespace Script.Data_Model.Status
                 currentCoins = currentCoins,
                 role = role.ToString(),
                 
-                vagrantState = (int)vagrantState,
-                startPositionX = startPosition.x,
-
-                villagerState = (int)villagerState,
                 isFearPending = isFearPending,
                 isInDanger = isInDanger,
                 fearTimer = fearTimer,
-
-                archerState = (int)archerState,
                 isLeftFlank = isLeftFlank
             };
         }
@@ -217,22 +183,16 @@ namespace Script.Data_Model.Status
         {
             t.position = new Vector3(data.positionX, data.positionY, 0);
             t.localScale = new Vector3(data.scaleX, 1, 1);
+            currentStateName = data.role + "Idle";
             currentCoins = data.currentCoins;
             if (System.Enum.TryParse(data.role, out NPCRole savedRole))
             {
                 role = savedRole;
             }
 
-            // Restore states (careful as they depend on role)
-            vagrantState = (VagrantState)data.vagrantState;
-            startPosition = new Vector3(data.startPositionX, data.positionY, 0);
-            
-            villagerState = (VillagerState)data.villagerState;
             isFearPending = data.isFearPending;
             isInDanger = data.isInDanger;
             fearTimer = data.fearTimer;
-
-            archerState = (ArcherState)data.archerState;
             isLeftFlank = data.isLeftFlank;
         }
     }

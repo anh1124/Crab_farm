@@ -68,29 +68,53 @@ namespace Script.Controller
                 Debug.LogError("[InputManager] Không tìm thấy KeyMapConfig! Tạo asset tại Assets/Resources/Config/KeyMapConfig");
         }
 
+        // ── Update: Đọc Raw Hardware Input (bỏ qua IME/Telex hoàn toàn) ──────
+        //
+        // Input.GetKeyDown/GetKeyUp nhận KeyCode trực tiếp từ phần cứng,
+        // TRƯỚC khi OS hay bộ gõ Telex/VNI can thiệp → không bao giờ bị lỗi IME.
+        // OnGUI + Event.current đã được XÓA vì lý do này.
+        //
         private void Update()
         {
             if (keyMap == null) return;
 
-            // ── Keyboard Movement (chạy trên mọi platform — kể cả Android editor) ──
-            _kbMoveLeft  = Input.GetKey(keyMap.moveLeft)  || Input.GetKey(keyMap.moveLeftAlt);
-            _kbMoveRight = Input.GetKey(keyMap.moveRight) || Input.GetKey(keyMap.moveRightAlt);
+            // ── Movement: Phím giữ (sustained state) ──────────────────────────
 
-            // Kết hợp keyboard + mobile
+            // Keyboard move left
+            if (Input.GetKeyDown(keyMap.moveLeft) || Input.GetKeyDown(keyMap.moveLeftAlt))
+                _kbMoveLeft = true;
+            if (Input.GetKeyUp(keyMap.moveLeft) || Input.GetKeyUp(keyMap.moveLeftAlt))
+                _kbMoveLeft = false;
+
+            // Keyboard move right
+            if (Input.GetKeyDown(keyMap.moveRight) || Input.GetKeyDown(keyMap.moveRightAlt))
+                _kbMoveRight = true;
+            if (Input.GetKeyUp(keyMap.moveRight) || Input.GetKeyUp(keyMap.moveRightAlt))
+                _kbMoveRight = false;
+
+            // Gamepad / joystick axis (tùy chọn)
+            float h = Input.GetAxisRaw("Horizontal");
+            if (h < -0.1f) _kbMoveLeft  = true;
+            if (h > 0.1f)  _kbMoveRight = true;
+
+            // Tổng hợp movement cho FixedUpdate
             MoveLeft  = _mobileMoveLeft  || _kbMoveLeft;
             MoveRight = _mobileMoveRight || _kbMoveRight;
 
             if (_kbMoveLeft || _kbMoveRight) SetAnyKeyUsed();
 
-            // ── Keyboard Coin (gọi trực tiếp — tránh vấn đề timing với FixedUpdate) ──
+            // ── Actions: Phím nhấn một lần (one-shot) ─────────────────────────
+
             var pc = PlayerController.PlayerController.Instance;
+
             if (pc != null)
             {
                 if (Input.GetKeyDown(keyMap.useCoin)) { pc.UseCoinDownAction(); SetAnyKeyUsed(); }
                 if (Input.GetKeyUp(keyMap.useCoin))   { pc.UseCoinUpAction();   SetAnyKeyUsed(); }
             }
 
-            // ── Keyboard Skills (gọi trực tiếp — cần instigator nên lấy từ PlayerController) ──
+            // ── Skills ────────────────────────────────────────────────────────
+
             if (pc?.playerBehavior != null)
             {
                 var sm = pc.SkillManager as SkillManager;
@@ -103,21 +127,22 @@ namespace Script.Controller
                 }
             }
 
-            // ── Global Hotkeys ──
-            if (Script.GUI_Controller.GameOverHandler.IsActive) return; // Chặn các input UI/Menus nếu Game Over đang bật
+            // ── UI ────────────────────────────────────────────────────────────
 
-            if (Input.GetKeyDown(keyMap.openPauseMenu))
+            if (!Script.GUI_Controller.GameOverHandler.IsActive)
             {
-                Script.GUI_Controller.GuiCanvasManager.Instance?.TogglePauseMenu();
-                SetAnyKeyUsed();
-            }
+                if (Input.GetKeyDown(keyMap.openPauseMenu))
+                {
+                    Script.GUI_Controller.GuiCanvasManager.Instance?.TogglePauseMenu();
+                    SetAnyKeyUsed();
+                }
 
-            // ── Keyboard Menus & UI ──
-            if (Input.GetKeyDown(keyMap.openBuildMenu) || 
-                Input.GetKeyDown(keyMap.accept)        || 
-                Input.GetKeyDown(keyMap.cancel))
-            {
-                SetAnyKeyUsed();
+                if (Input.GetKeyDown(keyMap.openBuildMenu) ||
+                    Input.GetKeyDown(keyMap.accept)        ||
+                    Input.GetKeyDown(keyMap.cancel))
+                {
+                    SetAnyKeyUsed();
+                }
             }
         }
 

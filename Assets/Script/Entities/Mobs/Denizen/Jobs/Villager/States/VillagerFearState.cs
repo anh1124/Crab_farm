@@ -1,74 +1,84 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
-using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Villager
 {
     public class VillagerFearState : DenizenState
     {
-        private readonly VillagerJob _job;
-        private float _fearEndTime;
-        private Vector3 _fleeTarget;
-
-        // Bỏ biến hardcode FEAR_DURATION
-
-        public VillagerFearState(VillagerJob job)
-        {
-            _job = job;
-        }
+        private Vector3 _townCenterPos;
 
         public override void Enter(DenizenContext ctx)
         {
-            _fearEndTime = Time.time + ctx.Status.maxFearDuration;
-            ctx.Status.isInDanger = true;
+            // Thay vì chạy về (0,0,0), hãy chạy về Plaza ngẫu nhiên
+            float randomX = Script.Utility.GetRandomPlazaPos();
+            _townCenterPos = new Vector3(randomX, ctx.Transform.position.y, 0f);
 
-            // Tìm điểm an toàn ngẫu nhiên trong Plaza thay vì chạy vào giữa bản đồ
-            float randomPlazaX = Utility.GetRandomPlazaPos();
-            _fleeTarget = new Vector3(randomPlazaX, ctx.Transform.position.y, 0f);
+            // Bắt đầu đếm ngược từ status
+            if (ctx.Status != null)
+            {
+                ctx.Status.fearTimer = ctx.Status.maxFearDuration;
+                ctx.Status.isFearPending = false;
+                ctx.Status.isInDanger = true;
+                ctx.Status.isMovementAllowed = true;
+            }
 
-            ctx.Movement.FaceTarget(_fleeTarget);
-            ctx.Movement.MoveTo(_fleeTarget, ctx.Status.RunSpeed);
+            if (ctx.Animator != null) 
+                ctx.Animator.Play("run");
 
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("run");
+            // Chỉ định Cơ Thể chạy về plaza (bằng tốc độ chạy)
+            if (ctx.Movement != null)
+                ctx.Movement.SetTarget(_townCenterPos, ctx.Status != null ? ctx.Status.runSpeed : -1f);
         }
 
-        // Gia hạn thời gian sợ khi vẫn thấy enemy
-        public void RefreshFear(DenizenContext ctx)
+        public override void UpdateBehavior(DenizenContext ctx)
         {
-            _fearEndTime = Time.time + ctx.Status.maxFearDuration;
+            if (ctx.IsSkillCasting) return;
+            
+            // Nếu đã đến điểm chạy trốn cũ nhưng vẫn còn sợ, thì chọn điểm Plaza khác để chạy tiếp
+            if (ctx.VillagerJob != null && ctx.VillagerJob.HasReachedPosition(_townCenterPos, 1.5f) && ctx.Status.fearTimer > 1f)
+            {
+                float newX = Script.Utility.GetRandomPlazaPos();
+                _townCenterPos = new Vector3(newX, ctx.Transform.position.y, 0f);
+                ctx.Movement?.SetTarget(_townCenterPos);
+            }
+
+            // Chuyển về Idle khi hết sợ hãi
+            if (ctx.Status != null && ctx.Status.fearTimer <= 0)
+            {
+                ctx.Status.isInDanger = false;
+                ctx.Status.isFearPending = false;
+
+                VillagerJob job = ctx.VillagerJob;
+                if (job != null)
+                {
+                    // Dừng chạy khi đã hết sợ
+                    if (ctx.Movement != null) ctx.Movement.Stop();
+
+                    job.ChangeState(job.IdleState);
+                }
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
-            // Hết hoảng sợ
-            if (Time.time >= _fearEndTime)
+            // Trừ timer tại status hàng frame
+            if (ctx.Status != null && ctx.Status.fearTimer > 0)
             {
-                ctx.Status.isInDanger = false;
-                _job.TransitionToIdle();
-                return;
+                ctx.Status.fearTimer -= Time.deltaTime;
             }
 
-            // Nếu đến điểm flee rồi mà vẫn sợ -> chọn điểm Plaza khác
-            if (ctx.Movement.HasReachedTarget)
+            if (ctx.Animator == null) return;
+            
+            if (ctx.Status.isMoving)
             {
-                float randomPlazaX = Utility.GetRandomPlazaPos();
-                _fleeTarget = new Vector3(randomPlazaX, ctx.Transform.position.y, 0f);
-                ctx.Movement.FaceTarget(_fleeTarget);
-                ctx.Movement.MoveTo(_fleeTarget, ctx.Status.RunSpeed);
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
+                    ctx.Animator.Play("run");
             }
-        }
-
-        public override void FrameUpdate(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim != null && !anim.GetCurrentAnimatorStateInfo(0).IsName("run"))
-                anim.Play("run");
-        }
-
-        public override string GetDebugInfo(DenizenContext ctx)
-        {
-            return $"FearTime: {(_fearEndTime - Time.time):F1}s | FleeTarget: {_fleeTarget}";
+            else
+            {
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("idle"))
+                    ctx.Animator.Play("idle");
+            }
         }
     }
 }

@@ -1,53 +1,54 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
+using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Villager
 {
     public class VillagerRunToolState : DenizenState
     {
-        private readonly VillagerJob _job;
-
-        public VillagerRunToolState(VillagerJob job)
-        {
-            _job = job;
-        }
-
         public override void Enter(DenizenContext ctx)
         {
-            if (ctx.Status.currentTool == null)
+            if (ctx.Animator != null) 
+                ctx.Animator.Play("run");
+
+            if (ctx.Status != null && ctx.Status.currentTool != null)
+                ctx.Movement?.SetTarget(ctx.Status.currentTool.transform.position, ctx.Status.runSpeed);
+        }
+
+        public override void UpdateBehavior(DenizenContext ctx)
+        {
+            if (ctx.IsSkillCasting) return;
+            var vSoul = ctx.VillagerJob;
+            if (vSoul == null) return;
+
+            // Nếu gặp nguy hiểm thì đổi ngay sang hoảng loạn
+            if (ctx.Status.isFearPending)
             {
-                _job.TransitionToIdle();
+                vSoul.ChangeState(vSoul.FearState);
                 return;
             }
-            
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("run");
+
+            // Nếu công cụ mục tiêu đã mất hoặc bị người khác lấy
+            if (ctx.Status.currentTool == null || !ctx.Status.currentTool.gameObject.activeInHierarchy)
+            {
+                vSoul.ChangeState(vSoul.IdleState);
+                return;
+            }
+
+            // Cập nhật điểm đến theo vị trí hiện tại của công cụ (nếu nảy đi nơi khác)
+            if (ctx.Movement != null)
+            {
+                vSoul.SetMoveTarget(ctx.Status.currentTool.transform.position, ctx.Status.runSpeed);
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
-            if (ctx.Status.isInDanger)
-            {
-                _job.ChangeState(_job.FearState);
-                return;
-            }
+            if (ctx.Animator == null) return;
 
-            if (ctx.Status.currentTool == null || !ctx.Status.currentTool.gameObject.activeInHierarchy)
-            {
-                ctx.Status.currentTool = null;
-                _job.TransitionToIdle();
-                return;
-            }
-
-            ctx.Movement.FaceTarget(ctx.Status.currentTool.transform.position);
-            ctx.Movement.MoveTo(ctx.Status.currentTool.transform.position, ctx.Status.RunSpeed);
-        }
-
-        public override void FrameUpdate(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim != null && !anim.GetCurrentAnimatorStateInfo(0).IsName("run"))
-                anim.Play("run");
+            // Đảm bảo luôn chạy animation "run" trong suốt quá trình đi lấy tool
+            if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
+                ctx.Animator.Play("run");
         }
     }
 }

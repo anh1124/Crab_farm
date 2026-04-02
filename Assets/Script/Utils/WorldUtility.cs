@@ -166,6 +166,13 @@ namespace Script.Utils
             return new Vector3(randomX, townCenterY, townCenterZ);
         }
 
+        public static float GetRandomHuntingPos()
+        {
+            // Đi săn thường ở xa tường thành một chút
+            bool isRight = Random.value > 0.5f;
+            return GetRandomOutsideSafePos(isRight, 5f, 50f).x;
+        }
+
         public static Vector2 GetWallPosition(bool getLeftWall)
         {
             if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
@@ -218,7 +225,7 @@ namespace Script.Utils
             return BuildingManager.instance.currentTownCenter.gameObject;
         }
 
-        public static bool IsInKingdomSafeZone(float posX)
+        public static bool IsInKingdomSafeZone(float posX, float padding = 0f)
         {
             var wallManager = Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance;
             if (wallManager == null) return false;
@@ -227,31 +234,46 @@ namespace Script.Utils
             var tc = BuildingManager.instance?.currentTownCenter;
             if (tc != null) townCenterX = tc.transform.position.x;
 
-            // Tìm tường an toàn xa nhất bên trái
-            float leftBound = townCenterX - 0.1f;
-            for (int i = wallManager.leftWalls.Count - 1; i >= 0; i--)
+            // Mặc định vùng an toàn là Plaza nếu chưa xây được bức tường nào
+            float plazaRadius = 10f;
+            var tcBehavior = BuildingManager.instance.currentTownCenter?.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+            if (tcBehavior != null) plazaRadius = tcBehavior.plazaDistance;
+
+            // [TACTICAL BOUNDARIES] Lấy mốc an toàn từ GuardManager (Điểm chiến tuyến thực tế)
+            var gm = Script.Game.Mobs.MobsManager.GuardManager.Instance;
+            
+            float leftBound = townCenterX - plazaRadius;
+            if (gm != null && gm.currentLeftWall != null)
             {
-                var wall = wallManager.leftWalls[i];
-                if (wallManager.IsWallDefendable(wall))
-                {
-                    leftBound = wall.transform.position.x;
-                    break;
-                }
+                leftBound = gm.currentLeftWall.transform.position.x;
             }
 
-            // Tìm tường an toàn xa nhất bên phải
-            float rightBound = townCenterX + 0.1f;
-            for (int i = wallManager.rightWalls.Count - 1; i >= 0; i--)
+            float rightBound = townCenterX + plazaRadius;
+            if (gm != null && gm.currentRightWall != null)
             {
-                var wall = wallManager.rightWalls[i];
-                if (wallManager.IsWallDefendable(wall))
-                {
-                    rightBound = wall.transform.position.x;
-                    break;
-                }
+                rightBound = gm.currentRightWall.transform.position.x;
             }
 
-            return posX >= leftBound && posX <= rightBound;
+            // Thu hẹp vùng an toàn lại bằng padding, giới hạn không vượt qua TownCenter
+            float paddedLeft = Mathf.Min(townCenterX, leftBound + padding);
+            float paddedRight = Mathf.Max(townCenterX, rightBound - padding);
+
+            return posX >= paddedLeft && posX <= paddedRight;
+        }
+
+        public static bool IsInPlazaZone(float posX)
+        {
+            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null) return false;
+            float townCenterX = BuildingManager.instance.currentTownCenter.transform.position.x;
+            float radius = 10f;
+            var tcBehavior = BuildingManager.instance.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+            if (tcBehavior != null) radius = tcBehavior.plazaDistance;
+            return posX >= townCenterX - radius && posX <= townCenterX + radius;
+        }
+
+        public static bool IsInSavePos(float posX)
+        {
+            return IsInPlazaZone(posX) || IsInKingdomSafeZone(posX);
         }
     }
 }

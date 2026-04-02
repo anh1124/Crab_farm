@@ -27,40 +27,7 @@ namespace Script.Utils
         /// </summary>
         public static GameObject ResolveTargetFromTrigger(GameObject hitObject)
         {
-            if (hitObject == null) return null;
-
-            // NẾU BẢN THÂN hitObject LÀ IDamageable, KHÔNG CẦN CHUYỂN LÊN PARENT.
-            // (Ví dụ Archer tự có Collider isTrigger, không được nhảy nhầm lên DenizenContainer)
-            if (hitObject.GetComponent<IDamageable>() != null)
-            {
-                return hitObject;
-            }
-
-            // 1. Kiểm tra bằng Tag "Trigger" (Được ưu tiên nhất)
-            // LƯU Ý: Phải đảm bảo Tag "Trigger" đã được tạo trong Tag Manager của Unity để tránh log lỗi.
-            if (hitObject.CompareTag(Script.Utils.GameTags.Trigger))
-            {
-                if (hitObject.transform.parent != null)
-                    return hitObject.transform.parent.gameObject;
-            }
-
-            // 2. Kiểm tra Layer (Dự phòng)
-            int triggerLayer = Script.Utils.GameLayers.TriggerLayerIndex;
-            if (triggerLayer != -1 && hitObject.layer == triggerLayer)
-            {
-                if (hitObject.transform.parent != null)
-                    return hitObject.transform.parent.gameObject;
-            }
-
-            // 3. Kiểm tra nếu là Trigger Collider (Dự phòng - dành cho các child hitbox chưa đặt tag)
-            var col = hitObject.GetComponent<Collider2D>();
-            if (col != null && col.isTrigger)
-            {
-                if (hitObject.transform.parent != null)
-                    return hitObject.transform.parent.gameObject;
-            }
-
-            return hitObject;
+            return hitObject; 
         }
 
         /// <summary>
@@ -103,8 +70,6 @@ namespace Script.Utils
                 }
             }
 
-            Debug.Log($"[Utility.ProcessAttackHits] {instigator.name} bắt đầu xử lý HIT {count} đối tượng. Damage: {damageAmount}. Damage Ally: {allowDamageAlly}.");
-
             HashSet<GameObject> processedTargets = new HashSet<GameObject>();
 
             for (int i = 0; i < count; i++)
@@ -113,28 +78,35 @@ namespace Script.Utils
 
                 GameObject hitObject = hits[i].gameObject;
                 if (hitObject == null) continue;
-
                 if (hitObject == instigator) continue;
 
                 // Dọn mảng: Chuyển lên Parent nếu hit trúng Trigger Box
                 hitObject = ResolveTargetFromTrigger(hitObject);
-                if (hitObject == null) continue;
                 
                 // Tránh chém trúng 1 enemy 2 lần
                 if (processedTargets.Contains(hitObject)) continue;
                 processedTargets.Add(hitObject);
 
-                // TÌM IDamageable: Kiểm tra chính nó hoặc cha của nó (cho trường hợp trúng Blocker con)
-                IDamageable damageable = hitObject.GetComponentInParent<IDamageable>();
+                // TÌM IDamageable: Kiểm tra chính nó, cha nó, hoặc con của nó
+                IDamageable damageable = hitObject.GetComponentInParent<IDamageable>() ?? hitObject.GetComponentInChildren<IDamageable>();
 
                 if (damageable != null)
                 {
-                    GameObject effectiveTarget = (damageable as MonoBehaviour).gameObject;
+                    GameObject effectiveTarget = (damageable as MonoBehaviour)?.gameObject;
+                    if (effectiveTarget == null) 
+                    {
+                        continue;
+                    }
+
+                    // QUAN TRỌNG: Tránh việc tự gây dame cho chính mình khi Hitbox quét trúng Root/Child Collider của bản thân
+                    if (effectiveTarget == instigator)
+                    {
+                        continue;
+                    }
 
                     // 1. Kiểm tra sống chết (Valid/Alive)
                     if (!IsTargetValidAndAlive(effectiveTarget))
                     {
-                        Debug.Log($"[Utility.ProcessAttackHits] SKIP {effectiveTarget.name} - Not valid or already dead.");
                         continue;
                     }
 
@@ -144,7 +116,6 @@ namespace Script.Utils
                         var wallStatus = effectiveTarget.GetComponent<WallStatus>();
                         if (wallStatus != null && wallStatus.tier == 0)
                         {
-                            Debug.Log($"[Utility.ProcessAttackHits] SKIP Wall Tier 0: {effectiveTarget.name}");
                             continue;
                         }
                     }
@@ -152,9 +123,14 @@ namespace Script.Utils
                     // 3. Phân biệt phe phái (Ally/Enemy)
                     if (isEnemyAttack)
                     {
-                        // Nếu AI Enemy đánh: Ta KHÔNG skip đồng minh 
-                        // Vì danh sách IsAlly (Player/Wall/Archer) chính là kẻ thù của nó.
-                        // Lưu ý: Đồng minh của Enemy (Enemy khác) đã được lọc qua Layer Collision từ trước.
+                        // Nếu AI Enemy đánh: Chỉ được gây dame lên những thứ thuộc phe Player (AllyTags)
+                        // Bất cứ thứ gì không nằm trong AllyTags (bao gồm quái khác, portal, target rác) đều bị bỏ qua.
+                        bool isTargetPlayerAlly = IsAlly(effectiveTarget);
+                        if (!isTargetPlayerAlly)
+                        {
+                            // Debug.Log($"[Utility.ProcessAttackHits] Enemy SKIP Non-Ally target (Friendly Fire prevention): {effectiveTarget.name}");
+                            continue;
+                        }
                     }
                     else
                     {

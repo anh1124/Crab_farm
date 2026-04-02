@@ -1,131 +1,92 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
 using Script.Utils;
+using Script.Manager.WorldManager;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Archer
 {
-    public class ArcherHuntingState : DenizenState, IArcherAttackState
+    public class ArcherHuntingState : DenizenState
     {
-        private readonly ArcherJob _job;
-        private float _lastPatrolMoveTime;
-        private Vector3 _currentPatrolTarget;
-        private bool _hasPatrolTarget;
-
-        // Interval tuần tra (port từ legacy HUNTING_PATROL_INTERVAL = 5s)
-        private const float PATROL_INTERVAL = 5f;
-
-        public ArcherHuntingState(ArcherJob job)
-        {
-            _job = job;
-        }
+        private float _nextReevaluate;
+        private Vector3 _huntingTarget;
+        private bool _hasTarget;
 
         public override void Enter(DenizenContext ctx)
         {
-            _hasPatrolTarget = false;
-            _lastPatrolMoveTime = -PATROL_INTERVAL; // Trigger chọn điểm ngay lập tức
+            _nextReevaluate = Time.time + Random.Range(1f, 3f);
+            _hasTarget = false;
+            
+            // Đảm bảo dùng đúng tên anim cho Archer và kiểm tra controller
+            if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
+                ctx.Animator.Play("archerIdle");
+                
+            ctx.Movement?.Stop();
+        }
+
+        public override void UpdateBehavior(DenizenContext ctx)
+        {
+            var aSoul = ctx.ArcherJob;
+            if (aSoul == null) return;
+
+            // Đêm xuống → phòng thủ
+            if (ctx.TimeManager != null && !ctx.TimeManager.IsDaytime)
+            {
+                aSoul.ChangeState(aSoul.ReturnToBaseState);
+                return;
+            }
+
+            // Phát hiện địch → kiểm tra vùng an toàn trước khi attack
+            if (ctx.Status.currentTarget != null)
+            {
+                if (aSoul.CanAttackFromHere())
+                    aSoul.ChangeState(aSoul.AttackState);
+                else
+                    aSoul.ChangeState(aSoul.ReturnToBaseState); // Về nơi an toàn trước
+                return;
+            }
+
+            // Đi săn lang thang trong vùng hợp lệ
+            if (!_hasTarget && Time.time >= _nextReevaluate)
+            {
+                // Thay vì random cả 2 bên (dễ chạy xuyên vương quốc), hãy săn ở hướng hiện tại của Archer
+                bool huntOnRight = ctx.Transform.position.x > 0;
+                Vector3 huntPos = Script.Utility.GetRandomOutsideSafePos(huntOnRight, 5f, 35f);
+                
+                _huntingTarget = new Vector3(huntPos.x, ctx.Transform.position.y, 0f);
+                _hasTarget = true;
+                aSoul.SetMoveTarget(_huntingTarget);
+                
+                if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
+                    ctx.Animator.Play("archerMove");
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
-            // --- Combat: Khi có target dừng lại ---
-            if (ctx.Status.currentTarget != null)
+            if (ctx.Animator == null || ctx.Animator.runtimeAnimatorController == null) return;
+
+            if (_hasTarget)
             {
-                if (ctx.Movement.IsMoving)
-                    ctx.Movement.StopMovement();
-                ctx.Movement.FaceTarget(ctx.Status.currentTarget.transform.position);
-                return;
-            }
-
-            // --- Patrol: Tuần tra khi không có target ---
-            // Chọn điểm patrol mới khi:
-            //   1. Chưa có điểm nào HOẶC
-            //   2. Đã đến nơi HOẶC
-            //   3. Hết interval (giống legacy HUNTING_PATROL_INTERVAL)
-            bool needNewTarget = !_hasPatrolTarget
-                || ctx.Movement.HasReachedTarget
-                || (Time.time - _lastPatrolMoveTime > PATROL_INTERVAL);
-
-            if (needNewTarget)
-            {
-                _currentPatrolTarget = CalculateHuntingPatrolPosition(ctx);
-                _hasPatrolTarget = true;
-                _lastPatrolMoveTime = Time.time;
-
-                if (Vector3.Distance(ctx.Transform.position, _currentPatrolTarget) > DenizenMovement.REACHED_THRESHOLD)
+                if (ctx.ArcherJob.HasReachedPosition(_huntingTarget))
                 {
-                    ctx.Movement.FaceTarget(_currentPatrolTarget);
-                    ctx.Movement.MoveTo(_currentPatrolTarget, ctx.Status.WalkSpeed);
+                    _hasTarget = false;
+                    _nextReevaluate = Time.time + Random.Range(3f, 8f);
+                    ctx.Movement?.Stop();
+                    ctx.Animator.Play("archerIdle");
                 }
-            }
-        }
-
-        public override void FrameUpdate(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim == null) return;
-
-            // Nếu có target và cooldown xong → bắn
-            if (ctx.Status.currentTarget != null)
-            {
-                if (ctx.ArcherShooting != null && ctx.ArcherShooting.CanShoot(ctx.Status.AttackCooldown))
+                else
                 {
-                    ctx.ArcherShooting.StartShooting();
-                    anim.Play("archerDraw");
+                    // Luôn đảm bảo chơi archerMove khi đang di chuyển săn
+                    if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("archerMove"))
+                        ctx.Animator.Play("archerMove");
                 }
-            }
-
-            // Tránh đè animation khi đang bắn (Draw/Release)
-            if ((ctx.ArcherShooting != null && ctx.ArcherShooting.IsAttacking) || 
-                anim.GetCurrentAnimatorStateInfo(0).IsName("archerRelease") || 
-                anim.GetCurrentAnimatorStateInfo(0).IsName("archerDraw"))
-                return;
-
-            // Không có target: cập nhật animation di chuyển
-            if (ctx.Movement.IsMoving)
-            {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("archerMove"))
-                    anim.Play("archerMove");
             }
             else
             {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
-                    anim.Play("archerIdle");
+                // Luôn đảm bảo chơi archerIdle khi đứng yên
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
+                    ctx.Animator.Play("archerIdle");
             }
-        }
-
-        // Animation event: Draw xong → Release
-        public void OnDrawComplete(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("archerRelease");
-        }
-
-        // Animation event: Tên bay → Bắn
-        public void OnArrowRelease(DenizenContext ctx)
-        {
-            if (ctx.Status.currentTarget != null && ctx.ArcherShooting != null)
-            {
-                ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);
-            }
-        }
-
-        private Vector3 CalculateHuntingPatrolPosition(DenizenContext ctx)
-        {
-            // Dùng Utility.GetRandomOutsideSafePos để tuần tra ngoài tường xa nhất
-            return Utility.GetRandomOutsideSafePos(
-                !ctx.Status.isLeftFlank, // isRight
-                5f,                      // min distance from wall
-                15f,                     // max distance from wall
-                30f                      // fallback if no wall
-            );
-        }
-
-        public override string GetDebugInfo(DenizenContext ctx)
-        {
-            return $"Flank: {(ctx.Status.isLeftFlank ? "Left" : "Right")} | " +
-                   $"NextPatrolIn: {(PATROL_INTERVAL - (Time.time - _lastPatrolMoveTime)):F1}s | " +
-                   $"HasTarget: {ctx.Status.currentTarget != null} | " +
-                   $"IsMoving: {ctx.Movement.IsMoving} | PatrolTarget: {_currentPatrolTarget}";
         }
     }
 }

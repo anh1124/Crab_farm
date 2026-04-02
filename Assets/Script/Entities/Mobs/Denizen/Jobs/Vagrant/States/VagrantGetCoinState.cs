@@ -1,46 +1,44 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
+using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 {
     public class VagrantGetCoinState : DenizenState
     {
-        private readonly VagrantJob _job;
-
-        public VagrantGetCoinState(VagrantJob job)
-        {
-            _job = job;
-        }
-
         public override void Enter(DenizenContext ctx)
         {
-            if (ctx.Status.coinTarget == null)
+            if (ctx.Animator != null) 
+                ctx.Animator.Play("run");
+
+            if (ctx.Status != null && ctx.Status.coinTarget != null)
+                ctx.Movement?.SetTarget(ctx.Status.coinTarget.transform.position, ctx.Status.runSpeed);
+        }
+
+        public override void UpdateBehavior(DenizenContext ctx)
+        {
+            var vaSoul = ctx.VagrantJob;
+            if (vaSoul == null) return;
+
+            // Nếu đồng xu đã bị người khác lượm hoặc biến mất
+            if (ctx.Status.coinTarget == null || !ctx.Status.coinTarget.activeInHierarchy)
             {
-                _job.ChangeState(_job.IdleState);
+                vaSoul.ChangeState(vaSoul.IdleState);
                 return;
             }
-            
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("run");
+
+            // Liên tục cập nhật mục tiêu theo vị trí đồng xu (để lượm chuẩn xác)
+            if (ctx.Movement != null)
+                ctx.Movement.SetTarget(ctx.Status.coinTarget.transform.position, ctx.Status.runSpeed);
         }
 
         public override void Update(DenizenContext ctx)
         {
-            // State hiện tại chỉ thuần túy thực thi di chuyển theo lệnh từ Job
-            if (ctx.Status.coinTarget != null)
-            {
-                ctx.Movement.FaceTarget(ctx.Status.coinTarget.transform.position);
-                ctx.Movement.MoveTo(ctx.Status.coinTarget.transform.position, ctx.Status.RunSpeed);
-            }
-        }
+            if (ctx.Animator == null) return;
 
-        public override void FrameUpdate(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim != null && !anim.GetCurrentAnimatorStateInfo(0).IsName("run"))
-            {
-                anim.Play("run");
-            }
+            // Đảm bảo luôn chạy animation "run" trong lúc dí theo coin
+            if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
+                ctx.Animator.Play("run");
         }
     }
 }

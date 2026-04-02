@@ -11,22 +11,44 @@ using Script.Game.Mobs.MobsManager;
 using Script.Game.Mobs.Denizen.Jobs.Vagrant;
 using Script.Game.Mobs.Denizen.Jobs.Villager;
 using Script.Game.Mobs.Denizen.Jobs.Archer;
+using Script.Data_Model.Interfaces;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
-    /// <summary>
-    /// DenizenContext: Component chứa tất cả các tham chiếu được cache sẵn.
-    /// Giúp quản lý tham chiếu tập trung tại Inspector và tối ưu hiệu năng Runtime.
-    /// </summary>
-    public class DenizenContext : MonoBehaviour
+    //[không được xóa dòng này]: script này chỉ được lưu context
+    public class DenizenContext : MonoBehaviour, IItemHandle
     {
+        #region IItemHandle Implementation
+        /// <summary>
+        /// Bridge cho LootPickupTrigger: Luôn chuyển quyền xử lý cho Job hiện tại.
+        /// </summary>
+        public bool HandleItem(GameObject item)
+        {
+            var job = CurrentJob;
+            if (job != null && job.enabled)
+                return job.HandleItem(item);
+            return false;
+        }
+        #endregion
+
         #region Core Components — Luôn có trên mọi Denizen
         [Header("Core Components")]
         public DenizenStatus Status;
-        public DenizenCore Core;
-        public DenizenMovement Movement;
+        public DenizenRoleController RoleController;
         public Animator Animator;
         public SpriteRenderer SpriteRenderer;
+        public DenizenMovement Movement;
+
+        public DenizenJob CurrentJob
+        {
+            get
+            {
+                if (VagrantJob != null && VagrantJob.enabled) return VagrantJob;
+                if (VillagerJob != null && VillagerJob.enabled) return VillagerJob;
+                if (ArcherJob != null && ArcherJob.enabled) return ArcherJob;
+                return null;
+            }
+        }
 
         // Shortcuts để tương thích với code cũ/States
         public GameObject GameObject => gameObject;
@@ -56,6 +78,11 @@ namespace Script.Game.Mobs.Denizen.Core
         public NPCUpdateManager NPCUpdateManager;
         #endregion
 
+        [Header("Skills & Casting")]
+        public Script.Game.PlayerCharacter.Skills.SkillManager SkillManager;
+        public bool IsSkillCasting => Status != null && Status.isSkillCasting;
+        public bool SkillAllowsMovement => Status != null && Status.skillAllowsMovement;
+
         // Cấu trúc cũ để không break code bên ngoài: IsAlive property
         public bool IsAlive => Status != null && Status.IsAlive;
 
@@ -68,11 +95,12 @@ namespace Script.Game.Mobs.Denizen.Core
         {
             // Root components
             Status = GetComponent<DenizenStatus>();
-            Core = GetComponent<DenizenCore>();
-            Movement = GetComponent<DenizenMovement>();
+            RoleController = GetComponent<DenizenRoleController>();
             Animator = GetComponent<Animator>();
             SpriteRenderer = GetComponent<SpriteRenderer>();
             CoinSharing = GetComponent<DenizenCoinSharing>();
+            Movement = GetComponent<DenizenMovement>();
+            SkillManager = GetComponent<Script.Game.PlayerCharacter.Skills.SkillManager>();
 
             // Child components
             RayCaster = GetComponentInChildren<RayCastHelper>(true);
@@ -96,12 +124,32 @@ namespace Script.Game.Mobs.Denizen.Core
             AutoFindReferences();
         }
 
+        public void ResetDetectors()
+        {
+            if (RayCaster != null)    RayCaster.IsActive = false;
+            if (CircleDetect != null) CircleDetect.IsActive = false;
+        }
+
         private void Awake()
         {
-            // Nếu chạy Runtime mà chưa gán Manager thì gán lại lần cuối
-            if (GuardManager == null) GuardManager = GuardManager.Instance;
-            if (TimeManager == null) TimeManager = GameTimeManager.Instance;
-            if (WallManager == null) WallManager = WallAndStumpManager.Instance;
+            // Fallback: tự tìm nếu chưa gán qua Inspector
+            if (RoleController == null) RoleController = GetComponent<DenizenRoleController>();
+            
+            // Ưu tiên tìm Animator ở child (Skin/Body) theo cấu trúc prefab chuẩn
+            if (Animator == null)       Animator = GetComponentInChildren<Animator>(true);
+            if (SpriteRenderer == null) SpriteRenderer = GetComponentInChildren<SpriteRenderer>(true);
+            
+            if (Movement == null)       Movement = GetComponent<DenizenMovement>();
+            if (RayCaster == null)      RayCaster = GetComponentInChildren<RayCastHelper>(true);
+            if (CircleDetect == null)   CircleDetect = GetComponentInChildren<CircleDetectHelper>(true);
+            if (VagrantJob == null)     VagrantJob = GetComponentInChildren<VagrantJob>(true);
+            if (VillagerJob == null)    VillagerJob = GetComponentInChildren<VillagerJob>(true);
+            if (ArcherJob == null)      ArcherJob = GetComponentInChildren<ArcherJob>(true);
+
+            // Managers
+            if (GuardManager == null)    GuardManager = GuardManager.Instance;
+            if (TimeManager == null)     TimeManager = GameTimeManager.Instance;
+            if (WallManager == null)     WallManager = WallAndStumpManager.Instance;
             if (NPCUpdateManager == null) NPCUpdateManager = NPCUpdateManager.Instance;
         }
     }

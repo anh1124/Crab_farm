@@ -1,88 +1,80 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
+using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 {
     public class VagrantIdleState : DenizenState
     {
-        private readonly VagrantJob _job;
-        private float _nextRandomWalkTime;
-
-        public VagrantIdleState(VagrantJob job)
-        {
-            _job = job;
-        }
+        private float _nextWalkTime;
+        private Vector3 _target;
+        private bool _hasTarget;
 
         public override void Enter(DenizenContext ctx)
         {
-            ctx.Movement.StopMovement();
-            _nextRandomWalkTime = Time.time + Random.Range(2f, 5f);
+            _nextWalkTime = Time.time + Random.Range(2f, 5f);
+            _hasTarget = false;
+            
+            if (ctx.Animator != null) 
+                ctx.Animator.Play("idle");
 
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("idle");
+            if (ctx.Movement != null)
+                ctx.Movement.Stop();
+        }
+
+        public override void UpdateBehavior(DenizenContext ctx)
+        {
+            var vaSoul = ctx.VagrantJob;
+            if (vaSoul == null) return;
+
+            // Nếu gặp nguy hiểm hoặc kích hoạt sợ hãi
+            if (ctx.Status.isFearPending)
+            {
+                vaSoul.ChangeState(vaSoul.FearState);
+                return;
+            }
+
+            // Nếu thấy đồng xu xung quanh
+            if (ctx.Status.coinTarget != null)
+            {
+                vaSoul.ChangeState(vaSoul.GetCoinState);
+                return;
+            }
+
+            // Logic đi dạo thẩn thờ
+            if (!_hasTarget && Time.time >= _nextWalkTime)
+            {
+                _target = new Vector3(Utility.GetRandomOutsideSafePos(Random.value > 0.5f, 10f, 25f, 40f).x, ctx.Transform.position.y, 0f);
+                _hasTarget = true;
+                vaSoul.SetMoveTarget(_target);
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
-            // 1. Check Fear Pending
-            if (ctx.Status.isFearPending)
-            {
-                ctx.Status.isFearPending = false;
-                _job.ChangeState(_job.FearState);
-                return;
-            }
+            if (ctx.Animator == null) return;
 
-            // 2. Check Coin Target
-            if (ctx.Status.coinTarget != null)
+            if (_hasTarget)
             {
-                _job.ChangeState(_job.GetCoinState);
-                return;
-            }
-
-            // 3. Random Walk / Flip logic (port từ legacy VagrantBehavior)
-            if (!ctx.Movement.IsMoving && Time.time >= _nextRandomWalkTime)
-            {
-                float maxDist = ctx.Status.maxIdleWalkDistance > 0 ? ctx.Status.maxIdleWalkDistance : 3f;
-
-                // 70% đi lang thang quanh startPosition - 30% lật mặt đứng yên (legacy RandomFlipRoutine)
-                if (Random.value < 0.7f)
+                if (ctx.VagrantJob.HasReachedPosition(_target))
                 {
-                    float randomOffset = Random.Range(-maxDist, maxDist);
-                    float targetX = Mathf.Clamp(
-                        ctx.Status.startPosition.x + randomOffset,
-                        ctx.Status.startPosition.x - maxDist,
-                        ctx.Status.startPosition.x + maxDist
-                    );
-                    Vector3 target = new Vector3(targetX, ctx.Transform.position.y, ctx.Transform.position.z);
-                    ctx.Movement.FaceTarget(target);
-                    ctx.Movement.MoveTo(target, ctx.Status.WalkSpeed);
-                    _nextRandomWalkTime = Time.time + Random.Range(4f, 8f);
+                    _hasTarget = false;
+                    _nextWalkTime = Time.time + Random.Range(5f, 15f);
+                    ctx.Movement?.Stop();
+                    ctx.Animator.Play("idle");
                 }
                 else
                 {
-                    // Đứng yên - lật mặt ngẫu nhiên
-                    Vector3 scale = ctx.Transform.localScale;
-                    scale.x *= -1;
-                    ctx.Transform.localScale = scale;
-                    _nextRandomWalkTime = Time.time + Random.Range(2f, 5f);
+                    // Đảm bảo luôn play walk khi đang di chuyển
+                    if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("walk"))
+                        ctx.Animator.Play("walk");
                 }
-            }
-        }
-
-        public override void FrameUpdate(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim == null) return;
-
-            if (ctx.Movement.IsMoving)
-            {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("walk"))
-                    anim.Play("walk");
             }
             else
             {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("idle"))
-                    anim.Play("idle");
+                // Đảm bảo luôn play idle khi đứng yên
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("idle"))
+                    ctx.Animator.Play("idle");
             }
         }
     }

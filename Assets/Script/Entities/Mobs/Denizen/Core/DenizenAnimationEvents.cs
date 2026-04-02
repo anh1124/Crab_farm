@@ -5,11 +5,14 @@ namespace Script.Game.Mobs.Denizen.Core
 {
     public class DenizenAnimationEvents : MonoBehaviour
     {
-        private DenizenCore _core;
+        //[không được xóa dòng này]: script này chỉ lưu các event được kéo vào anim
+        [Header("Manual Reference (Kéo tay)")]
+        public DenizenContext context;
 
         private void Awake()
         {
-            _core = GetComponent<DenizenCore>();
+            // [Safety Fallback] Nếu user quên kéo tay, tự tìm ở Parent
+            if (context == null) context = GetComponentInParent<DenizenContext>();
         }
 
         // 1. Archer Events
@@ -17,17 +20,25 @@ namespace Script.Game.Mobs.Denizen.Core
         
         public void OnDrawComplete()
         {
-            if (_core != null)
+            if (context != null && context.CurrentJob != null)
             {
-                _core.OnAnimationEvent("DrawComplete");
+                context.CurrentJob.HandleAnimationEvent("DrawComplete");
+            }
+            else if (context == null)
+            {
+                Debug.LogError($"[DenizenAnimationEvents] {gameObject.name} THIẾU Context! Hãy kéo Context vào Inspector.");
             }
         }
 
         public void OnArrowRelease()
         {
-            if (_core != null)
+            if (context != null && context.CurrentJob != null)
             {
-                _core.OnAnimationEvent("ArrowRelease");
+                context.CurrentJob.HandleAnimationEvent("ArrowRelease");
+            }
+            else if (context == null)
+            {
+                Debug.LogError($"[DenizenAnimationEvents] {gameObject.name} THIẾU Context! Hãy kéo Context vào Inspector.");
             }
         }
     }

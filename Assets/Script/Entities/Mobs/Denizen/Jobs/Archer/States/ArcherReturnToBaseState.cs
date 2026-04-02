@@ -1,107 +1,62 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
-using Script.Game.Mobs.MobsManager;
+using Script.Utils;
+using Script.Manager.WorldManager;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Archer
 {
-    public class ArcherReturnToBaseState : DenizenState, IArcherAttackState
+    public class ArcherReturnToBaseState : DenizenState
     {
-        private readonly ArcherJob _job;
-
-        public ArcherReturnToBaseState(ArcherJob job)
-        {
-            _job = job;
-        }
+        private Vector3 _basePos;
 
         public override void Enter(DenizenContext ctx)
         {
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("archerMove");
+            // [SMART POSITIONING] — Tìm vị trí an toàn nhất để điều chỉnh
+            // Ưu tiên 1: Vị trí Slot phòng thủ được giao
+            if (ctx.GuardManager != null)
+            {
+                _basePos = ctx.GuardManager.GetDefensePositionForArcher(ctx.GameObject);
+            }
+            else
+            {
+                // Ưu tiên 2: Plaza trung tâm
+                GameObject townCenter = WorldUtility.GetTownCenter();
+                float tx = townCenter != null ? townCenter.transform.position.x : 0f;
+                _basePos = new Vector3(tx, ctx.Transform.position.y, 0f);
+            }
+            
+            if (ctx.Animator != null) ctx.Animator.Play("archerMove");
+            if (ctx.Movement != null) ctx.Movement.SetTarget(_basePos, ctx.Status.runSpeed);
+        }
+
+        public override void UpdateBehavior(DenizenContext ctx)
+        {
+            var aSoul = ctx.ArcherJob;
+            if (aSoul == null) return;
+
+            // CHỈ kiểm tra vật lý — đã đến đúng điểm slot chưa?
+            // _basePos = GuardManager.GetDefensePositionForArcher() đã tính sẵn offset đúng.
+            // KHÔNG dùng CanAttackFromHere() ở đây: nó kiểm tra ranh giới mềm
+            // và bị floating-point lừa khi đứng chính xác tại boundary → gây loop vô tận.
+            if (aSoul.HasReachedPosition(_basePos, 0.4f))
+            {
+                aSoul.ExecuteDefensiveOrder();
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
-            // Kiểm tra có được phép bắn không
-            bool canShoot = ctx.Status.currentTarget != null && Utility.IsInKingdomSafeZone(ctx.Transform.position.x);
+            if (ctx.Animator == null || ctx.Animator.runtimeAnimatorController == null) return;
 
-            if (canShoot)
+            if (ctx.Status.isMoving)
             {
-                // Dừng lại và quay về phía enemy
-                ctx.Movement.StopMovement();
-                ctx.Movement.FaceTarget(ctx.Status.currentTarget.transform.position);
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("archerMove"))
+                    ctx.Animator.Play("archerMove");
             }
             else
             {
-                // Tiếp tục di chuyển về base
-                Vector3 targetPos = GetBasePosition(ctx);
-                ctx.Movement.FaceTarget(targetPos);
-                ctx.Movement.MoveTo(targetPos, ctx.Status.RunSpeed);
-
-                if (ctx.Movement.HasReachedTarget)
-                {
-                    _job.ChangeState(_job.HoldWallState);
-                }
-            }
-        }
-
-        public override void FrameUpdate(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim == null) return;
-
-            bool canShoot = ctx.Status.currentTarget != null && Utility.IsInKingdomSafeZone(ctx.Transform.position.x);
-
-            if (canShoot)
-            {
-                if (ctx.ArcherShooting != null && ctx.ArcherShooting.CanShoot(ctx.Status.AttackCooldown))
-                {
-                    ctx.ArcherShooting.StartShooting();
-                    anim.Play("archerDraw");
-                }
-            }
-
-            // Không ghi đè animation khi đang bắn
-            if ((ctx.ArcherShooting != null && ctx.ArcherShooting.IsAttacking) || 
-                anim.GetCurrentAnimatorStateInfo(0).IsName("archerRelease") || 
-                anim.GetCurrentAnimatorStateInfo(0).IsName("archerDraw"))
-                return;
-
-            if (ctx.Movement.IsMoving)
-            {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("archerMove"))
-                    anim.Play("archerMove");
-            }
-            else
-            {
-                if (!anim.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
-                    anim.Play("archerIdle");
-            }
-        }
-
-        private Vector3 GetBasePosition(DenizenContext ctx)
-        {
-            return GuardManager.Instance != null 
-                ? GuardManager.Instance.Squad.GetDefensePositionForArcher(ctx.GameObject) 
-                : ctx.Transform.position;
-        }
-
-        public override string GetDebugInfo(DenizenContext ctx)
-        {
-            Vector3 basePos = GetBasePosition(ctx);
-            return $"BasePos: {basePos} | DistToBase: {Vector3.Distance(ctx.Transform.position, basePos):F1}m";
-        }
-
-        public void OnDrawComplete(DenizenContext ctx)
-        {
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("archerRelease");
-        }
-
-        public void OnArrowRelease(DenizenContext ctx)
-        {
-            if (ctx.Status.currentTarget != null && ctx.ArcherShooting != null)
-            {
-                ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
+                    ctx.Animator.Play("archerIdle");
             }
         }
     }

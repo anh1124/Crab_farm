@@ -1,6 +1,7 @@
 using UnityEngine;
 using Script.Data_Model; // For PrefabData
 using Script.Utils; // For DamageHandler and CombatUtility
+using Script.Interfaces; // For IDamageable
 
 namespace Script.Game.Combat
 {
@@ -9,8 +10,21 @@ namespace Script.Game.Combat
     public class ArrowController : MonoBehaviour
     {
         /*
-        chú ý , arrow sticky với mọi thứ trong physic2d
-        */
+         * =========================================================================
+         * QUY TẮC VẬN HÀNH MŨI TÊN (ARROW COMBAT DISCIPLINE):
+         * 1. GÂY SÁT THƯƠNG KHU TRÚ (LOCALITY DAMAGE):
+         *    - Chỉ gây dame nếu IDamageable hoặc DenizenStatus nằm TRÊN CÙNG GameObject với Collider.
+         *    - KHÔNG tự động tìm lên Root/Parent (Để tránh bắn nhầm vào các bộ phận không máu).
+         * 
+         * 2. BỘ LỌC TÁC CHIẾN (COMBAT FILTERING):
+         *    - CHỈ gây dame nếu Tag của đối tượng nằm trong danh sách 'ArcherTargets' (Enemy, Animal, v.v.).
+         *    - TUYỆT ĐỐI không gây dame lên đồng minh (IsAlly == true), ví dụ: Wall, Player.
+         * 
+         * 3. CƠ CHẾ CẮM TÊN (STICKY PHYSICS):
+         *    - CHỈ cắm tên (Sticky) khi xảy ra va chạm vật lý thực sự (Collision physic2d).
+         *    - KHÔNG cắm tên khi đi xuyên qua các vùng Trigger (Vùng nhận diện, vùng kiểm tra).
+         * =========================================================================
+         */
         #region References
         private Rigidbody2D rb;
         private Collider2D col; // Added Collider reference
@@ -30,8 +44,6 @@ namespace Script.Game.Combat
         [SerializeField] private bool enableSticking = true;
         [SerializeField] private float stickImpactOffset = 0.4f; // Distance to pull back from impact point
         
-        // [SerializeField] private LayerMask stickableLayers;  // Removed
-        
         [Header("Lifetime")]
         [SerializeField] private float stuckLifetime = 3f;  // Lifetime AFTER stuck
         [SerializeField] private float maxAirTime = 6f;     // Fallback if flies too long
@@ -43,8 +55,7 @@ namespace Script.Game.Combat
         private bool isStuck = false;
         private float lifeTimer = 0f;           
         private float timeSinceSpawn = 0f;      
-        private float deactivateThreshold = 0.5f;
-
+        
         // Stick tracking (parentless)
         private Transform stuckTarget;
         private Vector3 stuckLocalPosition;
@@ -130,54 +141,38 @@ namespace Script.Game.Combat
             }
         }
         
-        private void FixedUpdate()
-        {
-            if (!isActive) return;
-            
-            if (rb.velocity.magnitude < deactivateThreshold)
-            {
-                // DeactivatePhysics(); // Too sensitive? Left for air drag stops
-            }
-        }
         
         private void OnCollisionEnter2D(Collision2D collision)
         {
             if (!isActive) return;
-            
-            // Debug collision
-            if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
-                Debug.Log($"[Arrow] Collision: {collision.gameObject.name} | Tag: {collision.gameObject.tag} | Layer: {LayerMask.LayerToName(collision.gameObject.layer)}");
-
-            HandleHit(collision.gameObject, collision);
+            // VA CHẠM VẬT LÝ: Có cả gây dame và cắm tên
+            HandleHit(collision.gameObject, isPhysicalHit: true, collision: collision, collider: null);
         }
 
         private void OnTriggerEnter2D(Collider2D collider)
         {
             if (!isActive) return;
-
-            // Debug trigger
-            if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
-                Debug.Log($"[Arrow] Trigger: {collider.gameObject.name} | Tag: {collider.gameObject.tag} | Layer: {LayerMask.LayerToName(collider.gameObject.layer)}");
-
-            HandleHit(collider.gameObject, null, collider);
+            // TRIGGER: Chỉ gây dame, KHÔNG cắm tên (Sticky)
+            HandleHit(collider.gameObject, isPhysicalHit: false, collision: null, collider: collider);
         }
 
-        private void HandleHit(GameObject hitObject, Collision2D collision = null, Collider2D collider = null)
+        private void HandleHit(GameObject hitObject, bool isPhysicalHit, Collision2D collision = null, Collider2D collider = null)
         {
             if (!isActive) return;
 
-            // Stop immediately
+            // Dừng ngay lập tức
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
 
-            // Damage logic (Only once)
+            // 1. LUỒNG GÂY SÁT THƯƠNG (Chỉ thực hiện 1 lần)
             if (!hasDealtDamage)
             {
                 TryDealDamage(hitObject);
             }
 
-            // Stick logic
-            if (enableSticking && !isStuck)
+            // 2. LUỒNG CẮM TÊN (STICKY)
+            // CHÚ Ý: Chỉ Sticky nếu là va chạm vật lý (Collision), không Sticky lên Trigger
+            if (enableSticking && !isStuck && isPhysicalHit)
             {
                 if (collision != null) TryStickToTarget(collision);
                 else if (collider != null) TryStickToTrigger(collider);
@@ -216,24 +211,22 @@ namespace Script.Game.Combat
 
             DeactivatePhysics();
         }
-        
+
         private void SetInitialRotation(Vector2 velocity)
         {
             float angle = Mathf.Atan2(velocity.y, velocity.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0, 0, angle - spriteBaseAngle);
-            spriteRenderer.flipY = false; // Reset flip
+            spriteRenderer.flipY = false;
         }
-        
+
         private void UpdateRotation()
         {
             float angle = Mathf.Atan2(rb.velocity.y, rb.velocity.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0, 0, angle - spriteBaseAngle);
-            // No flipY needed for rotation-based projectile
         }
-        
+
         private void DeactivatePhysics()
         {
-            // Debug.Log("[Arrow] DeactivatePhysics called. Stopping and disabling collider.");
             isActive = false;
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
@@ -242,30 +235,32 @@ namespace Script.Game.Combat
             
             if (col != null) col.enabled = false; // Ensure collider is ALWAYS disabled
         }
-        
-        private void TryDealDamage(GameObject target)
+
+        private void TryDealDamage(GameObject hitObject)
         {
-            if (target == null) return;
+            if (hitObject == null) return;
 
-            // Arrow tấn công trực tiếp vào đối tượng va chạm (không tìm parent cho trigger/blocker nữa)
-            // Việc Resolve (nếu cần) sẽ để DamageHandler tự quyết định dựa trên tính chất đối tượng.
-            GameObject effectiveTarget = target;
+            // QUY TẮC: Chỉ gây dame nếu IDamageable/DenizenStatus nằm CÙNG GameObject với Collider (không Resolve lên cha)
+            var damageable = hitObject.GetComponent<IDamageable>();
+            var denizenStatus = hitObject.GetComponent<Script.Data_Model.Status.DenizenStatus>();
+            
+            if (damageable == null && denizenStatus == null) return;
 
-            // 1. Check Ally Tags (Friendly Fire Prevention)
-            if (PrefabData.Instance != null && !PrefabData.Instance.allowAllyDamage)
+            // KIỂM TRA TAG: Đối tượng phải thuộc danh sách mục tiêu săn bắn hợp lệ
+            string targetTag = hitObject.tag;
+            bool isValidCombatTarget = Script.Utils.TargetLists.ArcherTargets.Contains(targetTag);
+            
+            // CHỐNG BẮN NHẦM: Không gây dame lên đồng minh (Wall, Player, Archer...)
+            bool isAlly = Script.Utils.CombatUtility.IsAlly(hitObject);
+
+            if (isValidCombatTarget && !isAlly)
             {
-                if (CombatUtility.IsAlly(effectiveTarget))
+                if (DamageHandler.ApplyDamage(hitObject, (float)damage, instigator))
                 {
-                    return; // Ignore allies
+                    hasDealtDamage = true;
+                    if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
+                        Debug.Log($"[Arrow] Dealt {damage} damage to {hitObject.name} (Tag: {targetTag})");
                 }
-            }
-
-            // 2. Deal Damage via DamageHandler
-            if (DamageHandler.ApplyDamage(effectiveTarget, damage, instigator))
-            {
-                hasDealtDamage = true;
-                if (PrefabData.Instance != null && PrefabData.Instance.debugArrow)
-                    Debug.Log($"[Arrow] Dealt {damage} damage to {effectiveTarget.name} (Tag: {effectiveTarget.tag}) via DamageHandler");
             }
         }
         

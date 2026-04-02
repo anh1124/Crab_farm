@@ -5,27 +5,27 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 {
     public class ArcherDropCoinState : DenizenState
     {
-        private readonly ArcherJob _job;
-
-        public ArcherDropCoinState(ArcherJob job)
-        {
-            _job = job;
-        }
-
         public override void Enter(DenizenContext ctx)
         {
-            ctx.Movement.StopMovement();
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("archerIdle");
+            if (ctx.Animator != null) ctx.Animator.Play("archerIdle");
+            ctx.Status.isMovementAllowed = false;
         }
 
-        public override void Update(DenizenContext ctx)
+        public override void UpdateBehavior(DenizenContext ctx)
         {
-            // Kiểm tra Player còn trong range không
+            if (ctx.IsSkillCasting) return;
+
+            // 1. CHECK DANGER
+            if (ctx.Status.isInDanger)
+            {
+                ReturnToNormalBehavior(ctx);
+                return;
+            }
+
+            // 2. CHECK PLAYER RANGE
             bool playerInRange = IsPlayerInRange(ctx);
             bool canDrop = ctx.CoinSharing != null && ctx.CoinSharing.CanDropCoin();
             
-            // Nếu không thể share coin nữa hoặc player ra khỏi range
             if (!playerInRange || !canDrop)
             {
                 ReturnToNormalBehavior(ctx);
@@ -33,13 +33,11 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
         }
 
-        public override void FrameUpdate(DenizenContext ctx)
+        public override void Update(DenizenContext ctx)
         {
-            Animator anim = _job.GetAnimator();
-            if (anim != null && !anim.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
-                anim.Play("archerIdle");
+            if (ctx.Animator != null && !ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
+                ctx.Animator.Play("archerIdle");
 
-            // Chạy Logic thả coin ở 60Hz (FrameUpdate) để mượt mà nhất
             if (ctx.CoinSharing != null && ctx.CoinSharing.CanDropCoin())
             {
                 ctx.CoinSharing.TryDropCoin();
@@ -48,25 +46,32 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         private void ReturnToNormalBehavior(DenizenContext ctx)
         {
+             var archer = ctx.CurrentJob as ArcherJob;
+             if (archer == null) return;
+
              if (ctx.GuardManager != null && ctx.GuardManager.Alarm.isEnemyAttack)
              {
-                 _job.ChangeState(_job.ReturnToBaseState);
+                 archer.ChangeState(archer.ReturnToBaseState);
              }
              else if (ctx.TimeManager != null && ctx.TimeManager.IsDaytime)
              {
-                 _job.ChangeState(_job.HuntingState);
+                 archer.ChangeState(archer.HuntingState);
              }
              else
              {
-                 _job.ChangeState(_job.HoldWallState);
+                 archer.ChangeState(archer.HoldWallState);
              }
+        }
+
+        public override void Exit(DenizenContext ctx)
+        {
+            ctx.Status.isMovementAllowed = true;
         }
 
         private bool IsPlayerInRange(DenizenContext ctx)
         {
             if (ctx.CircleDetect != null)
             {
-                // GetListDetectedObjects() scan mới nhất (không dùng GetDetectedObjects() = cache cũ)
                 foreach (var go in ctx.CircleDetect.GetListDetectedObjects())
                 {
                     if (go == null) continue;
@@ -74,11 +79,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 }
             }
             return false;
-        }
-
-        public override string GetDebugInfo(DenizenContext ctx)
-        {
-            return $"CanDrop: {(ctx.CoinSharing != null ? ctx.CoinSharing.CanDropCoin().ToString() : "No Sharing")}";
         }
     }
 }

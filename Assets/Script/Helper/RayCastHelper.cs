@@ -21,7 +21,17 @@ public class RayCastHelper : MonoBehaviour
     public event Action<List<GameObject>> OnDetectedObjectsChanged;
 
     [Header("Behavior Settings")]
-    public bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
+    [SerializeField] private bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
+    public bool IsActive
+    {
+        get => isActive;
+        set 
+        {
+            isActive = value;
+            isDrawRay = value;
+            isShowGizmoUser = value;
+        }
+    }
     
 
     // Thay LayerMask bằng List<string> để chứa các tag cần kiểm tra

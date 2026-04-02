@@ -19,7 +19,6 @@ namespace Script.Game.Mobs.MobsManager
         [Header("Alarm Status")]
         public float alarmTimer = 0f;
 
-        private Coroutine alertCooldownCoroutine;
         private GuardManager guardManager;
 
         private void Start()
@@ -49,12 +48,6 @@ namespace Script.Game.Mobs.MobsManager
                 enemyController.OnDespawn += HandleEnemyDespawn;
             }
 
-            if (alertCooldownCoroutine != null)
-            {
-                StopCoroutine(alertCooldownCoroutine);
-                alertCooldownCoroutine = null;
-            }
-            
             alarmTimer = ALARM_COOLDOWN_DURATION;
 
             if (!isEnemyAttack)
@@ -80,33 +73,34 @@ namespace Script.Game.Mobs.MobsManager
 
             if (detectedEnemies.Count == 0)
             {
-                if (alertCooldownCoroutine == null)
-                {
-                    alertCooldownCoroutine = StartCoroutine(AlertCooldownRoutine());
-                }
+                // Logic đếm ngược đã được xử lý trong Update
             }
         }
 
-        private System.Collections.IEnumerator AlertCooldownRoutine()
+        private void Update()
         {
-            alarmTimer = ALARM_COOLDOWN_DURATION;
-            while (alarmTimer > 0)
-            {
-                alarmTimer -= Time.deltaTime;
-                yield return null;
-            }
-            alarmTimer = 0f;
+            if (!isEnemyAttack) return;
 
-            if (GameTimeManager.Instance != null && GameTimeManager.Instance.IsDaytime)
+            // Dọn dẹp danh sách kẻ địch bị null hoặc inactive định kỳ (mỗi frame hoặc giãn cách)
+            detectedEnemies.RemoveAll(x => x == null || !x.activeInHierarchy);
+
+            if (detectedEnemies.Count == 0)
             {
-                ClearAlarm();
+                if (alarmTimer > 0)
+                {
+                    alarmTimer -= Time.deltaTime;
+                    if (alarmTimer <= 0)
+                    {
+                        alarmTimer = 0;
+                        ClearAlarm();
+                    }
+                }
             }
             else
             {
-                ClearAlarm();
+                // Luôn reset timer về mức tối đa nếu vẫn còn địch trong tầm quét
+                alarmTimer = ALARM_COOLDOWN_DURATION;
             }
-            
-            alertCooldownCoroutine = null;
         }
 
         public void ClearAlarm()
@@ -152,11 +146,7 @@ namespace Script.Game.Mobs.MobsManager
                     }
                 }
                 detectedEnemies.Clear();
-                
-                if (alertCooldownCoroutine == null)
-                {
-                    alertCooldownCoroutine = StartCoroutine(AlertCooldownRoutine());
-                }
+                // Logic đếm ngược đã được xử lý trong Update
             }
         }
 

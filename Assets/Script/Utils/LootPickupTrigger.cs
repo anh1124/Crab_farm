@@ -12,6 +12,7 @@ namespace Script.Utils
         [Header("owner có thể nhặt loại item nào")]
         public bool canPickupCoin = true;
         public bool canPickupTool = true;
+        public bool isDebug = false;
 
         private MonoBehaviour _ownerNpc;
         private IItemHandle _itemReceiver;
@@ -23,6 +24,9 @@ namespace Script.Utils
         {
             // Tự động lấy script có chức năng xử lý item trong gameobject này hoặc parent cha
             _itemReceiver = GetComponentInParent<IItemHandle>();
+            if (isDebug) 
+                Debug.Log($"[LootPickup] Awake on {gameObject.name}. Found receiver: {(_itemReceiver != null ? (_itemReceiver as MonoBehaviour)?.name : "NULL")}");
+            
             if (_itemReceiver != null)
             {
                 _ownerNpc = _itemReceiver as MonoBehaviour;
@@ -40,16 +44,25 @@ namespace Script.Utils
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (_ownerNpc == null || _itemReceiver == null) return;
+            if (_ownerNpc == null || _itemReceiver == null)
+            {
+                if (isDebug)
+                    Debug.LogWarning($"[LootPickup] {gameObject.name}: ownerNpc or itemReceiver is NULL — Awake may not have found IItemHandle.");
+                return;
+            }
             
             PhysicalItem drop = other.GetComponent<PhysicalItem>();
             if (drop == null) return;
 
-          //  Debug.Log($"[LootPickupTrigger] TriggerEnter for {_ownerNpc.name}. Item: {drop.gameObject.name}, type: {drop.itemType}");
+            if (isDebug)
+                Debug.Log($"[LootPickup] {_ownerNpc.name} touched item: {drop.name}, type={drop.itemType}, pickedBy={drop.pickedBy}, denizensPickupAble={drop.denizensPickupAble}");
 
-            // 1. Kiểm tra trạng thái item xem có được nhặt không (FaceID, Cooldown, Thể Loại)
-            if (!CheckItemRule(drop)) 
-                return;
+            // 1. Kiểm tra trạng thái item
+            bool rulePass = CheckItemRule(drop);
+            if (isDebug)
+                Debug.Log($"[LootPickup] CheckItemRule = {rulePass}, isPlayer={_isPlayer}, isEnemy={_isEnemy}");
+            
+            if (!rulePass) return;
 
             // Tối ưu cực mạnh cho Player: Nếu full túi thì skip gọi HandleItem luôn
             if (_isPlayer && _playerBehavior != null)
@@ -58,23 +71,26 @@ namespace Script.Utils
                     return;
             }
 
-            // 2. Trao quyền Quyết Định (Decision Making) cho Não bộ NPC
+            // 2. Trao quyền Quyết Định cho Não bộ NPC
             bool canPick = _itemReceiver.HandleItem(other.gameObject);
-          //  Debug.Log($"[LootPickupTrigger] {_ownerNpc.name} HandleItem returned: {canPick}");
+            if (isDebug)
+                Debug.Log($"[LootPickup] {_ownerNpc.name} HandleItem returned: {canPick}");
 
-            // 3. Nếu Não bộ đồng ý nhận: Tiến hành đánh dấu chủ quyền & Hủy vật phẩm
+            // 3. Nếu đồng ý nhận: đánh dấu & hủy vật phẩm
             if (canPick)
             {
                 drop.pickedBy = _ownerNpc.gameObject;
                 drop.StopAllCoroutines();
                 
+                // Vô hiệu hóa ngay lập tức để tránh double-trigger
+                other.gameObject.SetActive(false);
+
                 if (drop.itemType == ItemType.Coin && CoinPool.Instance != null)
                 {
                     CoinPool.Instance.ReturnCoin(other.gameObject);
                 }
                 else
                 {
-                    other.gameObject.SetActive(false);
                     Destroy(other.gameObject, 0.1f);
                 }
             }

@@ -15,7 +15,11 @@ namespace Script.Manager.MobsManager
 
         [SerializeField] private List<PhysicalItem> availableTools = new List<PhysicalItem>();
         private List<PhysicalItem> unservedTools = new List<PhysicalItem>(); 
-        public int GetTotalUnservedTools() => unservedTools.Count;
+        public int GetTotalUnservedTools() 
+        {
+            // Trả về số lượng tool đang thực sự bơ vơ (không có người đại diện và chưa bị nhặt)
+            return availableTools.Count(t => t != null && t.IsAvailable() && t.AssignedCarrier == null);
+        }
 
         private void Awake()
         {
@@ -27,6 +31,22 @@ namespace Script.Manager.MobsManager
             {
                 Destroy(gameObject);
             }
+        }
+
+        [ContextMenu("🔍 Print Debug Status")]
+        private void PrintDebugStatus()
+        {
+            int idleVillagers = DenizenManager.Instance?.GetIdleVillagerCount() ?? 0;
+            string debugStr = $"[ToolManager] 🔍 STATUS REPORT: {availableTools.Count} tools total, {idleVillagers} idle villagers.\n";
+            
+            foreach (var tool in availableTools)
+            {
+                if (tool == null) continue;
+                string carrier = (tool.AssignedCarrier != null) ? tool.AssignedCarrier.name : "NONE";
+                string statusIcon = (tool.pickedBy != null) ? "✅" : (tool.AssignedCarrier != null ? "⏳" : "❌");
+                debugStr += $"  * {tool.gameObject.name} ({(Script.Game.Item.Coin.ItemType)tool.itemType}) | Carrier: {carrier} | Picked: {statusIcon}\n";
+            }
+            Debug.Log(debugStr);
         }
 
         public void RegisterTool(PhysicalItem tool)
@@ -97,12 +117,17 @@ namespace Script.Manager.MobsManager
         public void OnVillagerBecameIdle(VillagerJob villager)
         {
             CleanUnservedList();
-            if (unservedTools.Count == 0) return;
+            
+            // Tìm tất cả các tool đang bơ vơ trong hệ thống
+            var orphans = availableTools.FindAll(t => t != null && t.IsAvailable() && t.AssignedCarrier == null);
+            if (orphans.Count == 0) return;
 
-            var tool = GetNearestFrom(unservedTools, villager.transform.position);
+            // Ưu tiên tool gần nhất
+            var tool = GetNearestFrom(orphans, villager.transform.position);
             if (tool != null)
             {
-                unservedTools.Remove(tool);
+                // Xóa khỏi unservedTools nếu nó đang nằm trong đó
+                if (unservedTools.Contains(tool)) unservedTools.Remove(tool);
                 AssignToolToVillager(tool, villager);
             }
         }

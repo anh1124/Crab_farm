@@ -5,39 +5,53 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 {
     public class VagrantFearState : DenizenState
     {
-        private readonly VagrantJob _job;
-
-        // Fear duration giờ đã lấy theo ctx.Status.maxFearDuration thay vì hardcode.
-        private float _fearEndTime;
-
-        public VagrantFearState(VagrantJob job)
-        {
-            _job = job;
-        }
-
         public override void Enter(DenizenContext ctx)
         {
-            _fearEndTime = Time.time + ctx.Status.maxFearDuration;
-            ctx.Movement.StopMovement();
-            // Reset coin target để không quay lại GetCoin ngay sau khi hết sợ
-            ctx.Status.coinTarget = null;
+            // Bắt đầu đếm ngược từ status
+            if (ctx.Status != null)
+            {
+                ctx.Status.fearTimer = ctx.Status.maxFearDuration;
+                ctx.Status.isFearPending = false; // Xóa cờ kích hoạt sau khi đã vào trạng thái
+                ctx.Status.isInDanger = true;
+            }
 
-            Animator anim = _job.GetAnimator();
-            if (anim != null) anim.Play("fear");
+            if (ctx.Animator != null) 
+                ctx.Animator.Play("fear");
+
+            // Xóa mục tiêu di chuyển cũ nếu có
+            if (ctx.Movement != null)
+                ctx.Movement.Stop();
         }
 
-        // Mỗi lần OnObjectsDetected gặp enemy, gia hạn thêm thời gian sợ
-        public void RefreshFear(DenizenContext ctx)
+        public override void UpdateBehavior(DenizenContext ctx)
         {
-            _fearEndTime = Time.time + ctx.Status.maxFearDuration;
+            if (ctx.IsSkillCasting) return;
+
+            // Logic chuyển state khi hết thời gian sợ hãi (Dùng trực tiếp dữ liệu từ Status)
+            if (ctx.Status != null && ctx.Status.fearTimer <= 0)
+            {
+                ctx.Status.isInDanger = false;
+                ctx.Status.isFearPending = false;
+
+                VagrantJob job = ctx.VagrantJob;
+                if (job != null)
+                {
+                    job.ChangeState(job.IdleState);
+                }
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
-            if (Time.time >= _fearEndTime)
+            // Trừ timer tại status mỗi frame
+            if (ctx.Status != null && ctx.Status.fearTimer > 0)
             {
-                _job.ChangeState(_job.IdleState);
+                ctx.Status.fearTimer -= Time.deltaTime;
             }
+
+            if (ctx.Animator == null) return;
+            if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("fear"))
+                ctx.Animator.Play("fear");
         }
     }
 }

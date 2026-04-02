@@ -3,6 +3,8 @@ using UnityEngine;
 using Script.Data_Model.Status;
 using Script.Game.Mobs.Subjects;
 using Script.Manager.Building;
+using Script.Game.Mobs.Denizen.Core;
+using Script.Game.Mobs.Denizen.Jobs.Archer;
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -15,7 +17,8 @@ namespace Script.Game.Mobs.MobsManager
         [Header("Defense Slot Settings")]
         public int archerSlotCount = 7;
         public float archerSlotSpacing = 1.2f;
-        public float defaultSlotOffset = 6.0f;
+        public float defaultSlotOffset = 7.0f; 
+        public float rowDepthOffset = 0.3f;
 
         private GuardManager guardManager;
 
@@ -123,10 +126,10 @@ namespace Script.Game.Mobs.MobsManager
             foreach(var archer in allArchers)
             {
                 if(archer == null) continue;
-                var core = archer.GetComponent<Script.Game.Mobs.Denizen.Core.DenizenCore>();
-                if(core != null)
+                var roleCtrl = archer.GetComponent<DenizenRoleController>();
+                if(roleCtrl != null && roleCtrl.JobBrain != null)
                 {
-                    core.OnGuardManagerStatusChanged(isAttack);
+                    roleCtrl.JobBrain.OnGuardManagerStatusChanged(isAttack);
                 }
             }
         }
@@ -144,7 +147,7 @@ namespace Script.Game.Mobs.MobsManager
             {
                 if (archer == null) continue;
                 var status = archer.GetComponent<DenizenStatus>();
-                if (status != null && (status.archerState == DenizenStatus.ArcherState.ReturningToBase || status.archerState == DenizenStatus.ArcherState.HoldingWall))
+                if (status != null && (status.currentStateName == "ArcherReturningToBaseState" || status.currentStateName == "ArcherHoldWallState"))
                 {
                     status.assignedWall = wall;
                 }
@@ -157,17 +160,13 @@ namespace Script.Game.Mobs.MobsManager
             foreach (var archer in flank)
             {
                 if (archer == null) continue;
-                var core = archer.GetComponent<Script.Game.Mobs.Denizen.Core.DenizenCore>();
-                if (core != null)
+                var roleCtrl = archer.GetComponent<DenizenRoleController>();
+                if (roleCtrl != null && roleCtrl.JobBrain != null)
                 {
-                    if (safeWall != null)
-                    {
-                        core.ForceRetreat(safeWall);
-                    }
-                    else if (guardManager)
-                    {
-                        guardManager.DebugLog($"[GuardSquadSystem] {archer.name} không còn nơi để lùi, đứng tại chỗ!");
-                    }
+                    // Luôn gọi ForceRetreat, kể cả khi safeWall == null (Last Stand)
+                    roleCtrl.JobBrain.ForceRetreat(safeWall);
+                    if (safeWall == null && guardManager)
+                        guardManager.DebugLog($"[GuardSquadSystem] {archer.name} không còn nơi để lùi → Tử thủ tại chỗ!");
                 }
             }
         }
@@ -184,36 +183,39 @@ namespace Script.Game.Mobs.MobsManager
             GameObject wall = (guardManager && guardManager.Wall) ? guardManager.Wall.GetCurrentDefensiveWall(isLeft) : null;
             
             int index = flankList.IndexOf(archer);
-            int slotIndex = (index >= 0) ? index % archerSlotCount : 0;
+            if (index == -1) return archer.transform.position;
+
+            int slotInRow = index % archerSlotCount;
+            int rowIndex = index / archerSlotCount;
 
             if (wall == null)
             {
                 if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
                 {
                     var tc = BuildingManager.instance.currentTownCenter;
-                    Transform tcTransform = tc.transform;
-                    Vector3 tcPos = tcTransform.position;
+                    Vector3 tcPos = tc.transform.position;
                     
                     float startDist = 5f; 
                     var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
                     if(tcBehavior != null) startDist = tcBehavior.plazaDistance;
 
                     float dir = isLeft ? -1f : 1f;
-                    float totalOffset = startDist - (slotIndex * archerSlotSpacing);
-                    if (totalOffset < 2f) totalOffset = 2f;
+                    float horizontalOffset = startDist + (slotInRow * archerSlotSpacing) + (rowIndex * rowDepthOffset);
                     
-                    return new Vector3(tcPos.x + (dir * totalOffset), tcPos.y, archer.transform.position.z);
+                    return new Vector3(tcPos.x + (dir * horizontalOffset), tcPos.y, archer.transform.position.z);
                 }
                 return archer.transform.position;
             }
 
             float direction = isLeft ? 1f : -1f;
-            float offset = defaultSlotOffset + (slotIndex * archerSlotSpacing);
-            Vector3 basePos = wall.transform.position;
+            
+            float horizontalOffsetInRow = slotInRow * archerSlotSpacing;
+            float totalRowDepth = rowIndex * rowDepthOffset;
+            float totalOffset = defaultSlotOffset + horizontalOffsetInRow + totalRowDepth;
 
             return new Vector3(
-                basePos.x + direction * offset,
-                basePos.y,
+                wall.transform.position.x + direction * totalOffset,
+                wall.transform.position.y,
                 archer.transform.position.z
             );
         }
