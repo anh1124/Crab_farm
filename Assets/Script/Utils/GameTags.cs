@@ -19,6 +19,8 @@ namespace Script.Utils
         public const string Untagged = "Untagged";
         public const string Hammer = "Hammer";
         public const string Bow = "Bow";
+        public const string Structure = "Structure";
+        public const string Statues = "Statues";
     }
 
     public static class GameLayers

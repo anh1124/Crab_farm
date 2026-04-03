@@ -268,91 +268,90 @@ namespace Script.Manager
             
             try
             {
-                switch (obj.tag)
+                string tag = obj.tag;
+                if (tag == Script.Utils.GameTags.Player)
                 {
-                    case "Player":
-                        if (playerContainer != null)
-                            obj.transform.SetParent(playerContainer.transform, true);
-                        else
-                            Debug.LogError("playerContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to PlayerContainer");
-                        break;
-                    case "Wall":
-                    case "Structure":
-                    case "TownCenter":
-                    case "BowVendor":
-                    case "HammerVendor":
-                    case "ScytheVendor":
-                    case "SwordVendor":
-                    case "SpikeVendor":
-                        if (structureContainer != null)
-                            obj.transform.SetParent(structureContainer.transform, true);
-                        else
-                            Debug.LogError("structureContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to StructureContainer");
-                        break;
-                    
-                    case "Coin":
-                        if (coinContainer != null)
-                            obj.transform.SetParent(coinContainer.transform, true);
-                        else
-                            Debug.LogError("coinContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to CoinContainer");
-                        break;
-                    
-                    case "Tree":
-                    case "RabbitBushStatus":
-                        if (natureContainer != null)
-                            obj.transform.SetParent(natureContainer.transform, true);
-                        else
-                            Debug.LogError("natureContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to NatureContainer");
-                        break;
-                    
-                    case "RabbitStatus":
-                        if (animalsContainer != null)
-                            obj.transform.SetParent(animalsContainer.transform, true);
-                        else
-                            Debug.LogError("animalsContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to AnimalsContainer");
-                        break;
-                    
-                    case "Enemy":
-                        if (enemyContainer != null)
-                            obj.transform.SetParent(enemyContainer.transform, true);
-                        else
-                            Debug.LogError("enemyContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to EnemyContainer");
-                        break;
-                    
-                    case "Wanderer":
-                    case "Vagrant":
-                    case "Villager":
-                    case "Archer":
-                    case "Worker":
-                    case "Farmer":
-                        if (denizenContainer != null)
-                            obj.transform.SetParent(denizenContainer.transform, true);
-                        else
-                            Debug.LogError("denizenContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to DenizenContainer");
-                        break;
-                    
-                    case "Statues":
-                        if (statuesContainer != null)
-                            obj.transform.SetParent(statuesContainer.transform, true);
-                        else
-                            Debug.LogError("statuesContainer is null");
-                        if (isDebug) Debug.Log($"Set parent of {obj.name} to StatuesContainer");
-                        break;
-                    
-                    default:
-                        if (otherContainer != null)
-                            obj.transform.SetParent(otherContainer.transform, true);
-                        else
-                            Debug.LogError("otherContainer is null");
-                        if (isDebug) Debug.Log($"Đã chuyển {obj.name} vào OtherContainer");
-                        break;
+                    if (playerContainer != null)
+                        obj.transform.SetParent(playerContainer.transform, true);
+                    else
+                        Debug.LogError("playerContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to PlayerContainer");
+                }
+                else if (tag == Script.Utils.GameTags.Wall || 
+                         tag == Script.Utils.GameTags.Structure || 
+                         tag == Script.Utils.GameTags.TownCenter ||
+                         tag == "BowVendor" || 
+                         tag == "HammerVendor" || 
+                         tag == "ScytheVendor" || 
+                         tag == "SwordVendor" || 
+                         tag == "SpikeVendor")
+                {
+                    if (structureContainer != null)
+                        obj.transform.SetParent(structureContainer.transform, true);
+                    else
+                        Debug.LogError("structureContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to StructureContainer");
+                }
+                else if (tag == Script.Utils.GameTags.Coin)
+                {
+                    if (coinContainer != null)
+                        obj.transform.SetParent(coinContainer.transform, true);
+                    else
+                        Debug.LogError("coinContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to CoinContainer");
+                }
+                else if (tag == Script.Utils.GameTags.Tree || tag == "RabbitBushStatus")
+                {
+                    if (natureContainer != null)
+                        obj.transform.SetParent(natureContainer.transform, true);
+                    else
+                        Debug.LogError("natureContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to NatureContainer");
+                }
+                else if (tag == Script.Utils.GameTags.Animal || tag == "RabbitStatus")
+                {
+                    if (animalsContainer != null)
+                        obj.transform.SetParent(animalsContainer.transform, true);
+                    else
+                        Debug.LogError("animalsContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to AnimalsContainer");
+                }
+                else if (tag == Script.Utils.GameTags.Enemy)
+                {
+                    if (enemyContainer != null)
+                        obj.transform.SetParent(enemyContainer.transform, true);
+                    else
+                        Debug.LogError("enemyContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to EnemyContainer");
+                }
+                else if (tag == "Wanderer" || 
+                         tag == Script.Utils.GameTags.Vagrant || 
+                         tag == Script.Utils.GameTags.Villager || 
+                         tag == Script.Utils.GameTags.Archer || 
+                         tag == "Worker" || 
+                         tag == "Farmer")
+                {
+                    if (denizenContainer != null)
+                        obj.transform.SetParent(denizenContainer.transform, true);
+                    else
+                        Debug.LogError("denizenContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to DenizenContainer");
+                }
+                else if (tag == Script.Utils.GameTags.Statues)
+                {
+                    if (statuesContainer != null)
+                        obj.transform.SetParent(statuesContainer.transform, true);
+                    else
+                        Debug.LogError("statuesContainer is null");
+                    if (isDebug) Debug.Log($"Set parent of {obj.name} to StatuesContainer");
+                }
+                else
+                {
+                    if (otherContainer != null)
+                        obj.transform.SetParent(otherContainer.transform, true);
+                    else
+                        Debug.LogError("otherContainer is null");
+                    if (isDebug) Debug.Log($"Đã chuyển {obj.name} vào OtherContainer (Unknown tag: {tag})");
                 }
                 
                 // Log sau khi đã chuyển
@@ -378,29 +377,35 @@ namespace Script.Manager
             
             try
             {
-                Transform containerTransform = parent.transform.Find("statuesContainer");
-                if (containerTransform != null)
+                // First, check for specifically designated sub-containers like 'statuesContainer'
+                Transform statuesContainerChild = parent.transform.Find("statuesContainer");
+                if (statuesContainerChild != null)
                 {
                     List<Transform> children = new List<Transform>();
-                    foreach (Transform child in containerTransform)
-                    {
-                        if (child != null)
-                        {
-                            children.Add(child);
-                        }
-                    }
-
-                    foreach (Transform child in children)
-                    {
-                        if (child != null && child.gameObject != null)
-                        {
-                            MoveObjectToContainer(child.gameObject);
-                        }
-                    }
+                    foreach (Transform child in statuesContainerChild) children.Add(child);
+                    foreach (Transform child in children) MoveObjectToContainer(child.gameObject);
                 }
-                else
+
+                // Also move ANY child of the parent that has a known tag (Tree, Wall, etc.)
+                // This handles chunk prefabs that have trees or structures placed directly as children
+                List<Transform> allChildren = new List<Transform>();
+                foreach (Transform child in parent.transform) allChildren.Add(child);
+                
+                foreach (Transform child in allChildren)
                 {
-                    if (isDebug) Debug.Log("statuesContainer not found in parent");
+                    if (child == null || child.gameObject == null) continue;
+                    
+                    // If the child has a tag handled by MoveObjectToContainer, move it
+                    string tag = child.tag;
+                    if (tag == Script.Utils.GameTags.Tree || 
+                        tag == Script.Utils.GameTags.Wall || 
+                        tag == Script.Utils.GameTags.Structure || 
+                        tag == Script.Utils.GameTags.TownCenter ||
+                        tag == Script.Utils.GameTags.Coin ||
+                        tag == Script.Utils.GameTags.Statues)
+                    {
+                        MoveObjectToContainer(child.gameObject);
+                    }
                 }
             }
             catch (Exception e)
@@ -475,7 +480,7 @@ namespace Script.Manager
                 // Refresh danh sách container trước khi lưu
                 RefreshContainersList();
                 
-                MoveTreesFromChunks(); // Di chuyển cây vào container trước khi save
+                MoveEntitiesFromChunks(); // Di chuyển entities từ chunk vào container trước khi save
                 if (isDebug) Debug.Log($"Save path: {LoadFromSave.Instance.saveFilePath}");
                 
                 if (isDebug)
@@ -904,7 +909,7 @@ namespace Script.Manager
                     }
                     catch (Exception e)
                     {
-                        Debug.LogWarning($"[EntitySaveManager] Failed to set TownCenter tier from prefabID: {e.Message}");
+                        if (isDebug) Debug.LogWarning($"[EntitySaveManager] Failed to set TownCenter tier from prefabID: {e.Message}");
                     }
 
                     var saveable = instance.GetComponent<ISaveable>();
@@ -912,10 +917,6 @@ namespace Script.Manager
                     {
                         saveable.RestoreData(savedObject.data);
                         if (isDebug) Debug.Log($"Restored data for {instance.name}");
-                    }
-                    else
-                    {
-                        Debug.LogError($"ISaveable not found on {instance.name}");
                     }
                 }
             }
@@ -958,18 +959,23 @@ namespace Script.Manager
             }
         }
 
-      
-        public void MoveTreesFromChunks()
+        /// <summary>
+        /// Quét toàn bộ chunkContainer và di chuyển các đối tượng quan trọng (Tree, Wall, Structure, TownCenter, v.v.)
+        /// vào đúng container của chúng trước khi lưu.
+        /// Điều này đảm bảo các đối tượng được sinh ra đồng thời với chunk (khi tạo thế giới mới) 
+        /// sẽ được quản lý bởi hệ thống save-load entities thay vì bị mất.
+        /// </summary>
+        public void MoveEntitiesFromChunks()
         {
             if (chunkContainer == null)
             {
                 if (isDebug) Debug.LogWarning("ChunkContainer is null!");
                 return;
             }
-
+            
             try
             {
-                // Chỉ tìm các cây trong chunkContainer
+                // Chỉ tìm các đối tượng trong chunkContainer
                 Transform[] allObjectsInChunks = chunkContainer.GetComponentsInChildren<Transform>(true);
                 if (allObjectsInChunks == null)
                 {
@@ -979,7 +985,18 @@ namespace Script.Manager
                 
                 foreach (Transform obj in allObjectsInChunks)
                 {
-                    if (obj != null && obj.CompareTag(Script.Utils.GameTags.Tree))
+                    if (obj == null || obj.gameObject == null) continue;
+                    
+                    string tag = obj.tag;
+                    
+                    // Di chuyển nếu đối tượng có một trong các tag cần quản lý
+                    if (tag == Script.Utils.GameTags.Tree || 
+                        tag == Script.Utils.GameTags.Wall || 
+                        tag == Script.Utils.GameTags.Structure || 
+                        tag == Script.Utils.GameTags.TownCenter ||
+                        tag == Script.Utils.GameTags.Statues ||
+                        tag == Script.Utils.GameTags.Coin ||
+                        tag == "RabbitBushStatus")
                     {
                         MoveObjectToContainer(obj.gameObject);
                     }
@@ -987,12 +1004,9 @@ namespace Script.Manager
             }
             catch (Exception e)
             {
-                Debug.LogError($"Lỗi khi di chuyển cây từ chunks: {e.Message}");
+                Debug.LogError($"Lỗi khi di chuyển entities từ chunks: {e.Message}");
             }
         }
-        /*
-         *chú ý:tree được khởi tạo khi tạo các chunk nên chỉ được load,save trong chunkmanager hoặc hàm save trong game
-         */
         [System.Serializable]
         public class SavedObject
         {

@@ -27,6 +27,10 @@ namespace Script.Game.Other.Nature
             // Get components
             coinUser = GetComponent<CoinUser>();
             status = GetComponent<NatureTreeStatus>();
+            
+            // Initialize tree state immediately in Awake so that currentWorkProgress is set
+            // BEFORE any SaveAllContainer() call (which may happen before Start() runs).
+            InitializeTree();
         }
         
         private void CheckAndAddRequiredComponents()
@@ -59,14 +63,7 @@ namespace Script.Game.Other.Nature
                 Debug.LogError("[NatureTreeBehavior] NatureTreeStatus component not found on GameObject");
                 return;
             }
-            
-            InitializeTree();
-            // [BUGFIX] Destroy ghost trees that loaded with 0 progress
-            if (status.currentWorkProgress <= 0)
-            {
-                _isDead = true;
-                Destroy(gameObject);
-            }
+            // InitializeTree() is now called in Awake() to ensure correct state before saves.
         }
         
         private void InitializeTree()
@@ -136,7 +133,12 @@ namespace Script.Game.Other.Nature
         }
         public void OnDestroy()
         {
-            DropOnDeath();
+            // CHỈ drop coin nếu cây thực sự chết trong gameplay (_isDead = true)
+            // KHÔNG drop coin khi bị destroy do: chuyển parent, scene unload, clear map, v.v.
+            if (_isDead)
+            {
+                DropOnDeath();
+            }
         }
         public void DropOnDeath()
         {

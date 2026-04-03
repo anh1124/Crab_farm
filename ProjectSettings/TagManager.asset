@@ -33,6 +33,7 @@ TagManager:
   - Arrow
   - EnemyPortal
   - Trigger
+  - Statues
   layers:
   - Default
   - TransparentFX

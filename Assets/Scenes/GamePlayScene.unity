@@ -2288,6 +2288,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: GM
       objectReference: {fileID: 0}
+    - target: {fileID: 1617303465254960715, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: assetLoader.emptyChunk
+      value: 
+      objectReference: {fileID: 3831790649435925577, guid: d81c400a7debd014e972751dbc6c579b, type: 3}
+    - target: {fileID: 1617303465254960715, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: assetLoader.impassableRockLeft
+      value: 
+      objectReference: {fileID: 3831790649435925577, guid: b1bb39373f3d8fb4bb3c30dccf08fde3, type: 3}
+    - target: {fileID: 1617303465254960715, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: assetLoader.impassableRockRight
+      value: 
+      objectReference: {fileID: 3831790649435925577, guid: 917b5616b31e1a94c80412cffc0804e1, type: 3}
     - target: {fileID: 2315010559345707460, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: placementLayers.Array.size
       value: 4
