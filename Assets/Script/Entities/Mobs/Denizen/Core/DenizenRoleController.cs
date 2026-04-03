@@ -67,8 +67,17 @@ namespace Script.Game.Mobs.Denizen.Core
         {
             if (newRole == CurrentRole) return;
 
+            // Kiểm tra xem Role mới có Job script tương ứng không trước khi thực hiện bất kỳ thay đổi nào
+            if (!IsRoleSupported(newRole))
+            {
+                Debug.LogError($"[DenizenRoleController] Cannot change to {newRole}: No Job script found in DenizenContext for this role.");
+                return; // Giữ nguyên role cũ, tránh làm hỏng AI
+            }
+
             if (CurrentRole == NPCRole.Archer) GuardManager.Instance?.UnregisterArcher(gameObject);
             if (_status != null) _status.isSkillCasting = false; // Tránh kẹt skill khi đổi role
+            
+            // Chỉ vô hiệu hóa job cũ khi đã chắc chắn có job mới thay thế
             if (_currentJob != null) _currentJob.enabled = false;
 
             _previousRole = CurrentRole;
@@ -76,6 +85,20 @@ namespace Script.Game.Mobs.Denizen.Core
             if (_status != null) _status.Role = newRole;
 
             ApplyRole(newRole);
+        }
+
+        private bool IsRoleSupported(NPCRole role)
+        {
+            switch (role)
+            {
+                case NPCRole.Vagrant:  return _context.VagrantJob != null;
+                case NPCRole.Villager: return _context.VillagerJob != null;
+                case NPCRole.Archer:   return _context.ArcherJob != null;
+                // Hiện tại các role Worker và Farmer chưa có Job script nên sẽ trả về false
+                case NPCRole.Worker:   return false; 
+                case NPCRole.Farmer:   return false;
+                default: return false;
+            }
         }
 
         private void ApplyRole(NPCRole role)

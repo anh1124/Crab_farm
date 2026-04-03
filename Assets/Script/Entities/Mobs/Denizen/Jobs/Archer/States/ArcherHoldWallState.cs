@@ -37,11 +37,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 return;
             }
 
-            // 2. [ATTACK GATE] — ƯU TIÊN SỐ 2: Chỉ bắn khi đã đứng đúng vị trí
+            // 2. [ATTACK GATE] — ƯU TIÊN SỐ 2: Chỉ bắn khi đã đứng đúng vị trí và Skill sẵn sàng
             if (ctx.Status.currentTarget != null)
             {
-                archer.ChangeState(archer.AttackState);
-                return;
+                if (ctx.SkillManager != null && ctx.SkillManager.IsReady(0))
+                {
+                    archer.ChangeState(archer.AttackState);
+                    return;
+                }
             }
 
             // Quay mặt ra chiến tuyến

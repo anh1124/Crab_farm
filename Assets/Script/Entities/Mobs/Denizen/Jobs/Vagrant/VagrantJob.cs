@@ -18,6 +18,11 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         public VagrantIdleState   IdleState    { get; private set; }
         public VagrantFearState   FearState    { get; private set; }
         public VagrantGetCoinState GetCoinState { get; private set; }
+        
+        private VagrantItemHandler _itemHandler;
+        private DenizenSchedule _schedule;
+        private VagrantSensorHandler _sensor;
+
 
         protected void Awake()
         {
@@ -25,6 +30,10 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             IdleState    = new VagrantIdleState();
             FearState    = new VagrantFearState();
             GetCoinState = new VagrantGetCoinState();
+
+            _itemHandler = new VagrantItemHandler(Context);
+            _schedule = new DenizenSchedule(Context);
+            _sensor = new VagrantSensorHandler(Context, this);
         }
 
         #region Brain & Transitions
@@ -68,19 +77,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             if (Context != null)
             {
                 Context.ResetDetectors(); // Swab previous job's detectors
-                if (Context.RayCaster != null)
-                {
-                    Context.RayCaster.OnDetectedObjectsChanged -= OnObjectsDetected;
-                    Context.RayCaster.OnDetectedObjectsChanged += OnObjectsDetected;
-                    // Vagrant quét Enemy VÀ Coin
-                    Context.RayCaster.tagsToDetect = new List<string>
-                    {
-                        GameTags.Enemy,
-                        GameTags.Coin
-                    };
-                    Context.RayCaster.raycastDistance = Context.Status.detectRangeRaycast;
-                    Context.RayCaster.IsActive = true;
-                }
+                _sensor.Enable();
+                
                 if (Context.Status != null)
                 {
                     Context.Status.OnCoinChanged += OnCoinChangedHandler;
@@ -93,8 +91,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 
             if (GameTimeManager.Instance != null)
             {
-                GameTimeManager.Instance.SubscribeToHourlyEvent(6, OnShiftChange);
-                GameTimeManager.Instance.SubscribeToHourlyEvent(18, OnShiftChange);
+                _schedule.AddSchedule(6, OnShiftChange);
+                _schedule.AddSchedule(18, OnShiftChange);
+                _schedule.Enable();
             }
 
             ChangeState(IdleState);
@@ -106,19 +105,15 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 
             if (Context != null)
             {
-                if (Context.RayCaster != null)
-                {
-                    Context.RayCaster.OnDetectedObjectsChanged -= OnObjectsDetected;
-                    Context.RayCaster.IsActive = false;
-                }
+                _sensor.Disable();
+                
                 if (Context.Status != null)
                     Context.Status.OnCoinChanged -= OnCoinChangedHandler;
             }
 
             if (GameTimeManager.Instance != null)
             {
-                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, OnShiftChange);
-                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(18, OnShiftChange);
+                _schedule.Disable();
             }
 
             CurrentState?.Exit(Context);
@@ -142,45 +137,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             // Fear gate trong UpdateBehavior() sẽ xử lý tiếp
         }
 
-        /// <summary>
-        /// Xử lý kết quả detect (Enemy hoặc Coin).
-        /// Priority: Enemy > Coin — giống legacy VagrantBehavior.
-        /// </summary>
-        public void OnObjectsDetected(List<GameObject> objects)
-        {
-            if (!enabled || objects == null) return;
-
-            foreach (var obj in objects)
-            {
-                if (obj == null) continue;
-
-                // --- Enemy: ưu tiên cao nhất ---
-                if (obj.CompareTag(GameTags.Enemy))
-                {
-                    Context.Status.isFearPending = true;
-                    Context.Status.fearTimer = Context.Status.maxFearDuration;
-                    // Fear gate trong UpdateBehavior() sẽ trigger ChangeState
-                    return;
-                }
-
-                // --- Coin: chỉ nếu không đang sợ ---
-                if (obj.CompareTag(GameTags.Coin) && CurrentState != FearState)
-                {
-                    if (Context.Status.coinTarget != obj)
-                    {
-                        Context.Status.coinTarget = obj;
-                    }
-                    if (CurrentState != GetCoinState)
-                        ChangeState(GetCoinState);
-                    return;
-                }
-            }
-        }
-
         private void OnCoinChangedHandler(int newCoins)
         {
-            if (newCoins > 0)
-                Context.RoleController.ChangeRole(NPCRole.Villager);
+            _itemHandler.OnCoinChanged(newCoins);
+        }
+
+        public void OnObjectsDetected(List<GameObject> objects)
+        {
+            _sensor.OnObjectsDetected(objects);
         }
 
         /// <summary>
@@ -188,19 +152,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         /// </summary>
         public override bool HandleItem(GameObject item)
         {
-            var coin = item.GetComponent<PhysicalItem>();
-            if (coin != null && coin.itemType == ItemType.Coin && coin.IsAvailable())// vagrant luôn có thể nhặt coin (không cần điều kiện check túi)
-            {
-                Context.Status.coinTarget = null;
-                // Thêm xu vào túi cư dân
-                Context.Status.AddCoin(1);
-
-                // LootPickupTrigger sẽ tự set pickedBy sau khi HandleItem trả true
-                // Chỉ cần đổi nghề — dùng Context.RoleController (root NPC)
-                Context.RoleController?.ChangeRole(NPCRole.Villager);
-                return true;
-            }
-            return false;
+            return _itemHandler.HandleItem(item);
         }
         #endregion
     }

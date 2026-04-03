@@ -20,6 +20,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         public VillagerRunToolState RunToolState { get; private set; }
         public VillagerFearState    FearState    { get; private set; }
 
+        private VillagerItemHandler _itemHandler;
+        private VillagerSensorHandler _sensor;
+
         protected void Awake()
         {
             if (Context == null) Context = GetComponentInParent<DenizenContext>();
@@ -27,6 +30,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             ToTownState  = new VillagerToTownState();
             RunToolState = new VillagerRunToolState();
             FearState    = new VillagerFearState();
+
+            _itemHandler = new VillagerItemHandler(Context);
+            _sensor = new VillagerSensorHandler(Context, this);
         }
 
         #region Brain & Transitions
@@ -76,14 +82,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (Context != null)
             {
                 Context.ResetDetectors(); // Swab previous job's detectors
-                if (Context.RayCaster != null)
-                {
-                    Context.RayCaster.OnDetectedObjectsChanged -= OnObjectsDetected;
-                    Context.RayCaster.OnDetectedObjectsChanged += OnObjectsDetected;
-                    Context.RayCaster.tagsToDetect = new List<string>(TargetLists.FleeTargets);
-                    Context.RayCaster.raycastDistance = Context.Status.detectRangeRaycast;
-                    Context.RayCaster.IsActive = true;
-                }
+                _sensor.Enable();
             }
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
@@ -97,8 +96,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Unregister(this);
             if (DenizenManager.Instance != null) DenizenManager.Instance.UnregisterDenizen(gameObject); // Bug fix: was Register
 
-            if (Context?.RayCaster != null)
-                Context.RayCaster.OnDetectedObjectsChanged -= OnObjectsDetected;
+            if (Context != null)
+                _sensor.Disable();
 
             CurrentState?.Exit(Context);
             CurrentState = null;
@@ -113,63 +112,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             Context.Status.isFearPending = true;
         }
 
-        /// <summary>
-        /// Chỉ set flag khi phát hiện nguy hiểm — không gọi ChangeState trực tiếp.
-        /// Job's UpdateBehavior() là cổng duy nhất quyết định chuyển state.
-        /// </summary>
         public void OnObjectsDetected(List<GameObject> objects)
         {
-            if (objects == null) return;
-            bool detected = objects.Count > 0;
-            if (detected) Context.Status.isFearPending = true;
-            // Không cần set isInDanger riêng — isFearPending là đủ
+            _sensor.OnObjectsDetected(objects);
         }
 
         public override void HandleAnimationEvent(string eventName) { }
 
         public override bool HandleItem(GameObject item)
         {
-            var pItem = item.GetComponent<PhysicalItem>();
-            if (pItem == null || !pItem.IsAvailable()) return false;
-
-            // 1. Chuyển nghề khi nhặt vũ khí/công cụ (Logic Tiến Hóa) — Ưu tiên cao nhất
-            if (pItem.itemType == ItemType.Tool_Bow)
-            {
-                Debug.Log($"[VillagerJob] Picked up Bow! Requesting Archer role. Context={Context != null}, RC={Context?.RoleController != null}");
-                item.SetActive(false); // Ẩn vật phẩm ngay lập tức để né double-trigger
-                Context.RoleController?.ChangeRole(NPCRole.Archer);
-                return true;
-            }
-            else if (pItem.itemType == ItemType.Tool_Hammer)
-            {
-                Debug.Log($"[VillagerJob] Picked up Hammer! Requesting Worker role.");
-                item.SetActive(false);
-                Context.RoleController?.ChangeRole(NPCRole.Worker);
-                return true;
-            }
-            else if (pItem.itemType == ItemType.Tool_Scythe)
-            {
-                Debug.Log($"[VillagerJob] Picked up Scythe! Requesting Farmer role.");
-                item.SetActive(false);
-                Context.RoleController?.ChangeRole(NPCRole.Farmer);
-                return true;
-            }
-
-            // 2. Nếu là Tool mình đang được chỉ định nhặt (Gán từ ToolManager)
-            if (pItem == Context.Status.currentTool)
-            {
-                Debug.Log($"[VillagerJob] Picked up assigned tool: {pItem.itemType}");
-                return true;
-            }
-
-            // 3. Nếu là Xu (Villager cũng nhặt được xu)
-            if (pItem.itemType == ItemType.Coin && !Context.Status.IsFull)
-            {
-                Context.Status.AddCoin(1);
-                return true;
-            }
-
-            return false;
+            return _itemHandler.HandleItem(item);
         }
         #endregion
 

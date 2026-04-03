@@ -25,24 +25,39 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public override void UpdateBehavior(DenizenContext ctx)
         {
-            var aSoul = ctx.ArcherJob;
-            if (aSoul == null) return;
+            var archerJob = ctx.ArcherJob;
+            if (archerJob == null) return;
 
             // Đêm xuống → phòng thủ
             if (ctx.TimeManager != null && !ctx.TimeManager.IsDaytime)
             {
-                aSoul.ChangeState(aSoul.ReturnToBaseState);
+                archerJob.ChangeState(archerJob.ReturnToBaseState);
                 return;
             }
 
-            // Phát hiện địch → kiểm tra vùng an toàn trước khi attack
+            // Phát hiện mục tiêu
             if (ctx.Status.currentTarget != null)
             {
-                if (aSoul.CanAttackFromHere())
-                    aSoul.ChangeState(aSoul.AttackState);
-                else
-                    aSoul.ChangeState(aSoul.ReturnToBaseState); // Về nơi an toàn trước
-                return;
+                // Chỉ chuẩn bị tấn công nếu Skill đã hồi chiêu xong
+                if (ctx.SkillManager != null && ctx.SkillManager.IsReady(0))
+                {
+                    // Animal và EnemyPortal nằm cùng cấp -> săn nã tự do
+                    bool isHuntingTarget = ctx.Status.currentTarget.CompareTag(GameTags.Animal) || ctx.Status.currentTarget.CompareTag(GameTags.EnemyPortal);
+                    
+                    if (isHuntingTarget)
+                    {
+                        archerJob.ChangeState(archerJob.AttackState);
+                    }
+                    else
+                    {
+                        // Đích thị là Enemy đang tiến quân -> phải kiểm tra kỷ luật vị trí
+                        if (archerJob.CanAttackFromHere())
+                            archerJob.ChangeState(archerJob.AttackState);
+                        else
+                            archerJob.ChangeState(archerJob.ReturnToBaseState); // Về nơi an toàn trước
+                    }
+                    return;
+                }
             }
 
             // Đi săn lang thang trong vùng hợp lệ
@@ -54,7 +69,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 
                 _huntingTarget = new Vector3(huntPos.x, ctx.Transform.position.y, 0f);
                 _hasTarget = true;
-                aSoul.SetMoveTarget(_huntingTarget);
+                archerJob.SetMoveTarget(_huntingTarget);
                 
                 if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
                     ctx.Animator.Play("archerMove");

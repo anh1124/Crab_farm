@@ -571,7 +571,7 @@ MonoBehaviour:
   tagsToDetect: []
   targetLayer:
     serializedVersion: 2
-    m_Bits: 17537
+    m_Bits: 83073
   showDebugLog: 0
   debugDetectedObjects: []
 --- !u!114 &1113228248691594019
@@ -596,5 +596,5 @@ MonoBehaviour:
   tagsToDetect: []
   targetLayer:
     serializedVersion: 2
-    m_Bits: 10369
+    m_Bits: 75905
   debugHitObjects: []

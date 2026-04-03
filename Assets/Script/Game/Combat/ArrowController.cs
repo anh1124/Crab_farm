@@ -46,7 +46,7 @@ namespace Script.Game.Combat
         
         [Header("Lifetime")]
         [SerializeField] private float stuckLifetime = 3f;  // Lifetime AFTER stuck
-        [SerializeField] private float maxAirTime = 6f;     // Fallback if flies too long
+        [SerializeField] private float maxAirTime = 4f;     // Fallback if flies too long
         #endregion
         
         #region State

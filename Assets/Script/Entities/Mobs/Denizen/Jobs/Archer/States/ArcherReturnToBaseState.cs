@@ -31,16 +31,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public override void UpdateBehavior(DenizenContext ctx)
         {
-            var aSoul = ctx.ArcherJob;
-            if (aSoul == null) return;
+            var archerJob = ctx.ArcherJob;
+            if (archerJob == null) return;
 
             // CHỈ kiểm tra vật lý — đã đến đúng điểm slot chưa?
             // _basePos = GuardManager.GetDefensePositionForArcher() đã tính sẵn offset đúng.
             // KHÔNG dùng CanAttackFromHere() ở đây: nó kiểm tra ranh giới mềm
             // và bị floating-point lừa khi đứng chính xác tại boundary → gây loop vô tận.
-            if (aSoul.HasReachedPosition(_basePos, 0.4f))
+            if (archerJob.HasReachedPosition(_basePos, 0.4f))
             {
-                aSoul.ExecuteDefensiveOrder();
+                archerJob.ExecuteDefensiveOrder();
             }
         }
 

@@ -31,23 +31,24 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
 
             // [TACTICAL CHECK FIRST] — Kiểm tra kỷ luật trước khi bóp cò
-            var archer = ctx.ArcherJob;
-            if (archer == null) return;
+            var archerJob = ctx.ArcherJob;
+            if (archerJob == null) return;
 
-            bool isSafe = archer.CanAttackFromHere();
+            bool isSafe = archerJob.CanAttackFromHere();
             if (ctx.Status.debugDenizen) 
             {
-                ctx.ArcherJob?.DebugArcherCombat();
+                archerJob.DebugArcherCombat();
             }
 
             if (!isSafe)
             {
                 if (ctx.Status.debugDenizen) 
                     Debug.Log($"<color=red>[AttackState]</color> {ctx.GameObject.name} HỦY PHÁT BẮN vì vị trí không an toàn!");
-                ctx.ArcherJob?.ChangeState(ctx.ArcherJob.ReturnToBaseState);
+                archerJob.ChangeState(archerJob.ReturnToBaseState);
                 return;
             }
 
+            // Kiểm tra SkillManager đã sẵn sàng chưa (Slot 0 là bắn cung)
             if (ctx.SkillManager.IsReady(0))
             {
                 if (ctx.SkillManager.ExecuteSkill(0, ctx.GameObject))
@@ -59,28 +60,30 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 }
                 else
                 {
-                    ctx.ArcherJob?.ChangeState(ctx.ArcherJob.IdleState);
+                    // Thực thi thất bại (thiếu mana/tài nguyên nếu có) -> Về Idle
+                    archerJob.ChangeState(archerJob.IdleState);
                 }
             }
             else
             {
-                // Skill còn hồi chiêu → về Idle, HoldWall sẽ thử lại sau
+                // Skill còn hồi chiêu -> Về Idle
                 if (ctx.Status.debugDenizen) 
-                    Debug.Log($"[AttackState] {ctx.GameObject.name} skill đang hồi chiêu → Idle");
-                ctx.ArcherJob?.ChangeState(ctx.ArcherJob.IdleState);
+                    Debug.Log($"[AttackState] {ctx.GameObject.name} skill đang hồi chiêu -> Idle");
+                archerJob.ChangeState(archerJob.IdleState);
             }
         }
 
         public override void UpdateBehavior(DenizenContext ctx)
         {
-            if (ctx.Status == null || ctx.ArcherJob == null) return;
+            var archerJob = ctx.ArcherJob;
+            if (ctx.Status == null || archerJob == null) return;
 
             // Chỉ theo dõi mục tiêu trong lúc chờ animation hoàn tất.
             // Nếu mục tiêu biến mất giữa chừng → hủy về Idle.
             GameObject target = ctx.Status.currentTarget;
             if (target == null || !target.activeInHierarchy)
             {
-                ctx.ArcherJob.ChangeState(ctx.ArcherJob.IdleState);
+                archerJob.ChangeState(archerJob.IdleState);
                 return;
             }
             // Còn lại: đợi OnDrawComplete → OnArrowRelease → tự thoát.
@@ -111,7 +114,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Status?.currentTarget != null && ctx.ArcherShooting != null)
                 ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);
 
+            // Báo cho SkillManager biết animation đã kết thúc để bắt đầu cooldown
             ctx.SkillManager?.OnSkillAnimationEnd(0, ctx.GameObject);
+            
             if (ctx.Status != null) ctx.Status.isSkillCasting = false;
             
             ctx.Animator?.Play("archerIdle");
