@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 6112153921068883486}
   - component: {fileID: 5919832901600328901}
   - component: {fileID: 2850362348973260976}
+  - component: {fileID: 7343576337000096863}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -118,6 +119,18 @@ MonoBehaviour:
   contentText: {fileID: 0}
   confirmButton: {fileID: 0}
   cancelButton: {fileID: 0}
+--- !u!114 &7343576337000096863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489224416659448179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56782d330dc9ee74a98f73c488a19ec7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &781692592766937310
 GameObject:
   m_ObjectHideFlags: 0
@@ -166,9 +179,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04a205cf139ec384ea3ad5d15e12055f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  showDebugLogs: 1
+  _archerHuntingRange: 25
   isDebugHuntingRange: 1
-  archerHuntingRange: 25
+  showDebugLogs: 1
 --- !u!114 &3102458789741671300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -218,6 +231,7 @@ MonoBehaviour:
   archerSlotCount: 7
   archerSlotSpacing: 1.2
   defaultSlotOffset: 6
+  rowDepthOffset: 0.3
 --- !u!114 &4058388849087136591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -283,6 +297,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pauseMenuPanel: {fileID: 0}
+  timeManager: {fileID: 0}
+  techManager: {fileID: 0}
+  chunkManager: {fileID: 0}
+  celestialManager: {fileID: 0}
+  worldFileManager: {fileID: 0}
+  entitySaveManager: {fileID: 0}
+  autoSaveManager: {fileID: 0}
+  denizenManager: {fileID: 0}
+  guardManager: {fileID: 0}
+  vagrantManager: {fileID: 0}
+  buildingManager: {fileID: 0}
+  buildingPlacementManager: {fileID: 0}
+  totalEnemyList: {fileID: 0}
+  enemyPool: {fileID: 0}
+  waveManager: {fileID: 0}
+  portalManager: {fileID: 0}
+  coinPool: {fileID: 0}
+  spawner: {fileID: 0}
+  npcUpdateManager: {fileID: 0}
+  arrowPool: {fileID: 0}
+  wallManager: {fileID: 0}
 --- !u!114 &5832753685871575959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -369,7 +404,7 @@ MonoBehaviour:
   twoHeadBot: {fileID: 0}
   stormHead: {fileID: 0}
   toucher: {fileID: 0}
-  EnemyDataList: []
+  _enemyDataList: []
 --- !u!114 &1182911642445597191
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -399,11 +434,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _primaryTarget: {fileID: 0}
-  advanceTags:
-  - Wall
-  - TownCenter
-  retreatTags:
-  - Wall
   detectionLayer:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -609,7 +639,6 @@ MonoBehaviour:
   configFileName: BuildingLimits
   townCenterConfigs: []
   availableStructures: []
-  currentTownCenter: {fileID: 0}
 --- !u!1 &5848034847329386121
 GameObject:
   m_ObjectHideFlags: 0
@@ -851,14 +880,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   seed: 0
-  groundChunkPath: Prefab/Chunk/ChunkGround
-  impassableRockPath: Prefab/Chunk/ImpassableRock
-  chunkPrefabsList: []
-  impassableRockPrefabs: []
-  emptyChunk: {fileID: 3831790649435925577, guid: d81c400a7debd014e972751dbc6c579b, type: 3}
-  chunkList: []
-  impassableRockLeft: {fileID: 0}
-  impassableRockRight: {fileID: 0}
+  assetLoader:
+    groundChunkPath: Prefab/Chunk/ChunkGround
+    impassableRockPath: Prefab/Chunk/ImpassableRock
+    chunkPrefabsList: []
+    impassableRockPrefabs: []
+    emptyChunk: {fileID: 0}
+    impassableRockLeft: {fileID: 0}
+    impassableRockRight: {fileID: 0}
+  _chunkList: []
+  chunkWidth: 30
 --- !u!1 &8356058680024437741
 GameObject:
   m_ObjectHideFlags: 0

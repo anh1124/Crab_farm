@@ -38,6 +38,12 @@ public class BuildMenu : MonoBehaviour
 
     public static BuildMenu instance;
 
+    private BuildingManager _bm;
+    private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
+
+    private BuildingPlacementManager _bpm;
+    private BuildingPlacementManager BPM => _bpm != null ? _bpm : (_bpm = FindObjectOfType<BuildingPlacementManager>());
+
     private void Awake()
     {
         if (instance == null)
@@ -116,14 +122,14 @@ public class BuildMenu : MonoBehaviour
         buildableStructures.Clear();
         
         // Make sure BuildingManager exists
-        if (BuildingManager.instance == null)
+        if (BM == null)
         {
-            Debug.LogError("BuildingManager.instance is null when trying to update buildable structures");
+            Debug.LogError("BM is null when trying to update buildable structures");
             return;
         }
         
         // kiểm tra currentTownCenter có null không
-        if (BuildingManager.instance.currentTownCenter == null)
+        if (BM.currentTownCenter == null)
         {
             Debug.LogWarning("[BuildMenu] Chưa có TownCenter. Chỉ hiển thị TownCenter để xây.");
             // nếu chưa có TownCenter, chỉ thêm TownCenter vào danh sách
@@ -133,28 +139,28 @@ public class BuildMenu : MonoBehaviour
         }
         
         // Get the current town center tier and configs
-        int townCenterLevel = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>().tier;
+        int townCenterLevel = BM.currentTownCenter.GetComponent<TownCenterStatus>().tier;
         Debug.Log($"[BuildMenu] Current TownCenter Level: {townCenterLevel}");
         
         // Check if TownCenterConfigs is loaded
-        if (BuildingManager.instance.TownCenterConfigs == null)
+        if (BM.TownCenterConfigs == null)
         {
-            Debug.LogError("BuildingManager.instance.TownCenterConfigs is NULL!");
+            Debug.LogError("BM.TownCenterConfigs is NULL!");
             return;
         }
         
         // First force BuildingManager to update its available buildings
-        BuildingManager.instance.UpdateAvailableBuildings();
+        BM.UpdateAvailableBuildings();
         if (townCenterLevel < 0 || 
-            BuildingManager.instance.TownCenterConfigs == null || 
-            townCenterLevel >= BuildingManager.instance.TownCenterConfigs.Count)
+            BM.TownCenterConfigs == null || 
+            townCenterLevel >= BM.TownCenterConfigs.Count)
         {
             Debug.LogWarning("Invalid town center tier or configs not loaded");
             return;
         }
         
         // Get available structures for the current tier
-        var config = BuildingManager.instance.TownCenterConfigs[townCenterLevel];
+        var config = BM.TownCenterConfigs[townCenterLevel];
         if (config == null)
         {
             Debug.LogWarning($"Config for town center tier {townCenterLevel} is null");
@@ -173,7 +179,7 @@ public class BuildMenu : MonoBehaviour
         foreach (var structureInfo in availableStructures)
         {
             // Count how many of this building type have already been built
-            int builtCount = BuildingManager.instance.CountBuiltBuildings(structureInfo.buildingType);
+            int builtCount = BM.CountBuiltBuildings(structureInfo.buildingType);
             
             // Check if we can build more of this type
             if (builtCount < structureInfo.maxQuantity)
@@ -293,7 +299,7 @@ public class BuildMenu : MonoBehaviour
 
     private void StartBuildingPreview(GameObject structurePrefab)
     {
-        BuildingPlacementManager.Instance.StartPlacement(structurePrefab);
+        BPM.StartPlacement(structurePrefab);
         isBuilding = true;
 
         ClearBuildButtonContainer();
@@ -312,7 +318,7 @@ public class BuildMenu : MonoBehaviour
 
     private void OnConfirmBuildClicked()
     {
-        if (BuildingPlacementManager.Instance.TryPlaceBuilding())
+        if (BPM.TryPlaceBuilding())
         {
             
             ResetBuildState();
@@ -325,7 +331,7 @@ public class BuildMenu : MonoBehaviour
 
     private void OnCancelBuildClicked()
     {
-        BuildingPlacementManager.Instance.CancelPlacement();
+        BPM.CancelPlacement();
         ResetBuildState();
         showBuildMenu = false;
     }
@@ -347,7 +353,7 @@ public class BuildMenu : MonoBehaviour
         // Chỉ cleanup khi đang trong chế độ build
         if (isBuilding)
         {
-            BuildingPlacementManager.Instance?.CancelPlacement();
+            BPM?.CancelPlacement();
             ResetBuildState();
         }
     }

@@ -19,7 +19,12 @@ namespace Script.Utils
         private bool _isPlayer;
         private bool _isEnemy;
         private PlayerBehavior _playerBehavior; // Cache PlayerBehavior if it's the player
-        
+        private ICoinPool _coinPool;
+
+        public void Setup(ICoinPool coinPool)
+        {
+            _coinPool = coinPool;
+        }
         private void Awake()
         {
             // Tự động lấy script có chức năng xử lý item trong gameobject này hoặc parent cha
@@ -85,9 +90,9 @@ namespace Script.Utils
                 // Vô hiệu hóa ngay lập tức để tránh double-trigger
                 other.gameObject.SetActive(false);
 
-                if (drop.itemType == ItemType.Coin && CoinPool.Instance != null)
+                if (drop.itemType == ItemType.Coin && _coinPool != null)
                 {
-                    CoinPool.Instance.ReturnCoin(other.gameObject);
+                    _coinPool.ReturnCoin(other.gameObject);
                 }
                 else
                 {

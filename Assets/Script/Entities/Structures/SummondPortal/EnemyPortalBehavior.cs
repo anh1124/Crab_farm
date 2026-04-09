@@ -34,6 +34,9 @@ namespace Script.Entities.Structures.SummondPortal
         
         // Dữ liệu mảng quái vật nhận từ Manager khi đêm xuống
         private List<EnemyWaveData> enemyWaveData;
+        private IEnemyPool _enemyPool;
+        private IEnemyDataProvider _enemyDataProvider;
+        private IGameTimeProvider _timeProvider;
 
         private PortalVisualAnimator visualAnimator;
         
@@ -62,7 +65,8 @@ namespace Script.Entities.Structures.SummondPortal
                 GameObject townCenter = Utility.GetTownCenter();
                 float centerPosX = townCenter != null ? townCenter.transform.position.x : 0f;
 
-                if (transform.position.x > centerPosX)
+                bool isRight = transform.position.x > centerPosX;
+                if (isRight)
                 {
                     EnemyPortalManager.Instance.portalR = gameObject;
                     Debug.Log($"[EnemyPortalBehavior] Start: Tự đăng ký vào portalR tại {transform.position}");
@@ -71,6 +75,12 @@ namespace Script.Entities.Structures.SummondPortal
                 {
                     EnemyPortalManager.Instance.portalL = gameObject;
                     Debug.Log($"[EnemyPortalBehavior] Start: Tự đăng ký vào portalL tại {transform.position}");
+                }
+
+                // Nhớ lại nhận pool và dependencies từ Manager nếu chưa có (load từ Save)
+                if (_enemyPool == null)
+                {
+                    EnemyPortalManager.Instance.InjectDependenciesIntoPortal(this);
                 }
             }
             else
@@ -91,8 +101,12 @@ namespace Script.Entities.Structures.SummondPortal
         /// <summary>
         /// Được gọi bởi EnemyPortalManager lúc Instaniate GameObject.
         /// </summary>
-        public void Setup()
+        public void Setup(IEnemyPool pool, IEnemyDataProvider dataProvider, IGameTimeProvider timeProvider)
         {
+            _enemyPool = pool;
+            _enemyDataProvider = dataProvider;
+            _timeProvider = timeProvider;
+            
             // Set FPS visual Animator thành Dormant (nghỉ)
             if (visualAnimator)
             {
@@ -103,18 +117,21 @@ namespace Script.Entities.Structures.SummondPortal
             CameraShake.Instance?.RequestShake(transform.position, activationShakeCount, activationInterval, activationTiltAngle);
 
             // Ghi lại ngày sinh ra cổng
-            status.spawnDay = GameTimeManager.Instance.GetElapsedDays();
+            status.spawnDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
             Debug.Log($"[EnemyPortal] Cổng vừa xuất hiện tại {transform.position}! Sẽ kích hoạt vào ngày {(status.spawnDay + status.activeDelay)}.");
 
             // Đăng ký sự kiện kiểm tra mỗi giờ để xem cổng đã sẵn sàng chưa (check buổi sáng)
-            GameTimeManager.Instance.SubscribeToHourlyEvent(GameTimeManager.MORNING_HOUR, CheckActivation);
+            if (_timeProvider != null)
+            {
+                _timeProvider.SubscribeToHourlyEvent(6, CheckActivation);
+            }
         }
 
         private void CheckActivation()
         {
             if (status.isReadyToSpawn) return;
 
-            int currentDay = GameTimeManager.Instance.GetElapsedDays();
+            int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
             // Đã sống đủ ngưỡng delay
             if (currentDay >= status.spawnDay + status.activeDelay)
             {
@@ -140,9 +157,9 @@ namespace Script.Entities.Structures.SummondPortal
             CameraShake.Instance?.RequestShake(transform.position, activationShakeCount, activationInterval, activationTiltAngle);
 
             // Hủy đăng ký vì ngày nào sau đó cũng là Active rồi
-            if (GameTimeManager.Instance)
+            if (_timeProvider != null)
             {
-                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.MORNING_HOUR, CheckActivation);
+                _timeProvider.UnsubscribeFromHourlyEvent(6, CheckActivation);
             }
         }
 
@@ -216,9 +233,9 @@ namespace Script.Entities.Structures.SummondPortal
             }
 
             // Dọn dẹp event nếu nó chết lúc đang chờ
-            if (!status.isReadyToSpawn && GameTimeManager.Instance != null && GameTimeManager.Instance.gameObject)
+            if (!status.isReadyToSpawn && _timeProvider != null)
             {
-                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.MORNING_HOUR, CheckActivation);
+                _timeProvider.UnsubscribeFromHourlyEvent(6, CheckActivation);
             }
 
             // Chỉ log khi đây là phá hủy thật trong game,
@@ -231,10 +248,10 @@ namespace Script.Entities.Structures.SummondPortal
 
         #region Spawning Logic (Hợp nhất từ SummondPortal)
 
-        public void StartSpawning()
+        public void StartSpawning(List<EnemyWaveData> waveData)
         {
-            // Lấy danh sách enemy từ EnemyWaveManager VÀO LÚC BẮT ĐẦU SPAWN (ban đêm)
-            enemyWaveData = EnemyWaveManager.Instance.currentWaveEnemies;
+            // Lấy danh sách enemy từ tham số truyền vào
+            enemyWaveData = waveData;
             
             if (enemyWaveData != null)
             {
@@ -287,34 +304,43 @@ namespace Script.Entities.Structures.SummondPortal
 
         private void SpawnEnemy(TotalEnemyList.EnemyDataBase enemyData)
         {
-            if (enemyData.enemyPrefab != null)
+            // Auto-recover pool nếu chưa được inject (ví dụ: portal được load từ Save, chưa qua Setup())
+            if (_enemyPool == null)
             {
-                // Gọi enemy từ Object Pool thay vì Instantiate
-                GameObject enemy = EnemyPool.Instance.GetEnemy(enemyData.enemyName);
-                if (enemy != null)
+                _enemyPool = FindObjectOfType<Script.Game.Enemy.EnemyPool>();
+                if (_enemyPool == null)
                 {
-                    enemy.transform.position = gameObject.transform.position;
-                    enemy.transform.rotation = Quaternion.identity;
+                    Debug.LogError("[EnemyPortalBehavior] _enemyPool is NULL and cannot be found in scene! Cannot spawn.");
+                    return;
+                }
+                Debug.LogWarning("[EnemyPortalBehavior] _enemyPool was null — auto-recovered from scene. Portal was likely loaded from save without Setup().");
+            }
 
-                    EnemyAIController controller = enemy.GetComponent<EnemyAIController>();
-                    if (controller != null)
-                    {
-                        // ResetState & thiết lập lại target
-                        controller.ResetEnemy(gameObject);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[EnemyPortalBehavior] {enemyData.enemyName} thiếu Component EnemyAIController!");
-                    }
+            if (enemyData.enemyPrefab == null)
+            {
+                Debug.LogError($"[EnemyPortalBehavior] enemyPrefab của '{enemyData.enemyName}' bị null! Kiểm tra lại TotalEnemyList Inspector.");
+                return;
+            }
+
+            GameObject enemy = _enemyPool.GetEnemy(enemyData.enemyName);
+            if (enemy != null)
+            {
+                enemy.transform.position = gameObject.transform.position;
+                enemy.transform.rotation = Quaternion.identity;
+
+                EnemyAIController controller = enemy.GetComponent<EnemyAIController>();
+                if (controller != null)
+                {
+                    controller.ResetEnemy(gameObject);
                 }
                 else
                 {
-                    Debug.LogWarning($"[EnemyPortalBehavior] Pool không còn đủ {enemyData.enemyName} để spawn!");
+                    Debug.LogWarning($"[EnemyPortalBehavior] {enemyData.enemyName} thiếu Component EnemyAIController!");
                 }
             }
             else
             {
-                Debug.LogError($"[EnemyPortalBehavior] EnemyPrefab của {enemyData.enemyName} bị trống null!");
+                Debug.LogWarning($"[EnemyPortalBehavior] Pool không còn đủ '{enemyData.enemyName}' để spawn!");
             }
         }
 

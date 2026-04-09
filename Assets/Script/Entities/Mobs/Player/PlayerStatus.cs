@@ -54,7 +54,7 @@ namespace Script.Data_Model.Status
         public bool isGround;
 
         // Coin sử dụng property để tự động bắn event khi thay đổi
-        private int _coin;
+        [SerializeField] private int _coin;
         public int coin
         {
             get => _coin;
@@ -135,7 +135,10 @@ namespace Script.Data_Model.Status
             if (loaded.currentMana < maxMana)
                 Mana.Reduce(maxMana - loaded.currentMana);
 
-            Debug.Log($"[PlayerStatus] Restored save data. HP={HP.Current}/{HP.Max}, Mana={Mana.Current}/{Mana.Max}");
+            // Force refresh UI sau khi restore xong (trong trường hợp CoinUI chưa đăng ký kịp)
+            OnCoinChanged?.Invoke(_coin);
+
+            Debug.Log($"[PlayerStatus] Restored save data. HP={HP.Current}/{HP.Max}, Mana={Mana.Current}/{Mana.Max}, Coin={_coin}");
         }
     }
 }

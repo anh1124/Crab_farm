@@ -28,19 +28,19 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         public override void UpdateBehavior(DenizenContext ctx)
         {
             if (ctx.IsSkillCasting) return;
-            var vSoul = ctx.VillagerJob;
-            if (vSoul == null) return;
+            var villagerJob = ctx.VillagerJob;
+            if (villagerJob == null) return;
 
             // Kiểm tra các điều kiện chuyển trạng thái khẩn cấp
             if (ctx.Status.isFearPending)
             {
-                vSoul.ChangeState(vSoul.FearState);
+                villagerJob.ChangeState(villagerJob.FearState);
                 return;
             }
 
             if (ctx.Status.currentTool != null)
             {
-                vSoul.ChangeState(vSoul.RunToolState);
+                villagerJob.ChangeState(villagerJob.RunToolState);
                 return;
             }
             
@@ -48,9 +48,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (ctx.TimeManager != null && !ctx.TimeManager.IsDaytime)
             {
                 // Nếu chưa ở gần tâm thành phố (Plaza), mới phải đi về
-                if (!vSoul.HasReachedPosition(Vector3.zero, 4.0f))
+                if (!villagerJob.HasReachedPosition(Vector3.zero, 4.0f))
                 {
-                    vSoul.ChangeState(vSoul.ToTownState);
+                    villagerJob.ChangeState(villagerJob.ToTownState);
                     return;
                 }
             }
@@ -61,7 +61,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
                 _lastToolCheck = Time.time;
                 if (Script.Manager.MobsManager.ToolManager.Instance?.GetTotalUnservedTools() > 0)
                 {
-                    Script.Manager.MobsManager.ToolManager.Instance.OnVillagerBecameIdle(vSoul);
+                    Script.Manager.MobsManager.ToolManager.Instance.OnVillagerBecameIdle(villagerJob);
+                    // Nếu đã đổi state (sang RunToolState), thoát UpdateBehavior ngay
+                    if (villagerJob.CurrentState != this) return;
                 }
             }
 
@@ -70,7 +72,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 _walkTarget = new Vector3(Script.Utility.GetRandomPlazaPos(), ctx.Transform.position.y, 0f);
                 _hasTarget = true;
-                vSoul.SetMoveTarget(_walkTarget);
+                villagerJob.SetMoveTarget(_walkTarget);
             }
         }
 

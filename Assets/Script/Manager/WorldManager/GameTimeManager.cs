@@ -8,9 +8,8 @@ using Script.Manager.SaveManager;
 namespace Script.Manager.WorldManager
 {
     [RequireComponent(typeof(AutoSaveManager))]
-public class GameTimeManager : MonoBehaviour
+public class GameTimeManager : MonoBehaviour, IGameTimeProvider
 {
-    public static GameTimeManager Instance { get; private set; }
     public TextMeshProUGUI timeDisplay;
 
     // Time properties with auto-correction
@@ -33,7 +32,17 @@ public class GameTimeManager : MonoBehaviour
     public int GameYear => (_totalMinutes / 172800) + 1;
 
     [SerializeField] private float realSecondsPerGameDay = 240f;
+
+    [Header("Tăng tốc thời gian (Debug)")]
+    [Tooltip("Hệ số tốc độ thời gian.\n" +
+             "0   = Đóng băng (dừng thời gian)\n" +
+             "0.5 = Chậm gấp đôi (ngày dài hơn)\n" +
+             "1   = Bình thường\n" +
+             "5   = Nhanh x5")]
+    [SerializeField] [Range(0f, 5f)] private float gameTimeScale = 1f;
+
     private float _secondsPerMinute;
+    private float _accumulatedTime; // Tích lũy giây thực để tính phút game
 
     // Event system
     private readonly Dictionary<int, Action> _hourlyEvents = new();
@@ -44,28 +53,24 @@ public class GameTimeManager : MonoBehaviour
     [SerializeField] private List<string> hourlyEventDebug = new List<string>();
     #endif
 
-    private void Awake() => InitializeSingleton();
-    private void Start() => InitializeTimeSystem();
-
     #region Initialization
-    private void InitializeSingleton()
+    private void Awake() 
     {
-        if (Instance == null)
-        {
-            Instance = this;
-           
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        // Singleton pattern removed - initialized via StartGameScrene
     }
 
-    private void InitializeTimeSystem()
+    public void InitializeTimeSystem()
     {
-        _secondsPerMinute = realSecondsPerGameDay / 1440f;
-  
+        RecalculateSecondsPerMinute();
+        _accumulatedTime = 0f;
         StartCoroutine(TimeUpdateCoroutine());
+    }
+
+    private void RecalculateSecondsPerMinute()
+    {
+        // gameTimeScale = 0: đóng băng → dùng giá trị lớn để không bao giờ tiến
+        float scale = Mathf.Max(gameTimeScale, 0.001f);
+        _secondsPerMinute = (realSecondsPerGameDay / 1440f) / scale;
     }
     #endregion
 
@@ -140,27 +145,71 @@ public class GameTimeManager : MonoBehaviour
     {
         while (true)
         {
-            yield return new WaitForSeconds(_secondsPerMinute);
-            _totalMinutes++;
+            yield return null; // Tick mỗi frame
+            
+            // Cập nhật lại _secondsPerMinute mỗi frame để hệ số thay đổi có hiệu lực ngay
+            RecalculateSecondsPerMinute();
+
+            _accumulatedTime += Time.deltaTime;
+
+            // gameTimeScale = 0 → đóng băng thời gian, không cộng dồn
+            if (gameTimeScale <= 0f) continue;
+
+            // Tính số phút game cần tiến theo thời gian tích lũy
+            int minutesToAdvance = Mathf.FloorToInt(_accumulatedTime / _secondsPerMinute);
+            if (minutesToAdvance <= 0) continue;
+
+            _accumulatedTime -= minutesToAdvance * _secondsPerMinute;
+
+            int hourBefore = GameHour;
+            _totalMinutes += minutesToAdvance;
+
             UpdateInspectorFieldsFromTotalMinutes();
             UpdateTimeDisplay();
-            CheckForHourlyEvent();
+
+            // Kích hoạt tất cả event của các giờ bị bỏ qua khi tốc độ cao
+            FireHourlyEventsForSkippedHours(hourBefore, minutesToAdvance);
         }
+    }
+
+    /// <summary>
+    /// Đảm bảo không bỏ sót event của bất kỳ giờ nào kể cả khi skip nhiều giờ 1 tick.
+    /// </summary>
+    private void FireHourlyEventsForSkippedHours(int hourBefore, int minutesAdvanced)
+    {
+        // Số giờ thực sự đã trôi qua trong tick này
+        int hoursAdvanced = minutesAdvanced / 60;
+        if (hoursAdvanced <= 0)
+        {
+            // Vẫn trong cùng giờ, kiểm tra bình thường
+            CheckForHourlyEvent();
+            return;
+        }
+
+        // Kích hoạt từng giờ bị bỏ qua theo thứ tự
+        for (int i = 1; i <= hoursAdvanced; i++)
+        {
+            int skippedHour = (hourBefore + i) % 24;
+            if (_hourlyEvents.TryGetValue(skippedHour, out Action action))
+            {
+                action?.Invoke();
+            }
+        }
+
+        _lastProcessedHour = GameHour;
     }
     public int GetElapsedDays()
     {
         return _totalMinutes / 1440;
     }
-    public void SetGameTimeFromSave()
+    public void SetGameTimeFromSave(Script.Save_Controller.WorldInfo worldInfo)
     {
-        if (LoadFromSave.Instance == null || LoadFromSave.Instance.worldInfo == null)
+        if (worldInfo == null)
         {
-            Debug.LogWarning("No save data found!");
+            Debug.LogWarning("[GameTimeManager] No worldInfo provided for setup!");
             return;
         }
 
-        WorldInfo worldInfo = LoadFromSave.Instance.worldInfo;
-        
         // Convert saved time to total minutes
         int totalMinutes = (worldInfo.GameYear - 1) * 172800 + 
                            (worldInfo.GameMonth - 1) * 43200 + 
@@ -170,9 +219,9 @@ public class GameTimeManager : MonoBehaviour
 
         SetGameTime(totalMinutes);
         
-        Debug.Log($"Loaded WorldInfo: Name={worldInfo.Name}, " +
-                  $"GameTime={worldInfo.GameHour}:{worldInfo.GameMinute}, " +
-                  $"Date={worldInfo.GameDay}/{worldInfo.GameMonth}/{worldInfo.GameYear}");
+        Debug.Log($"[GameTimeManager] Time Setup: " +
+                  $"{worldInfo.GameHour}:{worldInfo.GameMinute}, " +
+                  $"{worldInfo.GameDay}/{worldInfo.GameMonth}/{worldInfo.GameYear}");
     }
     #endregion
 

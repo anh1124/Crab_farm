@@ -14,6 +14,23 @@ namespace Script.Save_Controller
     {
         // dùng trong gameplay scene
         public static WorldFileManager Instance { get; private set; }
+        private TechState _techState;
+        private EntitySaveManager _entitySaveManager;
+        private LoadFromSave _loadFromSave;
+
+        public void Setup(TechState tech, EntitySaveManager entitySave, LoadFromSave loadSave)
+        {
+            _techState = tech;
+            _entitySaveManager = entitySave;
+            _loadFromSave = loadSave;
+        }
+
+        public void Init()
+        {
+            // Path logic is already in Awake for legacy support, 
+            // but we can move or re-verify it here if needed.
+            Debug.Log("✅ WorldFileManager initialized via Init()");
+        }
         public string saveRootPath;
 
         [Tooltip("thông tin thế giới hiện tạitại")]
@@ -113,31 +130,31 @@ namespace Script.Save_Controller
         //hàm này là hàm save chính
         public void SaveCurrentMap()
         {
-            var declaringType = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().DeclaringType;
-            if (declaringType != null)
+            if (_entitySaveManager != null)
             {
-                string callingScript = declaringType.Name;
-                // Debug.Log($"{callingScript} save map");
+                _entitySaveManager.SaveAllContainer();
+            }
+            else if (EntitySaveManager.Instance != null)
+            {
+                EntitySaveManager.Instance.SaveAllContainer();
             }
 
-            // Các logic save game
-            EntitySaveManager.Instance.SaveAllContainer();
-            ChunkManager.Instance.SaveMapToJson(GetActiveWorldPath());
+            var cm = FindObjectOfType<ChunkManager>();
+            if (cm != null)
+            {
+                 cm.SaveMapToJson(GetActiveWorldPath());
+            }
+            
             SaveGameTime();
             
-            // Sử dụng worldInfo trực tiếp thay vì PrefabData
-            if (worldInfo != null)
+            if (worldInfo != null && _techState != null)
             {
                 SaveTechStatus(
-                    worldInfo.TechFireArrow,
-                    worldInfo.TechPenetrating,
-                    worldInfo.TechForge,
-                    worldInfo.TechAdhesive
+                    _techState.TechFireArrow,
+                    _techState.TechPenetrating,
+                    _techState.TechForge,
+                    _techState.TechAdhesive
                 );
-            }
-            else
-            {
-                Debug.LogWarning("worldInfo là null, không thể lưu trạng thái tech.");
             }
         }
         public void SaveGameTime()
@@ -150,11 +167,15 @@ namespace Script.Save_Controller
             }
 
             // Cập nhật thời gian hiện tại từ GameTimeManager vào worldInfo
-            worldInfo.GameHour = GameTimeManager.Instance.GameHour;
-            worldInfo.GameMinute = GameTimeManager.Instance.GameMinute;
-            worldInfo.GameDay = GameTimeManager.Instance.GameDay;
-            worldInfo.GameMonth = GameTimeManager.Instance.GameMonth;
-            worldInfo.GameYear = GameTimeManager.Instance.GameYear;
+            var gtm = FindObjectOfType<GameTimeManager>();
+            if (gtm != null)
+            {
+                worldInfo.GameHour = gtm.GameHour;
+                worldInfo.GameMinute = gtm.GameMinute;
+                worldInfo.GameDay = gtm.GameDay;
+                worldInfo.GameMonth = gtm.GameMonth;
+                worldInfo.GameYear = gtm.GameYear;
+            }
 
             // Lấy đường dẫn tới file worldInfo.json
             string worldFolder = GetWorldFolderPath(worldInfo.Name);
@@ -178,37 +199,32 @@ namespace Script.Save_Controller
         }
         public void SaveTechStatus(bool techFireArrow, bool techPenetrating, bool techForge, bool techAdhesive)
         {
-            // Kiểm tra xem worldInfo có tồn tại không
-            if (worldInfo == null)
-            {
-                Debug.LogWarning("Không có dữ liệu WorldInfo để lưu trạng thái tech.");
-                return;
-            }
+            if (worldInfo == null) return;
 
-            // Update tech status
+            // Sync to worldInfo for file saving
             worldInfo.TechFireArrow = techFireArrow;
             worldInfo.TechPenetrating = techPenetrating;
             worldInfo.TechForge = techForge;
             worldInfo.TechAdhesive = techAdhesive;
 
-            // Get path to worldInfo.json
-            string worldFolder = GetWorldFolderPath(worldInfo.Name);
-            if (worldFolder == null)
+            // Also ensure techState is synced if updated from elsewhere
+            if (_techState != null)
             {
-                Debug.LogError("Không tìm thấy folder của world để lưu trạng thái tech.");
-                return;
+                _techState.TechFireArrow = techFireArrow;
+                _techState.TechPenetrating = techPenetrating;
+                _techState.TechForge = techForge;
+                _techState.TechAdhesive = techAdhesive;
             }
-            string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
 
-            // Cập nhật last played date mỗi khi save tech
+            string worldFolder = GetWorldFolderPath(worldInfo.Name);
+            if (worldFolder == null) return;
+
+            string worldInfoPath = Path.Combine(worldFolder, "worldInfo.json");
             worldInfo.LastPlayedDate = System.DateTime.Now.ToString("O");
 
-            // Serialize and write JSON file
             string json = JsonConvert.SerializeObject(worldInfo, Formatting.Indented);
             File.WriteAllText(worldInfoPath, json);
-            // Debug.Log("Trạng thái tech đã được lưu vào " + worldInfoPath);
             
-            // Thông báo rằng worldInfo đã thay đổi
             OnWorldInfoChanged?.Invoke(worldInfo);
         }
         
@@ -244,8 +260,15 @@ namespace Script.Save_Controller
                 
                 // Gán vào biến worldInfo
                 worldInfo = loadedInfo;
-                
-                // Debug.Log($"Đã load thông tin thế giới: {worldName}");
+
+                // Sync to techState
+                if (_techState != null && worldInfo != null)
+                {
+                    _techState.TechFireArrow = worldInfo.TechFireArrow;
+                    _techState.TechPenetrating = worldInfo.TechPenetrating;
+                    _techState.TechForge = worldInfo.TechForge;
+                    _techState.TechAdhesive = worldInfo.TechAdhesive;
+                }
                 
                 // Thông báo rằng worldInfo đã thay đổi
                 OnWorldInfoChanged?.Invoke(worldInfo);
@@ -402,33 +425,16 @@ namespace Script.Save_Controller
         /// <returns>True nếu load thành công, False nếu thất bại</returns>
         public bool LoadActiveWorldData()
         {
-            if (!IsActiveWorldPathValid())
-            {
-                Debug.LogError("Active world path is not valid");
-                return false;
-            }
+            if (!IsActiveWorldPathValid()) return false;
 
-            // Load world info từ file save
-            bool worldInfoLoaded = LoadFromSave.Instance.LoadWorldInfoFromSave(activeWorldPath);
-            if (!worldInfoLoaded)
-            {
-                Debug.LogError("Failed to load world info!");
-                return false;
-            }
+            LoadFromSave loader = _loadFromSave != null ? _loadFromSave : LoadFromSave.Instance;
+            if (loader == null) return false;
 
-            // Load/generates map từ file save
-            bool mapLoaded = LoadFromSave.Instance.LoadMapFromSave(activeWorldPath);
-            if (!mapLoaded)
-            {
-                Debug.LogError("Failed to load/generate map!");
-                return false;
-            }
+            bool worldInfoLoaded = loader.LoadWorldInfoFromSave(activeWorldPath);
+            if (!worldInfoLoaded) return false;
 
-            // NOTE: Tech/Time và Entities KHÔNG load ở đây.
-            // Chúng được load bởi StartGameScrene Phase 4 (LoadTechAndTimeFromSave + LoadEntitiesFromSave)
-            // để tránh load 2 lần.
-
-            return true;
+            bool mapLoaded = loader.LoadMapFromSave(activeWorldPath);
+            return mapLoaded;
         }
 
 

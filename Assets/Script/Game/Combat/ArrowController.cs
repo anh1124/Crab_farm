@@ -29,7 +29,7 @@ namespace Script.Game.Combat
         private Rigidbody2D rb;
         private Collider2D col; // Added Collider reference
         private SpriteRenderer spriteRenderer;
-        private ArrowPool pool;
+        private IArrowPool pool;
         #endregion
         
         #region Settings
@@ -285,7 +285,7 @@ namespace Script.Game.Combat
             }
         }
         
-        public void SetPool(ArrowPool poolRef)
+        public void SetPool(IArrowPool poolRef)
         {
             pool = poolRef;
         }

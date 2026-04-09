@@ -1,31 +1,33 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Script.Game.Enemy.Core;
+using System;
 
 namespace Script.Game.Enemy
 {
-    public class EnemyPool : MonoBehaviour
+    public class EnemyPool : MonoBehaviour, IEnemyPool
     {
-        public static EnemyPool Instance { get; private set; }
-
         private Dictionary<string, Queue<GameObject>> _pools = new Dictionary<string, Queue<GameObject>>(System.StringComparer.OrdinalIgnoreCase);
         private Transform _poolParent;
+        private IEnemyDataProvider _enemyDataProvider;
+        private Data_Model.PrefabData _prefabData;
+        private EnemyTargetManager _targetManager;
+
+        public void Setup(IEnemyDataProvider dataProvider, Data_Model.PrefabData prefabData, EnemyTargetManager targetManager)
+        {
+            _enemyDataProvider = dataProvider;
+            _prefabData = prefabData;
+            _targetManager = targetManager;
+        }
 
         private void Awake()
         {
-            if (Instance == null)
+            if (_poolParent == null)
             {
-                Instance = this;
+                GameObject parentObj = new GameObject("EnemyPool_Container");
+                _poolParent = parentObj.transform;
+                _poolParent.SetParent(transform);
             }
-            else
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            GameObject parentObj = new GameObject("EnemyPool_Container");
-            _poolParent = parentObj.transform;
-            _poolParent.SetParent(transform);
         }
 
         private bool _isInitialized = false;
@@ -35,19 +37,14 @@ namespace Script.Game.Enemy
         {
             if (_isInitialized) return;
 
-            if (TotalEnemyList.Instance == null || TotalEnemyList.Instance.EnemyDataList == null)
+            if (_enemyDataProvider == null || _enemyDataProvider.ReadyToUseEnemyDataList == null)
             {
-                Debug.LogError("[EnemyPool] TotalEnemyList.Instance is null or empty!");
+                Debug.LogError("[EnemyPool] _enemyDataProvider is null or data list is missing!");
                 return;
             }
             
             _isInitialized = true;
-
-            // Luồng tạo Pool:
-            // 1. TotalEnemyList đọc json EnemyDataConfig.
-            // 2. Chắp vá GameObject prefab từ Inspector (circleHead, shieldBot...) sang mỗi object data.
-            // 3. EnemyPool chạy vòng lặp với TotalEnemyList.EnemyDataList đã được gắn prefab.
-            foreach (var data in TotalEnemyList.Instance.EnemyDataList)
+            foreach (var data in _enemyDataProvider.ReadyToUseEnemyDataList)
             {
                 if (data.enemyPrefab == null)
                 {
@@ -89,7 +86,7 @@ namespace Script.Game.Enemy
                 // Dynamic pool expansion
                 Debug.LogWarning($"[EnemyPool] Pool '{enemyName}' is empty! Creating a new one dynamically...");
                 
-                var data = TotalEnemyList.Instance.EnemyDataList.Find(d => d.enemyName == enemyName);
+                var data = _enemyDataProvider.ReadyToUseEnemyDataList.Find(d => d.enemyName == enemyName);
                 if (data == null || data.enemyPrefab == null) 
                 {
                     Debug.LogError($"[EnemyPool] Data missing for expanding '{enemyName}'");
@@ -149,7 +146,7 @@ namespace Script.Game.Enemy
             EnemyAIController controller = enemy.GetComponent<EnemyAIController>();
             if (controller != null)
             {
-                controller.InjectDependencies(EnemyTargetManager.Instance, this.ReturnEnemy);
+                controller.InjectDependencies(_targetManager, this.ReturnEnemy);
             }
             
             return enemy;

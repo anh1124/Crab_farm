@@ -8,25 +8,25 @@ namespace Script.Game.Mobs.MobsManager
     [RequireComponent(typeof(GuardAlarmSystem))]
     [RequireComponent(typeof(GuardSquadSystem))]
     [RequireComponent(typeof(GuardWallSystem))]
-    public class GuardManager : MonoBehaviour, IDataListBootstrap
+    public class GuardManager : MonoBehaviour, IDataListBootstrap, IGuardProvider
     {
-        public static GuardManager Instance { get; private set; }
 
         public GuardAlarmSystem Alarm { get; private set; }
         public GuardSquadSystem Squad { get; private set; }
         public GuardWallSystem Wall { get; private set; }
-
-        [Header("Debug Settings")]
-        public bool showDebugLogs = false;
         
+        public float archerHuntingRange => _archerHuntingRange;
+        [SerializeField] private float _archerHuntingRange = 25f;
+
         [Header("Visualization Debug")]
         public bool isDebugHuntingRange = true;
-        public float archerHuntingRange = 25f;
+        public bool showDebugLogs = true;
+
+        private Script.Manager.Building.BuildingManager _bm;
+        private Script.Manager.Building.BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<Script.Manager.Building.BuildingManager>());
 
         private void Awake()
         {
-            InitializeSingleton();
-             
             Alarm = GetComponent<GuardAlarmSystem>();
             if (Alarm == null) Alarm = gameObject.AddComponent<GuardAlarmSystem>();
             
@@ -37,18 +37,15 @@ namespace Script.Game.Mobs.MobsManager
             if (Wall == null) Wall = gameObject.AddComponent<GuardWallSystem>();
         }
 
+        public void Setup(Script.Manager.Building.BuildingPlacementManager placementManager, Script.Manager.EntitySaveManager saveManager)
+        {
+            // Inject dependencies
+            Debug.Log("[GuardManager] Dependencies wired via Setup.");
+        }
+
         private void InitializeSingleton()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DebugLog("GuardManager initialized");
-            }
-            else if (Instance != this)
-            {
-                Debug.LogWarning("[GuardManager] Duplicate instance detected, destroying...");
-                Destroy(gameObject);
-            }
+            // Singleton removed
         }
 
         #region IDataListBootstrap Implementation
@@ -113,12 +110,12 @@ namespace Script.Game.Mobs.MobsManager
         public Vector3? GetHuntingRangeStartPosition(bool isLeft)
         {
             GameObject wall = isLeft ? Wall?.currentLeftWall : Wall?.currentRightWall;
-            
             if (wall != null) return wall.transform.position;
-            
-            if (Script.Manager.Building.BuildingManager.instance != null && Script.Manager.Building.BuildingManager.instance.currentTownCenter != null)
-                return Script.Manager.Building.BuildingManager.instance.currentTownCenter.transform.position;
-            
+
+            // Fallback to TownCenter if no wall found
+            if (BM != null && BM.currentTownCenter != null) 
+                return BM.currentTownCenter.transform.position;
+
             return null;
         }
         
@@ -136,7 +133,8 @@ namespace Script.Game.Mobs.MobsManager
             if (!isDebugHuntingRange) return;
             float range = archerHuntingRange;
             Vector3 rayDir = isLeft ? Vector3.left : Vector3.right;
-            Debug.DrawRay(wallPos, rayDir * range, Color.blue);
+            // Elevate ray for better visibility (+2m)
+            Debug.DrawRay(wallPos + Vector3.up * 2.0f, rayDir * range, Color.blue);
         }
 
         [ContextMenu("Debug Archer Positions")]
@@ -144,13 +142,19 @@ namespace Script.Game.Mobs.MobsManager
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             sb.AppendLine("=== ARCHER POSITION DEBUG INFO ===");
+            sb.AppendLine($"Enemy Attack: {isEnemyAttack}");
             
-            if (Script.Manager.Building.BuildingManager.instance != null && Script.Manager.Building.BuildingManager.instance.currentTownCenter != null)
+            float plazaDistance = -1f;
+            if (BM != null && BM.currentTownCenter != null)
             {
-                var tc = Script.Manager.Building.BuildingManager.instance.currentTownCenter;
+                var tc = BM.currentTownCenter;
                 sb.AppendLine($"TownCenter Pos: {tc.transform.position}");
                 var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
-                if (tcBehavior != null) sb.AppendLine($"Plaza Distance: {tcBehavior.plazaDistance}");
+                if (tcBehavior != null)
+                {
+                    plazaDistance = tcBehavior.plazaDistance;
+                    sb.AppendLine($"Plaza Distance: {plazaDistance}");
+                }
                 else sb.AppendLine("Plaza Distance: N/A (Behavior Missing)");
             }
             else
@@ -160,6 +164,14 @@ namespace Script.Game.Mobs.MobsManager
             
             if (Squad != null)
             {
+                sb.AppendLine("--- SLOT SETTINGS (Inspector) ---");
+                sb.AppendLine($"archerSlotCount: {Squad.archerSlotCount}");
+                sb.AppendLine($"defaultSlotOffset: {Squad.defaultSlotOffset}");
+                sb.AppendLine($"archerSlotSpacing: {Squad.archerSlotSpacing}");
+                sb.AppendLine($"rowDepthOffset: {Squad.rowDepthOffset}");
+                sb.AppendLine($"currentLeftWall: {(currentLeftWall != null ? currentLeftWall.name : "NULL")}");
+                sb.AppendLine($"currentRightWall: {(currentRightWall != null ? currentRightWall.name : "NULL")}");
+
                 sb.AppendLine($"--- LEFT FLANK ({Squad.leftFlankArchers.Count}) ---");
                 for(int i=0; i<Squad.leftFlankArchers.Count; i++)
                 {
@@ -167,7 +179,18 @@ namespace Script.Game.Mobs.MobsManager
                     if(archer != null)
                     {
                         int slotIndex = i % Squad.archerSlotCount;
-                        sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {Squad.GetDefensePositionForArcher(archer)}");
+                        int rowIndex = i / Squad.archerSlotCount;
+                        float requestedOffset = Squad.defaultSlotOffset + (slotIndex * Squad.archerSlotSpacing) + (rowIndex * Squad.rowDepthOffset);
+                        float effectiveOffset = requestedOffset;
+                        bool isPlazaFallback = currentLeftWall == null;
+                        if (isPlazaFallback && plazaDistance > 0f)
+                        {
+                            float maxSafeOffset = Mathf.Max(0.5f, plazaDistance - 0.5f);
+                            effectiveOffset = Mathf.Min(requestedOffset, maxSafeOffset);
+                        }
+
+                        sb.AppendLine($"[{i}] Slot: {slotIndex} Row: {rowIndex} | Pos: {archer.transform.position} | Target: {Squad.GetDefensePositionForArcher(archer)}");
+                        sb.AppendLine($"     requestedOffset: {requestedOffset:F2} | effectiveOffset: {effectiveOffset:F2} | mode: {(isPlazaFallback ? "PlazaFallback" : "WallDefense")}");
                     }
                 }
                 
@@ -178,7 +201,18 @@ namespace Script.Game.Mobs.MobsManager
                     if(archer != null)
                     {
                         int slotIndex = i % Squad.archerSlotCount;
-                        sb.AppendLine($"[{i}] Slot: {slotIndex} | Pos: {archer.transform.position} | Target: {Squad.GetDefensePositionForArcher(archer)}");
+                        int rowIndex = i / Squad.archerSlotCount;
+                        float requestedOffset = Squad.defaultSlotOffset + (slotIndex * Squad.archerSlotSpacing) + (rowIndex * Squad.rowDepthOffset);
+                        float effectiveOffset = requestedOffset;
+                        bool isPlazaFallback = currentRightWall == null;
+                        if (isPlazaFallback && plazaDistance > 0f)
+                        {
+                            float maxSafeOffset = Mathf.Max(0.5f, plazaDistance - 0.5f);
+                            effectiveOffset = Mathf.Min(requestedOffset, maxSafeOffset);
+                        }
+
+                        sb.AppendLine($"[{i}] Slot: {slotIndex} Row: {rowIndex} | Pos: {archer.transform.position} | Target: {Squad.GetDefensePositionForArcher(archer)}");
+                        sb.AppendLine($"     requestedOffset: {requestedOffset:F2} | effectiveOffset: {effectiveOffset:F2} | mode: {(isPlazaFallback ? "PlazaFallback" : "WallDefense")}");
                     }
                 }
             }

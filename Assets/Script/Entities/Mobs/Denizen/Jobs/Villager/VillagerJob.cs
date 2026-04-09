@@ -19,18 +19,40 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         public VillagerToTownState  ToTownState  { get; private set; }
         public VillagerRunToolState RunToolState { get; private set; }
         public VillagerFearState    FearState    { get; private set; }
-
+        public VillagerDropCoinState DropCoinState { get; private set; }
+        
         private VillagerItemHandler _itemHandler;
         private VillagerSensorHandler _sensor;
+        private bool _isInitialized;
 
         protected void Awake()
         {
+            InitializeBrain();
+        }
+
+        private void InitializeBrain()
+        {
+            if (_isInitialized) return;
+
             if (Context == null) Context = GetComponentInParent<DenizenContext>();
             IdleState    = new VillagerIdleState();
             ToTownState  = new VillagerToTownState();
             RunToolState = new VillagerRunToolState();
             FearState    = new VillagerFearState();
+            DropCoinState = new VillagerDropCoinState();
 
+            // Initialize minimal handlers for safety during early activation (e.g. Loading)
+            if (Context != null)
+            {
+                _itemHandler = new VillagerItemHandler(Context);
+                _sensor = new VillagerSensorHandler(Context, this);
+            }
+            _isInitialized = true;
+        }
+
+        protected override void OnContextInjected()
+        {
+            InitializeBrain();
             _itemHandler = new VillagerItemHandler(Context);
             _sensor = new VillagerSensorHandler(Context, this);
         }
@@ -38,6 +60,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         #region Brain & Transitions
         public override void UpdateBehavior()
         {
+            InitializeBrain();
             if (Context == null) return;
 
             // [DETECTOR] — Gọi scanner thủ công (giống Enemy pattern)
@@ -86,7 +109,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             }
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
-            if (DenizenManager.Instance != null) DenizenManager.Instance.RegisterDenizen(gameObject);
+            var dm = FindObjectOfType<DenizenManager>();
+            if (dm != null) dm.RegisterDenizen(gameObject);
 
             ChangeState(Context.Status != null && Context.Status.isFearPending ? (DenizenState)FearState : IdleState);
         }
@@ -94,7 +118,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         private void OnDisable()
         {
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Unregister(this);
-            if (DenizenManager.Instance != null) DenizenManager.Instance.UnregisterDenizen(gameObject); // Bug fix: was Register
+            var dm = FindObjectOfType<DenizenManager>();
+            if (dm != null) dm.UnregisterDenizen(gameObject); // Bug fix: was Register
 
             if (Context != null)
                 _sensor.Disable();

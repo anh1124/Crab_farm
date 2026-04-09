@@ -125,10 +125,11 @@ namespace Script.Game.Enemy
             {
                 _enemyID = save.enemyID;
 
-                // QUAN TRỌNG: Re-setup stats cơ bản từ TotalEnemyList dựa trên ID trước khi áp dụng máu hiện tại
-                if (TotalEnemyList.Instance != null && TotalEnemyList.Instance.EnemyDataList != null)
+                // QUAN TRỌNG: Re-setup stats cơ bản dựa trên ID trước khi áp dụng máu hiện tại
+                var dataProvider = FindObjectOfType<TotalEnemyList>();
+                if (dataProvider != null && dataProvider.ReadyToUseEnemyDataList != null)
                 {
-                    var baseData = TotalEnemyList.Instance.EnemyDataList.Find(d => d.enemyName == _enemyID);
+                    var baseData = dataProvider.ReadyToUseEnemyDataList.Find(d => d.enemyName == _enemyID);
                     if (baseData != null)
                     {
                         Setup(baseData);

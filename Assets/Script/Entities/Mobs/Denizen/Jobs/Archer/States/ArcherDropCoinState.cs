@@ -49,7 +49,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
              var archer = ctx.CurrentJob as ArcherJob;
              if (archer == null) return;
 
-             if (ctx.GuardManager != null && ctx.GuardManager.Alarm.isEnemyAttack)
+             if (ctx.GuardManager != null && ctx.GuardManager.isEnemyAttack)
              {
                  archer.ChangeState(archer.ReturnToBaseState);
              }

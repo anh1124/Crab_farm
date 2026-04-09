@@ -11,7 +11,7 @@ namespace Script.Manager.GamePlayManager
 
 
         [Header("Tick Settings")]
-        [SerializeField] private float tickInterval = 0.2f; 
+        [SerializeField] private float tickInterval = 0.05f; 
         [SerializeField] private bool showDebugLog = false;
 
         private void Awake()
@@ -31,7 +31,7 @@ namespace Script.Manager.GamePlayManager
         private readonly List<INPCBehavior> _npcs = new List<INPCBehavior>();
         private float _timer = 0f;
         private int _bucketIndex = 0;
-        private const int BUCKET_COUNT = 10; 
+        private const int BUCKET_COUNT = 5; // Chia làm 5 nhóm thay vì 10 để nhạy hơn (10ms/bucket)
 
         private void Update()
         {
@@ -57,23 +57,25 @@ namespace Script.Manager.GamePlayManager
             int count = _npcs.Count;
             if (count == 0) return;
 
-            // Dùng CeilToInt để đảm bảo nếu có ít NPC thì vẫn được phân vào các bucket đầu
             int bucketSize = Mathf.CeilToInt((float)count / BUCKET_COUNT);
             int startIndex = _bucketIndex * bucketSize;
             int endIndex = Mathf.Min(startIndex + bucketSize, count);
 
             if (startIndex >= count) return;
 
-            for (int i = endIndex - 1; i >= startIndex; i--)
+            // Safe iteration: copy to a temporary list to avoid issues if a job unregisters itself during update
+            List<INPCBehavior> currentBatch = new List<INPCBehavior>();
+            for (int i = startIndex; i < endIndex; i++)
             {
-                if (i < 0 || i >= count) continue;
-                var npc = _npcs[i];
-                if (npc == null || (npc as UnityEngine.Object) == null) 
-                { 
-                    _npcs.RemoveAt(i); 
-                    continue; 
+                if (i < _npcs.Count) currentBatch.Add(_npcs[i]);
+            }
+
+            foreach (var npc in currentBatch)
+            {
+                if (npc != null && (npc as UnityEngine.Object) != null)
+                {
+                    npc.UpdateBehavior();
                 }
-                npc.UpdateBehavior();
             }
         }
 

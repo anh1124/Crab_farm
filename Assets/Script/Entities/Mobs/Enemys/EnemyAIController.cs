@@ -105,9 +105,10 @@ namespace Script.Game.Enemy.Core
             }
 
             // [TIME-BASED STATE TRANSITION]
-            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
+            var gtm = UnityEngine.Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            if (gtm != null)
             {
-                bool isDay = Script.Manager.WorldManager.GameTimeManager.Instance.IsDaytime;
+                bool isDay = gtm.IsDaytime;
                 if (!(_currentState is Script.Game.Enemy.States.AttackState))
                 {
                     // [CORRECTED]: Đêm thì Tiến công, Ngày thì Rút lui

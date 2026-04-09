@@ -15,12 +15,19 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             var coin = item.GetComponent<PhysicalItem>();
             if (coin != null && coin.itemType == ItemType.Coin && coin.IsAvailable())
             {
-                Context.Status.coinTarget = null;
-                // Thêm xu vào túi cư dân
+                Debug.Log($"[VagrantItemHandler] Coin detected at {coin.transform.position}. Picking up and changing role to Villager.");
+                Context.Status.coinTarget = null; // Quan trọng: Clear target để tránh jitter
                 Context.Status.AddCoin(1);
 
                 // Đổi nghề sang Villager
-                Context.RoleController?.ChangeRole(NPCRole.Villager);
+                if (Context.RoleController != null)
+                {
+                    Context.RoleController.ChangeRole(NPCRole.Villager);
+                }
+                else
+                {
+                    Debug.LogError("[VagrantItemHandler] RoleController missing! Cannot change to Villager.");
+                }
                 return true;
             }
             return false;

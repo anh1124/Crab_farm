@@ -20,14 +20,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
 
         public override void UpdateBehavior(DenizenContext ctx)
         {
-            var vSoul = ctx.VillagerJob;
-            if (vSoul == null) return;
+            var villagerJob = ctx.VillagerJob;
+            if (villagerJob == null) return;
 
             // Nếu đã đến trung tâm thành phố thì quay về Idle
-            if (vSoul.HasReachedPosition(_target))
+            if (villagerJob.HasReachedPosition(_target))
             {
                 if (ctx.Movement != null) ctx.Movement.Stop();
-                vSoul.ChangeState(vSoul.IdleState);
+                villagerJob.ChangeState(villagerJob.IdleState);
             }
         }
 

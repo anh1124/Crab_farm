@@ -72,10 +72,21 @@ namespace Script.Game.Mobs.Denizen.Core
 
         #region Managers — Local Cache (resolved at Runtime or Editor)
         [Header("Managers")]
-        public GuardManager GuardManager;
-        public GameTimeManager TimeManager;
+        public IGuardProvider GuardManager;
+        public IGameTimeProvider TimeManager;
         public WallAndStumpManager WallManager;
         public NPCUpdateManager NPCUpdateManager;
+
+        public void Setup(IGuardProvider guard, IGameTimeProvider time, WallAndStumpManager wall, NPCUpdateManager npcUpdate, Script.Game.Combat.IArrowPool arrowPool = null)
+        {
+            GuardManager = guard;
+            TimeManager = time;
+            WallManager = wall;
+            NPCUpdateManager = npcUpdate;
+
+            if (ArcherShooting != null && arrowPool != null)
+                ArcherShooting.Setup(arrowPool);
+        }
         #endregion
 
         [Header("Skills & Casting")]
@@ -110,11 +121,11 @@ namespace Script.Game.Mobs.Denizen.Core
             VillagerJob = GetComponentInChildren<VillagerJob>(true);
             ArcherJob = GetComponentInChildren<ArcherJob>(true);
 
-            // Managers (Thường là Singleton nên có thể gán luôn)
-            GuardManager = GuardManager.Instance;
-            TimeManager = GameTimeManager.Instance;
-            WallManager = WallAndStumpManager.Instance;
-            NPCUpdateManager = NPCUpdateManager.Instance;
+            // Managers (DI preferred, this is for Editor convenience)
+            GuardManager = FindObjectOfType<MobsManager.GuardManager>();
+            TimeManager = FindObjectOfType<GameTimeManager>();
+            WallManager = FindObjectOfType<WallAndStumpManager>();
+            NPCUpdateManager = FindObjectOfType<NPCUpdateManager>();
 
             //Debug.Log($"[DenizenContext] Auto-find complete for {gameObject.name}");
         }
@@ -133,6 +144,7 @@ namespace Script.Game.Mobs.Denizen.Core
         private void Awake()
         {
             // Fallback: tự tìm nếu chưa gán qua Inspector
+            if (Status == null)         Status = GetComponent<DenizenStatus>();
             if (RoleController == null) RoleController = GetComponent<DenizenRoleController>();
             
             // Ưu tiên tìm Animator ở child (Skin/Body) theo cấu trúc prefab chuẩn
@@ -142,15 +154,19 @@ namespace Script.Game.Mobs.Denizen.Core
             if (Movement == null)       Movement = GetComponent<DenizenMovement>();
             if (RayCaster == null)      RayCaster = GetComponentInChildren<RayCastHelper>(true);
             if (CircleDetect == null)   CircleDetect = GetComponentInChildren<CircleDetectHelper>(true);
+            if (CoinSharing == null)    CoinSharing = GetComponent<DenizenCoinSharing>();
+            if (SkillManager == null)   SkillManager = GetComponent<Script.Game.PlayerCharacter.Skills.SkillManager>();
+
             if (VagrantJob == null)     VagrantJob = GetComponentInChildren<VagrantJob>(true);
             if (VillagerJob == null)    VillagerJob = GetComponentInChildren<VillagerJob>(true);
             if (ArcherJob == null)      ArcherJob = GetComponentInChildren<ArcherJob>(true);
 
-            // Managers
-            if (GuardManager == null)    GuardManager = GuardManager.Instance;
-            if (TimeManager == null)     TimeManager = GameTimeManager.Instance;
-            if (WallManager == null)     WallManager = WallAndStumpManager.Instance;
-            if (NPCUpdateManager == null) NPCUpdateManager = NPCUpdateManager.Instance;
+            // Managers initialization moved to Setup() called by factory/bootstrapper
+            // Fallback for standalone spawning
+            if (GuardManager == null) GuardManager = FindObjectOfType<MobsManager.GuardManager>();
+            if (TimeManager == null)  TimeManager = FindObjectOfType<GameTimeManager>();
+            if (WallManager == null)  WallManager = FindObjectOfType<WallAndStumpManager>();
+            if (NPCUpdateManager == null) NPCUpdateManager = FindObjectOfType<NPCUpdateManager>();
         }
     }
 }

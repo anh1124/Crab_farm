@@ -54,6 +54,7 @@ namespace Script.Game.Mobs.Denizen.Core
             {
                 float speed = _currentAssignedSpeed > 0f ? _currentAssignedSpeed : _context.Status.walkSpeed;
                 CurrentSpeed = speed;
+                _context.Status.currentSpeed = speed; // Sync to Status for Debugging
                 MovementUtility.MoveTowardsTarget(gameObject, _moveTargetPos, speed);
 
                 // Flip theo hướng di chuyển
@@ -64,6 +65,7 @@ namespace Script.Game.Mobs.Denizen.Core
             else
             {
                 CurrentSpeed = 0f;
+                if (_context.Status != null) _context.Status.currentSpeed = 0f;
             }
         }
     }

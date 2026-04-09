@@ -9,7 +9,12 @@ namespace Script.Game.Mobs.Subjects
         #region Fields & Settings
         [Header("References")]
         [SerializeField] private Transform firePoint;
-        [SerializeField] private ArrowPool arrowPool;
+        private IArrowPool arrowPool;
+        
+        public void Setup(IArrowPool pool)
+        {
+            arrowPool = pool;
+        }
 
         [Header("Projectile Settings")]
         [SerializeField] private float projectileSpeed = 15f;
@@ -79,12 +84,8 @@ namespace Script.Game.Mobs.Subjects
 
             if (arrowPool == null)
             {
-                arrowPool = ArrowPool.Instance;
-                if (arrowPool == null)
-                {
-                    Debug.LogError("[ArcherShooting] ArrowPool not found in scene!");
-                    return;
-                }
+                Debug.LogError($"[ArcherShooting] ArrowPool is null on {gameObject.name}!");
+                return;
             }
 
             if (wallLayer.value == 0)
@@ -101,7 +102,8 @@ namespace Script.Game.Mobs.Subjects
             }
 
             float finalAngle = cachedAngle;
-            float finalSpeed = cachedSpeed;
+            // Clamp speed: tránh mũi tên vô lý khi target quá gần (speed → ∞)
+            float finalSpeed = Mathf.Min(cachedSpeed, projectileSpeed * 3f);
 
             if (accuracy < 1.0f)
                 finalAngle += Random.Range(-5f, 5f) * (1f - accuracy);
@@ -189,13 +191,10 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
 
-            // Hard fallback: 85°, vẫn tính speed hướng về enemy
-            cachedAngle = 85f;
-            cachedSpeed = TrajectoryPredictor.CalculateLaunchSpeed(
-                firePoint.position, targetPosition, 85f, actualGravity);
-            if (cachedSpeed <= 0f) cachedSpeed = projectileSpeed;
-            if (showDebugInfo)
-                Debug.LogWarning($"[ArcherShooting] HARD FALLBACK 85° | speed={cachedSpeed:F1}");
+            // Hard fallback: 45°, tốc độ cố định để tránh lực vô lý
+            cachedAngle = 45f;
+            cachedSpeed = projectileSpeed;
+            Debug.LogWarning($"[ArcherShooting] HARD FALLBACK 45° fixed speed={cachedSpeed:F1} (không tìm thấy quỹ đạo hợp lệ)");
         }
 
         // ─────────────────────────────────────────────────────────────────────

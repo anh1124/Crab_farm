@@ -34,8 +34,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
                 return;
             }
 
-            // Nếu thấy đồng xu xung quanh
-            if (ctx.Status.coinTarget != null)
+            // Nếu thấy đồng xu xung quanh (và nó còn đang hoạt động)
+            if (ctx.Status.coinTarget != null && ctx.Status.coinTarget.activeInHierarchy)
             {
                 vaSoul.ChangeState(vaSoul.GetCoinState);
                 return;
@@ -44,7 +44,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             // Logic đi dạo thẩn thờ
             if (!_hasTarget && Time.time >= _nextWalkTime)
             {
-                _target = new Vector3(Utility.GetRandomOutsideSafePos(Random.value > 0.5f, 10f, 25f, 40f).x, ctx.Transform.position.y, 0f);
+                // Xác định phía hiện tại (Trái hay Phải) so với TownCenter để tránh đi xuyên vương quốc
+                var townCenter = Utility.GetTownCenter();
+                float townCenterX = (townCenter != null) ? townCenter.transform.position.x : 0f;
+                bool isRight = ctx.Transform.position.x > townCenterX;
+
+                // Lấy vị trí random ở phía hiện tại, bên ngoài tường thành (hoặc fallback nếu không có tường)
+                _target = new Vector3(Utility.GetRandomOutsideSafePos(isRight, 5f, 15f, 30f).x, ctx.Transform.position.y, 0f);
                 _hasTarget = true;
                 vaSoul.SetMoveTarget(_target);
             }

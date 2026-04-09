@@ -18,22 +18,22 @@ namespace Script.Game.Mobs.Denizen.Core
 
         public override void Enable()
         {
-            if (GameTimeManager.Instance != null)
+            if (Context.TimeManager != null)
             {
                 foreach (var schedule in _schedules)
                 {
-                    GameTimeManager.Instance.SubscribeToHourlyEvent(schedule.hour, schedule.action);
+                    Context.TimeManager.SubscribeToHourlyEvent(schedule.hour, schedule.action);
                 }
             }
         }
 
         public override void Disable()
         {
-            if (GameTimeManager.Instance != null)
+            if (Context.TimeManager != null)
             {
                 foreach (var schedule in _schedules)
                 {
-                    GameTimeManager.Instance.UnsubscribeFromHourlyEvent(schedule.hour, schedule.action);
+                    Context.TimeManager.UnsubscribeFromHourlyEvent(schedule.hour, schedule.action);
                 }
             }
         }

@@ -60,16 +60,26 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 }
             }
 
-            // Đi săn lang thang trong vùng hợp lệ
+            // Đi săn lang lang trong vùng bãi săn được định nghĩa trong GuardManager
             if (!_hasTarget && Time.time >= _nextReevaluate)
             {
-                // Thay vì random cả 2 bên (dễ chạy xuyên vương quốc), hãy săn ở hướng hiện tại của Archer
-                bool huntOnRight = ctx.Transform.position.x > 0;
-                Vector3 huntPos = Script.Utility.GetRandomOutsideSafePos(huntOnRight, 5f, 35f);
-                
-                _huntingTarget = new Vector3(huntPos.x, ctx.Transform.position.y, 0f);
-                _hasTarget = true;
-                archerJob.SetMoveTarget(_huntingTarget);
+                bool isLeft = !ctx.Status.isLeftFlank; // Hướng bãi săn ngược với cánh đứng 
+                if (ctx.GuardManager != null)
+                {
+                    var bounds = WorldUtility.GetHuntingBounds(ctx.GuardManager, ctx.Status.isLeftFlank);
+                    float randomX = Random.Range(bounds.start, bounds.end);
+                    _huntingTarget = new Vector3(randomX, ctx.Transform.position.y, 0f);
+                    _hasTarget = true;
+                    archerJob.SetMoveTarget(_huntingTarget);
+                }
+                else
+                {
+                    // Fallback nếu không có GuardManager
+                    float randomX = Script.Utility.GetRandomHuntingPos(); 
+                    _huntingTarget = new Vector3(randomX, ctx.Transform.position.y, 0f);
+                    _hasTarget = true;
+                    archerJob.SetMoveTarget(_huntingTarget);
+                }
                 
                 if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
                     ctx.Animator.Play("archerMove");

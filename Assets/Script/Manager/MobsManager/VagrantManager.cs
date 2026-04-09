@@ -27,26 +27,36 @@ namespace Script.Game.Mobs.MobsManager
 
     public class VagrantManager : MonoBehaviour
     {
-        public static VagrantManager Instance { get; private set; }
 
         [Header("Thiết lập sinh vagrant (đọc từ file JSON)")]
         public VagrantSpawnConfig config;
         
-        // Tỉ lệ sinh vagrant hiện tại (mặc định = dailySpawnChance, tăng khi sinh thất bại)
+        private IGameTimeProvider _timeProvider;
+        private BuildingPlacementManager _buildingManager;
+        private EntitySaveManager _saveManager;
+        private DenizenManager _denizenManager;
+        private IGuardProvider _guardProvider;
+        
         private float currentSpawnChance;
+
+        public void Setup(IGameTimeProvider timeProvider, BuildingPlacementManager buildingManager, EntitySaveManager saveManager, DenizenManager denizenManager, IGuardProvider guardProvider)
+        {
+            _timeProvider = timeProvider;
+            _buildingManager = buildingManager;
+            _saveManager = saveManager;
+            _denizenManager = denizenManager;
+            _guardProvider = guardProvider;
+
+            if (_timeProvider != null)
+            {
+                _timeProvider.SubscribeToHourlyEvent(6, HandleDailyVagrantSpawn);
+            }
+        }
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                LoadConfig();
-                currentSpawnChance = config.dailySpawnChance; // Khởi tạo tỉ lệ ban đầu
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            LoadConfig();
+            currentSpawnChance = config.dailySpawnChance; 
         }
 
         private void LoadConfig()
@@ -64,25 +74,23 @@ namespace Script.Game.Mobs.MobsManager
 
         private void Start()
         {
-            if (GameTimeManager.Instance != null)
-            {
-                GameTimeManager.Instance.SubscribeToHourlyEvent(6, HandleDailyVagrantSpawn);
-            }
+            // Registration moved to Setup()
         }
 
         private void OnDestroy()
         {
-            if (GameTimeManager.Instance != null)
+            if (_timeProvider != null)
             {
-                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(6, HandleDailyVagrantSpawn);
+                _timeProvider.UnsubscribeFromHourlyEvent(6, HandleDailyVagrantSpawn);
             }
         }
 
         private void HandleDailyVagrantSpawn()
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null) return;
+            var buildingManager = FindObjectOfType<Script.Manager.Building.BuildingManager>();
+            if (buildingManager == null || buildingManager.currentTownCenter == null) return;
             
-            int townCenterLevel = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>().tier;
+            int townCenterLevel = buildingManager.currentTownCenter.GetComponent<TownCenterStatus>().tier;
             if (townCenterLevel <= 0) return;
             
             int currentVagrantCount = CountExistingVagrants();
@@ -123,9 +131,9 @@ namespace Script.Game.Mobs.MobsManager
 
         private int CountExistingVagrants()
         {
-            if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.denizenContainer == null) return 0;
+            if (_saveManager == null || _saveManager.denizenContainer == null) return 0;
 
-            List<GameObject> objects = EntitySaveManager.Instance.GetObjectsFromContainerList(EntitySaveManager.Instance.denizenContainer);
+            List<GameObject> objects = _saveManager.GetObjectsFromContainerList(_saveManager.denizenContainer);
             
             int vagrantCount = 0;
             foreach (GameObject obj in objects)
@@ -156,12 +164,16 @@ namespace Script.Game.Mobs.MobsManager
                 }
 
                 spawnPosition.y = 0;
-                GameObject vagrantObj = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.denizen, spawnPosition);
+                GameObject vagrantObj = _saveManager.InstanceAndMoveObjectToContainer(PrefabData.Instance.denizen, spawnPosition);
                 if (vagrantObj != null)
                 {
+                    // Đảm bảo vagrant mới được khởi tạo context và Managers
+                    if (_denizenManager != null)
+                    {
+                        _denizenManager.InitializeNewDenizen(vagrantObj, _guardProvider);
+                    }
+                    
                     vagrantObj.tag = "Vagrant";
-                    EntitySaveManager.Instance?.MoveObjectToContainer(vagrantObj);
-
                     var roleCtrl = vagrantObj.GetComponent<DenizenRoleController>();
                     if (roleCtrl != null)
                     {
@@ -178,7 +190,7 @@ namespace Script.Game.Mobs.MobsManager
         private Vector3 DetermineSpawnPosition(bool? isRight = null)
         {
             bool spawnOnRight = isRight ?? (Random.value > 0.5f);
-            GameObject farthestWall = EntitySaveManager.Instance.FindFarthestWall(spawnOnRight);
+            GameObject farthestWall = _saveManager.FindFarthestWall(spawnOnRight);
         
             if (farthestWall == null) return Vector3.zero;
         

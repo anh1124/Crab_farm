@@ -3,12 +3,37 @@ using Script.Manager.WorldManager;
 using Script.Data_Model;
 using System.Collections.Generic;
 using Script.Entities.Structures.SummondPortal;
+using Script.Game.Enemy;
 
 namespace Script.Manager.GamePlayManager
 {
     public class EnemyPortalManager : MonoBehaviour
     {
         public static EnemyPortalManager Instance { get; private set; }
+
+        private IEnemyPool _enemyPool;
+        private IEnemyDataProvider _enemyDataProvider;
+        private IGameTimeProvider _timeProvider;
+        private bool _isSubscribedToTime = false;
+
+        public void Setup(IEnemyPool pool, IEnemyDataProvider dataProvider, IGameTimeProvider timeProvider)
+        {
+            _enemyPool = pool;
+            _enemyDataProvider = dataProvider;
+            _timeProvider = timeProvider;
+
+            // Đăng ký ngay khi Setup() được gọi để tránh race condition với Start()
+            if (_timeProvider != null && !_isSubscribedToTime)
+            {
+                _timeProvider.SubscribeToHourlyEvent(6, CheckAndSpawnPortals);
+                _isSubscribedToTime = true;
+                Debug.Log("[EnemyPortalManager] Đã đăng ký CheckAndSpawnPortals vào giờ 6:00 AM.");
+            }
+            else if (_timeProvider == null)
+            {
+                Debug.LogWarning("[EnemyPortalManager] Setup: timeProvider là null! Portal sẽ không tự sinh theo ngày.");
+            }
+        }
 
         public GameObject portalL;
         public GameObject portalR;
@@ -32,16 +57,30 @@ namespace Script.Manager.GamePlayManager
 
         private void Start()
         {
-            // Đăng ký kiểm tra quá trình sinh cổng vào mỗi buổi sáng (6:00 AM)
-            GameTimeManager.Instance.SubscribeToHourlyEvent(GameTimeManager.MORNING_HOUR, CheckAndSpawnPortals);
+            // Nếu Setup() chưa được gọi (ví dụ: scene test đơn lẻ), fallback tự tìm
+            if (!_isSubscribedToTime)
+            {
+                var tp = FindObjectOfType<GameTimeManager>();
+                if (tp != null)
+                {
+                    _timeProvider = tp;
+                    _timeProvider.SubscribeToHourlyEvent(6, CheckAndSpawnPortals);
+                    _isSubscribedToTime = true;
+                    Debug.LogWarning("[EnemyPortalManager] Start() fallback: auto-found timeProvider và đăng ký ngưỡng 6:00 AM.");
+                }
+                else
+                {
+                    Debug.LogWarning("[EnemyPortalManager] Start(): Không tìm thấy GameTimeManager. Portal sẽ không tự sinh!");
+                }
+            }
         }
 
         private void CheckAndSpawnPortals()
         {
-            // Nếu chưa có TownCenter thì không sinh cổng
-            if (Utility.GetTownCenter() == null)
+            // Nếu chưa có TownCenter hoặc TownCenter tier = 0 thì không sinh cổng
+            if (Utility.GetTownCenterTier() == 0)
             {
-                Debug.Log("[EnemyPortalManager] Chưa có TownCenter, hủy sinh cổng hôm nay.");
+                Debug.Log("[EnemyPortalManager] Chưa có TownCenter hoặc Tier = 0, hủy sinh cổng hôm nay.");
                 return;
             }
 
@@ -110,20 +149,16 @@ namespace Script.Manager.GamePlayManager
 
             // Lưu reference lại
             if (isRightSide)
-            {
                 portalR = newPortal;
-            }
             else
-            {
                 portalL = newPortal;
-            }
 
             // Khởi tạo Setup cho portal behavior
             var behavior = newPortal.GetComponent<EnemyPortalBehavior>();
             if (behavior) 
             {
-                // Gọi tới hàm setup của behavior
-                behavior.Setup();
+                // Gọi tới hàm setup của behavior với các dependency được tiêm vào
+                behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
             }
 
             Debug.Log($"[EnemyPortalManager] Đã tạo thành công cổng {(isRightSide ? "PHẢI" : "TRÁI")} tại: {spawnPos}");
@@ -180,11 +215,23 @@ namespace Script.Manager.GamePlayManager
             return list;
         }
 
+        /// <summary>
+        /// Inject dependencies do portal tự gọi khi load từ save.
+        /// </summary>
+        public void InjectDependenciesIntoPortal(EnemyPortalBehavior portal)
+        {
+            if (portal != null)
+            {
+                portal.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
+                Debug.Log($"[EnemyPortalManager] Đã tiêm lại dependencies cho portal tại {portal.transform.position} (Load từ save).");
+            }
+        }
+
         private void OnDestroy()
         {
-            if (GameTimeManager.Instance != null && GameTimeManager.Instance.gameObject)
+            if (_timeProvider != null && _isSubscribedToTime)
             {
-                GameTimeManager.Instance.UnsubscribeFromHourlyEvent(GameTimeManager.MORNING_HOUR, CheckAndSpawnPortals);
+                _timeProvider.UnsubscribeFromHourlyEvent(6, CheckAndSpawnPortals);
             }
         }
     }

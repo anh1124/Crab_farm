@@ -9,7 +9,7 @@ namespace Script.Game.Combat
     /// - Max: 250 arrows
     /// - Auto-expand when needed
     /// </summary>
-    public class ArrowPool : MonoBehaviour
+    public class ArrowPool : MonoBehaviour, IArrowPool
     {
         [Header("Pool Configuration")]
         [SerializeField] private GameObject arrowPrefab;
@@ -17,23 +17,31 @@ namespace Script.Game.Combat
         [SerializeField] private int maxPoolSize = 250;  // Hard limit
         [SerializeField] private Transform poolParent;
         
-        public static ArrowPool Instance { get; private set; }
-
         private Queue<GameObject> pool = new Queue<GameObject>();
         private int totalCreated = 0;
+
+        private Script.Data_Model.PrefabData _prefabData;
+
+        public void Setup(Script.Data_Model.PrefabData prefabData)
+        {
+            _prefabData = prefabData;
+        }
+
+        public void Init()
+        {
+            if (_prefabData != null && _prefabData.arrow != null)
+            {
+                Initialize(_prefabData.arrow);
+            }
+            else if (arrowPrefab != null)
+            {
+                Initialize(arrowPrefab);
+            }
+            Debug.Log("✅ ArrowPool initialized via Init()");
+        }
         
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-                return;
-            }
-
             if (poolParent == null)
             {
                 GameObject parentObj = new GameObject("ArrowPool_Container");
@@ -41,7 +49,7 @@ namespace Script.Game.Combat
                 poolParent.SetParent(transform);
             }
             
-            // If prefab is already set via Inspector, initialize
+            // Legacy/Inspector support
             if (arrowPrefab != null)
             {
                 Initialize(arrowPrefab);

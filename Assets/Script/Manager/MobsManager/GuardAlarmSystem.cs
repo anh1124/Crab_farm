@@ -23,7 +23,7 @@ namespace Script.Game.Mobs.MobsManager
 
         private void Start()
         {
-            guardManager = GuardManager.Instance;
+            guardManager = FindObjectOfType<GuardManager>();
         }
 
         public void RegisterEnemy(GameObject enemy)

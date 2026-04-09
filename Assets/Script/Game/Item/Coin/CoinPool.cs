@@ -8,47 +8,39 @@ namespace Script.Game.Item.Coin
     /// Pool quản lý Coin dựa trên thiết kế của ArrowPool.
     /// Script này được tự động AddComponent vào CoinContainer bởi EntitySaveManager.
     /// </summary>
-    public class CoinPool : MonoBehaviour
+    public class CoinPool : MonoBehaviour, ICoinPool
     {
         [Header("Pool Configuration")]
         [SerializeField] private GameObject coinPrefab;
         [SerializeField] private int minPoolSize = 30;   // Preload
         [SerializeField] private int maxPoolSize = 250;  // Hard limit
         
-        public static CoinPool Instance { get; private set; }
-
         private Queue<GameObject> pool = new Queue<GameObject>();
         private int totalCreated = 0;
-        
-        private void Awake()
+        private PrefabData _prefabData;
+
+        public void Setup(PrefabData prefabData)
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(this); // Nếu có CoinPool khác chạy trước, hủy component này đi
-                return;
-            }
+            _prefabData = prefabData;
         }
 
-        private void Start()
+        public void Init()
         {
-            // Tự động tìm coinPrefab từ PrefabData nếu inspector null
-            if (coinPrefab == null && PrefabData.Instance != null)
+            if (coinPrefab == null && _prefabData != null)
             {
-                coinPrefab = PrefabData.Instance.coinPrefab;
+                coinPrefab = _prefabData.coinPrefab;
             }
 
             if (coinPrefab != null)
             {
                 Initialize(coinPrefab);
             }
-            else
-            {
-                Debug.LogError("[CoinPool] Missing Coin Prefab in PrefabData!");
-            }
+            Debug.Log("✅ CoinPool initialized via Init()");
+        }
+        
+        private void Awake()
+        {
+            // Singleton removed
         }
 
         public void Initialize(GameObject prefab) 

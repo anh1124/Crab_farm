@@ -14,9 +14,10 @@ namespace Script.Game.PlayerCharacter.Skills
     {
         public override void OnStart(GameObject owner)
         {
-            if (VagrantManager.Instance == null)
+            var vm = FindObjectOfType<VagrantManager>();
+            if (vm == null)
             {
-                Debug.LogError("[SpawnVagrantSkill] VagrantManager.Instance is null!");
+                Debug.LogError("[SpawnVagrantSkill] VagrantManager not found in scene!");
                 return;
             }
 
@@ -24,7 +25,7 @@ namespace Script.Game.PlayerCharacter.Skills
             float dir = owner.transform.localScale.x;
             Vector3 spawnPos = owner.transform.position + new Vector3(dir * 2f, 2f, 0f);
 
-            VagrantManager.Instance.SpawnVagrants(1, null, spawnPos);
+            vm.SpawnVagrants(1, null, spawnPos);
             Debug.Log($"[SpawnVagrantSkill] Spawned 1 Vagrant at {spawnPos}");
         }
 

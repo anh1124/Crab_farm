@@ -4,31 +4,35 @@ using UnityEngine;
 
 namespace Script.Game.Enemy
 {
-    public class TotalEnemyList : MonoBehaviour
+    public class TotalEnemyList : MonoBehaviour, IEnemyDataProvider
     {
-
         public GameObject circleHead;
-        
         public GameObject shieldBot;
         public GameObject twoHeadBot;
-
         public GameObject stormHead;
         public GameObject toucher;
+
+        private List<GameObject> _activeEnemies = new List<GameObject>();
+        public List<GameObject> Enemies => _activeEnemies;
+
+        // Implement interface property
+        public List<EnemyDataBase> ReadyToUseEnemyDataList => _readyToUseEnemyDataList;
         
-        public static TotalEnemyList Instance { get; private set; }
+        [SerializeField] private List<EnemyDataBase> _readyToUseEnemyDataList = new List<EnemyDataBase>();
+
+        public void AddEnemy(GameObject enemy)
+        {
+            if (!_activeEnemies.Contains(enemy)) _activeEnemies.Add(enemy);
+        }
+
+        public void RemoveEnemy(GameObject enemy)
+        {
+            if (_activeEnemies.Contains(enemy)) _activeEnemies.Remove(enemy);
+        }
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-               
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-            // Việc khởi tạo data sẽ được gọi thống nhất từ StartGameScrene
+            // Singleton removed. Lifecycle managed by StartGameScene.
         }
 
         private bool _isInitialized = false;
@@ -55,11 +59,10 @@ namespace Script.Game.Enemy
             public List<EnemyDataBase> enemies;
         }
 
-        public List<EnemyDataBase> EnemyDataList = new List<EnemyDataBase>();
-
         public void InitializeEnemyData()
         {
             if (_isInitialized) return;
+            _readyToUseEnemyDataList.Clear(); // Clear old serialized data first
 
             // Load JSON from Resources
             TextAsset jsonFile = Resources.Load<TextAsset>("DataConfig/EnemyDataConfig");
@@ -105,7 +108,7 @@ namespace Script.Game.Enemy
                     if (data.enemyPrefab != null)
                     {
                         readyEnemies.Add(data.enemyName);
-                        EnemyDataList.Add(data); // ✅ CHỈ ADD VÀO LIST CHƠI GAME NẾU CÓ PREFAB
+                        _readyToUseEnemyDataList.Add(data); 
                     }
                     else
                     {
@@ -123,7 +126,7 @@ namespace Script.Game.Enemy
         // Phương thức lấy dữ liệu enemy theo tên
         public EnemyDataBase GetEnemyDataByName(string enemyName)
         {
-            return EnemyDataList.Find(data => data.enemyName == enemyName);
+            return _readyToUseEnemyDataList.Find(data => data.enemyName == enemyName);
         }
         
         
@@ -132,10 +135,10 @@ namespace Script.Game.Enemy
         {
             int monterPowerReturn = 0;
             var selectedMonsters = new List<(EnemyDataBase Data, int Quantity)>();
-
-            if (EnemyDataList == null || EnemyDataList.Count == 0) return selectedMonsters; // Safety check
-
-            var sortedEnemies = EnemyDataList.OrderByDescending(e => e.power).ToList();
+    
+            if (ReadyToUseEnemyDataList == null || ReadyToUseEnemyDataList.Count == 0) return selectedMonsters; // Safety check
+    
+            var sortedEnemies = ReadyToUseEnemyDataList.OrderByDescending(e => e.power).ToList();
             int index = 0;
             int consecutiveFails = 0; // Đếm số lần nhét slot thất bại liên tiếp
 
@@ -190,7 +193,7 @@ namespace Script.Game.Enemy
         [ContextMenu("Debug: In Tình Trạng Data & Prefab")]
         public void DebugDataAndPrefabStatus()
         {
-            if (EnemyDataList == null || EnemyDataList.Count == 0)
+            if (ReadyToUseEnemyDataList == null || ReadyToUseEnemyDataList.Count == 0)
             {
                 Debug.LogWarning("[TotalEnemyList] Danh sách Data trống! Hãy Play game để Initialize trước.");
                 return;
@@ -199,7 +202,7 @@ namespace Script.Game.Enemy
             List<string> readyEnemies = new List<string>();    // Có Data + Có Prefab
             List<string> missingEnemies = new List<string>();  // Có Data nhưng Thiếu Prefab
 
-            foreach (var data in EnemyDataList)
+            foreach (var data in ReadyToUseEnemyDataList)
             {
                 if (data.enemyPrefab != null)
                 {

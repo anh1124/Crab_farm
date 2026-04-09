@@ -6,9 +6,8 @@ using UnityEngine;
 
 namespace Script.Manager.Building
 {
-    public class BuildingPlacementManager : MonoBehaviour
+    public class BuildingPlacementManager : MonoBehaviour, IPlacementProvider
     {
-        public static BuildingPlacementManager Instance { get; private set; }
     
         [Header("Visual Feedback")] 
         private readonly Color validPlacementColor = new Color(0, 1, 0, 0.3f);    // Green
@@ -44,13 +43,17 @@ namespace Script.Manager.Building
         [Header("Runtime Debug Info")]
         [SerializeField] private List<string> detectedObjects = new List<string>();
 
+        private IBuildingProvider _buildingProvider;
+        private EntitySaveManager _saveManager;
+
+        public void Setup(IBuildingProvider building, EntitySaveManager save)
+        {
+            _buildingProvider = building;
+            _saveManager = save;
+        }
+
         private void Awake()
         {
-            if (Instance == null)
-                Instance = this;
-            else
-                Destroy(gameObject);
-
             InitializeVisualComponents();
         }
 
@@ -94,10 +97,10 @@ namespace Script.Manager.Building
 
             SetupPreview(previewInstance);
 
-            if (BuildingManager.instance.currentTownCenter != null)
+            if (_buildingProvider != null && _buildingProvider.currentTownCenter != null)
             {
                 Vector3 playerPos = PlayerController.Instance.player.transform.position;
-                Vector3 townCenterPos = Building.BuildingManager.instance.currentTownCenter.transform.position;
+                Vector3 townCenterPos = _buildingProvider.currentTownCenter.transform.position;
                 Utility.RotateObjectTowardsTownCenter(previewInstance, playerPos, townCenterPos);
             }
             isPlacing = true;
@@ -207,10 +210,10 @@ namespace Script.Manager.Building
             previewInstance.transform.position = previewPos;
             
             // Nếu tag của preview nằm trong danh sách cần định hướng, gọi hàm xoay chung
-            if (Building.BuildingManager.instance.currentTownCenter != null)
+            if (_buildingProvider != null && _buildingProvider.currentTownCenter != null)
             {
                 Vector3 playerPos = PlayerController.Instance.player.transform.position;
-                Vector3 townCenterPos = Building.BuildingManager.instance.currentTownCenter.transform.position;
+                Vector3 townCenterPos = _buildingProvider.currentTownCenter.transform.position;
                 Utility.RotateObjectTowardsTownCenter(previewInstance, playerPos, townCenterPos);
             }
         
@@ -450,9 +453,9 @@ namespace Script.Manager.Building
                 }
             }
 
-            if (minimumDistance is > 0)
+            if (minimumDistance is > 0 && _saveManager != null)
             {
-                var structures = EntitySaveManager.Instance.GetObjectsFromContainerList(EntitySaveManager.Instance.structureContainer);
+                var structures = _saveManager.GetObjectsFromContainerList(_saveManager.structureContainer);
                 foreach (var structure in structures)
                 {
                     if (structure.CompareTag(previewInstance.tag))
@@ -513,12 +516,12 @@ namespace Script.Manager.Building
             }
             bool overallValid = overlapValid && leftValid && rightValid;
 
-            if (overallValid)
+            if (overallValid && _saveManager != null)
             {
                 // Just store the scale, we'll set rotation to identity
                 Vector3 previewScale = previewInstance.transform.localScale;
 
-                GameObject newStructure = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
+                GameObject newStructure = _saveManager.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
                     // Force rotation to identity (no rotation) and apply only the scale from preview
@@ -529,8 +532,12 @@ namespace Script.Manager.Building
                     Debug.Log($"New structure created with rotation: {newStructure.transform.rotation.eulerAngles}, scale: {newStructure.transform.localScale}");
             
                     CleanupPreview();
-                    BuildMenu.instance.ResetShowBuildMenuState();
-                    Building.BuildingManager.instance.UpdateAvailableBuildings();
+                    
+                    // Notifying UI and logic - ideally these would also be injected
+                    var buildMenu = FindObjectOfType<BuildMenu>();
+                    if (buildMenu != null) buildMenu.ResetShowBuildMenuState();
+                    
+                    if (_buildingProvider != null) _buildingProvider.UpdateAvailableBuildings();
                     return true;
                 }
             }

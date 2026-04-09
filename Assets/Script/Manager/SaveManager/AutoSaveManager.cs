@@ -7,11 +7,27 @@ namespace Script.Manager.SaveManager
 {
     public class AutoSaveManager : MonoBehaviour
     {
+        private IGameTimeProvider _timeProvider;
+
+        public void Setup(IGameTimeProvider timeProvider)
+        {
+            _timeProvider = timeProvider;
+            if (_timeProvider != null)
+            {
+                _timeProvider.SubscribeToHourlyEvent(8, TriggerAutoSave);
+            }
+        }
+
         private void Start()
         {
-            if (GameTimeManager.Instance != null)
+            // Initialized via Setup
+        }
+
+        private void OnDestroy()
+        {
+            if (_timeProvider != null)
             {
-                GameTimeManager.Instance.SubscribeToHourlyEvent(8, TriggerAutoSave);
+                _timeProvider.UnsubscribeFromHourlyEvent(8, TriggerAutoSave);
             }
         }
 
@@ -28,24 +44,29 @@ namespace Script.Manager.SaveManager
             // hierarchy update (như destroy, instantiate con) được hoàn tất.
             yield return new WaitForEndOfFrame();
 
-            Debug.Log($"<color=green>[AutoSave] Đang tự động lưu tại {GameTimeManager.Instance.GameHour}h00 (đã delay 1 frame)...</color>");
-
-            // Kiểm tra số lượng object trước khi lưu
-            if (EntitySaveManager.Instance != null)
+            if (_timeProvider != null)
             {
-                if (EntitySaveManager.Instance.playerContainer != null) 
-                    Debug.Log($"[AutoSave Debug] Player count trước khi lưu: {EntitySaveManager.Instance.playerContainer.transform.childCount}");
-                if (EntitySaveManager.Instance.structureContainer != null) 
-                    Debug.Log($"[AutoSave Debug] Structure count trước khi lưu: {EntitySaveManager.Instance.structureContainer.transform.childCount}");
+                Debug.Log($"<color=green>[AutoSave] Đang tự động lưu tại {_timeProvider.GameHour}h00 (đã delay 1 frame)...</color>");
             }
 
-            float originalTimeScale = Time.timeScale;
-            // Time.timeScale = 0; // Đóng băng game
+            // Kiểm tra số lượng object trước khi lưu
+            var entitySaveManager = FindObjectOfType<EntitySaveManager>();
+            var worldFileManager = FindObjectOfType<WorldFileManager>();
 
-            WorldFileManager.Instance.SaveCurrentMap();
+            if (entitySaveManager != null)
+            {
+                if (entitySaveManager.playerContainer != null) 
+                    Debug.Log($"[AutoSave Debug] Player count trước khi lưu: {entitySaveManager.playerContainer.transform.childCount}");
+                if (entitySaveManager.structureContainer != null) 
+                    Debug.Log($"[AutoSave Debug] Structure count trước khi lưu: {entitySaveManager.structureContainer.transform.childCount}");
+            }
+
+            if (worldFileManager != null)
+            {
+                worldFileManager.SaveCurrentMap();
+            }
             
-            // Time.timeScale = originalTimeScale; // Mở lại game
-            Debug.Log($"[AutoSave] Đã gọi xong WorldFileManager.Instance.SaveCurrentMap().");
+            Debug.Log($"[AutoSave] Đã gọi xong WorldFileManager.SaveCurrentMap().");
         }
     }
 }

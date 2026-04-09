@@ -9,6 +9,9 @@ using Script.Game.Mobs.Denizen.Jobs.Vagrant;
 using Script.Game.Mobs.Denizen.Jobs.Villager;
 using Script.Game.Mobs.Denizen.Jobs.Archer;
 using Script.Interfaces;
+using Script.Manager.WorldManager;
+using Script.Game.Structures.Wall_And_Stump;
+using Script.Save_Controller;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
@@ -35,6 +38,39 @@ namespace Script.Game.Mobs.Denizen.Core
         private DenizenStatus _status;//status hiện tại
         private NPCRole _previousRole = NPCRole.Vagrant;//role trước đó
 
+        private IDenizenProvider _denizenProvider;
+        private IGuardProvider _guardProvider;
+        private IGameTimeProvider _timeProvider;
+        private WallAndStumpManager _wallManager;
+        private NPCUpdateManager _npcUpdateManager;
+        private Script.Game.Combat.IArrowPool _arrowPool;
+        private Script.Manager.EntitySaveManager _saveManager;
+
+        public void Setup(IDenizenProvider denizen, IGuardProvider guard, IGameTimeProvider time, WallAndStumpManager wall, NPCUpdateManager npcUpdate, Script.Game.Combat.IArrowPool arrowPool, Script.Manager.EntitySaveManager save)
+        {
+            _denizenProvider = denizen;
+            _guardProvider = guard;
+            _timeProvider = time;
+            _wallManager = wall;
+            _npcUpdateManager = npcUpdate;
+            _arrowPool = arrowPool;
+            _saveManager = save;
+            
+            // Injects context and managers to jobs via private _context
+            if (_context != null)
+            {
+                _context.Setup(_guardProvider, _timeProvider, _wallManager, _npcUpdateManager, _arrowPool);
+                
+                if (_context.VagrantJob != null) _context.VagrantJob.InjectContext(_context);
+                if (_context.VillagerJob != null) _context.VillagerJob.InjectContext(_context);
+                if (_context.ArcherJob != null) _context.ArcherJob.InjectContext(_context);
+            }
+            
+            if (_denizenProvider != null) _denizenProvider.RegisterDenizen(gameObject);
+            
+            ApplyRole(CurrentRole);
+        }
+
         public DenizenJob JobBrain => _currentJob;
 
         private void Awake()
@@ -42,25 +78,19 @@ namespace Script.Game.Mobs.Denizen.Core
             _status = GetComponent<DenizenStatus>();
             if (_context == null) _context = GetComponent<DenizenContext>();
 
-            // Đẩy context vào script job 
-            if (_context.VagrantJob != null) _context.VagrantJob.InjectContext(_context);
-            if (_context.VillagerJob != null) _context.VillagerJob.InjectContext(_context);
-            if (_context.ArcherJob != null) _context.ArcherJob.InjectContext(_context);
-            
             DisableAllJobs();
             _previousRole = CurrentRole;
         }
 
         private void Start()
         {
-            ApplyRole(CurrentRole);
-            DenizenManager.Instance?.RegisterDenizen(gameObject);
+            // Initial role application moved to Setup
         }
 
         private void OnDestroy()
         {
-            DenizenManager.Instance?.UnregisterDenizen(gameObject);
-            if (CurrentRole == NPCRole.Archer) GuardManager.Instance?.UnregisterArcher(gameObject);
+            _denizenProvider?.UnregisterDenizen(gameObject);
+            if (CurrentRole == NPCRole.Archer) _guardProvider?.UnregisterArcher(gameObject);
         }
 
         public void ChangeRole(NPCRole newRole)
@@ -74,7 +104,7 @@ namespace Script.Game.Mobs.Denizen.Core
                 return; // Giữ nguyên role cũ, tránh làm hỏng AI
             }
 
-            if (CurrentRole == NPCRole.Archer) GuardManager.Instance?.UnregisterArcher(gameObject);
+            if (CurrentRole == NPCRole.Archer) _guardProvider?.UnregisterArcher(gameObject);
             if (_status != null) _status.isSkillCasting = false; // Tránh kẹt skill khi đổi role
             
             // Chỉ vô hiệu hóa job cũ khi đã chắc chắn có job mới thay thế
@@ -120,49 +150,63 @@ namespace Script.Game.Mobs.Denizen.Core
                 case NPCRole.Archer:
                     gameObject.tag = Script.Utils.GameTags.Archer;
                     _currentJob = _context.ArcherJob;
-                    GuardManager.Instance?.RegisterArcher(gameObject);
+                    _guardProvider?.RegisterArcher(gameObject);
                     break;
             }
 
             if (_currentJob != null)
             {
-                // Fallback to DenizenManager if JobController was not assigned directly on the Job component
+                // Fallback to DenizenProvider for Animator Controller
                 RuntimeAnimatorController targetController = _currentJob.JobController;
-                if (targetController == null && DenizenManager.Instance != null)
+                
+                // Nếu chưa có provider, thử gọi Setup lại từ DenizenManager nếu có thể
+                if (_denizenProvider == null)
+                {
+                    var manager = FindObjectOfType<DenizenManager>();
+                    if (manager != null) _denizenProvider = manager;
+                }
+
+                if (targetController == null && _denizenProvider != null)
                 {
                     switch (role)
                     {
-                        case NPCRole.Vagrant:  targetController = DenizenManager.Instance.vagrantAnimatorController; break;
-                        case NPCRole.Villager: targetController = DenizenManager.Instance.villagerAnimatorController; break;
-                        case NPCRole.Archer:   targetController = DenizenManager.Instance.archerAnimatorController; break;
-                        case NPCRole.Worker:   targetController = DenizenManager.Instance.workerAnimatorController; break;
-                        case NPCRole.Farmer:   targetController = DenizenManager.Instance.farmerAnimatorController; break;
+                        case NPCRole.Vagrant:  targetController = _denizenProvider.vagrantAnimatorController; break;
+                        case NPCRole.Villager: targetController = _denizenProvider.villagerAnimatorController; break;
+                        case NPCRole.Archer:   targetController = _denizenProvider.archerAnimatorController; break;
+                        case NPCRole.Worker:   targetController = _denizenProvider.workerAnimatorController; break;
+                        case NPCRole.Farmer:   targetController = _denizenProvider.farmerAnimatorController; break;
                     }
                 }
 
+                // CHỈ Swap và Rebind nếu Controller thực sự khác hoặc Animator chưa có controller
                 if (_context.Animator != null && targetController != null)
                 {
-                    Debug.Log($"[DenizenRoleController] Swapping AnimatorController to: {targetController.name} for Job: {role}");
-                    _context.Animator.runtimeAnimatorController = targetController;
-                    _context.Animator.Rebind();
+                    if (_context.Animator.runtimeAnimatorController != targetController)
+                    {
+                        Debug.Log($"[DenizenRoleController] Swapping AnimatorController to: {targetController.name} for Job: {role}");
+                        _context.Animator.runtimeAnimatorController = targetController;
+                        _context.Animator.Rebind();
+                    }
                 }
                 else
                 {
-                    Debug.LogWarning($"[DenizenRoleController] Failed to swap Animator for {role}. Animator={(_context.Animator!=null)} Controller={(targetController!=null)}");
+                    Debug.LogWarning($"[DenizenRoleController] Failed to swap Animator for {role}. Animator={(_context.Animator != null)} Controller={(targetController != null)}");
                 }
 
+                // Kích hoạt Job mới
                 _currentJob.enabled = true;
+                Debug.Log($"[DenizenRoleController] Job Activated: {_currentJob.GetType().Name} for {gameObject.name}");
             }
             else
             {
-                Debug.LogError($"[DenizenRoleController] No Job script found for role: {role}");
+                Debug.LogError($"[DenizenRoleController] CRITICAL: No Job script found for role: {role} in children of {gameObject.name}!");
             }
 
             // Đồng bộ lại role dữ liệu
             CurrentRole = role;
             if (_status != null) _status.Role = role;
 
-            Script.Manager.EntitySaveManager.Instance?.MoveObjectToContainer(gameObject);
+            _saveManager?.MoveObjectToContainer(gameObject);
         }
 
         private void DisableAllJobs()
@@ -209,6 +253,17 @@ namespace Script.Game.Mobs.Denizen.Core
                 : "None";
             sb.AppendLine($"- Current State: {stateName}");
             sb.AppendLine($"- Position: {transform.position}");
+
+            if (ctx.TimeManager != null)
+            {
+                string dayNight = ctx.TimeManager.IsDaytime ? "Day" : "Night";
+                sb.AppendLine($"- World Time: {ctx.TimeManager.GameHour:00}:{ctx.TimeManager.GameMinute:00} ({dayNight})");
+                sb.AppendLine($"- World Date: Day {ctx.TimeManager.GameDay} / Month {ctx.TimeManager.GameMonth} / Year {ctx.TimeManager.GameYear}");
+            }
+            else
+            {
+                sb.AppendLine("- World Time: [TimeManager = null]");
+            }
             
             if (_status.isMoving && _context.Movement != null)
             {
@@ -244,7 +299,7 @@ namespace Script.Game.Mobs.Denizen.Core
                 sb.AppendLine($"assignedWall: {(_status.assignedWall != null ? _status.assignedWall.name : "None")}");
                 sb.AppendLine($"currentTarget: {(_status.currentTarget != null ? _status.currentTarget.name : "None")}");
                 
-                var squad = GuardManager.Instance;
+                var squad = _guardProvider;
                 if (squad != null)
                 {
                     Vector3 defPos = squad.GetDefensePositionForArcher(gameObject);

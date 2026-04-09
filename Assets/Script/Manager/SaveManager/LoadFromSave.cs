@@ -57,7 +57,8 @@ public class LoadFromSave : MonoBehaviour
         //các structure và map hoặc linh tinh sẽ được load ở hàm dưới vì nó phụ thuộc vào việc map đã được tạo hay chưa
         LoadMapJson();
 
-        GameTimeManager.Instance.SetGameTimeFromSave();
+        var gtm = FindObjectOfType<GameTimeManager>(true);
+        if (gtm != null) gtm.SetGameTimeFromSave(worldInfo);
 
         // Load tech status from WorldInfo to PrefabData
         LoadTechStatus();
@@ -76,9 +77,10 @@ public class LoadFromSave : MonoBehaviour
             string mapFilePath = Path.Combine(saveFilePath, "map.json");
             
             // Ensure ChunkManager instance exists
-            if (ChunkManager.Instance == null)
+            var chunkManager = FindObjectOfType<ChunkManager>(true);
+            if (chunkManager == null)
             {
-                Debug.LogError("ChunkManager.Instance is null! Cannot load or generate map.");
+                Debug.LogError("ChunkManager is null! Cannot load or generate map.");
                 return;
             }
             
@@ -87,7 +89,7 @@ public class LoadFromSave : MonoBehaviour
                 Debug.Log("Tìm thấy file map.json, đang load map...");
                 try
                 {
-                    ChunkManager.Instance.LoadMapFromJson(mapFilePath);
+                    chunkManager.LoadMapFromJson(mapFilePath);
                     Debug.Log("Đã load map từ file save.");
                 }
                 catch (Exception ex)
@@ -99,7 +101,14 @@ public class LoadFromSave : MonoBehaviour
             }
             else  // File map chưa tồn tại, tạo map mới từ seed
             {
-                Debug.Log($"File map.json không tồn tại, tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
+                if (worldInfo != null)
+                {
+                    Debug.Log($"File map.json không tồn tại, tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
+                }
+                else
+                {
+                    Debug.LogWarning("File map.json không tồn tại và worldInfo cũng null. Tạo map mới với seed mặc định (0).");
+                }
                 GenerateNewMap();
             }
         }
@@ -121,10 +130,15 @@ public class LoadFromSave : MonoBehaviour
                 return;
             }
             
-            ChunkManager.Instance.GenerateFirstMap(worldInfo.Seed);
-            
-            // Sau khi tạo map mới, lưu lại ngay
-            ChunkManager.Instance.SaveMapToJson(saveFilePath);
+            var chunkManager = FindObjectOfType<ChunkManager>(true);
+            if (chunkManager != null)
+            {
+                int seed = (worldInfo != null) ? worldInfo.Seed : 0;
+                chunkManager.GenerateFirstMap(seed);
+                
+                // Sau khi tạo map mới, lưu lại ngay
+                chunkManager.SaveMapToJson(saveFilePath);
+            }
         }
         catch (Exception ex)
         {
@@ -274,9 +288,9 @@ public class LoadFromSave : MonoBehaviour
             return false;
         }
 
-        if (ChunkManager.Instance == null)
+        if (FindObjectOfType<ChunkManager>(true) == null)
         {
-            Debug.LogError("[LoadFromSave] ChunkManager.Instance is null! Cannot load/generate map.");
+            Debug.LogError("[LoadFromSave] ChunkManager is null! Cannot load/generate map.");
             return false;
         }
 
@@ -317,16 +331,17 @@ public class LoadFromSave : MonoBehaviour
             return;
         }
 
-        if (GameTimeManager.Instance == null)
+        var gtm = FindObjectOfType<GameTimeManager>(true);
+        if (gtm == null)
         {
-            Debug.LogWarning("[LoadFromSave] GameTimeManager.Instance is null, skipping time load");
+            Debug.LogWarning("[LoadFromSave] GameTimeManager is null, skipping time load");
             return;
         }
 
         try
         {
             // Load game time
-            GameTimeManager.Instance.SetGameTimeFromSave();
+            gtm.SetGameTimeFromSave(worldInfo);
             Debug.Log("[LoadFromSave] Game time loaded successfully");
 
             // Load tech status

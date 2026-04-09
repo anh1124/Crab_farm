@@ -12,63 +12,68 @@ namespace Script.Manager.WorldManager
     /// - Gọi: TechManager.Instance.SetFireArrowTech(true); hoặc UpdateTechStatus(...)
     /// - Dữ liệu sẽ được ghi vào WorldFileManager.Instance.worldInfo và lưu bằng SaveTechStatus.
     /// </summary>
-    public class TechManager : MonoBehaviour
+    public class TechManager : MonoBehaviour, ITechProvider
     {
-        public static TechManager Instance { get; private set; }
+        private WorldFileManager _worldFileManager;
+
+        public void Setup(WorldFileManager worldFileManager)
+        {
+            _worldFileManager = worldFileManager;
+        }
 
         private void Awake()
         {
-            if (Instance == null) Instance = this; else Destroy(gameObject);
+            // Singleton removed
         }
 
         public void UpdateTechStatus(bool fireArrow, bool penetrating, bool forge, bool adhesive)
         {
-            if (WorldFileManager.Instance != null)
+            if (_worldFileManager != null)
             {
-                WorldFileManager.Instance.SaveTechStatus(fireArrow, penetrating, forge, adhesive);
+                _worldFileManager.SaveTechStatus(fireArrow, penetrating, forge, adhesive);
             }
         }
 
         public void SetFireArrowTech(bool value)
         {
-            if (WorldFileManager.Instance == null) return;
-            WorldFileManager.Instance.worldInfo.TechFireArrow = value;
-            WorldFileManager.Instance.SaveTechStatus(value,
-                WorldFileManager.Instance.worldInfo.TechPenetrating,
-                WorldFileManager.Instance.worldInfo.TechForge,
-                WorldFileManager.Instance.worldInfo.TechAdhesive);
+            if (_worldFileManager == null) return;
+            _worldFileManager.worldInfo.TechFireArrow = value;
+            _worldFileManager.SaveTechStatus(value,
+                _worldFileManager.worldInfo.TechPenetrating,
+                _worldFileManager.worldInfo.TechForge,
+                _worldFileManager.worldInfo.TechAdhesive);
         }
 
         public void SetPenetratingTech(bool value)
         {
-            if (WorldFileManager.Instance == null) return;
-            WorldFileManager.Instance.worldInfo.TechPenetrating = value;
-            WorldFileManager.Instance.SaveTechStatus(
-                WorldFileManager.Instance.worldInfo.TechFireArrow,
+            if (_worldFileManager == null) return;
+            _worldFileManager.worldInfo.TechPenetrating = value;
+            _worldFileManager.SaveTechStatus(
+                _worldFileManager.worldInfo.TechFireArrow,
                 value,
-                WorldFileManager.Instance.worldInfo.TechForge,
-                WorldFileManager.Instance.worldInfo.TechAdhesive);
+                _worldFileManager.worldInfo.TechForge,
+                _worldFileManager.worldInfo.TechAdhesive);
         }
 
         public void SetForgeTech(bool value)
         {
-            if (WorldFileManager.Instance == null) return;
-            WorldFileManager.Instance.worldInfo.TechForge = value;
-            WorldFileManager.Instance.SaveTechStatus(
-                WorldFileManager.Instance.worldInfo.TechFireArrow,
-                WorldFileManager.Instance.worldInfo.TechPenetrating,
+            if (_worldFileManager == null) return;
+            _worldFileManager.worldInfo.TechForge = value;
+            _worldFileManager.SaveTechStatus(
+                _worldFileManager.worldInfo.TechFireArrow,
+                _worldFileManager.worldInfo.TechPenetrating,
                 value,
-                WorldFileManager.Instance.worldInfo.TechAdhesive);
+                _worldFileManager.worldInfo.TechAdhesive);
         }
 
         public void SetAdhesiveTech(bool value)
         {
-            if (WorldFileManager.Instance == null) return;
-            WorldFileManager.Instance.worldInfo.TechAdhesive = value;
-            WorldFileManager.Instance.SaveTechStatus(
-                WorldFileManager.Instance.worldInfo.TechFireArrow,
-                WorldFileManager.Instance.worldInfo.TechPenetrating,
-                WorldFileManager.Instance.worldInfo.TechForge,
+            if (_worldFileManager == null) return;
+            _worldFileManager.worldInfo.TechAdhesive = value;
+            _worldFileManager.SaveTechStatus(
+                _worldFileManager.worldInfo.TechFireArrow,
+                _worldFileManager.worldInfo.TechPenetrating,
+                _worldFileManager.worldInfo.TechForge,
                 value);
         }
     }

@@ -6,6 +6,14 @@ namespace Script.Utils
 {
     public static class WorldUtility
     {
+        private static Script.Manager.Building.BuildingManager _bm;
+        private static Script.Manager.Building.BuildingManager BM => _bm != null ? _bm : (_bm = Object.FindObjectOfType<Script.Manager.Building.BuildingManager>());
+
+        private static Script.Game.Mobs.MobsManager.GuardManager _gm;
+        private static Script.Game.Mobs.MobsManager.GuardManager GM => _gm != null ? _gm : (_gm = Object.FindObjectOfType<Script.Game.Mobs.MobsManager.GuardManager>());
+
+        private static Script.Game.Structures.Wall_And_Stump.WallAndStumpManager _wm;
+        private static Script.Game.Structures.Wall_And_Stump.WallAndStumpManager WM => _wm != null ? _wm : (_wm = Object.FindObjectOfType<Script.Game.Structures.Wall_And_Stump.WallAndStumpManager>());
         public static void RotateObjectTowardsTownCenter(GameObject obj, Vector3 referencePos, Vector3 townCenterPos)
         {
             Vector3 scale = obj.transform.localScale;
@@ -32,14 +40,14 @@ namespace Script.Utils
 
         public static float GetRandomPlazaPos()
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
+            if (BM == null || BM.currentTownCenter == null)
             {
                 Debug.LogWarning("[WorldUtility] TownCenter not found! Returning random position near origin.");
                 // Fallback: Random position trong phạm vi 10f từ (0,0)
                 return Random.Range(-10f, 10f);
             }
 
-            var townCenter = BuildingManager.instance.currentTownCenter;
+            var townCenter = BM.currentTownCenter;
             float townCenterX = townCenter.transform.position.x;
             
             // Get plaza distance from TownCenterBehavior
@@ -69,13 +77,13 @@ namespace Script.Utils
 
         public static float GetRandomKingdomSafePos()
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
+            if (BM == null || BM.currentTownCenter == null)
             {
                 Debug.LogError("BuildingManager or TownCenter not found!");
                 return 0f;
             }
 
-            float townCenterX = BuildingManager.instance.currentTownCenter.transform.position.x;
+            float townCenterX = BM.currentTownCenter.transform.position.x;
 
             GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
             float farthestLeftWall = townCenterX;
@@ -102,13 +110,13 @@ namespace Script.Utils
 
         public static Vector3 GetRandomOutsideSafePos(bool isRight, float minDistance, float maxDistance, float noWallFallbackDistance = 30f)
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
+            if (BM == null || BM.currentTownCenter == null)
             {
                 Debug.LogError("BuildingManager or TownCenter not found! Returning zero. Cannot determine outside safe zone.");
                 return Vector3.zero;
             }
 
-            Vector3 townCenterPos = BuildingManager.instance.currentTownCenter.transform.position;
+            Vector3 townCenterPos = BM.currentTownCenter.transform.position;
             float townCenterX = townCenterPos.x;
             float townCenterY = townCenterPos.y; // Assuming ground level is Y of TownCenter
             float townCenterZ = townCenterPos.z;
@@ -175,14 +183,14 @@ namespace Script.Utils
 
         public static Vector2 GetWallPosition(bool getLeftWall)
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
+            if (BM == null || BM.currentTownCenter == null)
             {
                 Debug.LogError("BuildingManager or TownCenter not found!");
                 return Vector2.zero;
             }
 
-            float townCenterX = BuildingManager.instance.currentTownCenter.transform.position.x;
-            float townCenterY = BuildingManager.instance.currentTownCenter.transform.position.y;
+            float townCenterX = BM.currentTownCenter.transform.position.x;
+            float townCenterY = BM.currentTownCenter.transform.position.y;
 
             GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
             float wallX = getLeftWall ? float.MinValue : float.MaxValue;
@@ -217,30 +225,41 @@ namespace Script.Utils
 
         public static GameObject GetTownCenter()
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null)
+            if (BM == null || BM.currentTownCenter == null)
             {
                 Debug.LogError("BuildingManager or TownCenter not found!");
                 return null;
             }
-            return BuildingManager.instance.currentTownCenter.gameObject;
+            return BM.currentTownCenter.gameObject;
+        }
+
+        public static int GetTownCenterTier()
+        {
+            if (BM == null || BM.currentTownCenter == null) return 0;
+            var tcBehavior = BM.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+            if (tcBehavior != null && tcBehavior.status != null)
+            {
+                return tcBehavior.status.tier;
+            }
+            return 0;
         }
 
         public static bool IsInKingdomSafeZone(float posX, float padding = 0f)
         {
-            var wallManager = Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance;
+            var wallManager = WM;
             if (wallManager == null) return false;
 
             float townCenterX = 0f;
-            var tc = BuildingManager.instance?.currentTownCenter;
+            var tc = BM?.currentTownCenter;
             if (tc != null) townCenterX = tc.transform.position.x;
 
             // Mặc định vùng an toàn là Plaza nếu chưa xây được bức tường nào
             float plazaRadius = 10f;
-            var tcBehavior = BuildingManager.instance.currentTownCenter?.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+            var tcBehavior = BM.currentTownCenter?.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
             if (tcBehavior != null) plazaRadius = tcBehavior.plazaDistance;
 
             // [TACTICAL BOUNDARIES] Lấy mốc an toàn từ GuardManager (Điểm chiến tuyến thực tế)
-            var gm = Script.Game.Mobs.MobsManager.GuardManager.Instance;
+            var gm = GM;
             
             float leftBound = townCenterX - plazaRadius;
             if (gm != null && gm.currentLeftWall != null)
@@ -263,10 +282,10 @@ namespace Script.Utils
 
         public static bool IsInPlazaZone(float posX)
         {
-            if (BuildingManager.instance == null || BuildingManager.instance.currentTownCenter == null) return false;
-            float townCenterX = BuildingManager.instance.currentTownCenter.transform.position.x;
+            if (BM == null || BM.currentTownCenter == null) return false;
+            float townCenterX = BM.currentTownCenter.transform.position.x;
             float radius = 10f;
-            var tcBehavior = BuildingManager.instance.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+            var tcBehavior = BM.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
             if (tcBehavior != null) radius = tcBehavior.plazaDistance;
             return posX >= townCenterX - radius && posX <= townCenterX + radius;
         }
@@ -274,6 +293,31 @@ namespace Script.Utils
         public static bool IsInSavePos(float posX)
         {
             return IsInPlazaZone(posX) || IsInKingdomSafeZone(posX);
+        }
+
+        public static bool IsInHuntingZone(float posX, Script.Game.Mobs.MobsManager.IGuardProvider gm, bool isLeft)
+        {
+            if (gm == null) return false;
+            
+            var startPos = gm.GetHuntingRangeStartPosition(isLeft);
+            if (!startPos.HasValue) return false;
+
+            float startX = startPos.Value.x;
+            float endX = isLeft ? (startX - gm.archerHuntingRange) : (startX + gm.archerHuntingRange);
+
+            if (isLeft) return posX <= startX && posX >= endX;
+            else return posX >= startX && posX <= endX;
+        }
+
+        public static (float start, float end) GetHuntingBounds(Script.Game.Mobs.MobsManager.IGuardProvider gm, bool isLeft)
+        {
+            if (gm == null) return (0f, 0f);
+            var startPos = gm.GetHuntingRangeStartPosition(isLeft);
+            if (!startPos.HasValue) return (0f, 0f);
+
+            float startX = startPos.Value.x;
+            float endX = isLeft ? (startX - gm.archerHuntingRange) : (startX + gm.archerHuntingRange);
+            return (startX, endX);
         }
     }
 }

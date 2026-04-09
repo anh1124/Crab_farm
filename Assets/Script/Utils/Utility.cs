@@ -77,6 +77,11 @@ namespace Script
             return WorldUtility.GetTownCenter();
         }
 
+        public static int GetTownCenterTier()
+        {
+            return WorldUtility.GetTownCenterTier();
+        }
+
         public static void ProcessCoinPickup(GameObject coinObj, System.Func<bool> condition, System.Action onPickupSuccess)
         {
             if (coinObj == null) return;

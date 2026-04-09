@@ -44,9 +44,8 @@ namespace Script.Manager.Building
     }
 
     #endregion
-    public class BuildingManager : MonoBehaviour
+    public class BuildingManager : MonoBehaviour, IBuildingProvider
     {
-        public static BuildingManager instance;
         
         [Header("Config File Settings")]
         [Tooltip("Tên file config trong thư mục Resources/DataConfig/Structure")]
@@ -67,24 +66,11 @@ namespace Script.Manager.Building
         [Header("Danh sách công trình có thể xây hiện tại")]
         private List<StructureInfo> availableStructures = new List<StructureInfo>();
         
-        [FormerlySerializedAs("CurrentTownCenter")]
-        [Tooltip("Prefab TownCenter hiện tại (nếu có)")]
-        [SerializeField] 
-        public GameObject currentTownCenter;
+        public GameObject currentTownCenter { get; set; }
        
         //singleton
         private void Awake()
         {
-            if (instance == null)
-            {
-                instance = this;
-            }
-            else if (instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
             LoadTownCenterConfigsFromJson();
         }
         

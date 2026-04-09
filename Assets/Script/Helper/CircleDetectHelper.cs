@@ -1,7 +1,6 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 
 namespace Script.Game.Other
 {
@@ -13,22 +12,21 @@ namespace Script.Game.Other
 
         public Color gizmoColor = Color.magenta;
         public float detectRadius = 10f;
-        public bool isShowGizmo = true;//hệ thống tự set
-        public bool isShowGizmoUser = true;//user có cho debug không
-        
+        public bool isShowGizmo = true;      // Hệ thống tự set
+        public bool isShowGizmoUser = true;   // User có cho debug không
+
         [Header("Behavior Settings")]
         [SerializeField] private bool isActive = true; // Cờ cho phép bật/tắt quét tia độc lập
         public bool IsActive
         {
             get => isActive;
-            set 
+            set
             {
                 isActive = value;
                 isShowGizmo = value;
                 isShowGizmoUser = value;
             }
         }
-        
 
         [Header("Tag Settings")]
         public List<string> tagsToDetect = new List<string> { "Player", "Coin", "Enemy", "Animal" };
@@ -39,7 +37,7 @@ namespace Script.Game.Other
         [Header("Debug Display")]
         [Tooltip("Bật cờ này để xem danh sách Object bên dưới trên Inspector")]
         public bool showDebugLog = false;
-        
+
         [SerializeField, Tooltip("Danh sách hiển thị (An toàn cho Inspector, chỉ cập nhật khi bật showDebugLog)")]
         private List<GameObject> debugDetectedObjects = new List<GameObject>();
 
@@ -57,8 +55,7 @@ namespace Script.Game.Other
 
         private void Update()
         {
-            // [REFECTOR] Logic Scan thực tế vẫn do Behavior gọi (GetListDetectedObjects/ScanCircle).
-            // Ta chỉ cập nhật Gizmo mỗi frame để người dùng thấy mượt mà (60Hz).
+            // Cập nhật Gizmo mỗi frame để người dùng thấy mượt mà (60Hz).
             if (isShowGizmo && isShowGizmoUser)
             {
                 DrawDebugCircle(detectRadius);
@@ -88,7 +85,7 @@ namespace Script.Game.Other
         public void ScanCircle()
         {
             detectedObjects.Clear();
-            
+
             // Visual Debug (Runtime)
             if (isShowGizmo && isShowGizmoUser)
             {
@@ -96,9 +93,9 @@ namespace Script.Game.Other
             }
 
             _filter.layerMask = targetLayer; // Quét lớp được chỉ định
-            
+
             int hitCount = Physics2D.OverlapCircle(transform.position, detectRadius, _filter, _overlapResults);
-            
+
             for (int i = 0; i < hitCount; i++)
             {
                 Collider2D col = _overlapResults[i];
@@ -106,7 +103,7 @@ namespace Script.Game.Other
 
                 GameObject hitObj = col.gameObject;
 
-                // Bỏ qua nếu hit collider thuộc về ĐÚNG CÁI CÂY GIA PHẢ CỦA BẢN THÂN (Theo Fix User)
+                // Bỏ qua nếu hit collider thuộc về chính cây phân cấp của bản thân
                 if (hitObj.transform.IsChildOf(transform) || hitObj.transform == transform)
                 {
                     continue;
@@ -135,30 +132,11 @@ namespace Script.Game.Other
             // Đồng bộ List an toàn cho Inspector nếu đang bật Debug
             if (showDebugLog)
             {
-                // Thay vi Clear va Add, ta tao thuc thi List moi de Inspector khong bi loi Index
                 debugDetectedObjects = new List<GameObject>(detectedObjects);
             }
 
             // Emit event with the newly detected objects
             OnDetectedObjectsChanged?.Invoke(detectedObjects);
-        }
-
-        private void DrawDebugCircle(float radius)
-        {
-            int segments = 36;
-            float angle = 0f;
-            float angleStep = 360f / segments;
-            
-            Vector3 center = transform.position;
-            Vector3 prevPoint = center + new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad) * radius, Mathf.Sin(angle * Mathf.Deg2Rad) * radius, 0);
-
-            for (int i = 0; i <= segments; i++)
-            {
-                angle += angleStep;
-                Vector3 nextPoint = center + new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad) * radius, Mathf.Sin(angle * Mathf.Deg2Rad) * radius, 0);
-                Debug.DrawLine(prevPoint, nextPoint, gizmoColor);
-                prevPoint = nextPoint;
-            }
         }
 
         public void SetDetectRadius(float radius)
@@ -177,12 +155,46 @@ namespace Script.Game.Other
             Script.Utils.DebugUtility.LogPhysicsResults(gameObject.name, "CircleOverlap", transform.position, hitCount, results, tagsToDetect);
         }
 
+        // ------------------------------------------------------------------
+        // CÁC HÀM VẼ GIZMO & DEBUG (ĐÃ TỐI ƯU TRÁNH TRÙNG LẶP CODE)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Hàm lõi tính toán và vẽ một vòng tròn 2D.
+        /// </summary>
+        /// <param name="radius">Bán kính vòng tròn</param>
+        /// <param name="drawLineAction">Delegate nhận 2 điểm để vẽ đoạn thẳng (Gizmos.DrawLine hoặc Debug.DrawLine)</param>
+        private void DrawCircle(float radius, Action<Vector3, Vector3> drawLineAction)
+        {
+            int segments = 36;
+            float angleStep = 360f / segments;
+            Vector3 center = transform.position;
+
+            float angle = 0f;
+            Vector3 prevPoint = center + new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad) * radius, Mathf.Sin(angle * Mathf.Deg2Rad) * radius, 0);
+
+            for (int i = 1; i <= segments; i++)
+            {
+                angle = i * angleStep;
+                Vector3 nextPoint = center + new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad) * radius, Mathf.Sin(angle * Mathf.Deg2Rad) * radius, 0);
+                drawLineAction(prevPoint, nextPoint);
+                prevPoint = nextPoint;
+            }
+        }
+
+        // Vẽ trong Game View (dùng Debug.DrawLine)
+        private void DrawDebugCircle(float radius)
+        {
+            DrawCircle(radius, (start, end) => Debug.DrawLine(start, end, gizmoColor));
+        }
+
+        // Vẽ trong Scene View (dùng Gizmos)
         private void OnDrawGizmos()
         {
             if (isShowGizmo && isShowGizmoUser)
             {
                 Gizmos.color = gizmoColor;
-                Gizmos.DrawWireSphere(transform.position, detectRadius);
+                DrawCircle(detectRadius, (start, end) => Gizmos.DrawLine(start, end));
             }
         }
     }

@@ -12,6 +12,30 @@ namespace Script.Data_Model
     {
      
         public static PrefabData Instance { get; private set; }
+        private TechState _techState;
+
+        public void Setup(TechState tech)
+        {
+            _techState = tech;
+        }
+
+        public void Init()
+        {
+            // Register prefabs again to be safe (if not already done)
+            if (prefabDict.Count == 0) RegisterPrefabs();
+            
+            // Load player characters from JSON
+            LoadPlayerCharactersFromJson();
+
+            // Clear nulls
+            playerCharacterList.RemoveAll(item => item == null);
+            RequirePrefabCheck();
+
+            // Load dynamic config
+            LoadDynamicConfig();
+            
+            Debug.Log("✅ PrefabData initialized via Init()");
+        }
 
         [Header("Player / Camera")]
         public GameObject player;
@@ -94,65 +118,34 @@ namespace Script.Data_Model
         // Method to update tech status and save to worldInfo
         public void UpdateTechStatus(bool fireArrow, bool penetrating, bool forge, bool adhesive)
         {
-            // Use WorldFileManager.Instance to update and save tech status
-            if (Save_Controller.WorldFileManager.Instance != null)
+            if (_techState != null)
             {
-                Save_Controller.WorldFileManager.Instance.SaveTechStatus(
-                    fireArrow, penetrating, forge, adhesive);
+                _techState.TechFireArrow = fireArrow;
+                _techState.TechPenetrating = penetrating;
+                _techState.TechForge = forge;
+                _techState.TechAdhesive = adhesive;
             }
         }
 
         // Individual methods for updating each tech
         public void SetFireArrowTech(bool value) 
         {
-            if (Save_Controller.WorldFileManager.Instance != null)
-            {
-                Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow = value;
-                Save_Controller.WorldFileManager.Instance.SaveTechStatus(
-                    value, 
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechForge,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive);
-            }
+            if (_techState != null) _techState.TechFireArrow = value;
         }
         
         public void SetPenetratingTech(bool value) 
         {
-            if (Save_Controller.WorldFileManager.Instance != null)
-            {
-                Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating = value;
-                Save_Controller.WorldFileManager.Instance.SaveTechStatus(
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow,
-                    value,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechForge,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive);
-            }
+            if (_techState != null) _techState.TechPenetrating = value;
         }
         
         public void SetForgeTech(bool value) 
         {
-            if (Save_Controller.WorldFileManager.Instance != null)
-            {
-                Save_Controller.WorldFileManager.Instance.worldInfo.TechForge = value;
-                Save_Controller.WorldFileManager.Instance.SaveTechStatus(
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating,
-                    value,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive);
-            }
+            if (_techState != null) _techState.TechForge = value;
         }
         
         public void SetAdhesiveTech(bool value) 
         {
-            if (Save_Controller.WorldFileManager.Instance != null)
-            {
-                Save_Controller.WorldFileManager.Instance.worldInfo.TechAdhesive = value;
-                Save_Controller.WorldFileManager.Instance.SaveTechStatus(
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechFireArrow,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechPenetrating,
-                    Save_Controller.WorldFileManager.Instance.worldInfo.TechForge,
-                    value);
-            }
+            if (_techState != null) _techState.TechAdhesive = value;
         }
 
         #endregion
@@ -240,43 +233,21 @@ namespace Script.Data_Model
         public List<string> huntingTargetTags = new List<string> { "Animal" };
 
         [Header("Debug / Settings")]
-        public bool allowAllyDamage = false; // Toggle friendly fire logic
-      
-        public readonly Dictionary<string, int> productPrices = new Dictionary<string, int>();
+        public bool allowAllyDamage = false;
 
+        public Dictionary<string, int> productPrices = new Dictionary<string, int>();
 
-        
         private void Awake()
         {
             if (Instance == null)
             {
                 Instance = this;
+                // Register dictionaries early so they are available in Start()
+                RegisterPrefabs();
             }
             else
             {
                 Destroy(gameObject);
-            }
-            
-            // Đăng ký các prefabWall
-            RegisterPrefabs();
-            
-			//danh sách chứa tag mà player có thể tương tác bằng trigger helper
-			playerCoinUserInteractable = new List<string> {"Wall","Structure","Tree","TownCenter",
-				"BowVendor","HammerVendor","ScytheVendor","SwordVendor","SpikeVendor"}; 
-
-            // Load player characters from JSON first
-            LoadPlayerCharactersFromJson();
-
-            // Loại bỏ tất cả các phần tử null khỏi danh sách charactor
-            playerCharacterList.RemoveAll(item => item == null);
-            RequirePrefabCheck();
-
-            // Load dynamic config JSON for vendor prices and ally tags
-            LoadDynamicConfig();
-            
-            if (Save_Controller.WorldFileManager.Instance == null)
-            {
-                Debug.LogError("[PrefabData] WorldFileManager không tìm thấy trong scene! Hãy thêm nó vào GameplayScene.");
             }
         }
         

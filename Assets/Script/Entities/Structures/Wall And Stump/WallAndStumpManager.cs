@@ -58,7 +58,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         private void InitializeReferences()
         {
             if (guardManager == null)
-                guardManager = Script.Game.Mobs.MobsManager.GuardManager.Instance;
+                guardManager = FindObjectOfType<Script.Game.Mobs.MobsManager.GuardManager>();
         }
 
         public int Order => 0; // WallAndStumpManager should initialize before GuardManager (Order 1)
@@ -140,10 +140,11 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             if (townCenter == null)
             {
+                var bm = FindObjectOfType<Script.Manager.Building.BuildingManager>();
                 // Mute error log if BuildingManager hasn't loaded TownCenter yet
-                if (Script.Manager.Building.BuildingManager.instance != null && Script.Manager.Building.BuildingManager.instance.currentTownCenter != null)
+                if (bm != null && bm.currentTownCenter != null)
                 {
-                    townCenter = Utility.GetTownCenter();
+                    townCenter = Script.Utils.WorldUtility.GetTownCenter();
                 }
             }
             if (townCenter == null) return;

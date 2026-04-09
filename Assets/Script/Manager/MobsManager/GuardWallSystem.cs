@@ -17,7 +17,7 @@ namespace Script.Game.Mobs.MobsManager
 
         private void Start()
         {
-            guardManager = GuardManager.Instance;
+            guardManager = FindObjectOfType<GuardManager>();
             wallManager = WallAndStumpManager.Instance;
             if (wallManager != null)
             {

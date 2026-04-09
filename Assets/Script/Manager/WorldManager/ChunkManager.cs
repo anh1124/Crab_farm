@@ -7,19 +7,24 @@ using UnityEngine;
 
 namespace Script.Manager.WorldManager
 {
-    public class ChunkManager : MonoBehaviour
+    public class ChunkManager : MonoBehaviour, IChunkProvider
     {
-        public static ChunkManager Instance { get; private set; }
-
         [Header("Settings")]
         public int seed;
         public ChunkAssetLoader assetLoader;
         
         [Header("State")]
-        [HideInInspector] public List<Chunk> chunkList = new List<Chunk>();
+        [SerializeField] private List<Chunk> _chunkList = new List<Chunk>();
+        public List<Chunk> chunkList => _chunkList;
         
         private ChunkFactory factory;
         private ChunkPersistence persistence;
+        private EntitySaveManager _saveManager;
+
+        public void Setup(EntitySaveManager saveManager)
+        {
+            _saveManager = saveManager;
+        }
 
         private int currentChunkLeftId = 0;
         private int currentChunkRightId = 0;
@@ -29,21 +34,9 @@ namespace Script.Manager.WorldManager
 
         private void Awake()
         {
-            AddSingleton();
             InitializeComponents();
         }
 
-        private void AddSingleton()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
 
         private void InitializeComponents()
         {
@@ -64,6 +57,7 @@ namespace Script.Manager.WorldManager
 
         public void GenerateFirstMap(int Seed)
         {
+            if (factory == null) InitializeComponents();
             this.seed = Seed;
             rng = new System.Random(Seed);
             
@@ -77,10 +71,9 @@ namespace Script.Manager.WorldManager
             CreateInitialChunks(groundChunkCount);
             
             // Save entity containers after world generation.
-            // Trees are now initialized in Awake() so currentWorkProgress=8 is correct at this point.
-            if (EntitySaveManager.Instance != null)
+            if (_saveManager != null)
             {
-                EntitySaveManager.Instance.SaveAllContainer();
+                _saveManager.SaveAllContainer();
             }
         }
 
@@ -96,10 +89,10 @@ namespace Script.Manager.WorldManager
                 return;
             }
 
-            GameObject container = EntitySaveManager.Instance.chunkContainer;
+            GameObject container = _saveManager.chunkContainer;
 
             // Create center chunk (always empty to accommodate TownCenter)
-            factory.CreateGroundChunk(Vector3.zero, centerChunkId, rng, container, chunkList, true);
+            factory.CreateGroundChunk(Vector3.zero, centerChunkId, rng, container, _chunkList, true);
             currentChunkLeftId = centerChunkId;
             currentChunkRightId = centerChunkId;
 
@@ -118,10 +111,10 @@ namespace Script.Manager.WorldManager
             }
 
             // Add boundary rocks
-            factory.CreateImpassableRock(true, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, container, chunkList);
-            factory.CreateImpassableRock(false, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, container, chunkList);
+            factory.CreateImpassableRock(true, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, container, _chunkList);
+            factory.CreateImpassableRock(false, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, container, _chunkList);
 
-            chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
+            _chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
         }
 
         public void AddChunk(bool toRight)
@@ -149,13 +142,16 @@ namespace Script.Manager.WorldManager
             bool chunkExists = chunkList.Exists(c => Mathf.Approximately(c.positionX, newX) && c.chunkType == "ground");
             if (!chunkExists)
             {
-                factory.CreateGroundChunk(new Vector3(newX, 0, 0), newId, rng, EntitySaveManager.Instance.chunkContainer, chunkList);
+                factory.CreateGroundChunk(new Vector3(newX, 0, 0), newId, rng, _saveManager.chunkContainer, _chunkList);
             }
 
-            factory.CreateImpassableRock(!toRight, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, EntitySaveManager.Instance.chunkContainer, chunkList);
-            chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
+            factory.CreateImpassableRock(!toRight, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, _saveManager.chunkContainer, _chunkList);
+            _chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
             
-            EntitySaveManager.Instance.SaveAllContainer();
+            if (_saveManager != null)
+            {
+                _saveManager.SaveAllContainer();
+            }
         }
 
         private void RemoveImpassableRock(bool fromRight)
@@ -165,7 +161,7 @@ namespace Script.Manager.WorldManager
             
             if (rockToRemove != null)
             {
-                foreach (Transform child in EntitySaveManager.Instance.chunkContainer.transform)
+                foreach (Transform child in _saveManager.chunkContainer.transform)
                 {
                     if (Mathf.Approximately(rockToRemove.positionX, child.position.x))
                     {
@@ -173,7 +169,7 @@ namespace Script.Manager.WorldManager
                         break;
                     }
                 }
-                chunkList.Remove(rockToRemove);
+                _chunkList.Remove(rockToRemove);
                 
                 if (fromRight) currentChunkRightId--;
                 else currentChunkLeftId++;
@@ -202,16 +198,18 @@ namespace Script.Manager.WorldManager
 
         public void SaveMapToJson(string saveFilePath)
         {
-            string containerName = EntitySaveManager.Instance.chunkContainer != null 
-                ? EntitySaveManager.Instance.chunkContainer.name 
+            if (persistence == null) InitializeComponents();
+            string containerName = _saveManager.chunkContainer != null 
+                ? _saveManager.chunkContainer.name 
                 : "UnnamedChunkContainer";
                 
-            persistence.SaveMapToJson(saveFilePath, seed, currentChunkLeftId, currentChunkRightId, chunkList, containerName);
+            persistence.SaveMapToJson(saveFilePath, seed, currentChunkLeftId, currentChunkRightId, _chunkList, containerName);
         }
 
         public void LoadMapFromJson(string mapFilePath)
         {
-            MapSaveData data = persistence.LoadMapFromJson(mapFilePath, EntitySaveManager.Instance.chunkContainer, out List<Chunk> loadedChunks);
+            if (persistence == null) InitializeComponents();
+            MapSaveData data = persistence.LoadMapFromJson(mapFilePath, _saveManager.chunkContainer, out List<Chunk> loadedChunks);
             
             if (data != null)
             {
@@ -219,8 +217,8 @@ namespace Script.Manager.WorldManager
                 rng = new System.Random(seed);
                 currentChunkLeftId = data.currentChunkLeftId;
                 currentChunkRightId = data.currentChunkRightId;
-                chunkList = loadedChunks;
-                chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
+                _chunkList = loadedChunks;
+                _chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
             }
         }
 

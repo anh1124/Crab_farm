@@ -18,27 +18,29 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         public override void UpdateBehavior(DenizenContext ctx)
         {
             if (ctx.IsSkillCasting) return;
-            var vSoul = ctx.VillagerJob;
-            if (vSoul == null) return;
+            var villagerJob = ctx.VillagerJob;
+            if (villagerJob == null) return;
 
             // Nếu gặp nguy hiểm thì đổi ngay sang hoảng loạn
             if (ctx.Status.isFearPending)
             {
-                vSoul.ChangeState(vSoul.FearState);
+                villagerJob.ChangeState(villagerJob.FearState);
                 return;
             }
 
             // Nếu công cụ mục tiêu đã mất hoặc bị người khác lấy
-            if (ctx.Status.currentTool == null || !ctx.Status.currentTool.gameObject.activeInHierarchy)
+            if (ctx.Status.currentTool == null || !ctx.Status.currentTool.gameObject.activeInHierarchy || ctx.Status.currentTool.pickedBy != null)
             {
-                vSoul.ChangeState(vSoul.IdleState);
+                ctx.Status.currentTool = null; // Cần clear biến này đi để không bị loop nhảy vào lại
+                villagerJob.ChangeState(villagerJob.IdleState);
                 return;
             }
 
-            // Cập nhật điểm đến theo vị trí hiện tại của công cụ (nếu nảy đi nơi khác)
-            if (ctx.Movement != null)
+            // Di chuyển đến Tool
+            float distance = Vector3.Distance(ctx.Transform.position, ctx.Status.currentTool.transform.position);
+            if (distance > 0.5f)
             {
-                vSoul.SetMoveTarget(ctx.Status.currentTool.transform.position, ctx.Status.runSpeed);
+                villagerJob.SetMoveTarget(ctx.Status.currentTool.transform.position, ctx.Status.runSpeed);
             }
         }
 

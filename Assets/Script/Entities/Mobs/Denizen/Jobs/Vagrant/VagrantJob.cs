@@ -14,7 +14,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 {
     public class VagrantJob : DenizenJob, INPCBehavior, IDamageable
     {
-        // States
         public VagrantIdleState   IdleState    { get; private set; }
         public VagrantFearState   FearState    { get; private set; }
         public VagrantGetCoinState GetCoinState { get; private set; }
@@ -22,15 +21,35 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         private VagrantItemHandler _itemHandler;
         private DenizenSchedule _schedule;
         private VagrantSensorHandler _sensor;
-
+        private bool _isInitialized;
 
         protected void Awake()
         {
+            InitializeBrain();
+        }
+
+        private void InitializeBrain()
+        {
+            if (_isInitialized) return;
+
             if (Context == null) Context = GetComponentInParent<DenizenContext>();
             IdleState    = new VagrantIdleState();
             FearState    = new VagrantFearState();
             GetCoinState = new VagrantGetCoinState();
 
+            // Initialize minimal handlers for safety during early activation (e.g. Loading)
+            if (Context != null)
+            {
+                _itemHandler = new VagrantItemHandler(Context);
+                _schedule = new DenizenSchedule(Context);
+                _sensor = new VagrantSensorHandler(Context, this);
+            }
+            _isInitialized = true;
+        }
+
+        protected override void OnContextInjected()
+        {
+            InitializeBrain();
             _itemHandler = new VagrantItemHandler(Context);
             _schedule = new DenizenSchedule(Context);
             _sensor = new VagrantSensorHandler(Context, this);
@@ -39,11 +58,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         #region Brain & Transitions
         public override void UpdateBehavior()
         {
-            if (Context == null) return;
+            InitializeBrain();
+            if (Context == null || Context.Status == null) return;
 
             // [DETECTOR] — Gọi scanner thủ công, giống cách Enemy làm
             if (Context.RayCaster != null && Context.RayCaster.IsActive)
-                Context.RayCaster.DrawRay();
+            {
+                 // Đảm bảo tag luôn đúng nếu bị Reset() lung tung
+                 if (Context.RayCaster.tagsToDetect.Count == 0) _sensor.Enable();
+                 Context.RayCaster.DrawRay();
+            }
 
             if (Context.IsSkillCasting) return;
 
@@ -89,7 +113,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
 
-            if (GameTimeManager.Instance != null)
+            var gtm = FindObjectOfType<GameTimeManager>();
+            if (gtm != null)
             {
                 _schedule.AddSchedule(6, OnShiftChange);
                 _schedule.AddSchedule(18, OnShiftChange);
@@ -111,7 +136,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
                     Context.Status.OnCoinChanged -= OnCoinChangedHandler;
             }
 
-            if (GameTimeManager.Instance != null)
+            var gtm = FindObjectOfType<GameTimeManager>();
+            if (gtm != null)
             {
                 _schedule.Disable();
             }

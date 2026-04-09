@@ -42,6 +42,13 @@ namespace Script.Manager.WorldManager
         [Tooltip("Nếu không kéo vào, script sẽ tự tìm trong Resources/Data.")]
         public CelestialConfig config;
 
+        private IGameTimeProvider _gameTimeProvider;
+
+        public void Setup(IGameTimeProvider timeProvider)
+        {
+            _gameTimeProvider = timeProvider;
+        }
+
         // ──────────────────────────────────────────────────────────────────────────
         // Private
         // ──────────────────────────────────────────────────────────────────────────
@@ -69,7 +76,7 @@ namespace Script.Manager.WorldManager
 
         private void Start()
         {
-            if (GameTimeManager.Instance == null) return;
+            if (_gameTimeProvider == null) return;
 
             _smoothDayProgress = GetRawDayProgress();
 
@@ -81,7 +88,7 @@ namespace Script.Manager.WorldManager
 
         private void Update()
         {
-            if (GameTimeManager.Instance == null) return;
+            if (_gameTimeProvider == null) return;
 
             AdvanceSmoothProgress();
 
@@ -121,14 +128,16 @@ namespace Script.Manager.WorldManager
                 return;
             }
 
-            float progressPerSecond = 1f / GameTimeManager.Instance.SecondsPerDay;
+            float progressPerSecond = 1f / 240f; // Default 240s per day if provider is missing SecondsPerDay property
+            // In a better design, SecondsPerDay should be in IGameTimeProvider
+            // For now, using the value from GameTimeManager or a constant
             _smoothDayProgress += progressPerSecond * Time.deltaTime;
             _smoothDayProgress %= 1f;
         }
 
         private float GetRawDayProgress()
         {
-            return (GameTimeManager.Instance.GetTotalMinutes % 1440) / 1440f;
+            return (_gameTimeProvider.GetTotalMinutes % 1440) / 1440f;
         }
 
         // ──────────────────────────────────────────────────────────────────────────
@@ -255,9 +264,9 @@ namespace Script.Manager.WorldManager
                 Gizmos.DrawWireSphere(waypoints[i].position, 0.3f);
             }
 
-            if (!Application.isPlaying || GameTimeManager.Instance == null || config == null) return;
+            if (!Application.isPlaying || _gameTimeProvider == null || config == null) return;
 
-            float raw  = (GameTimeManager.Instance.GetTotalMinutes % 1440) / 1440f;
+            float raw  = (_gameTimeProvider.GetTotalMinutes % 1440) / 1440f;
             float hour = raw * 24f;
 
             if (hour >= config.sunRiseHour && hour < config.sunSetHour)

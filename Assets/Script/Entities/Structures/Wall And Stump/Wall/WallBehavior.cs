@@ -39,8 +39,10 @@ namespace Script.Game.Structures.Wall_And_Stump
         [SerializeField] private CoinUser coinUser;
         #endregion
         
-        
         [SerializeField] public WallDataList wallDataList;
+       
+        private BuildingManager _bm;
+        private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
        
         // Events cho wall manager
         public event Action<WallBehavior> OnWallDestroyed;//thông báo cho manager xếp lại đội hình lính và rút lui
@@ -706,19 +708,19 @@ namespace Script.Game.Structures.Wall_And_Stump
         //khi trigger,gọi hàm này kiểm tra xem có thể nâng cấp không để hiện coinslot 
         private bool CanUpgradeByTownCenterLevel()
         {
-            if (BuildingManager.instance == null)
+            if (BM == null)
             {
-                Debug.LogError("[Wall] BuildingManager.instance is null");
+                Debug.LogError("[Wall] BM is null");
                 return false;
             }
 
-            if (BuildingManager.instance.currentTownCenter == null)
+            if (BM.currentTownCenter == null)
             {
                Debug.LogError("[Wall] currentTownCenter is null");
                 return false;
             }
 
-            var townCenterStatus = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>();
+            var townCenterStatus = BM.currentTownCenter.GetComponent<TownCenterStatus>();
             if (townCenterStatus == null)
             {
                 Debug.LogError("[Wall] TownCenterStatus component not found on currentTownCenter");
@@ -726,8 +728,8 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
 
             int townCenterLevel = townCenterStatus.tier;
-            int maxAllowedTier = BuildingManager.instance.GetMaxAllowedTier(BuildingType.Wall);
-            bool canUpgrade = BuildingManager.instance.CanBuildingBeUpgraded(BuildingType.Wall, status.tier);
+            int maxAllowedTier = BM.GetMaxAllowedTier(BuildingType.Wall);
+            bool canUpgrade = BM.CanBuildingBeUpgraded(BuildingType.Wall, status.tier);
 
             // Detailed logging now handled in GetWallDebugInfo()
 
@@ -1027,9 +1029,9 @@ namespace Script.Game.Structures.Wall_And_Stump
             string tcInfo = "NULL";
             bool canUpgradeByTC = false;
 
-            if (BuildingManager.instance?.currentTownCenter != null)
+            if (BM?.currentTownCenter != null)
             {
-                var tcStatus = BuildingManager.instance.currentTownCenter.GetComponent<TownCenterStatus>();
+                var tcStatus = BM.currentTownCenter.GetComponent<TownCenterStatus>();
                 if (tcStatus != null)
                 {
                     tcInfo = $"Lv.{tcStatus.tier}";

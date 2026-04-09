@@ -40,6 +40,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             // và bị floating-point lừa khi đứng chính xác tại boundary → gây loop vô tận.
             if (archerJob.HasReachedPosition(_basePos, 0.4f))
             {
+                // Đã tới vị trí thì dừng cờ di chuyển ngay để tránh spam move animation
+                // trong frame chuyển state.
+                archerJob.StopMovement();
                 archerJob.ExecuteDefensiveOrder();
             }
         }
@@ -55,6 +58,10 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
             else
             {
+                // Chỉ ép hướng khi đã dừng để không gây chạy lùi.
+                float faceDir = ctx.Status.isLeftFlank ? -1f : 1f;
+                MovementUtility.FaceTarget(ctx.GameObject, ctx.Transform.position + new Vector3(faceDir, 0f, 0f));
+
                 if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("archerIdle"))
                     ctx.Animator.Play("archerIdle");
             }

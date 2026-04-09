@@ -20,7 +20,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 Context.RayCaster.OnDetectedObjectsChanged -= OnObjectsDetected;
                 Context.RayCaster.OnDetectedObjectsChanged += OnObjectsDetected;
-                Context.RayCaster.tagsToDetect = new List<string>(TargetLists.FleeTargets);
+                Context.RayCaster.tagsToDetect = new List<string>(TargetLists.VillagerTargets); // Enemy, Player
                 Context.RayCaster.raycastDistance = Context.Status.detectRangeRaycast;
                 Context.RayCaster.IsActive = true;
             }
@@ -37,9 +37,28 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
 
         public void OnObjectsDetected(List<GameObject> objects)
         {
-            if (objects == null) return;
-            bool detected = objects.Count > 0;
-            if (detected) Context.Status.isFearPending = true;
+            if (objects == null || objects.Count == 0 || !_job.enabled) return;
+
+            // Đang đi trả coin thì không ngắt
+            if (_job.CurrentState == _job.DropCoinState) return;
+
+            bool enemyDetected = false;
+            bool playerDetected = false;
+
+            foreach (var obj in objects)
+            {
+                if (TargetLists.FleeTargets.Contains(obj.tag)) enemyDetected = true;
+                if (obj.tag == GameTags.Player) playerDetected = true;
+            }
+
+            if (enemyDetected) 
+            {
+                Context.Status.isFearPending = true;
+            }
+            else if (playerDetected && Context.CoinSharing != null && Context.CoinSharing.CanDropCoin())
+            {
+                _job.ChangeState(_job.DropCoinState);
+            }
         }
     }
 }

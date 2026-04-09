@@ -18,6 +18,12 @@ namespace Script.Game.Item.Coin
         private List<Coroutine> coinMoveCoroutines = new List<Coroutine>();
         private HashSet<GameObject> arrivedCoins = new HashSet<GameObject>();
         
+        private ICoinPool _coinPool;
+
+        public void SetupPool(ICoinPool pool)
+        {
+            _coinPool = pool;
+        }
         private float coinMoveSpeed;
         private int currentSlotIndex;
 
@@ -100,9 +106,9 @@ namespace Script.Game.Item.Coin
             {
                 if (coin != null)
                 {
-                    if (CoinPool.Instance != null)
+                    if (_coinPool != null)
                     {
-                        CoinPool.Instance.ReturnCoin(coin);
+                        _coinPool.ReturnCoin(coin);
                     }
                     else
                     {
@@ -161,7 +167,7 @@ namespace Script.Game.Item.Coin
             Vector3 playerPosition = player.transform.position;
             Vector3 targetPosition = coinSlots[currentSlotIndex].transform.position;
 
-            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab);
+            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab);
             if (coin != null) coin.transform.position = playerPosition;
             
             PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();

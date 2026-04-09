@@ -21,6 +21,12 @@ public class Spawner : MonoBehaviour
     public float coinThrowDistance = 2f;
     public GameObject coinPrefab;
     
+    private ICoinPool _coinPool;
+
+    public void Setup(ICoinPool coinPool)
+    {
+        _coinPool = coinPool;
+    }
 
     
     int yOffset = 2;
@@ -88,7 +94,7 @@ public class Spawner : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Vector2 newPosition = new Vector2(position.x, position.y + yOffset + (i * 0.1f));
-            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
             if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
@@ -109,7 +115,7 @@ public class Spawner : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Vector2 newPosition = new Vector2(position.x, position.y + yOffset);
-            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
             if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
@@ -131,7 +137,7 @@ public class Spawner : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Vector2 newPosition = new Vector2(position.x, position.y);
-            GameObject coin = CoinPool.Instance != null ? CoinPool.Instance.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
             if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();

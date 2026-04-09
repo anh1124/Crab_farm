@@ -36,7 +36,7 @@ namespace Script.Manager.MobsManager
         [ContextMenu("🔍 Print Debug Status")]
         private void PrintDebugStatus()
         {
-            int idleVillagers = DenizenManager.Instance?.GetIdleVillagerCount() ?? 0;
+            int idleVillagers = FindObjectOfType<DenizenManager>()?.GetIdleVillagerCount() ?? 0;
             string debugStr = $"[ToolManager] 🔍 STATUS REPORT: {availableTools.Count} tools total, {idleVillagers} idle villagers.\n";
             
             foreach (var tool in availableTools)
@@ -56,7 +56,7 @@ namespace Script.Manager.MobsManager
             availableTools.Add(tool);
 
             // [FIX] Bỏ logic check !tool.floating vì vũ khí lượm được/load từ save vẫn cần chủ!
-            var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
+            var villager = FindObjectOfType<DenizenManager>()?.GetNearestIdleVillager(tool.transform.position);
 
             if (villager != null)
                 AssignToolToVillager(tool, villager);
@@ -102,7 +102,7 @@ namespace Script.Manager.MobsManager
         {
             if (tool == null || tool.pickedBy != null) return;
 
-            var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
+            var villager = FindObjectOfType<DenizenManager>()?.GetNearestIdleVillager(tool.transform.position);
 
             if (villager != null)
                 AssignToolToVillager(tool, villager);
@@ -144,7 +144,7 @@ namespace Script.Manager.MobsManager
 
             foreach (var tool in orphans)
             {
-                var villager = DenizenManager.Instance?.GetNearestIdleVillager(tool.transform.position);
+                var villager = FindObjectOfType<DenizenManager>()?.GetNearestIdleVillager(tool.transform.position);
                 if (villager == null) break;
 
                 AssignToolToVillager(tool, villager);

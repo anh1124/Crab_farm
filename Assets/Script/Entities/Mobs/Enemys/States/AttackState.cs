@@ -28,9 +28,8 @@ namespace Script.Game.Enemy.States
             // [LÀM THEO YÊU CẦU]: Luôn chạy base để quay đầu về hướng Đích Chính (TownCenter/Portal) trước khi quét radar
             base.UpdateBehavior(ctx);
 
-            // 1. [DETERMINE SCAN TAGS] Căn cứ theo Ngày/Đêm để chọn danh sách mục tiêu quét
-            bool isDay = Script.Manager.WorldManager.GameTimeManager.Instance != null && 
-                         Script.Manager.WorldManager.GameTimeManager.Instance.IsDaytime;
+            var gtm = UnityEngine.Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            bool isDay = gtm != null && gtm.IsDaytime;
 
             // [FIXED TAGS]: Sử dụng các danh sách tập trung từ TargetLists
             List<string> scanTags = isDay ? TargetLists.EnemyRetreatTargets : TargetLists.EnemyAdvanceTargets;

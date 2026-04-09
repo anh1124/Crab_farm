@@ -8,6 +8,7 @@ using Script.Data_Model.Status;
 using Script.Data_Model.Interfaces;
 using Script.Game.Enemy;
 using Script.Game.Enemy.Core;
+using Script.Game.Item.Coin;
 using UnityEngine;
 // using Script.Manager.BuildingManager; // Avoid importing this namespace here to prevent name conflict with class BuildingManager
 
@@ -88,22 +89,10 @@ namespace Script.Manager
                 structureContainer = SetupContainerHelper("StructureContainer", ref structureContainer);
                 coinContainer = SetupContainerHelper("CoinContainer", ref coinContainer);
                 
-                if (coinContainer != null && coinContainer.GetComponent<Script.Game.Item.Coin.CoinPool>() == null)
-                {
-                    Debug.LogWarning("[EntitySaveManager] CoinPool đã được thêm tự động vào CoinContainer vì hệ thống Save/Load container chịu trách nhiệm khởi tạo node này.");
-                    coinContainer.AddComponent<Script.Game.Item.Coin.CoinPool>();
-                }
-
                 natureContainer = SetupContainerHelper("NatureContainer", ref natureContainer);
                 chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
                 enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
                 
-                if (enemyContainer != null && enemyContainer.GetComponent<Script.Game.Enemy.EnemyPool>() == null)
-                {
-                    Debug.LogWarning("[EntitySaveManager] EnemyPool đã được thêm tự động vào EnemyContainer vì hệ thống Save/Load container chịu trách nhiệm khởi tạo node này.");
-                    enemyContainer.AddComponent<Script.Game.Enemy.EnemyPool>();
-                }
-
                 animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
                 denizenContainer = SetupContainerHelper("DenizenContainer", ref denizenContainer);
                 statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
@@ -431,22 +420,10 @@ namespace Script.Manager
                 structureContainer = EnsureContainerExists("StructureContainer", ref structureContainer);
                 coinContainer = EnsureContainerExists("CoinContainer", ref coinContainer);
                 
-                if (coinContainer != null && coinContainer.GetComponent<Script.Game.Item.Coin.CoinPool>() == null)
-                {
-                    Debug.LogWarning("[EntitySaveManager] CoinPool đã được thêm tự động vào CoinContainer khi Refresh.");
-                    coinContainer.AddComponent<Script.Game.Item.Coin.CoinPool>();
-                }
-
                 natureContainer = EnsureContainerExists("NatureContainer", ref natureContainer);
                 chunkContainer = EnsureContainerExists("ChunkContainer", ref chunkContainer);
                 enemyContainer = EnsureContainerExists("EnemyContainer", ref enemyContainer);
                 
-                if (enemyContainer != null && enemyContainer.GetComponent<Script.Game.Enemy.EnemyPool>() == null)
-                {
-                    Debug.LogWarning("[EntitySaveManager] EnemyPool đã được thêm tự động vào EnemyContainer khi Refresh.");
-                    enemyContainer.AddComponent<Script.Game.Enemy.EnemyPool>();
-                }
-
                 animalsContainer = EnsureContainerExists("AnimalsContainer", ref animalsContainer);
                 denizenContainer = EnsureContainerExists("DenizenContainer", ref denizenContainer);
                 statuesContainer = EnsureContainerExists("StatuesContainer", ref statuesContainer);
@@ -780,11 +757,13 @@ namespace Script.Manager
                 // [POOL INITIALIZATION] Đảm bảo Pool đã được bơm đầy trước khi Load quái vật 
                 if (container == enemyContainer)
                 {
-                    if (Script.Game.Enemy.TotalEnemyList.Instance != null)
-                        Script.Game.Enemy.TotalEnemyList.Instance.InitializeEnemyData();
+                    var tel = FindObjectOfType<Script.Game.Enemy.TotalEnemyList>();
+                    if (tel != null)
+                        tel.InitializeEnemyData();
                             
-                    if (Script.Game.Enemy.EnemyPool.Instance != null)
-                        Script.Game.Enemy.EnemyPool.Instance.InitializePools();
+                    var ep = FindObjectOfType<Script.Game.Enemy.EnemyPool>();
+                    if (ep != null)
+                        ep.InitializePools();
                 }
 
                 // Load và tạo object mới
@@ -795,10 +774,11 @@ namespace Script.Manager
                     GameObject prefab = null;
                     bool isEnemy = false;
 
-                    // ƯU TIÊN: Lấy trực tiếp từ TotalEnemyList để định tính Enemy
-                    if (TotalEnemyList.Instance != null && TotalEnemyList.Instance.EnemyDataList != null)
+                    // ƯU TIÊN: Lấy trực tiếp từ IEnemyDataProvider nếu có
+                    var totalEnemyList = FindObjectOfType<TotalEnemyList>();
+                    if (totalEnemyList != null && totalEnemyList.ReadyToUseEnemyDataList != null)
                     {
-                        var enemyData = TotalEnemyList.Instance.EnemyDataList.Find(d => 
+                        var enemyData = totalEnemyList.ReadyToUseEnemyDataList.Find(d => 
                             string.Equals(d.enemyName, savedObject.prefabID, StringComparison.OrdinalIgnoreCase));
                         
                         if (enemyData != null)
@@ -838,20 +818,19 @@ namespace Script.Manager
                     
                     GameObject instance = null;
                     
+                    var enemyPool = FindObjectOfType<EnemyPool>();
+                    var coinPool = FindObjectOfType<CoinPool>();
+
                     // LOGIC POOLING KHI LOAD: 
-                    if (isEnemy && Script.Game.Enemy.EnemyPool.Instance != null)
+                    if (isEnemy && enemyPool != null)
                     {
-                        // Đảm bảo pool sẵn sàng (tránh trường hợp Enemy không nằm trong EnemyContainer nên miss initialization array trước đó)
-                        if (Script.Game.Enemy.EnemyPool.Instance.GetPoolCount() == 0)
-                        {
-                            Script.Game.Enemy.EnemyPool.Instance.InitializePools();
-                        }
-                        // Đã xử lý Case-Insensitive bên trong GetEnemy
-                        instance = Script.Game.Enemy.EnemyPool.Instance.GetEnemy(savedObject.prefabID);
+                        // Đảm bảo pool sẵn sàng
+                        enemyPool.InitializePools();
+                        instance = enemyPool.GetEnemy(savedObject.prefabID);
                     }
-                    else if (container == coinContainer && Script.Game.Item.Coin.CoinPool.Instance != null)
+                    else if (container == coinContainer && coinPool != null)
                     {
-                        instance = Script.Game.Item.Coin.CoinPool.Instance.GetCoin();
+                        instance = coinPool.GetCoin();
                     }
 
                     // Nếu không có pool hoặc pool không trả về được, fallback về Instantiate truyền thống
@@ -1076,13 +1055,14 @@ namespace Script.Manager
         {
             try
             {
-                if (Building.BuildingManager.instance == null || Building.BuildingManager.instance.currentTownCenter == null)
+                var bm = FindObjectOfType<Script.Manager.Building.BuildingManager>();
+                if (bm == null || bm.currentTownCenter == null)
                 {
                     Debug.LogWarning("No town center found to determine wall position");
                     return null;
                 }
                 
-                Vector3 townCenterPos = Building.BuildingManager.instance.currentTownCenter.transform.position;
+                Vector3 townCenterPos = bm.currentTownCenter.transform.position;
                 List<GameObject> walls = GetObjectsFromContainerList(structureContainer);
                 
                 GameObject farthestWall = null;

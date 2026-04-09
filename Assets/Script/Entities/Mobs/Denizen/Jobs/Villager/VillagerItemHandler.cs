@@ -20,6 +20,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 Debug.Log($"[VillagerItemHandler] Picked up Bow! Requesting Archer role.");
                 item.SetActive(false); // Ẩn vật phẩm ngay lập tức để né double-trigger
+                Context.Status.currentTool = null;
                 Context.RoleController?.ChangeRole(NPCRole.Archer);
                 return true;
             }
@@ -27,6 +28,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 Debug.Log($"[VillagerItemHandler] Picked up Hammer! Requesting Worker role.");
                 item.SetActive(false);
+                Context.Status.currentTool = null;
                 Context.RoleController?.ChangeRole(NPCRole.Worker);
                 return true;
             }
@@ -34,14 +36,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 Debug.Log($"[VillagerItemHandler] Picked up Scythe! Requesting Farmer role.");
                 item.SetActive(false);
+                Context.Status.currentTool = null;
                 Context.RoleController?.ChangeRole(NPCRole.Farmer);
                 return true;
             }
 
-            // 2. Nếu là Tool mình đang được chỉ định nhặt (Gán từ ToolManager)
+            // 2. Nếu là Tool mình đang được chỉ định nhặt (Gán từ ToolManager) nhưng chưa có behavior đặc biệt
             if (pItem == Context.Status.currentTool)
             {
                 Debug.Log($"[VillagerItemHandler] Picked up assigned tool: {pItem.itemType}");
+                Context.Status.currentTool = null;
                 return true;
             }
 

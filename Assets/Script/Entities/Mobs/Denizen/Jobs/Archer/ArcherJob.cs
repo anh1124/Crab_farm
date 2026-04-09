@@ -23,7 +23,6 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         public ArcherRetreatState      RetreatState      { get; private set; }
         public ArcherReturnToBaseState ReturnToBaseState { get; private set; }
         public ArcherDropCoinState     DropCoinState     { get; private set; }
-        
         private ArcherItemHandler _itemHandler;
         private DenizenSchedule _schedule;
         private ArcherSensorHandler _sensor;
@@ -34,9 +33,18 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         [Header("Tactical Settings")]
         [SerializeField] private bool ignoreGuardManagerCommand = false;
         public bool IgnoreGuardManagerCommand => ignoreGuardManagerCommand;
+        
+        private bool _isInitialized;
 
         protected void Awake()
         {
+            InitializeBrain();
+        }
+
+        private void InitializeBrain()
+        {
+            if (_isInitialized) return;
+
             if (Context == null) Context = GetComponentInParent<DenizenContext>();
             IdleState         = new ArcherIdleState();
             HuntingState      = new ArcherHuntingState();
@@ -46,6 +54,22 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             ReturnToBaseState = new ArcherReturnToBaseState();
             DropCoinState     = new ArcherDropCoinState();
 
+            // Initialize minimal handlers for safety during early activation (e.g. Loading)
+            if (Context != null)
+            {
+                _itemHandler      = new ArcherItemHandler(Context);
+                _schedule         = new DenizenSchedule(Context);
+                _targetSelector   = new ArcherTargetSelector(Context);
+                _sensor           = new ArcherSensorHandler(Context, this, _targetSelector);
+                _tacticalHandler  = new ArcherTacticalHandler(Context, this);
+                _combatValidator  = new ArcherCombatValidator(Context);
+            }
+            _isInitialized = true;
+        }
+
+        protected override void OnContextInjected()
+        {
+            InitializeBrain();
             _itemHandler      = new ArcherItemHandler(Context);
             _schedule         = new DenizenSchedule(Context);
             _targetSelector   = new ArcherTargetSelector(Context);
@@ -57,6 +81,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         #region Brain & Transitions
         public override void UpdateBehavior()
         {
+            InitializeBrain();
             if (Context == null) return;
 
             // [DETECTOR] — Gọi scanner thủ công, giống Enemy
@@ -73,7 +98,11 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 if (!isSafe)
                 {
                     _tacticalHandler.ExecuteDefensiveOrder();
-                    return;
+                    // Cho phép state di chuyển phòng thủ tiếp tục tự cập nhật.
+                    // Nếu return sớm ở đây, ReturnToBase/Retreat sẽ không bao giờ được check reached.
+                    bool allowDefenseStateUpdate = CurrentState == ReturnToBaseState || CurrentState == RetreatState;
+                    if (!allowDefenseStateUpdate)
+                        return;
                 }
             }
 
@@ -111,7 +140,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         /// <summary>Quyết định state ban đầu theo ưu tiên: Alarm > Night > Day.</summary>
         private void DecideInitialState()
         {
-            bool hasAlarm = Context.GuardManager != null && Context.GuardManager.Alarm.isEnemyAttack;
+            bool hasAlarm = Context.GuardManager != null && Context.GuardManager.isEnemyAttack;
             bool isDay    = Context.TimeManager == null || Context.TimeManager.IsDaytime;
 
             if (hasAlarm || !isDay)
@@ -140,12 +169,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
-            if (DenizenManager.Instance  != null) DenizenManager.Instance.RegisterDenizen(gameObject);
+            var dm = FindObjectOfType<DenizenManager>();
+            if (dm != null) dm.RegisterDenizen(gameObject);
 
-            if (GameTimeManager.Instance != null)
+            var gtm = FindObjectOfType<GameTimeManager>();
+            if (gtm != null)
             {
                 _schedule.AddSchedule(7, () => {
-                    if (Context.GuardManager != null && !Context.GuardManager.Alarm.isEnemyAttack)
+                    if (Context.GuardManager != null && !Context.GuardManager.isEnemyAttack)
                         ChangeState(HuntingState);
                 });
                 _schedule.AddSchedule(19, () => _tacticalHandler.ExecuteDefensiveOrder());
@@ -159,7 +190,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         private void OnDisable()
         {
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Unregister(this);
-            if (DenizenManager.Instance  != null) DenizenManager.Instance.UnregisterDenizen(gameObject);
+            var dm = FindObjectOfType<DenizenManager>();
+            if (dm != null) dm.UnregisterDenizen(gameObject);
 
             if (Context != null)
             {
@@ -169,7 +201,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                     Context.Status.OnCoinChanged -= OnCoinChangedHandler;
             }
 
-            if (GameTimeManager.Instance != null)
+            var gtm = FindObjectOfType<GameTimeManager>();
+            if (gtm != null)
             {
                 _schedule.Disable();
             }
@@ -234,7 +267,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public void HandleDayBreaks()
         {
-            if (Context.GuardManager != null && !Context.GuardManager.Alarm.isEnemyAttack)
+            if (Context.GuardManager != null && !Context.GuardManager.isEnemyAttack)
                 ChangeState(HuntingState);
         }
         #endregion
@@ -261,10 +294,19 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 }
             }
 
-            // 2. Giải mã logic CanAttackFromHere
-            sb.AppendLine("\n[Kiểm tra điều kiện tấn công (CanAttackFromHere)]:");
+            // 2. Phân tích vùng chiến tuyến/bãi săn
+            sb.AppendLine("\n[Kiểm tra vị trí và vùng hoạt động]:");
             bool inPlaza = WorldUtility.IsInPlazaZone(transform.position.x);
-            sb.AppendLine($"- Đang trong Plaza: {inPlaza}");
+            bool inKingdom = WorldUtility.IsInKingdomSafeZone(transform.position.x, 0f);
+            sb.AppendLine($"- Trong nội thành (Kingdom): {inKingdom}");
+            sb.AppendLine($"- Trong trung tâm (Plaza): {inPlaza}");
+
+            if (Context.GuardManager != null)
+            {
+                var bounds = WorldUtility.GetHuntingBounds(Context.GuardManager, Context.Status.isLeftFlank);
+                bool inHunt = WorldUtility.IsInHuntingZone(transform.position.x, Context.GuardManager, Context.Status.isLeftFlank);
+                sb.AppendLine($"- Trong bãi săn (Hunting Zone): {inHunt} (Vùng: {bounds.start:F1} -> {bounds.end:F1})");
+            }
 
             int defendableCount = 0;
             var wallManager = Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance;
@@ -274,25 +316,30 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 foreach (var wall in flankWalls)
                     if (wallManager.IsWallDefendable(wall)) defendableCount++;
             }
-            sb.AppendLine($"- Số tường phòng thủ được trên cánh này: {defendableCount}");
+            sb.AppendLine($"- Số tường phòng thủ được (Cánh này): {defendableCount}");
 
             float padding = 7.0f;
             if (Context.GuardManager != null && Context.GuardManager.Squad != null)
-                padding = Context.GuardManager.Squad.defaultSlotOffset;
-            sb.AppendLine($"- Khoảng cách an toàn (Padding) áp dụng: {padding}");
-
-            bool isSafeZone = WorldUtility.IsInKingdomSafeZone(transform.position.x, padding);
-            sb.AppendLine($"- Đứng sau vạch an toàn (SafeZone + Padding): {isSafeZone}");
-
+                padding = Context.GuardManager.defaultSlotOffset;
+            
+            bool isSafePos = WorldUtility.IsInKingdomSafeZone(transform.position.x, padding);
             bool canAttack = CanAttackFromHere();
+
             sb.AppendLine($"\n=> KẾT QUẢ: {(canAttack ? "<color=green>ĐỦ ĐIỀU KIỆN BẮN</color>" : "<color=red>KHÔNG ĐƯỢC PHÉP BẮN</color>")}");
 
             if (!canAttack)
             {
                 sb.AppendLine("LÝ DO:");
-                if (!inPlaza && !isSafeZone) sb.AppendLine("+ Archer đang đứng QUÁ GẦN nguy hiểm (vượt quá vạch Padding của tường xa nhất).");
-                else if (inPlaza && defendableCount == 1 && !IgnoreGuardManagerCommand && !isSafeZone)
-                     sb.AppendLine("+ Đang ở Plaza nhưng chỉ còn 1 tường cuối, yêu cầu đứng lùi sâu hơn nữa.");
+                if (CurrentState is ArcherHuntingState) 
+                    sb.AppendLine($"+ Đang ở trạng thái Săn Bắt nhưng lại đứng trong Vương Quốc (SafeZone). Yêu cầu ra ngoài tường.");
+                else if (!inKingdom && !inPlaza) 
+                    sb.AppendLine("+ Archer đang đứng QUÁ XA bảo vệ của tường (ngoài vương quốc) khi đang cần phòng thủ.");
+                else if (inKingdom && !isSafePos && !inPlaza)
+                    sb.AppendLine($"+ Archer chưa lùi đủ sâu đằng sau tường (Padding={padding}).");
+                else if (inPlaza && defendableCount == 1 && !isSafePos)
+                    sb.AppendLine("+ Đang ở Plaza nhưng chỉ còn 1 tường cuối, yêu cầu đứng lùi sâu hơn để bảo toàn mạng sống.");
+                else
+                    sb.AppendLine("+ Không xác định được vị trí an toàn hợp lệ.");
             }
 
             Debug.Log(sb.ToString());

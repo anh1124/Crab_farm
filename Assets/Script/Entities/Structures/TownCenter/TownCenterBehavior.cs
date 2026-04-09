@@ -26,7 +26,11 @@ namespace Script.Game.Structures.TownCenter
         [FormerlySerializedAs("currentPrefab")] public GameObject curentPrefab;
         
         [Header("Debug")]
+        [Header("Debug")]
         [SerializeField] private bool isDebugPlazaZone = true;
+        
+        private BuildingManager _bm;
+        private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
         
         private void Awake()
         {
@@ -55,8 +59,8 @@ namespace Script.Game.Structures.TownCenter
             GetDataFromDataList();
 
             Ini();
-            BuildingManager.instance.currentTownCenter = gameObject;//tự khai báo đến BuildingManager
-            BuildingManager.instance.UpdateAvailableBuildings(); // Cập nhật giới hạn công trình ngay khi TownCenter xuất hiện
+            BM.currentTownCenter = gameObject;//tự khai báo đến BuildingManager
+            BM.UpdateAvailableBuildings(); // Cập nhật giới hạn công trình ngay khi TownCenter xuất hiện
             
             // Tự khai báo luôn cho EnemyTarget
             if (Script.Game.Enemy.EnemyTargetManager.Instance != null)
@@ -75,9 +79,9 @@ namespace Script.Game.Structures.TownCenter
             }
             
             // Báo Manager clear biến Left/Right của nó
-            if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter == gameObject)
+            if (BM != null && BM.currentTownCenter == gameObject)
             {
-                BuildingManager.instance.currentTownCenter = null;
+                BM.currentTownCenter = null;
             }
         }
 
@@ -312,9 +316,9 @@ namespace Script.Game.Structures.TownCenter
 
         private void NotifyBuildingManager()
         {
-            if (BuildingManager.instance != null)
+            if (BM != null)
             {
-                BuildingManager.instance.UpdateAvailableBuildings();
+                BM.UpdateAvailableBuildings();
             }
         }
 
@@ -406,10 +410,10 @@ namespace Script.Game.Structures.TownCenter
                 coinUser.SetBuildingInfo(BuildingType.TownCenter, status.tier);
             }
             // Thông báo BuildingManager tham chiếu lại currentTownCenter nếu cần
-            if (BuildingManager.instance != null)
+            if (BM != null)
             {
-                BuildingManager.instance.currentTownCenter = gameObject;
-                BuildingManager.instance.UpdateAvailableBuildings();
+                BM.currentTownCenter = gameObject;
+                BM.UpdateAvailableBuildings();
                 //Debug.Log("[TownCenterBehavior] Updated BuildingManager with current town center and available buildings");
             }
 

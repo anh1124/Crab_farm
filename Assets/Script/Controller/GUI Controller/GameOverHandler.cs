@@ -66,7 +66,8 @@ namespace Script.GUI_Controller
             IsActive = true;
             EnsureReferences();
             
-            int survivedDays = GameTimeManager.Instance != null ? GameTimeManager.Instance.GetElapsedDays() : 0;
+            var gtm = FindObjectOfType<GameTimeManager>();
+            int survivedDays = gtm != null ? gtm.GetElapsedDays() : 0;
             Time.timeScale = 0f; // Pause game
 
             if (GuiCanvasManager.Instance != null && GuiCanvasManager.Instance.confirmationMenu != null)

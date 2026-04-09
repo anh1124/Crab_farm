@@ -21,10 +21,12 @@ namespace Script.Game.Mobs.MobsManager
         public float rowDepthOffset = 0.3f;
 
         private GuardManager guardManager;
+        private BuildingManager _bm;
+        private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
 
         private void Start()
         {
-            guardManager = GuardManager.Instance;
+            guardManager = FindObjectOfType<GuardManager>();
         }
 
         public void RegisterArcher(GameObject archer)
@@ -190,19 +192,26 @@ namespace Script.Game.Mobs.MobsManager
 
             if (wall == null)
             {
-                if (BuildingManager.instance != null && BuildingManager.instance.currentTownCenter != null)
+                if (BM != null && BM.currentTownCenter != null)
                 {
-                    var tc = BuildingManager.instance.currentTownCenter;
+                    var tc = BM.currentTownCenter;
                     Vector3 tcPos = tc.transform.position;
                     
-                    float startDist = 5f; 
+                    float plazaRadius = 5f;
                     var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
-                    if(tcBehavior != null) startDist = tcBehavior.plazaDistance;
+                    if (tcBehavior != null) plazaRadius = tcBehavior.plazaDistance;
 
-                    float dir = isLeft ? -1f : 1f;
-                    float horizontalOffset = startDist + (slotInRow * archerSlotSpacing) + (rowIndex * rowDepthOffset);
-                    
-                    return new Vector3(tcPos.x + (dir * horizontalOffset), tcPos.y, archer.transform.position.z);
+                    float plazaHorizontalOffsetInRow = slotInRow * archerSlotSpacing;
+                    float plazaTotalRowDepth = rowIndex * rowDepthOffset;
+                    float requestedOffset = defaultSlotOffset + plazaHorizontalOffsetInRow + plazaTotalRowDepth;
+
+                    // Không có wall: toàn bộ đội hình phải đứng trong Plaza (đường trắng của TownCenter).
+                    // Clamp offset để không vượt biên plaza dù số lượng archer lớn.
+                    float maxSafeOffset = Mathf.Max(0.5f, plazaRadius - 0.5f);
+                    float clampedOffset = Mathf.Min(requestedOffset, maxSafeOffset);
+                    float boundaryX = tcPos.x + (isLeft ? -plazaRadius : plazaRadius);
+                    float offsetTowardCenter = isLeft ? clampedOffset : -clampedOffset;
+                    return new Vector3(boundaryX + offsetTowardCenter, tcPos.y, archer.transform.position.z);
                 }
                 return archer.transform.position;
             }

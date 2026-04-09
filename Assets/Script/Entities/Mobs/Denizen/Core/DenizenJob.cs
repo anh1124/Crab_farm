@@ -1,4 +1,5 @@
 using UnityEngine;
+using Script.Data_Model.Interfaces;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
@@ -7,7 +8,7 @@ namespace Script.Game.Mobs.Denizen.Core
     /// CHỈ: Điều phối trạng thái (State Machine) và tham chiếu Context.
     /// KHÔNG: Giữ logic chiến đấu, kinh tế trực tiếp. Logic nằm ở State hoặc Job con.
     /// </summary>
-    public abstract class DenizenJob : MonoBehaviour
+    public abstract class DenizenJob : MonoBehaviour, IItemHandle
     {
         public DenizenState CurrentState { get; protected set; }
         
@@ -24,7 +25,10 @@ namespace Script.Game.Mobs.Denizen.Core
         public void InjectContext(DenizenContext ctx)
         {
             Context = ctx;
+            OnContextInjected();
         }
+
+        protected virtual void OnContextInjected() { }
 
         /// <summary>
         /// Logic chung cho mọi ChangeState: Exit → Reset Anim → Assign → Enter.

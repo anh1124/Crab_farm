@@ -125,20 +125,20 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         // Item Slot 1 -> Night (19:00)
         private void OnItem1Pressed()
         {
-            Debug.Log("[PlayerGui] Item 1 Pressed -> Set Time to NIGHT");
-            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
+            var gtm = FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            if (gtm != null)
             {
-                Script.Manager.WorldManager.GameTimeManager.Instance.SetTimeToNight();
+                gtm.SetTimeToNight();
             }
         }
 
         // Item Slot 2 -> Morning (07:00)
         private void OnItem2Pressed()
         {
-            Debug.Log("[PlayerGui] Item 2 Pressed -> Set Time to MORNING");
-            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
+            var gtm = FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            if (gtm != null)
             {
-                Script.Manager.WorldManager.GameTimeManager.Instance.SetTimeToMorning();
+                gtm.SetTimeToMorning();
             }
         }
 

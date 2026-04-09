@@ -18,9 +18,22 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         /// </summary>
         public bool CanAttackFromHere(ArcherJob job, float squadPadding = -1f)
         {
-            // Bỏ qua kỷ luật vị trí nếu mục tiêu là săn thú hoặc phá cổng (không phải Enemy chính quy)
-            if (Context.Status.currentTarget != null && !Context.Status.currentTarget.CompareTag(GameTags.Enemy))
-                return true;
+            // ZONE 0: KIỂM TRA BÃI SĂN (HUNTING ZONE)
+            // Nếu là mục tiêu săn bắn (Animal/Portal) hoặc đang trong Hunting State
+            if (Context.Status.currentTarget != null)
+            {
+                bool isHuntingTarget = Context.Status.currentTarget.CompareTag(GameTags.Animal) || Context.Status.currentTarget.CompareTag(GameTags.EnemyPortal);
+                if (isHuntingTarget)
+                {
+                    // Cho phép bắn nếu đang đứng trong bãi săn hợp lệ (ngoài vương quốc)
+                    bool inKingdomSafe = WorldUtility.IsInKingdomSafeZone(Context.transform.position.x, 0f);
+                    if (!inKingdomSafe) return true;
+                }
+                
+                // --- 0. Bỏ qua kỷ luật vị trí nếu mục tiêu KHÔNG phải Enemy chính quy ---
+                if (!Context.Status.currentTarget.CompareTag(GameTags.Enemy))
+                    return true;
+            }
 
             float posX = Context.transform.position.x;
 

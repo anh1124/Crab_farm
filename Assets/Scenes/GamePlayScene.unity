@@ -2493,6 +2493,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1824331059}
     - target: {fileID: 6490999052333895481, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: gameTimeScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6490999052333895481, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: realSecondsPerGameDay
       value: 240
       objectReference: {fileID: 0}
@@ -2591,6 +2595,10 @@ PrefabInstance:
     - target: {fileID: 8206099037918200606, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: circleHead
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8356058680024437741, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: m_Name
+      value: Time
       objectReference: {fileID: 0}
     - target: {fileID: 8651940488345645102, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: showDebugLogs

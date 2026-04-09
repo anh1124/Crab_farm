@@ -8,11 +8,17 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
     {
         public override void Enter(DenizenContext ctx)
         {
+            if (ctx.Status == null || ctx.Status.coinTarget == null || !ctx.Status.coinTarget.activeInHierarchy)
+            {
+                ctx.VagrantJob?.ChangeState(ctx.VagrantJob.IdleState);
+                return;
+            }
+
             if (ctx.Animator != null) 
                 ctx.Animator.Play("run");
 
-            if (ctx.Status != null && ctx.Status.coinTarget != null)
-                ctx.Movement?.SetTarget(ctx.Status.coinTarget.transform.position, ctx.Status.runSpeed);
+            if (ctx.Movement != null)
+                ctx.Movement.SetTarget(ctx.Status.coinTarget.transform.position, ctx.Status.runSpeed);
         }
 
         public override void UpdateBehavior(DenizenContext ctx)
