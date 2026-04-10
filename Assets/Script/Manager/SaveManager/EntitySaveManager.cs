@@ -820,13 +820,12 @@ namespace Script.Manager
                     
                     var enemyPool = FindObjectOfType<EnemyPool>();
                     var coinPool = FindObjectOfType<CoinPool>();
+                    var spawner = Spawner.Instance != null ? Spawner.Instance : FindObjectOfType<Spawner>();
 
                     // LOGIC POOLING KHI LOAD: 
-                    if (isEnemy && enemyPool != null)
+                    if (isEnemy && spawner != null)
                     {
-                        // Đảm bảo pool sẵn sàng
-                        enemyPool.InitializePools();
-                        instance = enemyPool.GetEnemy(savedObject.prefabID);
+                        instance = spawner.SpawnEnemyFromLoad(savedObject.prefabID, prefab, container.transform, isDebug);
                     }
                     else if (container == coinContainer && coinPool != null)
                     {
@@ -853,6 +852,18 @@ namespace Script.Manager
                         var controller = instance.GetComponent<Script.Game.Enemy.Core.EnemyAIController>();
                         if (controller != null)
                         {
+                            // Đảm bảo enemy load từ save luôn có dependency giống enemy spawn từ portal/pool.
+                            var targetMgr = FindObjectOfType<EnemyTargetManager>();
+                            Action<GameObject> returnAction = null;
+                            if (enemyPool != null)
+                                returnAction = enemyPool.ReturnEnemy;
+                            else
+                                returnAction = (go) =>
+                                {
+                                    if (go != null) go.SetActive(false);
+                                };
+                            controller.InjectDependencies(targetMgr, returnAction);
+
                             // Tìm Portal chính xác từ EnemyPortalManager thay vì quét bừa Tag
                             GameObject homePortal = null;
                             if (Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)

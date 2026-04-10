@@ -19,7 +19,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
                 ctx.Status.fearTimer = ctx.Status.maxFearDuration;
                 ctx.Status.isFearPending = false;
                 ctx.Status.isInDanger = true;
-                ctx.Status.isMovementAllowed = true;
+                ctx.Status.CanMove = true;
             }
 
             if (ctx.Animator != null) 

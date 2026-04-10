@@ -13,7 +13,7 @@ using Script.Game.Item.Coin;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Archer
 {
-    public class ArcherJob : DenizenJob, INPCBehavior, IDamageable
+    public class ArcherJob : DenizenJob, INPCBehavior
     {
         // States
         public ArcherIdleState         IdleState         { get; private set; }
@@ -163,7 +163,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 if (Context.Status != null)
                 {
                     Context.Status.OnCoinChanged  += OnCoinChangedHandler;
-                    Context.Status.isMovementAllowed = true;
+                    Context.Status.CanMove = true;
                     Context.Status.isMoving = false;
                 }
             }

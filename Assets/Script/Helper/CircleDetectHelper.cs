@@ -53,15 +53,6 @@ namespace Script.Game.Other
             _filter.useLayerMask = true;
         }
 
-        private void Update()
-        {
-            // Cập nhật Gizmo mỗi frame để người dùng thấy mượt mà (60Hz).
-            if (isShowGizmo && isShowGizmoUser)
-            {
-                DrawDebugCircle(detectRadius);
-            }
-        }
-
         public List<GameObject> GetListDetectedObjects(float? overrideRadius = null)
         {
             if (!isActive) return new List<GameObject>();
@@ -85,12 +76,6 @@ namespace Script.Game.Other
         public void ScanCircle()
         {
             detectedObjects.Clear();
-
-            // Visual Debug (Runtime)
-            if (isShowGizmo && isShowGizmoUser)
-            {
-                DrawDebugCircle(detectRadius);
-            }
 
             _filter.layerMask = targetLayer; // Quét lớp được chỉ định
 
@@ -182,14 +167,8 @@ namespace Script.Game.Other
             }
         }
 
-        // Vẽ trong Game View (dùng Debug.DrawLine)
-        private void DrawDebugCircle(float radius)
-        {
-            DrawCircle(radius, (start, end) => Debug.DrawLine(start, end, gizmoColor));
-        }
-
-        // Vẽ trong Scene View (dùng Gizmos)
-        private void OnDrawGizmos()
+        // Vẽ trong Scene View khi object được chọn
+        private void OnDrawGizmosSelected()
         {
             if (isShowGizmo && isShowGizmoUser)
             {

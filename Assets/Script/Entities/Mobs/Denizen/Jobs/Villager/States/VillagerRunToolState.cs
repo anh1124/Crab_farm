@@ -42,15 +42,29 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 villagerJob.SetMoveTarget(ctx.Status.currentTool.transform.position, ctx.Status.runSpeed);
             }
+            else
+            {
+                // Đã tới vị trí tool nhưng có thể chưa nhặt được (cooldown/điều kiện pickup),
+                // nên dừng movement để tránh loop anim chạy tại chỗ.
+                ctx.Movement?.Stop();
+            }
         }
 
         public override void Update(DenizenContext ctx)
         {
             if (ctx.Animator == null) return;
+            if (ctx.Status != null && ctx.Status.isFearPending) return;
 
-            // Đảm bảo luôn chạy animation "run" trong suốt quá trình đi lấy tool
-            if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
-                ctx.Animator.Play("run");
+            if (ctx.Status != null && ctx.Status.isMoving)
+            {
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
+                    ctx.Animator.Play("run");
+            }
+            else
+            {
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("idle"))
+                    ctx.Animator.Play("idle");
+            }
         }
     }
 }

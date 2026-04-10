@@ -17,7 +17,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Status != null)
             {
                 ctx.Status.isSkillCasting = false;
-                ctx.Status.isMovementAllowed = false;
+                ctx.Status.CanMove = false;
             }
             ctx.Movement?.Stop();
             ctx.Animator?.Play("archerIdle");
@@ -100,7 +100,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Status != null)
             {
                 ctx.Status.isSkillCasting = false;
-                ctx.Status.isMovementAllowed = true;
+                ctx.Status.CanMove = true;
             }
         }
 

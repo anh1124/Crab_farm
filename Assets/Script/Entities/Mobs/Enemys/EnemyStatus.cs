@@ -39,12 +39,26 @@ namespace Script.Game.Enemy
         // --- COMBAT FLAGS (Hiện lên Inspector để soi lỗi) ---
         [field: SerializeField] public bool IsSkillCasting { get; set; } = false;
         [field: SerializeField] public bool SkillAllowsMovement { get; set; } = true;
+        [SerializeField] private bool _ignoreReturnToPortalDefault = false;
+        [SerializeField] private bool _ignoreReturnToPortal = false;
+        public bool IgnoreReturnToPortal
+        {
+            get => _ignoreReturnToPortal;
+            set
+            {
+                if (_ignoreReturnToPortal == value) return;
+                _ignoreReturnToPortal = value;
+                OnIgnoreReturnToPortalChanged?.Invoke(value);
+            }
+        }
 
         public event System.Action<GameObject> OnDieEvent;
+        public event System.Action<bool> OnIgnoreReturnToPortalChanged;
 
         private void Awake()
         {
-            // Tạm thời trống, các thiết lập sẽ được gọi qua Setup
+            // Reset runtime flag theo giá trị mặc định trên prefab/inspector.
+            _ignoreReturnToPortal = _ignoreReturnToPortalDefault;
         }
 
         // Gọi từ EnemyPool khi khởi tạo (hoặc tái sử dụng)
@@ -71,6 +85,9 @@ namespace Script.Game.Enemy
             {
                 rch.raycastDistance = AttackRange;
             }
+
+            // Enemy dùng object-pool cần reset lại runtime flag mỗi lần spawn.
+            _ignoreReturnToPortal = _ignoreReturnToPortalDefault;
         }
 
        
@@ -110,7 +127,8 @@ namespace Script.Game.Enemy
                 enemyID = _enemyID,
                 currentHp = _currentHp,
                 posX = transform.position.x,
-                posY = transform.position.y
+                posY = transform.position.y,
+                ignoreReturnToPortal = _ignoreReturnToPortal
             };
         }
 
@@ -139,6 +157,8 @@ namespace Script.Game.Enemy
 
                 _currentHp = save.currentHp;
                 transform.position = new Vector3(save.posX, save.posY, 0);
+                _ignoreReturnToPortalDefault = save.ignoreReturnToPortal;
+                IgnoreReturnToPortal = save.ignoreReturnToPortal;
                 
                 // Cập nhật lại flag chết dựa trên hp
                 IsDead = (_currentHp <= 0);
@@ -152,6 +172,7 @@ namespace Script.Game.Enemy
             public float currentHp;
             public float posX;
             public float posY;
+            public bool ignoreReturnToPortal;
         }
 
         // --- IDamageable Implementation ---

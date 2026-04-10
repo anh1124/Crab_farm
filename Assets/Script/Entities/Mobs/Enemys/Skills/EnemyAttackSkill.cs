@@ -61,8 +61,10 @@ namespace Script.Game.Enemy.Skills
             // HitboxController sẽ tự động log ra các đối tượng trúng đòn (HIT) vào Console
             if (hitbox != null)
             {
-                if (controller.isDebug) Debug.Log($"<color=orange>[EnemyAttackSkill]</color> {owner.name} đang kích hoạt Hitbox: {hitbox.gameObject.name} với Damage: {damage}");
-                HitboxController.ActivateHitbox(hitbox, damage, owner, true);
+                var enemyStatus = owner.GetComponent<Script.Game.Enemy.EnemyStatus>();
+                bool debugLogs = (enemyStatus != null && enemyStatus.debugEnemy) || controller.isDebug;
+                if (debugLogs) Debug.Log($"<color=orange>[EnemyAttackSkill]</color> {owner.name} đang kích hoạt Hitbox: {hitbox.gameObject.name} với Damage: {damage}");
+                HitboxController.ActivateHitbox(hitbox, damage, owner, true, debugLogs);
             }
             else
             {

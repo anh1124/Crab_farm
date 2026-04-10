@@ -214,7 +214,7 @@ namespace Script.Game.Other
 
             coinPool.Setup(PrefabData.Instance);
             coinPool.Init(); // Important: Pool must be initialized
-            spawner.Setup(coinPool);
+            spawner.Setup(coinPool, enemyPool);
 
             var lootPickups = FindObjectsOfType<Script.Utils.LootPickupTrigger>(true);
             foreach (var lp in lootPickups) lp.Setup(coinPool);
@@ -270,6 +270,14 @@ namespace Script.Game.Other
 
             totalEnemyList.InitializeEnemyData();
             enemyPool.InitializePools();
+
+            if (spawner == null) spawner = FindObjectOfType<Spawner>(true);
+            if (spawner != null)
+            {
+                // Đồng bộ Spawner để luồng load-from-save luôn đi qua pool enemy.
+                spawner.Setup(coinPool, enemyPool);
+            }
+
             Debug.Log(" Enemy Systems (DI) initialized and wired.");
         }
 

@@ -26,15 +26,16 @@ namespace Script.Game.Other
                 // ===== PHASE 3: UI SETUP =====
                 SetupGUI();
 
-                // ===== PHASE 4: SAVE LOAD ENTITIES =====
+                // ===== PHASE 4: DYNAMIC POOLS =====
+                InitializeCoinBase();
+                InitializeEnemyBase();
+
+                // ===== PHASE 5: SAVE LOAD ENTITIES =====
+                // Cần khởi tạo pool trước khi load để enemy load-from-save đi đúng đường pool.
                 LoadSavedEntitiesPhased();
 
                 // Re-bootstrap denizens after save loading phase, so they have their managers
                 if (denizenManager != null) denizenManager.InitializeAllDenizensInScene(guardManager);
-
-                // ===== PHASE 5: DYNAMIC POOLS =====
-                InitializeCoinBase();
-                InitializeEnemyBase();
 
                 // ===== PHASE 6: PLAYER INSTANCE =====
                 InstancePlayerAndSetCamera(); 

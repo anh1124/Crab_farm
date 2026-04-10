@@ -162,8 +162,10 @@ namespace Script.Game.Item.Coin
         /// </summary>
         private void RestartCooldownsIfNeeded()
         {
-            if (!playerPickupAble)   _playerPickupCooldown  = pickupAbleCooldown;
-            if (!denizensPickupAble) _denizenPickupCooldown = pickupAbleCooldown;
+            // Nếu timer đã được set trước Start() (ví dụ Spawner vừa gọi CallFunctionCoolDown(10f)),
+            // không ghi đè lại bằng pickupAbleCooldown mặc định.
+            if (!playerPickupAble && _playerPickupCooldown <= 0f)   _playerPickupCooldown  = pickupAbleCooldown;
+            if (!denizensPickupAble && _denizenPickupCooldown <= 0f) _denizenPickupCooldown = pickupAbleCooldown;
             // enemyPickupAble = false là default design, KHÔNG cần timer restore
         }
 
@@ -331,19 +333,25 @@ namespace Script.Game.Item.Coin
         /// </summary>
         public void CallFunctionCoolDown(string characterType)
         {
+            CallFunctionCoolDown(characterType, pickupAbleCooldown);
+        }
+
+        public void CallFunctionCoolDown(string characterType, float cooldownSeconds)
+        {
+            float cooldown = Mathf.Max(0f, cooldownSeconds);
             switch (characterType)
             {
                 case "Player":
                     playerPickupAble = false;
-                    _playerPickupCooldown = pickupAbleCooldown;
+                    _playerPickupCooldown = cooldown;
                     break;
                 case "Denizens":
                     denizensPickupAble = false;
-                    _denizenPickupCooldown = pickupAbleCooldown;
+                    _denizenPickupCooldown = cooldown;
                     break;
                 case "Enemy":
                     enemyPickupAble = false;
-                    _enemyPickupCooldown = pickupAbleCooldown;
+                    _enemyPickupCooldown = cooldown;
                     break;
             }
         }

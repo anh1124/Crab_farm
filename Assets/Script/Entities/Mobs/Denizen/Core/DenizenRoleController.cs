@@ -26,7 +26,7 @@ namespace Script.Game.Mobs.Denizen.Core
     [RequireComponent(typeof(SpriteRenderer))]
     [RequireComponent(typeof(DenizenContext))]
     [RequireComponent(typeof(Script.Game.PlayerCharacter.Skills.SkillManager))]
-    public class DenizenRoleController : MonoBehaviour, ISaveable
+    public class DenizenRoleController : MonoBehaviour, ISaveable, IDamageable
     {
         [Header("Role Configuration")]
         public NPCRole CurrentRole = NPCRole.Vagrant;//role mặc định tránh lỗi khởi tạo
@@ -73,6 +73,15 @@ namespace Script.Game.Mobs.Denizen.Core
 
         public DenizenJob JobBrain => _currentJob;
 
+        public void ReceiveDamage(float damage, GameObject instigator)
+        {
+            if (damage <= 0f) return;
+
+            // Root nhận damage, sau đó route về job đang active để xử lý hành vi cụ thể theo role.
+            var activeJob = _currentJob != null && _currentJob.enabled ? _currentJob : _context?.CurrentJob;
+            activeJob?.ReceiveDamage(damage, instigator);
+        }
+
         private void Awake()
         {
             _status = GetComponent<DenizenStatus>();
@@ -106,6 +115,19 @@ namespace Script.Game.Mobs.Denizen.Core
 
             if (CurrentRole == NPCRole.Archer) _guardProvider?.UnregisterArcher(gameObject);
             if (_status != null) _status.isSkillCasting = false; // Tránh kẹt skill khi đổi role
+
+            // Clear movement/target tức thì khi đổi role để tránh role mới thừa hưởng
+            // target + move target cũ (nguồn gây chạy lung tung giữa các state).
+            if (_context != null)
+            {
+                _context.Movement?.Stop();
+                if (_context.Status != null)
+                {
+                    _context.Status.currentTarget = null;
+                    _context.Status.coinTarget = null;
+                    _context.Status.isMoving = false;
+                }
+            }
             
             // Chỉ vô hiệu hóa job cũ khi đã chắc chắn có job mới thay thế
             if (_currentJob != null) _currentJob.enabled = false;
@@ -133,7 +155,8 @@ namespace Script.Game.Mobs.Denizen.Core
 
         private void ApplyRole(NPCRole role)
         {
-            Debug.Log($"[DenizenRoleController] Applying Role: {role} to {gameObject.name}");
+            if (_status != null && _status.debugDenizen)
+                Debug.Log($"[DenizenRoleController] Applying Role: {role} to {gameObject.name}");
             if (_context.Animator != null) _context.Animator.Rebind();
             DisableAllJobs();
 
@@ -183,7 +206,8 @@ namespace Script.Game.Mobs.Denizen.Core
                 {
                     if (_context.Animator.runtimeAnimatorController != targetController)
                     {
-                        Debug.Log($"[DenizenRoleController] Swapping AnimatorController to: {targetController.name} for Job: {role}");
+                        if (_status != null && _status.debugDenizen)
+                            Debug.Log($"[DenizenRoleController] Swapping AnimatorController to: {targetController.name} for Job: {role}");
                         _context.Animator.runtimeAnimatorController = targetController;
                         _context.Animator.Rebind();
                     }
@@ -195,7 +219,8 @@ namespace Script.Game.Mobs.Denizen.Core
 
                 // Kích hoạt Job mới
                 _currentJob.enabled = true;
-                Debug.Log($"[DenizenRoleController] Job Activated: {_currentJob.GetType().Name} for {gameObject.name}");
+                if (_status != null && _status.debugDenizen)
+                    Debug.Log($"[DenizenRoleController] Job Activated: {_currentJob.GetType().Name} for {gameObject.name}");
             }
             else
             {
@@ -276,7 +301,7 @@ namespace Script.Game.Mobs.Denizen.Core
             sb.AppendLine($"currentStateName: {(_status.currentStateName)}");
             sb.AppendLine($"isSkillCasting: {_status.isSkillCasting}");
             sb.AppendLine($"skillAllowsMovement: {_status.skillAllowsMovement}");
-            sb.AppendLine($"isMovementAllowed: {_status.isMovementAllowed}");
+            sb.AppendLine($"canMove: {_status.CanMove}");
             sb.AppendLine($"isMoving: {_status.isMoving}");
             sb.AppendLine($"currentCoins: {_status.CurrentCoins}/{_status.MaxCoins}");
             

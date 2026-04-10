@@ -17,7 +17,7 @@ namespace Script.Data_Model.Status
 
         public enum ArcherState { Idle, Hunting, Attack, HoldWall, Retreat, ReturningToBase, DropCoin }
 
-        public bool isMovementAllowed = true;
+        [field: SerializeField] public bool CanMove { get; set; } = true;
         public bool isMoving = false;
 
         [SerializeField] private NPCRole role = NPCRole.Vagrant;

@@ -130,7 +130,7 @@ MonoBehaviour:
   spriteBaseAngle: 45
   minVelocityToRotate: 0.5
   enableSticking: 1
-  stickImpactOffset: 0.4
+  stickImpactOffset: 1.21
   stuckLifetime: 3
   maxAirTime: 6
 --- !u!60 &2021829951212370914

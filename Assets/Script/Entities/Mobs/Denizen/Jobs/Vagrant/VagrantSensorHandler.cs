@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
+using Script.Game.Item.Coin;
 using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
@@ -58,6 +59,10 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
                 // --- Coin: chỉ nếu không đang sợ ---
                 if (obj.CompareTag(GameTags.Coin) && _job.CurrentState != _job.FearState)
                 {
+                    var coin = obj.GetComponent<PhysicalItem>();
+                    if (coin == null || !coin.IsAvailable() || !coin.denizensPickupAble)
+                        continue;
+
                     if (Context.Status.coinTarget != obj)
                     {
                         Context.Status.coinTarget = obj;

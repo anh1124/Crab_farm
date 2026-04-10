@@ -12,7 +12,7 @@ using Script.Game.Item.Coin;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Villager
 {
-    public class VillagerJob : DenizenJob, INPCBehavior, IDamageable
+    public class VillagerJob : DenizenJob, INPCBehavior
     {
         // States
         public VillagerIdleState    IdleState    { get; private set; }
@@ -133,7 +133,24 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         public override void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0) return;
-            // Chỉ set flag — Fear gate trong UpdateBehavior() xử lý transition
+            if (Context == null || Context.Status == null) return;
+
+            // Villager mất 1 coin mỗi lần bị trúng đòn.
+            // Khi hết coin -> trở về Vagrant ngay theo kịch bản gameplay.
+            if (Context.Status.CurrentCoins > 0)
+            {
+                Context.Status.SubtractCoin(1);
+                global::Spawner.Instance?.DropCoinFromDenizenHit(Context.transform.position);
+            }
+
+            if (Context.Status.CurrentCoins <= 0)
+            {
+                Context.Status.CurrentCoins = 0;
+                Context.RoleController?.ChangeRole(NPCRole.Vagrant);
+                return;
+            }
+
+            // Còn coin thì vào Fear để chạy trốn.
             Context.Status.isFearPending = true;
         }
 

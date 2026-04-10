@@ -7,6 +7,7 @@ using Script.Game.Item.Coin;
 using Script.Manager.Building;
 using UnityEngine.Serialization;
 using Script.Interfaces;
+using Script.Game.Mobs.MobsManager;
 
 namespace Script.Game.Structures.TownCenter
 {
@@ -200,8 +201,8 @@ namespace Script.Game.Structures.TownCenter
 
         public bool CanReceiveCoins()
         {
-            var nextTier = TownCenterDataList.Instance.GetByTier(status.tier + 1);
-            return nextTier != null;
+            if (TownCenterDataList.Instance == null) return false;
+            return TownCenterDataList.Instance.TryGetByTier(status.tier + 1, out _, logIfMissing: false);
         }
 
         public void OnAllCoinsCollected()
@@ -238,12 +239,15 @@ namespace Script.Game.Structures.TownCenter
 
         private TownCenterDataList.TownCenterData GetNextTierData()
         {
-            var data = TownCenterDataList.Instance.GetByTier(status.tier + 1);
-            if (data == null)
+            if (TownCenterDataList.Instance == null) return null;
+
+            // Upgrade flow: log once here if actually trying to upgrade past max tier
+            if (!TownCenterDataList.Instance.TryGetByTier(status.tier + 1, out var data, logIfMissing: false))
             {
-                Debug.LogError($"[TownCenterBehavior] Không có tier tiếp theo.");
+                Debug.LogWarning($"[TownCenterBehavior] Không có tier tiếp theo (currentTier={status.tier}).");
                 return null;
             }
+
             return data;
         }
 
@@ -330,6 +334,10 @@ namespace Script.Game.Structures.TownCenter
         public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0 || _isDestroyed) return;
+
+            var guardManager = FindObjectOfType<GuardManager>();
+            if (guardManager != null)
+                guardManager.NotifyTownCenterUnderAttack();
             
             status.currentHp -= damage;
             Debug.Log($"[TownCenter] Received {damage} damage from {instigator?.name ?? "unknown"}. HP: {status.currentHp}/{status.maxHp}");

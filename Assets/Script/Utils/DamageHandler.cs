@@ -27,15 +27,7 @@ namespace Script.Utils
             var dieInterface = effectiveTarget.GetComponent<IDie>();
             if (dieInterface != null && dieInterface.IsDead) return false;
 
-            // ✅ Denizen dùng hệ thống route tập trung qua DenizenStatus.RouteDamage
-            var denizenStatus = effectiveTarget.GetComponent<Script.Data_Model.Status.DenizenStatus>();
-            if (denizenStatus != null)
-            {
-                denizenStatus.RouteDamage(damage, instigator);
-                return true;
-            }
-
-            // Fallback cho các entity khác (Enemy, v.v...): loop qua IDamageable active
+            // Generic route: chỉ làm việc với IDamageable trên object đã resolve từ collider.
             bool damaged = false;
             var damageables = effectiveTarget.GetComponents<IDamageable>();
             foreach (var damageable in damageables)

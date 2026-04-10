@@ -34,6 +34,18 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             var archerJob = ctx.ArcherJob;
             if (archerJob == null) return;
 
+            // Nếu đang có mục tiêu, skill sẵn sàng và vị trí hiện tại đã hợp lệ để bắn
+            // thì vào Attack ngay, không ép chạy về slot nữa.
+            if (ctx.Status.currentTarget != null && ctx.SkillManager != null && ctx.SkillManager.IsReady(0))
+            {
+                if (archerJob.CanAttackFromHere())
+                {
+                    archerJob.StopMovement();
+                    archerJob.ChangeState(archerJob.AttackState);
+                    return;
+                }
+            }
+
             // CHỈ kiểm tra vật lý — đã đến đúng điểm slot chưa?
             // _basePos = GuardManager.GetDefensePositionForArcher() đã tính sẵn offset đúng.
             // KHÔNG dùng CanAttackFromHere() ở đây: nó kiểm tra ranh giới mềm

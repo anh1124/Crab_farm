@@ -194,6 +194,10 @@ MonoBehaviour:
   debugEnemy: 0
   <CanMove>k__BackingField: 1
   <CanAction>k__BackingField: 1
+  <IsSkillCasting>k__BackingField: 0
+  <SkillAllowsMovement>k__BackingField: 1
+  _ignoreReturnToPortalDefault: 0
+  _ignoreReturnToPortal: 0
 --- !u!114 &3288081392546131592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -206,9 +210,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b801e1dfcf8bc0408b6de95947c15a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isDebug: 0
   currentStateName: None
   currentTarget: {fileID: 0}
   currentPortal: {fileID: 0}
+  _animatorTriggers: []
   shockAttackCollider: {fileID: 8997399569110945392}
 --- !u!50 &8024802097094593828
 Rigidbody2D:
@@ -262,6 +268,7 @@ MonoBehaviour:
   - TownCenter
   - Archer
   - Denizen
+  - Villager
   targetLayer:
     serializedVersion: 2
     m_Bits: 45569
@@ -282,6 +289,7 @@ MonoBehaviour:
   - skill: {fileID: 11400000, guid: b695168b6e8a0684aae14873579fee50, type: 2}
     state: 0
     cooldownTimer: 0
+  isDebug: 0
 --- !u!1 &8997399569110945392
 GameObject:
   m_ObjectHideFlags: 0

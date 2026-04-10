@@ -24,6 +24,18 @@ namespace Script.Game.Enemy.States
             var portal = ctx.HomePortal;
             if (portal == null || !portal.activeInHierarchy)
             {
+                // Tự tìm lại portal theo vị trí hiện tại để tránh kẹt state khi portal reference bị null.
+                var portalMgr = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
+                var townCenter = Script.Utility.GetTownCenter();
+                if (portalMgr != null && townCenter != null)
+                {
+                    portal = ctx.Transform.position.x > townCenter.transform.position.x ? portalMgr.portalR : portalMgr.portalL;
+                    ctx.HomePortal = portal;
+                }
+            }
+
+            if (portal == null || !portal.activeInHierarchy)
+            {
                 _moveTarget = null;
                 ctx.Controller.ChangeState(ctx.Controller.IdleStateInstance); 
                 return;
@@ -55,8 +67,8 @@ namespace Script.Game.Enemy.States
 
             float xDistance = Mathf.Abs(ctx.Transform.position.x - _moveTarget.transform.position.x);
             
-            // Nếu sát sạt tọa độ X (0.5 đơn vị) -> Tiến hành biến mất (Pool)
-            if (xDistance < 0.5f)
+            // Nới điều kiện một chút để tránh kẹt do va chạm/dao động quanh portal.
+            if (xDistance < 1.0f)
             {
                 ctx.Controller.Despawn(); 
                 ctx.ReturnToPoolAction?.Invoke(ctx.Self);

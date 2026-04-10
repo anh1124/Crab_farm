@@ -48,6 +48,7 @@ namespace Script.Game.Mobs.Subjects
         /// </summary>
         [Header("Trajectory Simulation")]
         [SerializeField] private int trajectorySimSteps = 24;
+        [SerializeField] private float simulatedArrowRadius = 0.25f;
         #endregion
 
         #region Internal State & Cache
@@ -270,8 +271,12 @@ namespace Script.Game.Mobs.Subjects
                 float py = origin.y + vel.y * t + 0.5f * actualGravity * t * t;
                 Vector2 curr = new Vector2(px, py);
 
-                if (Physics2D.Linecast(prev, curr, wallLayer).collider != null)
-                    return true;
+                Vector2 direction = (curr - prev).normalized;
+                float distance = Vector2.Distance(prev, curr);
+
+                RaycastHit2D hit = Physics2D.CircleCast(
+                    prev, simulatedArrowRadius, direction, distance, wallLayer);
+                if (hit.collider != null) return true;
 
                 prev = curr;
             }

@@ -26,6 +26,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             var vaSoul = ctx.VagrantJob;
             if (vaSoul == null) return;
 
+            // Safety gate: nếu có đe dọa thì ưu tiên Fear ngay cả khi đang đứng trên coin chờ nhặt.
+            if (ctx.Status != null && ctx.Status.isFearPending)
+            {
+                vaSoul.ChangeState(vaSoul.FearState);
+                return;
+            }
+
             // Nếu đồng xu đã bị người khác lượm hoặc biến mất
             if (ctx.Status.coinTarget == null || !ctx.Status.coinTarget.activeInHierarchy)
             {
@@ -34,6 +41,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
             }
 
             // Liên tục cập nhật mục tiêu theo vị trí đồng xu (để lượm chuẩn xác)
+            bool reachedCoin = vaSoul.HasReachedPosition(ctx.Status.coinTarget.transform.position, 0.5f);
+            if (reachedCoin)
+            {
+                ctx.Movement?.Stop();
+                return;
+            }
+
             if (ctx.Movement != null)
                 ctx.Movement.SetTarget(ctx.Status.coinTarget.transform.position, ctx.Status.runSpeed);
         }
@@ -41,10 +55,18 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         public override void Update(DenizenContext ctx)
         {
             if (ctx.Animator == null) return;
+            if (ctx.Status != null && ctx.Status.isFearPending) return;
 
-            // Đảm bảo luôn chạy animation "run" trong lúc dí theo coin
-            if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
-                ctx.Animator.Play("run");
+            if (ctx.Status != null && ctx.Status.isMoving)
+            {
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
+                    ctx.Animator.Play("run");
+            }
+            else
+            {
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("idle"))
+                    ctx.Animator.Play("idle");
+            }
         }
     }
 }

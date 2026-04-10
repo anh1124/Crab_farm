@@ -139,6 +139,24 @@ namespace Script.Game.Mobs.MobsManager
             }
         }
 
+        /// <summary>
+        /// TownCenter bị tấn công: chuyển tiền tuyến về Plaza để tập hợp Archer.
+        /// Không phá hoặc đổi trạng thái bất kỳ wall nào.
+        /// </summary>
+        public void ForceFrontlineToPlaza()
+        {
+            if (guardManager == null) guardManager = FindObjectOfType<GuardManager>();
+
+            UpdateSpecificWall(ref currentLeftWall, null, true);
+            UpdateSpecificWall(ref currentRightWall, null, false);
+
+            if (guardManager != null && guardManager.Squad != null)
+                guardManager.Squad.NotifyArchersDefensivePositionChanged(currentLeftWall, currentRightWall);
+
+            if (guardManager != null)
+                guardManager.DebugLog("[GuardWallSystem] TownCenter under attack -> frontline forced to Plaza.");
+        }
+
         private void OnDestroy()
         {
             if (currentLeftWall != null)

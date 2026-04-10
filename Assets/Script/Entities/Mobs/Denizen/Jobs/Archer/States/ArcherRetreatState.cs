@@ -15,7 +15,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Animator != null) 
                 ctx.Animator.Play("archerMove");
             
-            ctx.Status.isMovementAllowed = true;
+            ctx.Status.CanMove = true;
 
             if (ctx.Movement != null)
                 ctx.Movement.SetTarget(_wallTarget.transform.position, ctx.Status.runSpeed);

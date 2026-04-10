@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Script;
 using Script.Data_Model;
+using Script.Game.Enemy;
 using Script.Game.Item.Coin;
 using Script.Manager;
 using UnityEngine;
@@ -19,13 +20,18 @@ public class Spawner : MonoBehaviour
     public static Spawner Instance { get; private set; }
     public float coinThrowForce = 5f;
     public float coinThrowDistance = 2f;
+    [Header("Denizen Drop Config")]
+    [Tooltip("Cooldown (giây) cho Denizen khác nhặt coin khi coin được drop do bị tấn công.")]
+    public float denizenHitDropCoinCooldown = 10f;
     public GameObject coinPrefab;
     
     private ICoinPool _coinPool;
+    private IEnemyPool _enemyPool;
 
-    public void Setup(ICoinPool coinPool)
+    public void Setup(ICoinPool coinPool, IEnemyPool enemyPool = null)
     {
         _coinPool = coinPool;
+        _enemyPool = enemyPool;
     }
 
     
@@ -71,9 +77,17 @@ public class Spawner : MonoBehaviour
         StartCoroutine(DropByPlayerCoroutine(position, direction, amount));
     }
 
-    public void DropByDenizen(Vector2 position, int amount, Vector2 direction)
+    public void DropByDenizen(Vector2 position, int amount, Vector2 direction, float denizenPickupCooldown = -1f)
     {
-        StartCoroutine(DropByDenizenCoroutine(position, direction, amount));
+        StartCoroutine(DropByDenizenCoroutine(position, direction, amount, denizenPickupCooldown));
+    }
+
+    public void DropCoinFromDenizenHit(Vector2 denizenPosition, int amount = 1)
+    {
+        Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
+        if (dropDirection.sqrMagnitude < 0.01f) dropDirection = Vector2.right;
+        Vector2 spawnPosition = new Vector2(denizenPosition.x, denizenPosition.y + 2f);
+        DropByDenizen(spawnPosition, amount, dropDirection, denizenHitDropCoinCooldown);
     }
 
     public void InitializeCoinThrow(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
@@ -132,7 +146,7 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    private IEnumerator DropByDenizenCoroutine(Vector2 position, Vector2 direction, int amount)
+    private IEnumerator DropByDenizenCoroutine(Vector2 position, Vector2 direction, int amount, float denizenPickupCooldown = -1f)
     {
         for (int i = 0; i < amount; i++)
         {
@@ -146,7 +160,10 @@ public class Spawner : MonoBehaviour
                 coinScriptInstance.playerPickupAble = true;
                 coinScriptInstance.denizensPickupAble = false;
                 coinScriptInstance.floating = false;
-                coinScriptInstance.CallFunctionCoolDown("Denizens");
+                if (denizenPickupCooldown >= 0f)
+                    coinScriptInstance.CallFunctionCoolDown("Denizens", denizenPickupCooldown);
+                else
+                    coinScriptInstance.CallFunctionCoolDown("Denizens");
                 InitializeCoinThrow(coin, direction);
             }
 
@@ -239,5 +256,43 @@ public class Spawner : MonoBehaviour
         }
 
         return spawnedMob;
+    }
+
+    /// <summary>
+    /// Spawn enemy cho luồng load save. Spawner tự tương tác với pool.
+    /// </summary>
+    public GameObject SpawnEnemyFromLoad(string enemyName, GameObject fallbackPrefab, Transform fallbackParent, bool debug = false)
+    {
+        if (string.IsNullOrEmpty(enemyName))
+        {
+            Debug.LogError("[Spawner] SpawnEnemyFromLoad failed: enemyName is null/empty.");
+            return null;
+        }
+
+        if (_enemyPool == null)
+            _enemyPool = FindObjectOfType<EnemyPool>();
+
+        if (_enemyPool != null)
+        {
+            if (_enemyPool is EnemyPool concretePool)
+                concretePool.InitializePools();
+
+            var pooledEnemy = _enemyPool.GetEnemy(enemyName);
+            if (pooledEnemy != null)
+            {
+                if (debug) Debug.Log($"[Spawner] SpawnEnemyFromLoad -> pooled enemy: {enemyName}");
+                return pooledEnemy;
+            }
+        }
+
+        if (fallbackPrefab == null)
+        {
+            Debug.LogError($"[Spawner] SpawnEnemyFromLoad failed: fallback prefab null for '{enemyName}'.");
+            return null;
+        }
+
+        var instance = Instantiate(fallbackPrefab, fallbackParent);
+        if (debug) Debug.Log($"[Spawner] SpawnEnemyFromLoad -> instantiated fallback enemy: {enemyName}");
+        return instance;
     }
 }

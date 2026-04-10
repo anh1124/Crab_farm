@@ -18,7 +18,7 @@ namespace Script.Utils
         /// <param name="hitbox">Collider2D của skill</param>
         /// <param name="damage">Damage gây ra</param>
         /// <param name="instigator">GameObject gây damage (player)</param>
-        public static void ActivateHitbox(Collider2D hitbox, float damage, GameObject instigator, bool isEnemyAttack = false)
+        public static void ActivateHitbox(Collider2D hitbox, float damage, GameObject instigator, bool isEnemyAttack = false, bool debugLogs = false)
         {
             if (hitbox == null)
             {
@@ -46,8 +46,20 @@ namespace Script.Utils
             filter.useTriggers = true; // Cho phép đánh trúng các NPC sử dụng Trigger Collider
 
             int hitCount = Physics2D.OverlapCollider(hitbox, filter, buffer);
+            if (debugLogs)
+            {
+                string names = "";
+                for (int i = 0; i < hitCount; i++)
+                {
+                    if (buffer[i] == null) continue;
+                    if (names.Length > 0) names += ", ";
+                    names += $"{buffer[i].name}(Tag:{buffer[i].tag})";
+                }
+                Debug.Log($"[HitboxController] {instigator.name} hitbox '{hitboxObj.name}' overlapped {hitCount} collider(s): [{names}]");
+            }
+
             // Process damage thông qua CombatUtility (existing system)
-            CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage, isEnemyAttack);
+            CombatUtility.ProcessAttackHits(instigator, buffer, hitCount, damage, isEnemyAttack, debugLogs);
             
             // Disable hitbox ngay sau khi xử lý
             hitbox.enabled = false;

@@ -10,7 +10,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Animator != null) 
                 ctx.Animator.Play("archerIdle");
                 
-            ctx.Status.isMovementAllowed = false;
+            ctx.Status.CanMove = false;
             
             if (ctx.Movement != null)
                 ctx.Movement.Stop();
@@ -18,7 +18,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public override void Exit(DenizenContext ctx)
         {
-            ctx.Status.isMovementAllowed = true;
+            ctx.Status.CanMove = true;
         }
 
         public override void Update(DenizenContext ctx)

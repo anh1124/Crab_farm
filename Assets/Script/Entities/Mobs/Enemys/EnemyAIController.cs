@@ -69,6 +69,7 @@ namespace Script.Game.Enemy.Core
             UpdateAnimatorTriggers();
 
             if (status != null) status.OnDieEvent += OnDeath;
+            if (status != null) status.OnIgnoreReturnToPortalChanged += HandleIgnoreReturnToPortalChanged;
         }
 
         public void UpdateAnimatorTriggers()
@@ -85,6 +86,14 @@ namespace Script.Game.Enemy.Core
 
         private void OnEnable() => NPCUpdateManager.Instance?.Register(this);
         private void OnDisable() => NPCUpdateManager.Instance?.Unregister(this);
+        private void OnDestroy()
+        {
+            if (_ctx != null && _ctx.Status != null)
+            {
+                _ctx.Status.OnDieEvent -= OnDeath;
+                _ctx.Status.OnIgnoreReturnToPortalChanged -= HandleIgnoreReturnToPortalChanged;
+            }
+        }
 
         public virtual void UpdateBehavior()
         {
@@ -109,6 +118,7 @@ namespace Script.Game.Enemy.Core
             if (gtm != null)
             {
                 bool isDay = gtm.IsDaytime;
+                bool ignoreReturnToPortal = _ctx.Status != null && _ctx.Status.IgnoreReturnToPortal;
                 if (!(_currentState is Script.Game.Enemy.States.AttackState))
                 {
                     // [CORRECTED]: Đêm thì Tiến công, Ngày thì Rút lui
@@ -125,22 +135,40 @@ namespace Script.Game.Enemy.Core
                     }
                     else
                     {
-                        // Ngày: Tìm Portal rút về
-                        if (_ctx.HomePortal == null && Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
+                        // Flag này sẽ bỏ qua hoàn toàn logic "ban ngày phải về portal".
+                        if (ignoreReturnToPortal)
                         {
-                            var portalMgr = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
-                            var townCenter = Script.Utility.GetTownCenter();
-                            if (townCenter != null)
-                                _ctx.HomePortal = _ctx.Transform.position.x > townCenter.transform.position.x ? portalMgr.portalR : portalMgr.portalL;
+                            var target = _ctx.TargetManager?.GetTarget(gameObject);
+                            _ctx.CurrentTarget = target;
+
+                            if (target != null && !(_currentState is Script.Game.Enemy.States.MoveToTargetState))
+                            {
+                                ChangeState(_moveState);
+                            }
+                            else if (target == null && !(_currentState is Script.Game.Enemy.States.IdleState))
+                            {
+                                ChangeState(_idleState);
+                            }
                         }
-
-                        _ctx.CurrentTarget = _ctx.HomePortal;
-
-                        if (_ctx.HomePortal != null && !(_currentState is Script.Game.Enemy.States.ReturnToPortalState)) 
+                        else
                         {
-                            ChangeState(_returnState);
+                            // Ngày: Tìm Portal rút về
+                            if (_ctx.HomePortal == null && Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
+                            {
+                                var portalMgr = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
+                                var townCenter = Script.Utility.GetTownCenter();
+                                if (townCenter != null)
+                                    _ctx.HomePortal = _ctx.Transform.position.x > townCenter.transform.position.x ? portalMgr.portalR : portalMgr.portalL;
+                            }
+
+                            _ctx.CurrentTarget = _ctx.HomePortal;
+
+                            if (_ctx.HomePortal != null && !(_currentState is Script.Game.Enemy.States.ReturnToPortalState))
+                            {
+                                ChangeState(_returnState);
+                            }
+                            else if (_ctx.HomePortal == null && !(_currentState is Script.Game.Enemy.States.IdleState)) ChangeState(_idleState);
                         }
-                        else if (_ctx.HomePortal == null && !(_currentState is Script.Game.Enemy.States.IdleState)) ChangeState(_idleState);
                     }
                 }
             }
@@ -148,7 +176,7 @@ namespace Script.Game.Enemy.Core
             // Đồng bộ debug cho Editor
             currentTarget = _ctx.CurrentTarget;
             currentPortal = _ctx.HomePortal;
-            if (isDebug && _currentState != null) currentStateName = _currentState.GetType().Name;
+            currentStateName = _currentState != null ? _currentState.GetType().Name : "None";
 
             // [HÀNG RÀO QUAY ĐẦU]: Đảm bảo luôn nhìn về hướng đích đến cuối cùng
             if (_ctx.CurrentTarget != null && !(_currentState is Script.Game.Enemy.States.DeadState))
@@ -166,6 +194,11 @@ namespace Script.Game.Enemy.Core
         /// </summary>
         public void AnimEvent_OnDieComplete()
         {
+            if (isDebug)
+            {
+                string stateName = _currentState != null ? _currentState.GetType().Name : "None";
+                Debug.Log($"[EnemyAIController] {gameObject.name} received AnimEvent_OnDieComplete while state={stateName}");
+            }
             _currentState?.OnDieAnimationComplete(_ctx);
         }
 
@@ -177,6 +210,11 @@ namespace Script.Game.Enemy.Core
         {
             if (newState == null || _currentState == newState) return;
 
+            string oldState = _currentState != null ? _currentState.GetType().Name : "None";
+            string nextState = newState.GetType().Name;
+            if (isDebug && (nextState == nameof(DeadState) || oldState == nameof(DeadState)))
+                Debug.Log($"[EnemyAIController] {gameObject.name} state transition: {oldState} -> {nextState}");
+
             _currentState?.Exit(_ctx);
             _currentState = newState;
             
@@ -184,7 +222,7 @@ namespace Script.Game.Enemy.Core
             _currentState.ResetFlags();
             
             _currentState.Enter(_ctx);
-            if (isDebug) currentStateName = _currentState.GetType().Name;
+            currentStateName = _currentState.GetType().Name;
         }
 
         public void ResetEnemy(GameObject portal)
@@ -210,6 +248,23 @@ namespace Script.Game.Enemy.Core
             ChangeState(_deadState);
         }
 
+        private void HandleIgnoreReturnToPortalChanged(bool ignore)
+        {
+            if (!ignore) return;
+
+            // Bật ignore giữa chừng: nếu đang rút về portal thì quay lại flow tấn công.
+            var target = _ctx.TargetManager?.GetTarget(gameObject);
+            _ctx.CurrentTarget = target;
+            if (target != null)
+            {
+                ChangeState(_moveState);
+            }
+            else if (_currentState is Script.Game.Enemy.States.ReturnToPortalState)
+            {
+                ChangeState(_idleState);
+            }
+        }
+
         public virtual EnemyState GetMoveState() => new MoveToTargetState();
         public virtual AttackState GetAttackState() => new AttackState(); 
 
@@ -220,6 +275,10 @@ namespace Script.Game.Enemy.Core
             
             string statusInfo = _ctx.Status != null ? $"HP: {_ctx.Status.CurrentHp}/{_ctx.Status.MaxHp}, Spd: {_ctx.Status.MoveSpeed}" : "NULL";
             string targetInfo = _ctx.CurrentTarget != null ? $"{_ctx.CurrentTarget.name} (Tag: {_ctx.CurrentTarget.tag})" : "None";
+            string portalInfo = _ctx.HomePortal != null ? $"{_ctx.HomePortal.name} (Tag: {_ctx.HomePortal.tag})" : "None";
+            string selfPos = _ctx.Transform != null ? _ctx.Transform.position.ToString() : "None";
+            string targetPos = _ctx.CurrentTarget != null ? _ctx.CurrentTarget.transform.position.ToString() : "None";
+            float targetDistance = _ctx.CurrentTarget != null ? Mathf.Abs(_ctx.Transform.position.x - _ctx.CurrentTarget.transform.position.x) : -1f;
             
             string skillInfo = "";
             if (_ctx.SkillManager != null)
@@ -251,13 +310,22 @@ namespace Script.Game.Enemy.Core
 
             // Thêm danh sách Trigger để soi lỗi hoa thường
             string availableTriggers = _animatorTriggers != null ? string.Join(", ", _animatorTriggers) : "None";
+            var gtm = UnityEngine.Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            string timeInfo = gtm != null ? $"{gtm.GameHour:00}:{gtm.GameMinute:00} ({(gtm.IsDaytime ? "Day" : "Night")})" : "NoTimeManager";
+            bool ignoreReturn = _ctx.Status != null && _ctx.Status.IgnoreReturnToPortal;
 
             Debug.Log($"<color=orange>[AI FULL REPORT: {gameObject.name}]</color>\n" +
-                      $" - State: {currentStateName}\n" +
+                      $" - State: {(_currentState != null ? _currentState.GetType().Name : "None")}\n" +
                       $" - Animator: {currentAnim}\n" +
+                      $" - Time: {timeInfo}\n" +
+                      $" - IgnoreReturnToPortal: {ignoreReturn}\n" +
                       $" - Triggers Available: [{availableTriggers}]\n" +
                       $" - Casting: {_ctx.IsSkillCasting} | MoveAllowed: {_ctx.SkillAllowsMovement}\n" +
+                      $" - CurrentPos: {selfPos}\n" +
                       $" - Target: {targetInfo}\n" +
+                      $" - TargetPos: {targetPos}\n" +
+                      $" - X-Distance To Target: {(targetDistance >= 0f ? targetDistance.ToString("F2") : "N/A")}\n" +
+                      $" - HomePortal: {portalInfo}\n" +
                       $" - Detected All: [{allDetected}]\n" +
                       $" - Status: {statusInfo}\n" +
                       $" - Skills: {skillInfo}");

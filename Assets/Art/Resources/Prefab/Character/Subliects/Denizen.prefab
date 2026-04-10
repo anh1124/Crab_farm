@@ -125,22 +125,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   firePoint: {fileID: 6217569585450810106}
-  arrowPool: {fileID: 0}
-  projectileSpeed: 15
+  projectileSpeed: 12
   gravityScale: 2
   lowMinAngle: 30
-  lowMaxAngle: 45
-  lowAngleStep: 5
-  highMinAngle: 68
-  highMaxAngle: 88
-  highAngleStep: 10
-  accuracy: 0.5
+  lowMaxAngle: 44
+  lowAngleStep: 4
+  highMinAngle: 60
+  highMaxAngle: 90
+  highAngleStep: 4
+  accuracy: 1
   wallLayer:
     serializedVersion: 2
     m_Bits: 32768
   showDebugInfo: 0
   stickImpactOffset: 0.4
   trajectorySimSteps: 24
+  simulatedArrowRadius: 1.3
 --- !u!1 &3886413513261598691
 GameObject:
   m_ObjectHideFlags: 0
@@ -388,8 +388,6 @@ MonoBehaviour:
   VagrantJob: {fileID: 8784385641177253871}
   VillagerJob: {fileID: 220828774696625131}
   ArcherJob: {fileID: 8719448940933799011}
-  GuardManager: {fileID: 0}
-  TimeManager: {fileID: 0}
   WallManager: {fileID: 0}
   NPCUpdateManager: {fileID: 0}
   SkillManager: {fileID: 2416144875155933858}
@@ -409,7 +407,7 @@ MonoBehaviour:
   isSkillCasting: 0
   skillAllowsMovement: 1
   debugDenizen: 0
-  isMovementAllowed: 1
+  <CanMove>k__BackingField: 1
   isMoving: 0
   role: 0
   currentCoins: 0
@@ -518,6 +516,7 @@ MonoBehaviour:
   - skill: {fileID: 11400000, guid: f2523d94d73e5634382e5b10a52ad402, type: 2}
     state: 0
     cooldownTimer: 0
+  isDebug: 0
 --- !u!1 &5452678090401275911
 GameObject:
   m_ObjectHideFlags: 0

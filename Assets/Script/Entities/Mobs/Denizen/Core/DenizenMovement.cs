@@ -47,7 +47,7 @@ namespace Script.Game.Mobs.Denizen.Core
             if (_context == null || _context.Status == null) return;
 
             bool skillAllows = !_context.IsSkillCasting || _context.SkillAllowsMovement;
-            bool statusAllows = _context.Status.isMovementAllowed;
+            bool statusAllows = _context.Status.CanMove;
             bool isMoving    = _context.Status.isMoving;
 
             if (isMoving && skillAllows && statusAllows)

@@ -30,9 +30,10 @@ namespace Script.Game.Enemy.States
 
             var gtm = UnityEngine.Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
             bool isDay = gtm != null && gtm.IsDaytime;
+            bool ignoreReturn = ctx.Status != null && ctx.Status.IgnoreReturnToPortal;
 
             // [FIXED TAGS]: Sử dụng các danh sách tập trung từ TargetLists
-            List<string> scanTags = isDay ? TargetLists.EnemyRetreatTargets : TargetLists.EnemyAdvanceTargets;
+            List<string> scanTags = (isDay && !ignoreReturn) ? TargetLists.EnemyRetreatTargets : TargetLists.EnemyAdvanceTargets;
 
             // 2. [SCAN TARGET] Kiểm tra trong danh sách Detector
             var detected = (ctx.RaycastHelper != null) ? ctx.RaycastHelper.GetListHitObjects() : null;
@@ -41,8 +42,11 @@ namespace Script.Game.Enemy.States
             // Nếu không quét trúng cái gì -> Lập tức quay lại nhiệm vụ làm con máy ủi đẩy tới đích
             if (detectedObj == null)
             {
-                if (!isDay) ctx.Controller.ChangeState(ctx.Controller.MoveStateInstance);
-                else ctx.Controller.ChangeState(ctx.Controller.ReturnStateInstance);
+                if (!isDay || ignoreReturn) ctx.Controller.ChangeState(ctx.Controller.MoveStateInstance);
+                else
+                {
+                    ctx.Controller.ChangeState(ctx.Controller.ReturnStateInstance);
+                }
                 return;
             }
 

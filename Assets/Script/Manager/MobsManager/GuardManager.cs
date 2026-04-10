@@ -92,6 +92,18 @@ namespace Script.Game.Mobs.MobsManager
 
         public void RegisterEnemy(GameObject enemy) => Alarm?.RegisterEnemy(enemy);
         public void ClearAlarm() => Alarm?.ClearAlarm();
+        public void NotifyTownCenterUnderAttack()
+        {
+            if (Alarm != null && !Alarm.isEnemyAttack)
+            {
+                Alarm.isEnemyAttack = true;
+                Alarm.alarmTimer = 30f;
+                Squad?.NotifyAllArchersValues(true);
+                DebugLog("[GuardManager] ⚔️ TownCenter under attack - emergency defense mode enabled.");
+            }
+
+            Wall?.ForceFrontlineToPlaza();
+        }
 
         #endregion
 

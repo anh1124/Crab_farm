@@ -28,66 +28,67 @@ namespace Script.Game.Structures.TownCenter
         }//singleton
         
         //load data vào list
-        public void InitializeWallData()
+        public void InitializeWallData(PrefabData context)
         {
             if(townCentrerList == null)
                 townCentrerList = new List<TownCenterData>();
             else
                 townCentrerList.Clear();
             
-            townCentrerList.Add(new TownCenterData
+            var prefabData = context != null ? context : PrefabData.Instance;
+            if (prefabData == null || prefabData.townCenterList == null || prefabData.townCenterList.Count == 0)
             {
-                tier = 0,
-                upgradeCost = 3,
-                curentPrefab = PrefabData.Instance.townCenterList[0],
-            });
-            townCentrerList.Add(new TownCenterData
+                Debug.LogError("[TownCenterDataList] PrefabData.townCenterList is null/empty");
+                return;
+            }
+
+            // Upgrade costs by tier (tier i uses upgradeCost when upgrading from i -> i+1).
+            // If you add more prefabs, costs will auto-extend.
+            int[] defaultCosts = { 3, 7, 10, 15, 20, 25 };
+            int lastCost = defaultCosts[defaultCosts.Length - 1];
+
+            for (int i = 0; i < prefabData.townCenterList.Count; i++)
             {
-                tier = 1,
-                upgradeCost = 7,
-                curentPrefab = PrefabData.Instance.townCenterList[1],
-            });
-            townCentrerList.Add(new TownCenterData
-            {
-                tier = 2,
-                upgradeCost = 10,
-                curentPrefab = PrefabData.Instance.townCenterList[2],
-            });
-            townCentrerList.Add(new TownCenterData
-            {
-                tier = 3,
-                upgradeCost = 15,
-                curentPrefab = PrefabData.Instance.townCenterList[3],
-            });
-            townCentrerList.Add(new TownCenterData
-            {
-                tier = 4,
-                curentPrefab = PrefabData.Instance.townCenterList[4],
-            });
+                int cost = i < defaultCosts.Length ? defaultCosts[i] : (lastCost + 5 * (i - defaultCosts.Length + 1));
+                townCentrerList.Add(new TownCenterData
+                {
+                    tier = i,
+                    upgradeCost = cost,
+                    curentPrefab = prefabData.townCenterList[i],
+                });
+            }
         }
 
         // Bootstrap interface implementation
         public int Order => 110; // chạy sau WallDataList/kiểm tra ,tại sao lại phải chạy sau wall data
         public void InitializeData(PrefabData context)
         {
-            InitializeWallData();
+            InitializeWallData(context);
         }
         
         // lấy dữ liệu TownCenter theo tier
         public TownCenterData GetByTier(int tier)
         {
+            TryGetByTier(tier, out var data, logIfMissing: true);
+            return data;
+        }
+
+        // For "check next tier" use-cases: can be silent (no spam log)
+        public bool TryGetByTier(int tier, out TownCenterData data, bool logIfMissing)
+        {
+            data = null;
             if (townCentrerList == null)
             {
-                Debug.LogError("[TownCenterDataList] townCentrerList is null");
-                return null;
+                if (logIfMissing)
+                    Debug.LogError("[TownCenterDataList] townCentrerList is null");
+                return false;
             }
-            
-            var data = townCentrerList.Find(d => d.tier == tier);
-            if (data == null)
-            {
+
+            data = townCentrerList.Find(d => d.tier == tier);
+            if (data == null && logIfMissing)
                 Debug.LogError($"[TownCenterDataList] Không tìm thấy data cho tier {tier}");
-            }
-            return data;
+
+            return data != null;
         }
         
         

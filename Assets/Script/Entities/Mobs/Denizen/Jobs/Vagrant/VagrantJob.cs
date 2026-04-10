@@ -12,7 +12,7 @@ using Script.Game.Item.Coin;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 {
-    public class VagrantJob : DenizenJob, INPCBehavior, IDamageable
+    public class VagrantJob : DenizenJob, INPCBehavior
     {
         public VagrantIdleState   IdleState    { get; private set; }
         public VagrantFearState   FearState    { get; private set; }
@@ -106,7 +106,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
                 if (Context.Status != null)
                 {
                     Context.Status.OnCoinChanged += OnCoinChangedHandler;
-                    Context.Status.isMovementAllowed = true;
+                    Context.Status.CanMove = true;
                     Context.Status.isMoving = false;
                 }
             }

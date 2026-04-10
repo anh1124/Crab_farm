@@ -29,6 +29,8 @@ namespace Script.Game.PlayerCharacter.Skills
 
         [Header("Skill Slots")]
         [SerializeField] protected SkillSlot[] skillSlots = new SkillSlot[0];
+        [Header("Debug")]
+        [SerializeField] private bool isDebug = false;
 
         protected Transform _skillContainer;
 
@@ -69,7 +71,7 @@ namespace Script.Game.PlayerCharacter.Skills
                 newSkill.Initialize(_skillContainer);
             }
             
-            Debug.Log($"[SkillManager] Equipped skill '{(newSkill != null ? newSkill.skillName : "None")}' to slot {index}");
+            LogDebug($"[SkillManager] Equipped skill '{(newSkill != null ? newSkill.skillName : "None")}' to slot {index}");
         }
 
         // ── Execute ────────────────────────────────────────────────────────
@@ -92,7 +94,7 @@ namespace Script.Game.PlayerCharacter.Skills
 
             if (slot.state != SkillState.Ready)
             {
-                Debug.Log($"[SkillManager] Skill '{slot.skill.skillName}' is not ready. State: {slot.state}");
+                LogDebug($"[SkillManager] Skill '{slot.skill.skillName}' is not ready. State: {slot.state}");
                 return false;
             }
 
@@ -103,7 +105,7 @@ namespace Script.Game.PlayerCharacter.Skills
             slot.state = SkillState.Executing;
             slot.skill.OnStart(instigator);
 
-            Debug.Log($"[SkillManager] Executed skill '{slot.skill.skillName}' at slot {index}");
+            LogDebug($"[SkillManager] Executed skill '{slot.skill.skillName}' at slot {index}");
 
             // Nếu skill không dùng animation, kết thúc ngay lập tức để vào Cooldown
             if (!slot.skill.useAnimation)
@@ -146,7 +148,7 @@ namespace Script.Game.PlayerCharacter.Skills
             {
                 slot.state = SkillState.Cooling;
                 slot.cooldownTimer = slot.skill.cooldown;
-                Debug.Log($"[SkillManager] Skill '{slot.skill.skillName}' entered cooldown: {slot.cooldownTimer}s");
+                LogDebug($"[SkillManager] Skill '{slot.skill.skillName}' entered cooldown: {slot.cooldownTimer}s");
             }
             else
             {
@@ -221,7 +223,7 @@ namespace Script.Game.PlayerCharacter.Skills
                     skillSlots[i].skill.Initialize(container);
                     skillSlots[i].state = SkillState.Ready;
                     skillSlots[i].cooldownTimer = 0f;
-                    Debug.Log($"[SkillManager] Initialized slot {i}: {skillSlots[i].skill.skillName}");
+                    LogDebug($"[SkillManager] Initialized slot {i}: {skillSlots[i].skill.skillName}");
                 }
             }
         }
@@ -230,5 +232,10 @@ namespace Script.Game.PlayerCharacter.Skills
 
         private bool IsValid(int index)
             => index >= 0 && index < skillSlots.Length && skillSlots[index] != null;
+
+        private void LogDebug(string message)
+        {
+            if (isDebug) Debug.Log(message);
+        }
     }
 }

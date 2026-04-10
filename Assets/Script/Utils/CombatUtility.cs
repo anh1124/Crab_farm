@@ -27,6 +27,18 @@ namespace Script.Utils
         /// </summary>
         public static GameObject ResolveTargetFromTrigger(GameObject hitObject)
         {
+            if (hitObject == null) return null;
+
+            // Ưu tiên root thực sự của Denizen/Enemy để tránh lấy nhầm child có tag không hợp lệ.
+            var denizenRoot = hitObject.GetComponentInParent<DenizenStatus>();
+            if (denizenRoot != null) return denizenRoot.gameObject;
+
+            var enemyRoot = hitObject.GetComponentInParent<Script.Game.Enemy.EnemyStatus>();
+            if (enemyRoot != null) return enemyRoot.gameObject;
+
+            var wallRoot = hitObject.GetComponentInParent<WallStatus>();
+            if (wallRoot != null) return wallRoot.gameObject;
+
             return hitObject; 
         }
 
@@ -58,8 +70,10 @@ namespace Script.Utils
         /// hiện tại hàm gây dame chỉ mới sử dụng cho player
         /// khi enemy dùng sẽ cần thêm logic và chuyển isAlly thành false 
         /// </summary>
-        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, float damageAmount, bool isEnemyAttack = false)
+        public static void ProcessAttackHits(GameObject instigator, Collider2D[] hits, int count, float damageAmount, bool isEnemyAttack = false, bool debugLogs = false)
         {
+            bool shouldLog = debugLogs;
+
             bool allowDamageAlly = false;
             // Xác định xem instigator có được chém đồng minh không
             if (instigator != null && instigator.CompareTag(Script.Utils.GameTags.Player))
@@ -71,6 +85,10 @@ namespace Script.Utils
             }
 
             HashSet<GameObject> processedTargets = new HashSet<GameObject>();
+            if (count == 0 && shouldLog)
+            {
+                Debug.Log($"[Utility.ProcessAttackHits] {instigator.name} hitbox overlap = 0 (no collider touched).");
+            }
 
             for (int i = 0; i < count; i++)
             {
@@ -82,6 +100,7 @@ namespace Script.Utils
 
                 // Dọn mảng: Chuyển lên Parent nếu hit trúng Trigger Box
                 hitObject = ResolveTargetFromTrigger(hitObject);
+                if (hitObject == null) continue;
                 
                 // Tránh chém trúng 1 enemy 2 lần
                 if (processedTargets.Contains(hitObject)) continue;
@@ -93,8 +112,10 @@ namespace Script.Utils
                 if (damageable != null)
                 {
                     GameObject effectiveTarget = (damageable as MonoBehaviour)?.gameObject;
+                    effectiveTarget = ResolveTargetFromTrigger(effectiveTarget);
                     if (effectiveTarget == null) 
                     {
+                        if (shouldLog) Debug.Log($"[Utility.ProcessAttackHits] SKIP {hitObject.name} - IDamageable found but has no MonoBehaviour host.");
                         continue;
                     }
 
@@ -107,6 +128,7 @@ namespace Script.Utils
                     // 1. Kiểm tra sống chết (Valid/Alive)
                     if (!IsTargetValidAndAlive(effectiveTarget))
                     {
+                        if (shouldLog) Debug.Log($"[Utility.ProcessAttackHits] SKIP {effectiveTarget.name} - target invalid/dead.");
                         continue;
                     }
 
@@ -116,6 +138,7 @@ namespace Script.Utils
                         var wallStatus = effectiveTarget.GetComponent<WallStatus>();
                         if (wallStatus != null && wallStatus.tier == 0)
                         {
+                            if (shouldLog) Debug.Log($"[Utility.ProcessAttackHits] SKIP {effectiveTarget.name} - wall tier 0.");
                             continue;
                         }
                     }
@@ -128,7 +151,8 @@ namespace Script.Utils
                         bool isTargetPlayerAlly = IsAlly(effectiveTarget);
                         if (!isTargetPlayerAlly)
                         {
-                            // Debug.Log($"[Utility.ProcessAttackHits] Enemy SKIP Non-Ally target (Friendly Fire prevention): {effectiveTarget.name}");
+                            if (shouldLog)
+                                Debug.Log($"[Utility.ProcessAttackHits] Enemy SKIP Non-Ally target: {effectiveTarget.name} (Tag: {effectiveTarget.tag})");
                             continue;
                         }
                     }
@@ -138,18 +162,18 @@ namespace Script.Utils
                         bool isTargetAlly = IsAlly(effectiveTarget);
                         if (isTargetAlly && !allowDamageAlly)
                         {
-                            Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {effectiveTarget.name} - IsAlly: {isTargetAlly}");
+                            if (shouldLog) Debug.Log($"[Utility.ProcessAttackHits] SKIP Ally: {effectiveTarget.name} - IsAlly: {isTargetAlly}");
                             continue;
                         }
                     }
 
                     // 4. Gây sát thương
-                    Debug.Log($"[Utility.ProcessAttackHits] HIT {effectiveTarget.name} (Tag: {effectiveTarget.tag}) -> Apply Damage {damageAmount}");
+                    if (shouldLog) Debug.Log($"[Utility.ProcessAttackHits] HIT {effectiveTarget.name} (Tag: {effectiveTarget.tag}) -> Apply Damage {damageAmount}");
                     DamageHandler.ApplyDamage(effectiveTarget, damageAmount, instigator);
                 }
                 else
                 {
-                    Debug.Log($"[Utility.ProcessAttackHits] SKIP {hitObject.name} - No IDamageable found in hierarchy.");
+                    if (shouldLog) Debug.Log($"[Utility.ProcessAttackHits] SKIP {hitObject.name} - No IDamageable found in hierarchy.");
                 }
             }
         }

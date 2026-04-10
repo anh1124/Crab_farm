@@ -56,7 +56,23 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         {
             if (PrefabData.Instance?.bow != null)
             {
-                Object.Instantiate(PrefabData.Instance.bow, Context.transform.position + Vector3.up, Quaternion.identity);
+                var spawner = global::Spawner.Instance != null ? global::Spawner.Instance : Object.FindObjectOfType<global::Spawner>();
+                if (spawner != null)
+                {
+                    spawner.DropItem(
+                        PrefabData.Instance.bow,
+                        Context.transform.position,
+                        playerPickupAble: true,
+                        denizensPickupAble: true
+                    );
+                }
+                else
+                {
+                    // Fallback nếu Spawner chưa sẵn sàng.
+                    var bow = Object.Instantiate(PrefabData.Instance.bow, Context.transform.position + Vector3.up, Quaternion.identity);
+                    var pItem = bow.GetComponent<PhysicalItem>();
+                    if (pItem != null) pItem.CallFunctionCoolDown("Denizens");
+                }
             }
         }
     }
