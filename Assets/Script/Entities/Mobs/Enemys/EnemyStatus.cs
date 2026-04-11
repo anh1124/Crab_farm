@@ -1,6 +1,8 @@
 using Script.Interfaces;
 using UnityEngine;
 using Script.Data_Model.Interfaces;
+using Script.Save_Controller;
+using Newtonsoft.Json;
 using static Script.Game.Enemy.TotalEnemyList;
 
 namespace Script.Game.Enemy
@@ -134,7 +136,8 @@ namespace Script.Game.Enemy
                 currentHp = _currentHp,
                 posX = transform.position.x,
                 posY = transform.position.y,
-                ignoreReturnToPortal = _ignoreReturnToPortal
+                ignoreReturnToPortal = _ignoreReturnToPortal,
+                skillManager = SkillManagerSaveUtility.CaptureFrom(this)
             };
         }
 
@@ -169,6 +172,9 @@ namespace Script.Game.Enemy
                 // Cập nhật lại flag chết dựa trên hp
                 IsDead = (_currentHp <= 0);
                 OnHealthChanged?.Invoke(CurrentHp, MaxHp);
+
+                var skillMgr = GetComponent<Script.Game.PlayerCharacter.Skills.SkillManager>();
+                SkillManagerSaveUtility.Restore(skillMgr, save.skillManager, gameObject);
             }
         }
 
@@ -180,6 +186,9 @@ namespace Script.Game.Enemy
             public float posX;
             public float posY;
             public bool ignoreReturnToPortal;
+
+            [JsonProperty("skillManager")]
+            public SkillManagerSaveData skillManager;
         }
 
         // --- IDamageable Implementation ---

@@ -1,3 +1,5 @@
+using System;
+using Script.Save_Controller;
 using UnityEngine;
 
 namespace Script.Game.PlayerCharacter.Skills
@@ -226,6 +228,72 @@ namespace Script.Game.PlayerCharacter.Skills
                     LogDebug($"[SkillManager] Initialized slot {i}: {skillSlots[i].skill.skillName}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Khôi phục slot / cooldown từ save. Gọi sau Awake/InitializeSkills của prefab.
+        /// Executing: runtime là đang thi triển (chưa vào hồi chiêu); khi load không có animation → chuyển Cooling và
+        /// dùng đúng cooldownTimer trong file (kể cả 0 — chấp nhận save có thể bị lợi dụng).
+        /// </summary>
+        public virtual void ApplySaveSnapshot(SkillManagerSaveData data, GameObject owner)
+        {
+            if (data == null || data.slots == null || owner == null) return;
+
+            EnsureSkillContainer(owner.transform);
+
+            int n = Mathf.Min(data.slots.Count, skillSlots.Length);
+            for (int i = 0; i < n; i++)
+            {
+                if (!IsValid(i)) continue;
+
+                var saved = data.slots[i];
+                var slot = skillSlots[i];
+
+                SkillBase previous = slot.skill;
+
+                if (!string.IsNullOrEmpty(saved.skillName))
+                {
+                    var lib = SkillLibrary.Instance;
+                    var resolved = lib != null ? lib.GetSkillByName(saved.skillName) : null;
+                    if (resolved != null)
+                        slot.skill = resolved;
+                    else if (slot.skill == null || slot.skill.skillName != saved.skillName)
+                        Debug.LogWarning($"[SkillManager] Save skillName '{saved.skillName}' not in SkillLibrary; keeping slot {i} as-is.");
+                }
+
+                if (slot.skill != null && slot.skill != previous && _skillContainer != null)
+                    slot.skill.Initialize(_skillContainer);
+
+                if (!Enum.IsDefined(typeof(SkillState), saved.state))
+                {
+                    LogDebug($"[SkillManager] Invalid saved state {saved.state} for slot {i}, using Ready.");
+                    slot.state = SkillState.Ready;
+                    slot.cooldownTimer = 0f;
+                    continue;
+                }
+
+                var state = (SkillState)saved.state;
+                float cd = saved.cooldownTimer;
+                if (state == SkillState.Executing)
+                    state = SkillState.Cooling;
+
+                slot.state = state;
+                slot.cooldownTimer = Mathf.Max(0f, cd);
+            }
+        }
+
+        protected void EnsureSkillContainer(Transform ownerRoot)
+        {
+            if (_skillContainer != null) return;
+
+            var found = ownerRoot.Find("SkillContainer");
+            if (found != null)
+            {
+                _skillContainer = found;
+                return;
+            }
+
+            _skillContainer = ownerRoot;
         }
 
         // ── Private Helpers ────────────────────────────────────────────────

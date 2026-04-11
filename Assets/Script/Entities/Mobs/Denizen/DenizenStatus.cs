@@ -3,6 +3,8 @@ using UnityEngine;
 using Script.Data_Model.Interfaces;
 using Script.Game.Mobs.Subjects;
 using Script.Game.Item.Coin;
+using Script.Save_Controller;
+using Newtonsoft.Json;
 
 namespace Script.Data_Model.Status
 {
@@ -126,6 +128,9 @@ namespace Script.Data_Model.Status
             // Archer Save Data
             public int archerState;
             public bool isLeftFlank;
+
+            [JsonProperty("skillManager")]
+            public SkillManagerSaveData skillManager;
         }
 
         // ICoinable Implementation

@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Script.Data_Model.Status;
 using Script.Data_Model.Config;
 using Script.Data_Model.Interfaces;
@@ -106,6 +107,35 @@ namespace Script.Game.Player
             {
                 layer.followTarget = this.transform;
             }
+
+            LogPlayerSkillsAtStart();
+        }
+
+        /// <summary>
+        /// Một lần ở Start: log toàn bộ slot skill + cooldown (debug save/load & runtime).
+        /// </summary>
+        private void LogPlayerSkillsAtStart()
+        {
+            var skillMgr = GetComponent<SkillManager>();
+            if (skillMgr == null)
+            {
+                Debug.Log("[playerskill] No SkillManager on this player.");
+                return;
+            }
+
+            var sb = new StringBuilder();
+            sb.Append("[playerskill] Skills at Start (slot | name | state | cooldown remaining / total):\n");
+            for (int i = 0; i < skillMgr.SlotCount; i++)
+            {
+                var sk = skillMgr.GetSkill(i);
+                string name = sk != null ? sk.skillName : "(empty)";
+                float rem = skillMgr.GetCooldownRemaining(i);
+                float total = skillMgr.GetCooldownTotal(i);
+                var state = skillMgr.GetState(i);
+                sb.Append($"[playerskill]   [{i}] {name} | {state} | {rem:F2}s / {total:F2}s\n");
+            }
+
+            Debug.Log(sb.ToString());
         }
 
         private void OnDestroy()

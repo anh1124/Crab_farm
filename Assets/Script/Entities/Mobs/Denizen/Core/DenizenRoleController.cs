@@ -12,6 +12,8 @@ using Script.Interfaces;
 using Script.Manager.WorldManager;
 using Script.Game.Structures.Wall_And_Stump;
 using Script.Save_Controller;
+using Newtonsoft.Json.Linq;
+using Script.Game.PlayerCharacter.Skills;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
@@ -245,16 +247,29 @@ namespace Script.Game.Mobs.Denizen.Core
         #region Save & Load
         public string GetPrefabID() => "denizen";
 
-        public object CaptureData() => _status != null ? _status.CaptureData(transform) : null;
+        public object CaptureData()
+        {
+            if (_status == null) return null;
+            var d = _status.CaptureData(transform);
+            d.skillManager = SkillManagerSaveUtility.CaptureFrom(this);
+            return d;
+        }
 
         public void RestoreData(object data)
         {
-            var d = data as DenizenStatus.DenizenSaveData;
+            DenizenStatus.DenizenSaveData d = null;
+            if (data is JObject jObj)
+                d = jObj.ToObject<DenizenStatus.DenizenSaveData>();
+            else
+                d = data as DenizenStatus.DenizenSaveData;
             if (d == null || _status == null) return;
 
             _status.RestoreData(d, transform);
             if (_status.Role != CurrentRole) ChangeRole(_status.Role);
             else ApplyRole(CurrentRole);
+
+            var skillMgr = GetComponent<SkillManager>();
+            SkillManagerSaveUtility.Restore(skillMgr, d.skillManager, gameObject);
         }
         #endregion
 

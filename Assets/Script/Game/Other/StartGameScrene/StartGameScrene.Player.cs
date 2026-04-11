@@ -74,6 +74,10 @@ namespace Script.Game.Other
                 CameraFollowPlayer.Instance.TeleportCameraTo(player.transform.position);
             }
 
+            // LoadAllContainer đã chạy trước khi spawn player → LoadAndSetupPlayer thoát sớm. Áp save tại đây.
+            if (EntitySaveManager.Instance != null)
+                EntitySaveManager.Instance.ApplyPlayerSaveAfterSpawn();
+
             Debug.Log($" Player instance created at {spawnPosition} and systems setup completed");
         }
     }

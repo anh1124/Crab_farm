@@ -558,6 +558,15 @@ namespace Script.Manager
             }
         }
         
+        /// <summary>
+        /// Gọi sau khi player đã được Instantiate (vd. InstancePlayerAndSetCamera).
+        /// LoadAllContainer chạy trước khi có player nên RestoreData bị bỏ qua — bước này áp PlayerContainer.json (HP, mana, skillManager, …).
+        /// </summary>
+        public void ApplyPlayerSaveAfterSpawn()
+        {
+            LoadAndSetupPlayer();
+        }
+
         private void LoadAndSetupPlayer()
         {
             try
@@ -854,13 +863,12 @@ namespace Script.Manager
                         if (isDebug) Debug.Log($"[EntitySaveManager] Retrieved pooled entity {savedObject.prefabID}");
                     }
 
-                    // --- KÍCH HOẠT AI SAU KHI LOAD ---
+                    // Enemy: inject trước → restore save (HP, skillManager, …) → ResetEnemy sau cùng để AI không ghi đè snapshot.
                     if (isEnemy)
                     {
                         var controller = instance.GetComponent<Script.Game.Enemy.Core.EnemyAIController>();
                         if (controller != null)
                         {
-                            // Đảm bảo enemy load từ save luôn có dependency giống enemy spawn từ portal/pool.
                             var targetMgr = FindObjectOfType<EnemyTargetManager>();
                             Action<GameObject> returnAction = null;
                             if (enemyPool != null)
@@ -871,8 +879,21 @@ namespace Script.Manager
                                     if (go != null) go.SetActive(false);
                                 };
                             controller.InjectDependencies(targetMgr, returnAction);
+                        }
+                    }
 
-                            // Tìm Portal chính xác từ EnemyPortalManager thay vì quét bừa Tag
+                    var saveable = instance.GetComponent<ISaveable>();
+                    if (saveable != null)
+                    {
+                        saveable.RestoreData(savedObject.data);
+                        if (isDebug) Debug.Log($"Restored data for {instance.name}");
+                    }
+
+                    if (isEnemy)
+                    {
+                        var controller = instance.GetComponent<Script.Game.Enemy.Core.EnemyAIController>();
+                        if (controller != null)
+                        {
                             GameObject homePortal = null;
                             if (Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
                             {
@@ -886,13 +907,6 @@ namespace Script.Manager
                             }
                             controller.ResetEnemy(homePortal);
                         }
-                    }
-
-                    var saveable = instance.GetComponent<ISaveable>();
-                    if (saveable != null)
-                    {
-                        saveable.RestoreData(savedObject.data);
-                        if (isDebug) Debug.Log($"Restored data for {instance.name}");
                     }
                 }
             }

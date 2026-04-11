@@ -2,6 +2,7 @@ using UnityEngine;
 using Script.Game.Player;
 using Script.Game.PlayerCharacter.Skills;
 using Script.Controller.PlayerController;
+using Script.Save_Controller;
 
 namespace Script.Game.PlayerCharacter
 {
@@ -38,6 +39,16 @@ namespace Script.Game.PlayerCharacter
             }
 
             InitializeSkills(container);
+        }
+
+        /// <summary>
+        /// Sau khi bơm snapshot từ save: tránh kẹt movement / slot executing từ trạng thái đã chuẩn hóa.
+        /// </summary>
+        public override void ApplySaveSnapshot(SkillManagerSaveData data, GameObject owner)
+        {
+            base.ApplySaveSnapshot(data, owner);
+            _currentExecutingSlot = -1;
+            UnlockMovement();
         }
 
         /// <summary>
@@ -132,7 +143,7 @@ namespace Script.Game.PlayerCharacter
 
         // ── Private ────────────────────────────────────────────────────────
 
-        private void UnlockMovement()
+        protected void UnlockMovement()
         {
             if (PlayerController.Instance != null)
                 PlayerController.Instance.canMove = true;

@@ -1,6 +1,8 @@
 using Script.Data_Model.Interfaces;
 using Script.Interfaces;
+using Script.Save_Controller;
 using System;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace Script.Data_Model.Status
@@ -29,6 +31,9 @@ namespace Script.Data_Model.Status
             
             // NEW: Resource data for save/load
             public float currentMana;
+
+            [JsonProperty("skillManager")]
+            public SkillManagerSaveData skillManager;
         }
         // Event bắn ra mỗi khi số coin thay đổi — UI lắng nghe event này
         public event Action<int> OnCoinChanged;
@@ -105,13 +110,19 @@ namespace Script.Data_Model.Status
                 positionX = transform.position.x,
                 positionY = transform.position.y,
                 isGround = this.isGround,
-                currentMana = Mana.Current
+                currentMana = Mana.Current,
+                skillManager = SkillManagerSaveUtility.CaptureFrom(this)
             };
         }
 
         public void RestoreData(object data)
         {
-            PlayerStatusData loaded = data as PlayerStatusData;
+            PlayerStatusData loaded = null;
+            if (data is Newtonsoft.Json.Linq.JObject jObj)
+                loaded = jObj.ToObject<PlayerStatusData>();
+            else
+                loaded = data as PlayerStatusData;
+
             if (loaded == null) return;
 
             // Đánh dấu đã load từ save — Awake sẽ bỏ qua ApplyConfig
@@ -136,6 +147,9 @@ namespace Script.Data_Model.Status
 
             // Force refresh UI sau khi restore xong (trong trường hợp CoinUI chưa đăng ký kịp)
             OnCoinChanged?.Invoke(_coin);
+
+            var skillMgr = GetComponent<Script.Game.PlayerCharacter.Skills.SkillManager>();
+            SkillManagerSaveUtility.Restore(skillMgr, loaded.skillManager, gameObject);
 
             Debug.Log($"[PlayerStatus] Restored save data. HP={HP.Current}/{HP.Max}, Mana={Mana.Current}/{Mana.Max}, Coin={_coin}");
         }
