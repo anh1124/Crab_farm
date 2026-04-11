@@ -5,6 +5,7 @@ using Script.Data_Model.Status;
 
 using Script.Data_Model.Interfaces;
 using Script.Data_Model;
+using Script.Manager.WorldManager;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
@@ -35,7 +36,14 @@ namespace Script.Game.Structures.Wall_And_Stump
         [Header("Critical HP Settings")]
         [Tooltip("HP threshold để coi như wall nguy hiểm, cần rút lui")]
         public int criticalHPThreshold = 10;
+
+        [Header("Hồi máu theo giờ game")]
+        [Tooltip("Mỗi lần đồng hồ game tới 12:00, mỗi tường (Wall) còn HP > 0 hồi thêm tỷ lệ maxHp này.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float noonWallHealFraction = 0.34f;
         #endregion
+
+        private GameTimeManager _gameTimeManager;
 
         #region Lifecycle & Bootstrap
         private void Awake()
@@ -47,7 +55,36 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
         }
 
-        private void Start() { }
+        private void Start()
+        {
+            _gameTimeManager = FindObjectOfType<GameTimeManager>(true);
+            if (_gameTimeManager != null)
+                _gameTimeManager.SubscribeToHourlyEvent(GameTimeManager.NOON_HOUR, OnGameNoonWallHeal);
+            else
+                Debug.LogWarning("[WallAndStumpManager] Không tìm thấy GameTimeManager — bỏ qua đăng ký hồi máu trưa cho tường.");
+        }
+
+        private void OnDestroy()
+        {
+            if (_gameTimeManager != null)
+                _gameTimeManager.UnsubscribeFromHourlyEvent(GameTimeManager.NOON_HOUR, OnGameNoonWallHeal);
+        }
+
+        /// <summary>12:00 game: hồi <see cref="noonWallHealFraction"/> × maxHp cho mọi tường đang trong danh sách.</summary>
+        private void OnGameNoonWallHeal()
+        {
+            if (noonWallHealFraction <= 0f) return;
+
+            foreach (var wall in leftWalls.Concat(rightWalls))
+            {
+                if (wall == null) continue;
+                var ws = wall.GetComponent<WallStatus>();
+                if (ws == null || ws.maxHp <= 0f || ws.currentHp <= 0f) continue;
+                if (ws.state != WallState.Wall) continue;
+
+                ws.Heal(ws.maxHp * noonWallHealFraction);
+            }
+        }
 
         private void InitializeSingleton()
         {

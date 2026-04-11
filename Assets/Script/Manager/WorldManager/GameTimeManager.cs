@@ -23,6 +23,8 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     [SerializeField] private int inspectorYear = 1;
 
     public const int MORNING_HOUR = 6;
+    /// <summary>12:00 game — dùng cho sự kiện theo giờ (ví dụ hồi máu tường).</summary>
+    public const int NOON_HOUR = 12;
     public const int NIGHT_HOUR = 19;
 
     public int GameHour => _totalMinutes / 60 % 24;
