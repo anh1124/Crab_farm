@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Script.Data_Model;
 using Script.Data_Model.Status;
-using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 using Script.Game.Structures.Wall_And_Stump;
 

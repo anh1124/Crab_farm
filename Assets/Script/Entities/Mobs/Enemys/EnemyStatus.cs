@@ -1,4 +1,3 @@
-using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 using UnityEngine;
 using Script.Data_Model.Interfaces;
@@ -6,7 +5,7 @@ using static Script.Game.Enemy.TotalEnemyList;
 
 namespace Script.Game.Enemy
 {
-    public class EnemyStatus : MonoBehaviour, IHealth, IDie, ICoinable, IDamageable, ISaveable
+    public class EnemyStatus : MonoBehaviour, IHealth, IHealthReactive, IDie, ICoinable, IDamageable, ISaveable
     {
         [Header("Debug Stats")]
         [SerializeField] private float _currentHp;
@@ -55,6 +54,9 @@ namespace Script.Game.Enemy
         public event System.Action<GameObject> OnDieEvent;
         public event System.Action<bool> OnIgnoreReturnToPortalChanged;
 
+        public event System.Action<float, float> OnHealthChanged;
+        public event System.Action<float> OnTakeDamageEvent;
+
         private void Awake()
         {
             // Reset runtime flag theo giá trị mặc định trên prefab/inspector.
@@ -72,7 +74,9 @@ namespace Script.Game.Enemy
             MoveSpeed = data.speed;
             AttackCooldown = data.attackSpeed;
             AttackDamage = data.dame;
-            
+
+            OnHealthChanged?.Invoke(CurrentHp, MaxHp);
+
             // Lấy AttackRange từ Database nếu có config (fallback 0.8f nếu file JSON bị thiếu/ghi zero)
             if (data.attackRange > 0)
             {
@@ -111,6 +115,8 @@ namespace Script.Game.Enemy
             if (IsDead) return;
 
             CurrentHp -= amount;
+            OnTakeDamageEvent?.Invoke(amount);
+            OnHealthChanged?.Invoke(CurrentHp, MaxHp);
             if (CurrentHp <= 0 && !IsDead)
             {
                 Die();
@@ -162,6 +168,7 @@ namespace Script.Game.Enemy
                 
                 // Cập nhật lại flag chết dựa trên hp
                 IsDead = (_currentHp <= 0);
+                OnHealthChanged?.Invoke(CurrentHp, MaxHp);
             }
         }
 
@@ -197,6 +204,8 @@ namespace Script.Game.Enemy
             {
                 CurrentHp = MaxHp;
             }
+
+            OnHealthChanged?.Invoke(CurrentHp, MaxHp);
         }
     }
 }

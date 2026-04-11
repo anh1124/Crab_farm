@@ -105,27 +105,44 @@ namespace Script.Game.Structures.TownCenter
             }
         }
 
-        private void AddAndRemoveTentForTier2()
+        /// <summary>Lều: tier 2 có tent; tier khác gỡ tent (load save / upgrade đều dùng chung).</summary>
+        private void SyncTentForCurrentTier()
         {
+            var tentTf = transform.Find("tent");
             if (status.tier == 2)
             {
-                // Check if tent already exists to avoid duplicates
-                if (transform.Find("tent") == null)
+                if (tentTf == null && PrefabData.Instance != null && PrefabData.Instance.tent != null)
                 {
                     var tent = Instantiate(PrefabData.Instance.tent, transform);
                     tent.name = "tent";
-                    Debug.Log("Added tent as child");
+                    Debug.Log("[TownCenterBehavior] Added tent (tier 2).");
                 }
             }
-            else if (status.tier == 3)
+            else if (tentTf != null)
             {
-                var tent = transform.Find("tent");
-                if (tent != null)
-                {
-                    Destroy(tent.gameObject);
-                    Debug.LogWarning("destroy tent");
-                }
+                Destroy(tentTf.gameObject);
+                if (status.tier > 2)
+                    Debug.Log("[TownCenterBehavior] Removed tent (tier > 2).");
             }
+        }
+
+        /// <summary>
+        /// Đồng bộ sprite/animator (và tent) theo <see cref="TownCenterStatus.tier"/> hiện tại.
+        /// Prefab tier trong <see cref="TownCenterDataList"/> chỉ làm nguồn hình — không ghi đè tier/HP từ prefab đó.
+        /// </summary>
+        public void ApplyVisualsForCurrentTier()
+        {
+            if (TownCenterDataList.Instance == null)
+            {
+                Debug.LogError("[TownCenterBehavior] ApplyVisualsForCurrentTier: TownCenterDataList.Instance null");
+                return;
+            }
+
+            if (!TownCenterDataList.Instance.TryGetByTier(status.tier, out var data, logIfMissing: true))
+                return;
+
+            UpdateVisuals(data);
+            SyncTentForCurrentTier();
         }
 
         private void Ini()
@@ -232,7 +249,7 @@ namespace Script.Game.Structures.TownCenter
             UpdateStatusAndData(nextTierData);
             UpdateCoinUser(nextTierData);
             NotifyBuildingManager();
-            AddAndRemoveTentForTier2();
+            SyncTentForCurrentTier();
             
             Debug.Log($"[TownCenterBehavior] Upgraded to tier {status.tier}");
         }
@@ -339,7 +356,7 @@ namespace Script.Game.Structures.TownCenter
             if (guardManager != null)
                 guardManager.NotifyTownCenterUnderAttack();
             
-            status.currentHp -= damage;
+            ((IHealth)status).TakeDamage(damage);
             Debug.Log($"[TownCenter] Received {damage} damage from {instigator?.name ?? "unknown"}. HP: {status.currentHp}/{status.maxHp}");
         }
 
@@ -390,6 +407,8 @@ namespace Script.Game.Structures.TownCenter
         };
         public void RestoreData(object data)
         {
+            EnsureDataListReady();
+
             var d = (TownCenterData)data;
             if (status == null) status = GetComponent<TownCenterStatus>();
             transform.position = new Vector3(d.positionX, d.positionY, 0);
@@ -430,6 +449,9 @@ namespace Script.Game.Structures.TownCenter
             {
                 Script.Game.Enemy.EnemyTargetManager.Instance.SetPrimaryTarget(gameObject);
             }
+
+            // Spawn từ prefab tier 0 khi load save — áp giao diện đúng cấp theo status.tier (sprite/anim từ prefab tier trong list)
+            ApplyVisualsForCurrentTier();
         }
 
         // Cố gắng suy ra tier hiện tại dựa trên Sprite/Animator của đối tượng so với danh sách prefab trong PrefabData

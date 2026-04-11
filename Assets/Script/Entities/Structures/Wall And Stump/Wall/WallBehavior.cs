@@ -3,7 +3,7 @@ using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Data_Model.Status;
 using Script.Entities.Structures.Wall_And_Stump.Wall;
-using Script.Game.Enemy.Interfaces;
+using Script.Interfaces;
 using Script.Game.Item.Coin;
 using Script.Game.Other;
 using Script.Game.Structures.Wall_And_Stump;
@@ -12,7 +12,6 @@ using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Script.Utils.DebugUtility;
-using Script.Interfaces;
 
 namespace Script.Game.Structures.Wall_And_Stump
 {

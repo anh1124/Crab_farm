@@ -2529,6 +2529,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 5039406809920019329, guid: 94c1559fd1e75c147852a1bdee23c353, type: 3}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: hpLabelPrefab
+      value: 
+      objectReference: {fileID: 2273048958369109092, guid: 07815d6044434c940af115a126109c2d, type: 3}
+    - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: allowAllyDamage
       value: 1
       objectReference: {fileID: 0}

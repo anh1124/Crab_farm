@@ -83,9 +83,29 @@ namespace Script.Data_Model
         
         [Space(15)] [Header("TownCenter ")] [Space(5)]  
         #region TownCenter
+        /// <summary>
+        /// Danh sách prefab Town Center theo tier (index = tier).
+        /// <list type="bullet">
+        /// <item><b>[0]</b> — Prefab <b>duy nhất</b> spawn vào scene: map mới (ChunkFactory), build menu, và mọi lần load save
+        /// (<c>PrefabData.GetTownCenterByLevel(0)</c>). Đây là root có collider / script / hierarchy gameplay.</item>
+        /// <item><b>[1] … [n]</b> — Chỉ làm <b>tham chiếu hình</b>: TownCenterBehavior copy sprite/animator từ prefab tier đó khi upgrade
+        /// hoặc <c>ApplyVisualsForCurrentTier</c> sau load; không thay thế instance root bằng prefab này.</item>
+        /// </list>
+        /// <c>RegisterPrefabs</c> vẫn map <c>town_center_{i}</c> cho file save; khi deserialize, EntitySaveManager spawn luôn [0] rồi bơm data + áp visuals.
+        /// </summary>
+        [Tooltip("[0] = prefab spawn thật (map mới, build, load save). [1..] = chỉ để lấy sprite/animator theo tier khi upgrade hoặc restore visuals.")]
         public List<GameObject> townCenterList = new List<GameObject>();
         public float plazaDistance = 30f;//khoảng cách quảng trường
         public GameObject tent;// for towncenter tier 2
+        #endregion
+
+        [Space(15)] [Header("UI — HPText")] [Space(5)]
+        #region UI_HPText
+        [Tooltip("Prefab nhãn HP (TMP) khi Script.UI.HPText không tìm thấy TextMeshProUGUI trên host — spawn làm con của host.")]
+        public GameObject hpLabelPrefab;
+
+        [Tooltip("Local position dùng khi HPText.spawnLocalOffset = (0,0,0). Mặc định +8 trục Y.")]
+        public Vector3 defaultHpTextOffset = new Vector3(0f, 8f, 0f);
         #endregion
 
         [Space(15)] [Header("Farm ")] [Space(5)]  

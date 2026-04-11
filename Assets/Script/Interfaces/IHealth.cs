@@ -1,10 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using System;
 
-namespace Script.Game.Enemy.Interfaces
+namespace Script.Interfaces
 {
-  
     // Quản lý máu
     public interface IHealth
     {
@@ -14,6 +11,15 @@ namespace Script.Game.Enemy.Interfaces
         void TakeDamage(float amount);
         void Die();
         void Heal(float amount);
-        
+    }
+
+    /// <summary>
+    /// Tuỳ chọn: phát sự kiện khi máu thay đổi / nhận sát thương để UI (ví dụ HPText) lắng nghe.
+    /// Không phải mọi <see cref="IHealth"/> đều cần triển khai.
+    /// </summary>
+    public interface IHealthReactive
+    {
+        event Action<float, float> OnHealthChanged;
+        event Action<float> OnTakeDamageEvent;
     }
 }

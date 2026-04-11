@@ -1,12 +1,13 @@
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Script.Interfaces;
 
 namespace Script.Data_Model.Status
 {
-    [System.Serializable]
-    public class TownCenterStatus : MonoBehaviour
+    [Serializable]
+    public class TownCenterStatus : MonoBehaviour, IHealth, IHealthReactive
     {
-        
         public int tier;
         public int upgradeCost;
         public bool readyToUpgrade;
@@ -17,16 +18,67 @@ namespace Script.Data_Model.Status
         public float maxHp = 500f;
         [SerializeField] private float _currentHp = 500f;
 
-        public event System.Action<float, float> OnHpChanged;
+        /// <summary>Giữ cho TownCenterBehavior và code cũ.</summary>
+        public event Action<float, float> OnHpChanged;
+
+        public event Action<float, float> OnHealthChanged;
+        public event Action<float> OnTakeDamageEvent;
 
         public float currentHp
         {
             get => _currentHp;
             set
             {
+                float prev = _currentHp;
                 _currentHp = Mathf.Clamp(value, 0, maxHp);
-                OnHpChanged?.Invoke(_currentHp, maxHp);
+                if (Mathf.Approximately(prev, _currentHp)) return;
+                float damageDealt = prev > _currentHp ? prev - _currentHp : -1f;
+                RaiseHpChanged(damageDealt);
             }
+        }
+
+        float IHealth.CurrentHp
+        {
+            get => _currentHp;
+            set => currentHp = value;
+        }
+
+        float IHealth.MaxHp
+        {
+            get => maxHp;
+            set
+            {
+                float next = Mathf.Max(0f, value);
+                if (Mathf.Approximately(maxHp, next)) return;
+                maxHp = next;
+                _currentHp = Mathf.Clamp(_currentHp, 0f, maxHp);
+                RaiseHpChanged(-1f);
+            }
+        }
+
+        void IHealth.TakeDamage(float amount)
+        {
+            if (amount <= 0f || _currentHp <= 0f) return;
+            currentHp -= amount;
+        }
+
+        void IHealth.Heal(float amount)
+        {
+            if (amount <= 0f) return;
+            currentHp += amount;
+        }
+
+        void IHealth.Die()
+        {
+            currentHp = 0f;
+        }
+
+        private void RaiseHpChanged(float damageAmountForUi)
+        {
+            OnHpChanged?.Invoke(_currentHp, maxHp);
+            OnHealthChanged?.Invoke(_currentHp, maxHp);
+            if (damageAmountForUi >= 0f)
+                OnTakeDamageEvent?.Invoke(damageAmountForUi);
         }
 
         [ContextMenu("Trừ 100 HP")]
@@ -37,5 +89,3 @@ namespace Script.Data_Model.Status
         }
     }
 }
-
-
