@@ -106,6 +106,7 @@ namespace Script.Game.Item.Coin
             {
                 if (coin != null)
                 {
+                    RestoreCoinCollidersAfterTransit(coin);
                     if (_coinPool != null)
                     {
                         _coinPool.ReturnCoin(coin);
@@ -134,11 +135,22 @@ namespace Script.Game.Item.Coin
                         coinScript.playerPickupAble = true;
                         coinScript.denizensPickupAble = true;
                     }
+
+                    RestoreCoinCollidersAfterTransit(transitCoin);
                 }
             }
             coinsInTransit.Clear();
             arrivedCoins.Clear();
             currentSlotIndex = 0;
+        }
+
+        private static void RestoreCoinCollidersAfterTransit(GameObject coin)
+        {
+            if (coin == null) return;
+            foreach (var c in coin.GetComponentsInChildren<Collider2D>(true))
+            {
+                if (c != null) c.enabled = true;
+            }
         }
 
         public void StopAllCoinCoroutines()
@@ -188,6 +200,14 @@ namespace Script.Game.Item.Coin
 
         private IEnumerator MoveCoinToSlot(GameObject coin, Vector3 targetPosition, int slotIndex, GameObject player, System.Action<GameObject> onCoinArrived)
         {
+            if (coin == null) yield break;
+
+            Collider2D[] transitColliders = coin.GetComponentsInChildren<Collider2D>(true);
+            foreach (var c in transitColliders)
+            {
+                if (c != null) c.enabled = false;
+            }
+
             Vector3 startPosition = coin.transform.position;
             float elapsedTime = 0f;
 
@@ -208,6 +228,7 @@ namespace Script.Game.Item.Coin
             
             // Bắn event báo đã đến đích
             onCoinArrived?.Invoke(coin);
+            // Collider vẫn tắt cho tới khi ReturnCoin / ClearTransitVisuals — tránh chạm trigger tường khi coin đứng tại slot.
         }
     }
 }

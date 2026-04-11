@@ -104,6 +104,13 @@ namespace Script.Game.Item.Coin
         public void ReturnCoin(GameObject coin)
         {
             if (coin == null) return;
+
+            var phys = coin.GetComponent<PhysicalItem>();
+            if (phys != null) phys.floating = false;
+            foreach (var c in coin.GetComponentsInChildren<Collider2D>(true))
+            {
+                if (c != null) c.enabled = true;
+            }
             
             coin.SetActive(false);
             

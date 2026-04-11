@@ -7,6 +7,7 @@ using Script.Interfaces;
 using Script.Game.Item.Coin;
 using Script.Game.Other;
 using Script.Game.Structures.Wall_And_Stump;
+using Script.Game.Mobs.MobsManager;
 using Script.Manager.Building;
 using Script.Save_Controller;
 using UnityEngine;
@@ -36,6 +37,12 @@ namespace Script.Game.Structures.Wall_And_Stump
         #region === Reference Variables ===
         [SerializeField] private WallStatus status;
         [SerializeField] private CoinUser coinUser;
+
+        [Header("Hồi máu bằng coin (CoinUser, không dùng LootPickupTrigger)")]
+        [Tooltip("Khi tường thiếu máu và GuardManager không ở trạng thái enemy attack: mỗi lần đủ 1 coin → hồi tỷ lệ maxHp.")]
+        [SerializeField] [Range(0.01f, 1f)] private float coinHealMaxHpFraction = 0.5f;
+
+        private GuardManager _guardManager;
         #endregion
         
         [SerializeField] public WallDataList wallDataList;
@@ -74,6 +81,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         //nhớ sửa lại hàm điều chỉnh tiền và event cho coin user khi là stump hoặc wall
         private void Awake()
         {
+            _guardManager = FindObjectOfType<GuardManager>(true);
             InitializeComponents();
     
             // Load cấp 1 (base tier)
@@ -458,8 +466,8 @@ namespace Script.Game.Structures.Wall_And_Stump
         
         public void RepairStump()
         {
-            // Reset HP về đầy
-            status.currentHp = status.maxHp;
+            // Reset HP về đầy (dùng property để bắn OnHealthChanged cho HPText và listener khác)
+            status.CurrentHp = status.MaxHp;
             status.state = WallState.Wall;
 
             // [TAG] Khôi phục tag thành 'Wall' để hệ thống khác nhận biết wall đã chạy lại
@@ -479,43 +487,61 @@ namespace Script.Game.Structures.Wall_And_Stump
             // [Flow] Đồng bộ lại state mới (chuyển về Wall list)
             SyncRegistrationWithManager();
         }
+        /// <summary>Enemy đang tấn công (GuardManager) → không cho hồi máu bằng 1 coin.</summary>
+        private bool IsEnemyCombatBlockingCoinHeal()
+        {
+            if (_guardManager == null) _guardManager = FindObjectOfType<GuardManager>(true);
+            return _guardManager != null && _guardManager.isEnemyAttack;
+        }
+
+        /// <summary>Tường còn Wall, thiếu máu, và không trong combat → CoinUser chỉ cần 1 coin để hồi.</summary>
+        private bool CanOfferCoinHealForWall()
+        {
+            if (status.state != WallState.Wall) return false;
+            if (status.maxHp <= 0f) return false;
+            return status.currentHp < status.maxHp && !IsEnemyCombatBlockingCoinHeal();
+        }
+
         // --- ICoinUserOwner Implementation ---
         public int GetRequiredCoinCount()
         {
             if (status.state == WallState.Wall)
             {
+                if (CanOfferCoinHealForWall()) return 1;
                 return status.upgradeCost;
             }
-            else // WallState.Stump
-            {
-                return status.rebuildCost;
-            }
+
+            return status.rebuildCost;
         }
 
         public bool CanReceiveCoins()
         {
             if (status.state == WallState.Wall)
             {
-                // Wall: Chế độ nâng cấp
-                // Kiểm tra khả năng nâng cấp thực tế
+                if (CanOfferCoinHealForWall()) return true;
+
                 bool canActuallyUpgrade = CanUpgradeByTownCenterLevel();
                 return canActuallyUpgrade && !status.isMaxTier;
             }
-            else // WallState.Stump
-            {
-                // Stump: Chế độ sửa chữa, luôn có thể nhận coin để sửa chữa
-                return true;
-            }
+
+            return true;
         }
 
         public void OnAllCoinsCollected()
         {
             if (status.state == WallState.Wall)
             {
-                // Gọi tới hàm nâng cấp thực sự (script bên ngoài tự implement)
-                // Theo codebase gốc thì delegate đc gán vào `OnCoinCollectionComplete`, 
-                // nhưng do đang refactor, đảm bảo hàm đó có chạy logic nâng cấp.
-                OnCoinCollectionComplete(); 
+                if (status.currentHp < status.maxHp && !IsEnemyCombatBlockingCoinHeal())
+                {
+                    status.Heal(status.maxHp * coinHealMaxHpFraction);
+                    if (coinUser != null) coinUser.ResetUpgradeState();
+                    OnWallRepaired?.Invoke(this);
+                    if (WallAndStumpManager.Instance != null)
+                        WallAndStumpManager.Instance.SortAndNotify();
+                    return;
+                }
+
+                OnCoinCollectionComplete();
             }
             else if (status.state == WallState.Stump)
             {
@@ -603,9 +629,9 @@ namespace Script.Game.Structures.Wall_And_Stump
             {
                 techAdhesive = WorldFileManager.Instance.worldInfo.TechAdhesive;
             }
-            status.maxHp = techAdhesive ? status.blessedMaxHp : status.normalMaxHp;
-            status.currentHp = status.maxHp;
-            
+            float nextMax = techAdhesive ? status.blessedMaxHp : status.normalMaxHp;
+            status.MaxHp = nextMax;
+            status.CurrentHp = status.MaxHp;
         }
         private void OnWorldInfoChanged(WorldInfo worldInfo)
         {
@@ -976,7 +1002,6 @@ namespace Script.Game.Structures.Wall_And_Stump
             ApplyTierToStatus(tierData);
             UpdateVisualAndPhysics(tierData, initialState);
             UpdateMaxHp();
-            status.currentHp = status.maxHp;
         }
      
         /// Load tier/components từ current status (tier/state), update maxHp/coin. Dùng cho RestoreData sau set fields.

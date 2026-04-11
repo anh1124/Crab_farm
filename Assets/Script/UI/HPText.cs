@@ -1,4 +1,3 @@
-using System.Collections;
 using Script.Data_Model;
 using Script.Interfaces;
 using Script.Utils;
@@ -32,8 +31,11 @@ namespace Script.UI
         private IHealth health;
         private IHealthReactive healthReactive;
         private CanvasGroup canvasGroup;
-        private Coroutine hideCoroutine;
         private Collider2D triggerCollider;
+
+        private float _showTimeRemaining;
+        private bool _fading;
+        private float _fadeProgress;
 
         private void Awake()
         {
@@ -121,34 +123,85 @@ namespace Script.UI
             ShowHealth(defaultDisplayDuration);
         }
 
+        /// <summary>
+        /// Gọi từ <see cref="Script.Game.Player.PlayerInteraction"/> khi player overlap collider của structure
+        /// (cùng luồng với CoinUser). Dùng khi structure không có collider trigger trên object này (ví dụ tường solid).
+        /// </summary>
+        public void OnPlayerProximityEnter()
+        {
+            ShowHealth(triggerDisplayDuration);
+        }
+
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.CompareTag(GameTags.Player))
                 ShowHealth(triggerDisplayDuration);
         }
 
+        private void Update()
+        {
+            if (canvasGroup == null) return;
+            if (_showTimeRemaining <= 0f && !_fading) return;
+
+            if (_showTimeRemaining > 0f)
+            {
+                _showTimeRemaining -= Time.deltaTime;
+                if (_showTimeRemaining <= 0f)
+                {
+                    if (useFade)
+                    {
+                        _fading = true;
+                        _fadeProgress = 0f;
+                    }
+                    else
+                    {
+                        canvasGroup.alpha = 0f;
+                    }
+                }
+            }
+
+            if (_fading)
+            {
+                _fadeProgress += Time.deltaTime * fadeSpeed;
+                canvasGroup.alpha = Mathf.Lerp(1f, 0f, Mathf.Clamp01(_fadeProgress));
+                if (_fadeProgress >= 1f)
+                {
+                    _fading = false;
+                    canvasGroup.alpha = 0f;
+                }
+            }
+        }
+
         public void ShowHealth(float duration)
         {
             if (health == null || canvasGroup == null) return;
 
-            if (canvasGroup.alpha <= 0.01f)
-                UpdateHPText(health.CurrentHp, health.MaxHp);
+            // Luôn đọc lại IHealth: wall rebuild/stump có thể gán field mà không bắn OnHealthChanged,
+            // và khi text vẫn đang hiện (alpha > 0) không được bỏ qua refresh.
+            UpdateHPText(health.CurrentHp, health.MaxHp);
 
-            if (hideCoroutine != null)
-                StopCoroutine(hideCoroutine);
-
+            _fadeProgress = 0f;
             canvasGroup.alpha = 1f;
-            hideCoroutine = StartCoroutine(HideAfterDelay(duration));
+            _showTimeRemaining = duration;
+            if (_showTimeRemaining <= 0f)
+            {
+                if (useFade)
+                    _fading = true;
+                else
+                {
+                    _fading = false;
+                    canvasGroup.alpha = 0f;
+                }
+            }
+            else
+                _fading = false;
         }
 
         public void HideImmediate()
         {
-            if (hideCoroutine != null)
-            {
-                StopCoroutine(hideCoroutine);
-                hideCoroutine = null;
-            }
-
+            _showTimeRemaining = 0f;
+            _fading = false;
+            _fadeProgress = 0f;
             canvasGroup.alpha = 0f;
         }
 
@@ -156,26 +209,6 @@ namespace Script.UI
         {
             if (hpText != null)
                 hpText.text = $"{Mathf.CeilToInt(current)}/{Mathf.CeilToInt(max)} HP";
-        }
-
-        private IEnumerator HideAfterDelay(float delay)
-        {
-            yield return new WaitForSeconds(delay);
-
-            if (useFade)
-            {
-                float elapsed = 0f;
-                float startAlpha = canvasGroup.alpha;
-                while (elapsed < 1f)
-                {
-                    elapsed += Time.deltaTime * fadeSpeed;
-                    canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsed);
-                    yield return null;
-                }
-            }
-
-            canvasGroup.alpha = 0f;
-            hideCoroutine = null;
         }
     }
 }

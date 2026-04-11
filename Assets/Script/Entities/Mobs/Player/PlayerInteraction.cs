@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Script.Interfaces;
+using Script.UI;
 using UnityEngine;
 
 namespace Script.Game.Player
@@ -39,6 +40,11 @@ namespace Script.Game.Player
         {
             // Tránh va chạm với trigger của chính mình hoặc con cái của mình nếu cần
             if (other.isTrigger && (other.CompareTag(Script.Utils.GameTags.Player) || other.transform.IsChildOf(transform))) return;
+
+            // HPText: cùng điều kiện overlap với IPlayerInteractable (tường solid vẫn báo từ phía player).
+            var hpText = other.GetComponentInParent<HPText>(true);
+            if (hpText != null)
+                hpText.OnPlayerProximityEnter();
 
             // Xử lý IPlayerInteractable
             IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();

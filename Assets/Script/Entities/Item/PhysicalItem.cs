@@ -15,7 +15,7 @@ namespace Script.Game.Item.Coin
      * - Chức năng chính: Rơi tự do, ném parabol, tự đăng ký với ToolManager, Save/Load.
      * - Tối ưu hiệu năng: 
      *     + Staggered Update: Check Raycast mỗi 3 frame (chia đều tải CPU theo frame).
-     *     + Early-Exit: Dừng rơi khi chạm đất (floating = true).
+     *     + Early-Exit: Dừng rơi khi chạm đất (floating = true). CoinUser bay tới slot cũng đặt floating=true để tắt rơi.
      *     + Static Caching: Cache LayerMask dùng chung cho tất cả instance.
      *     + Timer-based Cooldown: Thay thế coroutine bằng float timer — 0 GC alloc.
      */

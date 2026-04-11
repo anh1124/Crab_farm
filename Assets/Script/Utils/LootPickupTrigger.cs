@@ -110,6 +110,9 @@ namespace Script.Utils
             if (drop.itemType == ItemType.Coin && !canPickupCoin) return false;
             if (drop.itemType != ItemType.Coin && !canPickupTool) return false;
 
+            // Coin đang bay tới slot CoinUser: floating=true + chưa cho nhặt — không coi là loot rơi (collider cũng tắt lúc bay).
+            if (drop.itemType == ItemType.Coin && drop.floating && !drop.playerPickupAble && !drop.denizensPickupAble) return false;
+
             if (_isPlayer && !drop.playerPickupAble) return false;
             if (_isEnemy && !drop.enemyPickupAble) return false;
             if (!_isPlayer && !_isEnemy && !drop.denizensPickupAble) return false;
