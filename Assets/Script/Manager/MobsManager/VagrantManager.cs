@@ -18,7 +18,7 @@ namespace Script.Game.Mobs.MobsManager
     {
         public float spawnDistanceFromWall = 3f;
         public int maxVagrants = 5;
-        public float dailySpawnChance = 0.7f;
+        public float dailySpawnChance = 0.5f;
         public int minDailySpawnCount = 0;
         public int maxDailySpawnCount = 11;
         [Tooltip("Khoảng random vị trí x khi sinh vagrant quanh tường (theo đơn vị world)")]
@@ -36,8 +36,6 @@ namespace Script.Game.Mobs.MobsManager
         private EntitySaveManager _saveManager;
         private DenizenManager _denizenManager;
         private IGuardProvider _guardProvider;
-        
-        private float currentSpawnChance;
 
         public void Setup(IGameTimeProvider timeProvider, BuildingPlacementManager buildingManager, EntitySaveManager saveManager, DenizenManager denizenManager, IGuardProvider guardProvider)
         {
@@ -56,7 +54,6 @@ namespace Script.Game.Mobs.MobsManager
         private void Awake()
         {
             LoadConfig();
-            currentSpawnChance = config.dailySpawnChance; 
         }
 
         private void LoadConfig()
@@ -96,37 +93,18 @@ namespace Script.Game.Mobs.MobsManager
             int currentVagrantCount = CountExistingVagrants();
             if (currentVagrantCount >= config.maxVagrants) return;
             
-            if (Random.value > currentSpawnChance)
-            {
-                IncreaseSpawnChance();
+            if (Random.value > config.dailySpawnChance)
                 return;
-            }
 
             int spawnCount;
             int maxAllowedPerDay = Mathf.Min(2, townCenterLevel); 
             int remainingSlots = config.maxVagrants - currentVagrantCount;
             spawnCount = Mathf.Min(maxAllowedPerDay, remainingSlots);
             
-            if (Mathf.Approximately(currentSpawnChance, 1.0f) && Random.value < 0.5f && spawnCount < remainingSlots)
-            {
-                spawnCount += 1;
-            }
-            
             if (spawnCount <= 0) return;
             
             bool spawnOnRight = Random.value > 0.5f;
             SpawnVagrants(spawnCount, spawnOnRight);
-        }
-        
-        private void IncreaseSpawnChance()
-        {
-            currentSpawnChance += 0.3f;
-            if (currentSpawnChance > 1.0f) currentSpawnChance = 1.0f;
-        }
-        
-        private void ResetSpawnChance()
-        {
-            currentSpawnChance = config.dailySpawnChance;
         }
 
         private int CountExistingVagrants()
@@ -151,7 +129,6 @@ namespace Script.Game.Mobs.MobsManager
             if (PrefabData.Instance == null || PrefabData.Instance.denizen == null) return;
 
             if (count <= 0) return;
-            int successfulSpawns = 0;
 
             for (int i = 0; i < count; i++)
             {
@@ -180,11 +157,7 @@ namespace Script.Game.Mobs.MobsManager
                         roleCtrl.ChangeRole(NPCRole.Vagrant);
                     }
                 }
-            
-                if (vagrantObj != null) successfulSpawns++;
             }
-            
-            if (successfulSpawns > 0) ResetSpawnChance();
         }
         
         private Vector3 DetermineSpawnPosition(bool? isRight = null)

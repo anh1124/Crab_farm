@@ -1,7 +1,7 @@
 {
   "spawnDistanceFromWall": 3.0,
   "maxVagrants": 5,
-  "dailySpawnChance": 0.7,
+  "dailySpawnChance": 0.5,
   "minDailySpawnCount": 0,
   "maxDailySpawnCount": 11,
   "randomXRange": 5.0
