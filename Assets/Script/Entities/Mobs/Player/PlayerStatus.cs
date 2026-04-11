@@ -1,5 +1,4 @@
 using Script.Data_Model.Interfaces;
-using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 using System;
 using UnityEngine;

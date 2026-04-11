@@ -2,7 +2,6 @@ using System;
 using Script.Data_Model.Status;
 using Script.Data_Model.Config;
 using Script.Data_Model.Interfaces;
-using Script.Game.Enemy.Interfaces;
 using Script.Interfaces;
 using UnityEngine;
 using Script.Game.PlayerCharacter;

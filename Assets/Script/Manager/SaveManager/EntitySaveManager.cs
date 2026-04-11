@@ -788,6 +788,14 @@ namespace Script.Manager
                         }
                     }
 
+                    // Town Center: luôn spawn prefab tier 0; tier & UI theo dữ liệu save + TownCenterBehavior.ApplyVisualsForCurrentTier
+                    if (prefab == null && PrefabData.Instance != null &&
+                        !string.IsNullOrEmpty(savedObject.prefabID) &&
+                        savedObject.prefabID.StartsWith("town_center_", StringComparison.Ordinal))
+                    {
+                        prefab = PrefabData.Instance.GetTownCenterByLevel(0);
+                    }
+
                     // Nếu không phải Enemy hoặc không tìm thấy trong list Mob, mới dùng PrefabData
                     if (prefab == null && PrefabData.Instance != null)
                     {
@@ -878,28 +886,6 @@ namespace Script.Manager
                             }
                             controller.ResetEnemy(homePortal);
                         }
-                    }
-
-                    // Special handling: if this is a TownCenter prefab, infer and set tier from prefabID before RestoreData
-                    // (Giữ nguyên cho TownCenter, nhưng bỏ nếu prefabID không còn tier)
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(savedObject.prefabID) && savedObject.prefabID.StartsWith("town_center_"))
-                        {
-                            var tcs = instance.GetComponent<TownCenterStatus>();
-                            if (tcs != null)
-                            {
-                                var suffix = savedObject.prefabID.Substring("town_center_".Length);
-                                if (int.TryParse(suffix, out int parsedTier))
-                                {
-                                    tcs.tier = parsedTier;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        if (isDebug) Debug.LogWarning($"[EntitySaveManager] Failed to set TownCenter tier from prefabID: {e.Message}");
                     }
 
                     var saveable = instance.GetComponent<ISaveable>();

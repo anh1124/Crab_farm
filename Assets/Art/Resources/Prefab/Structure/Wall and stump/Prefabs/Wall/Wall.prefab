@@ -15,6 +15,8 @@ GameObject:
   - component: {fileID: 5267843469578174948}
   - component: {fileID: 4887082484993064419}
   - component: {fileID: 3956667016558705964}
+  - component: {fileID: 5920612493921421669}
+  - component: {fileID: 7519356731727938331}
   m_Layer: 15
   m_Name: Wall
   m_TagString: Wall
@@ -176,6 +178,36 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!225 &5920612493921421669
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5531189184210328128}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &7519356731727938331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5531189184210328128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 384a630714dd21d4997aacad89bd7cb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hpLabelHost: {fileID: 0}
+  spawnLocalOffset: {x: 0, y: 0, z: 0}
+  defaultDisplayDuration: 3
+  triggerDisplayDuration: 2
+  fadeSpeed: 2
+  useFade: 1
 --- !u!1 &7788292574185275152
 GameObject:
   m_ObjectHideFlags: 0

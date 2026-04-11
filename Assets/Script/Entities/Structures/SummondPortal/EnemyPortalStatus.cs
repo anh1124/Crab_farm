@@ -1,8 +1,7 @@
 using System;
 using UnityEngine;
-using Script.Game.Enemy.Interfaces;
-using Script.Data_Model.Interfaces;
 using Script.Interfaces;
+using Script.Data_Model.Interfaces;
 
 namespace Script.Entities.Structures.SummondPortal
 {

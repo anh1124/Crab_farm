@@ -1,10 +1,10 @@
 using System;
 using UnityEngine;
-using Script.Game.Enemy.Interfaces;
+using Script.Interfaces;
 namespace Script.Data_Model.Status
 {
     // Chỉ chứa data và state của Wall, không có logic behavior
-    public class WallStatus : MonoBehaviour, IHealth
+    public class WallStatus : MonoBehaviour, IHealth, IHealthReactive
     {
         [Header("Basic Info")]
         public int tier;
@@ -22,26 +22,57 @@ namespace Script.Data_Model.Status
         public Action<float> OnHealed;
         public Action OnDeath;
 
+        public event Action<float, float> OnHealthChanged;
+        public event Action<float> OnTakeDamageEvent;
+
         // --- IHealth Implementation ---
-        public float CurrentHp { get => currentHp; set => currentHp = Mathf.Clamp(value, 0, MaxHp); }
-        public float MaxHp { get => maxHp; set => maxHp = value; }
+        public float CurrentHp
+        {
+            get => currentHp;
+            set
+            {
+                float next = Mathf.Clamp(value, 0, MaxHp);
+                if (Mathf.Approximately(currentHp, next)) return;
+                float prev = currentHp;
+                currentHp = next;
+                OnHealthChanged?.Invoke(currentHp, maxHp);
+                if (next < prev)
+                    OnTakeDamageEvent?.Invoke(prev - next);
+            }
+        }
+
+        public float MaxHp
+        {
+            get => maxHp;
+            set
+            {
+                if (Mathf.Approximately(maxHp, value)) return;
+                maxHp = value;
+                currentHp = Mathf.Clamp(currentHp, 0, maxHp);
+                OnHealthChanged?.Invoke(currentHp, maxHp);
+            }
+        }
 
         public void TakeDamage(float amount)
         {
             if (currentHp <= 0) return;
             currentHp -= amount;
             OnDamaged?.Invoke(amount);
+            OnTakeDamageEvent?.Invoke(amount);
             if (currentHp <= 0)
             {
                 currentHp = 0;
                 Die();
             }
+
+            OnHealthChanged?.Invoke(currentHp, maxHp);
         }
 
         public void Heal(float amount)
         {
             currentHp = Mathf.Min(currentHp + amount, maxHp);
             OnHealed?.Invoke(amount);
+            OnHealthChanged?.Invoke(currentHp, maxHp);
         }
 
         public void Die()
