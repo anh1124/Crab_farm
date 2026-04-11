@@ -70,9 +70,13 @@ namespace Script.Game.Enemy.Core
 
         protected virtual void StopMovement(EnemyContext ctx)
         {
+            // Kiểm tra xem thực tế có đang ở trạng thái di chuyển không (bao gồm cả từ state trước truyền lại)
+            bool wasMoving = ctx.Status != null && ctx.Status.IsMoving;
+
             if (ctx.Status != null) ctx.Status.IsMoving = false;
 
-            if (_isMovingInternal)
+            // Nếu state bản thân nghĩ là đang đi, hoặc status tổng quát báo là đang đi
+            if (_isMovingInternal || wasMoving)
             {
                 _isMovingInternal = false;
                 OnIdleUpdate(ctx);

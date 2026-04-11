@@ -15,6 +15,8 @@ namespace Script.Game.Enemy.States
         public override void Enter(EnemyContext ctx)
         {
             CheckSkillCasting(ctx);
+            // Ép dừng di chuyển ngay khi vào state tấn công nếu state này không cho phép đi
+            if (!AllowMovementInState) StopMovement(ctx);
         }
 
         public override void UpdateBehavior(EnemyContext ctx)
