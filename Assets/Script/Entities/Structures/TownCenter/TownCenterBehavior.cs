@@ -70,6 +70,13 @@ namespace Script.Game.Structures.TownCenter
             }
 
             status.OnHpChanged += HandleHPChanged;
+
+            // Subscribe to noon heal event
+            var gameTimeManager = FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            if (gameTimeManager != null)
+            {
+                gameTimeManager.SubscribeToHourlyEvent(Script.Manager.WorldManager.GameTimeManager.NOON_HOUR, HealOnMorning);
+            }
         }
 
         private void OnDestroy()
@@ -77,6 +84,13 @@ namespace Script.Game.Structures.TownCenter
             if (status != null)
             {
                 status.OnHpChanged -= HandleHPChanged;
+            }
+            
+            // Unsubscribe from noon heal event
+            var gameTimeManager = FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            if (gameTimeManager != null)
+            {
+                gameTimeManager.UnsubscribeFromHourlyEvent(Script.Manager.WorldManager.GameTimeManager.NOON_HOUR, HealOnMorning);
             }
             
             // Báo Manager clear biến Left/Right của nó
@@ -92,6 +106,15 @@ namespace Script.Game.Structures.TownCenter
             {
                 OnTownCenterDestroyed();
             }
+        }
+
+        private void HealOnMorning()
+        {
+            if (status == null) return;
+            
+            float healAmount = status.maxHp * 0.15f; // 15% of max HP
+            ((IHealth)status).Heal(healAmount);
+            Debug.Log($"[TownCenter] Morning heal: +{healAmount} HP (15% of max). Current HP: {status.currentHp}/{status.maxHp}");
         }
 
         private void Update()
@@ -394,6 +417,8 @@ namespace Script.Game.Structures.TownCenter
             public bool readyToUpgrade;
             public int buildProgress;
             public int buildProgressMax;
+            public float currentHp;
+            public float maxHp;
         }
         public string GetPrefabID() => $"town_center_{status.tier}";
         public object CaptureData() => new TownCenterData
@@ -403,7 +428,9 @@ namespace Script.Game.Structures.TownCenter
             tier = status.tier,
             readyToUpgrade = status.readyToUpgrade,
             buildProgress = status.buildProgress,
-            buildProgressMax = status.buildProgressMax
+            buildProgressMax = status.buildProgressMax,
+            currentHp = status.currentHp,
+            maxHp = status.maxHp
         };
         public void RestoreData(object data)
         {
@@ -432,6 +459,8 @@ namespace Script.Game.Structures.TownCenter
             status.readyToUpgrade = d.readyToUpgrade;
             status.buildProgress = d.buildProgress;
             status.buildProgressMax = d.buildProgressMax;
+            status.currentHp = d.currentHp;
+            status.maxHp = d.maxHp;
             if (coinUser != null)
             {
                 coinUser.SetBuildingInfo(BuildingType.TownCenter, status.tier);
