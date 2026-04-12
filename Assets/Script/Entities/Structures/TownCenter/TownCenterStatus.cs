@@ -15,8 +15,8 @@ namespace Script.Data_Model.Status
         public int buildProgressMax;
 
         [Header("Health")]
-        public float maxHp = 500f;
-        [SerializeField] private float _currentHp = 500f;
+        public float maxHp = 0f; // Will be set by tier-based data (tier * 25)
+        [SerializeField] private float _currentHp = 0f;
 
         /// <summary>Giữ cho TownCenterBehavior và code cũ.</summary>
         public event Action<float, float> OnHpChanged;

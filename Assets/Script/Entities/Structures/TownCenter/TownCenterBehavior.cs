@@ -230,7 +230,8 @@ namespace Script.Game.Structures.TownCenter
             }
             status.upgradeCost = data.upgradeCost;
             curentPrefab = data.curentPrefab;
-            Debug.Log($"[TownCenterBehavior] Data loaded. Tier: {status.tier}, UpgradeCost: {status.upgradeCost}");
+            status.maxHp = data.maxHp;
+            Debug.Log($"[TownCenterBehavior] Data loaded. Tier: {status.tier}, UpgradeCost: {status.upgradeCost}, MaxHp: {status.maxHp}");
         }
 
         // --- ICoinUserOwner Implementation ---
@@ -347,6 +348,9 @@ namespace Script.Game.Structures.TownCenter
             status.tier = data.tier;
             status.upgradeCost = data.upgradeCost;
             curentPrefab = data.curentPrefab;
+            status.maxHp = data.maxHp;
+            status.currentHp = status.maxHp; // Heal to full HP on upgrade
+            Debug.Log($"[TownCenterBehavior] Upgraded to tier {status.tier}, MaxHp: {status.maxHp}, HP healed to full");
         }
 
         private void UpdateCoinUser(TownCenterDataList.TownCenterData data)
@@ -374,6 +378,13 @@ namespace Script.Game.Structures.TownCenter
         public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0 || _isDestroyed) return;
+
+            // Tier 0 is immune to damage
+            if (status.tier == 0)
+            {
+                Debug.Log($"[TownCenter] Tier 0 is immune to damage from {instigator?.name ?? "unknown"}");
+                return;
+            }
 
             var guardManager = FindObjectOfType<GuardManager>();
             if (guardManager != null)

@@ -15,6 +15,7 @@ namespace Script.Game.Structures.TownCenter
             public int tier;
             public int upgradeCost;
             public GameObject curentPrefab;
+            public float maxHp;
         }
         public static TownCenterDataList Instance { get; private set; }
         public List<TownCenterData> townCentrerList;
@@ -55,6 +56,7 @@ namespace Script.Game.Structures.TownCenter
                     tier = i,
                     upgradeCost = cost,
                     curentPrefab = prefabData.townCenterList[i],
+                    maxHp = (i == 0) ? 1f : (i * 25f) // Tier 0=1, Tier 1=25, Tier 2=50, etc.
                 });
             }
         }

@@ -158,8 +158,8 @@ MonoBehaviour:
   readyToUpgrade: 0
   buildProgress: 0
   buildProgressMax: 0
-  maxHp: 500
-  _currentHp: 500
+  maxHp: 1
+  _currentHp: 1
 --- !u!114 &6899957883843830173
 MonoBehaviour:
   m_ObjectHideFlags: 0
