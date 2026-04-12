@@ -277,10 +277,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hpLabelHost: {fileID: 4751599309742796818}
-  hpLabelPrefab: {fileID: 2273048958369109092, guid: 07815d6044434c940af115a126109c2d, type: 3}
   spawnLocalOffset: {x: 0, y: 8, z: 0}
-  defaultDisplayDuration: 3
-  triggerDisplayDuration: 2
+  defaultDisplayDuration: 1
+  triggerDisplayDuration: 1
   fadeSpeed: 2
   useFade: 1
 --- !u!1001 &6807876492406318198

@@ -79,6 +79,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   status: {fileID: 4178578177379091226}
   coinUser: {fileID: 572095547188932323}
+  coinHealMaxHpFraction: 0.5
   wallDataList: {fileID: 11400000, guid: 15e6f424f38b4834a8e78210ea257320, type: 2}
 --- !u!114 &572095547188932323
 MonoBehaviour:
@@ -204,8 +205,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hpLabelHost: {fileID: 0}
   spawnLocalOffset: {x: 0, y: 0, z: 0}
-  defaultDisplayDuration: 3
-  triggerDisplayDuration: 2
+  defaultDisplayDuration: 1
+  triggerDisplayDuration: 1
   fadeSpeed: 2
   useFade: 1
 --- !u!1 &7788292574185275152

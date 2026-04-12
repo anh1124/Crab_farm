@@ -8,6 +8,7 @@ using Script.Data_Model.Status;
 using Script.Entities.Structures.Wall_And_Stump.Wall;
 using Script.Game.Structures.Wall_And_Stump;
 using Script.Manager.Building;
+using Script.Manager;
 
 public class BuildMenu : MonoBehaviour
 {
@@ -101,10 +102,14 @@ public class BuildMenu : MonoBehaviour
             // Để chắc chắn lấy data TownCenter Level MỚI NHẤT
             UpdateBuildableStructuresList();
 
-            // SỬA LỖI: Nếu không có gì để xây -> Không bật Background trống lên!
+            // Nếu không có gì để xây -> Hiện arrow dẫn đường đến TownCenter
             if (buildableStructures.Count == 0)
             {
-                Debug.Log("[BuildMenu] Hiện không có công trình nào khả dụng để xây. Giữ menu đóng.");
+                Debug.Log("[BuildMenu] Không có công trình nào để xây. Hiện arrow dẫn đường.");
+                if (ArrowGuideManager.Instance != null)
+                {
+                    ArrowGuideManager.Instance.ShowArrow();
+                }
                 return;
             }
 
