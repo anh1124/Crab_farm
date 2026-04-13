@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -23,6 +24,9 @@ namespace Script.GUI_Controller
         public ResourceBarUI manaBarUI;
         
         public CoinUI coinUI;
+        
+        [Header("Time Display")]
+        public TextMeshProUGUI timeDisplay;
 
         private void Awake()
         {
@@ -60,6 +64,7 @@ namespace Script.GUI_Controller
             playerHud.gameObject.SetActive(false);
             buildMenu.gameObject.SetActive(false);
             pauseButton.gameObject.SetActive(false);
+            if (timeDisplay != null) timeDisplay.gameObject.SetActive(false);
         }
         public void ResumeGame()
         {
@@ -71,6 +76,7 @@ namespace Script.GUI_Controller
             playerHud.gameObject.SetActive(true);
             buildMenu.gameObject.SetActive(true);
             pauseButton.gameObject.SetActive(true);
+            if (timeDisplay != null) timeDisplay.gameObject.SetActive(true);
         }
 
         /// <summary>

@@ -319,6 +319,77 @@ namespace Script.Utils
             float endX = isLeft ? (startX - gm.archerHuntingRange) : (startX + gm.archerHuntingRange);
             return (startX, endX);
         }
+
+        #region Pause Menu Report Utilities
+
+        /// <summary>
+        /// Lấy số coin TownCenter đang giữ
+        /// </summary>
+        public static int GetTownCenterCoinCount()
+        {
+            var tc = GetTownCenter();
+            if (tc == null) return 0;
+            
+            var tcStatus = tc.GetComponent<Script.Data_Model.Status.TownCenterStatus>();
+            if (tcStatus == null) return 0;
+            
+            return tcStatus.storedCoinCount;
+        }
+
+        /// <summary>
+        /// Đếm số wall còn lành lặn (HP >= criticalHPThreshold) theo hướng
+        /// </summary>
+        public static int GetHealthyWallCount(bool isLeft)
+        {
+            if (WM == null) return 0;
+            
+            var walls = isLeft ? WM.leftWalls : WM.rightWalls;
+            if (walls == null) return 0;
+            
+            int count = 0;
+            int threshold = WM.criticalHPThreshold;
+            
+            foreach (var wall in walls)
+            {
+                if (wall == null) continue;
+                var wallStatus = wall.GetComponent<Script.Data_Model.Status.WallStatus>();
+                if (wallStatus != null && wallStatus.currentHp >= threshold)
+                {
+                    count++;
+                }
+            }
+            
+            return count;
+        }
+
+        /// <summary>
+        /// Lấy thông tin portal (isActive, remainingDays)
+        /// </summary>
+        public static (bool isActive, int remainingDays) GetPortalInfo(bool isRight)
+        {
+            var portalManager = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
+            if (portalManager == null) return (false, 0);
+            
+            var portal = isRight ? portalManager.portalR : portalManager.portalL;
+            if (portal == null) return (false, 0);
+            
+            var portalStatus = portal.GetComponent<Script.Entities.Structures.SummondPortal.EnemyPortalStatus>();
+            if (portalStatus == null) return (false, 0);
+            
+            if (portalStatus.isReadyToSpawn) return (true, 0);
+            
+            // Tính ngày còn lại để active
+            var timeProvider = Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            if (timeProvider == null) return (false, 0);
+            
+            int currentDay = timeProvider.GetElapsedDays();
+            int activationDay = portalStatus.spawnDay + portalStatus.activeDelay;
+            int remainingDays = Mathf.Max(0, activationDay - currentDay);
+            
+            return (false, remainingDays);
+        }
+
+        #endregion
     }
 }
 

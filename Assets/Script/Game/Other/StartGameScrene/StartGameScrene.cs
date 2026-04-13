@@ -10,8 +10,6 @@ namespace Script.Game.Other
     [RequireComponent(typeof(CheatManager))]
     public partial class StartGameScrene : MonoBehaviour
     {
-        public GameObject pauseMenuPanel;
-        
         public void Start()
         {
             try
@@ -22,9 +20,6 @@ namespace Script.Game.Other
                 // ===== PHASE 2: WORLD INFO =====
                 if (!InitializeActiveWorld()) return;
                 ValidateWorldData();
-
-                // ===== PHASE 3: UI SETUP =====
-                SetupGUI();
 
                 // ===== PHASE 4: DYNAMIC POOLS =====
                 InitializeCoinBase();
@@ -49,18 +44,6 @@ namespace Script.Game.Other
             {
                 Debug.LogError($" Game loading failed: {ex.Message}\n{ex.StackTrace}");
                 SceneManager.LoadScene("MainMenuScene");
-            }
-        }
-
-        private void SetupGUI()
-        {
-            if (pauseMenuPanel != null)
-            {
-                pauseMenuPanel.SetActive(false);
-            }
-            else
-            {
-                Debug.LogError("pauseMenuPanel is null");
             }
         }
 

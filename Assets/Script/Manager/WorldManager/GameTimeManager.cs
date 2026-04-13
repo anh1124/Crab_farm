@@ -232,7 +232,7 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     {
         if (timeDisplay == null) return;
         
-        timeDisplay.text = $"{GameHour:D2}:{GameMinute:D2} - {GameDay:D2}/{GameMonth:D2}/{GameYear:D4}";
+        timeDisplay.text = $"Day {GameDay}";
     }
     #endregion
 
