@@ -18,6 +18,9 @@ namespace Script.Data_Model.Status
         public float maxHp = 0f; // Will be set by tier-based data (tier * 25)
         [SerializeField] private float _currentHp = 0f;
 
+        [Header("Coin Storage")]
+        public int storedCoinCount = 0; // Unlimited capacity
+
         /// <summary>Giữ cho TownCenterBehavior và code cũ.</summary>
         public event Action<float, float> OnHpChanged;
 

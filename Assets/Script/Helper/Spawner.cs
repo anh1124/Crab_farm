@@ -171,6 +171,26 @@ public class Spawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Drop coin from TownCenter - returns coin reference for cooldown setting
+    /// </summary>
+    public GameObject DropByTownCenter(Vector2 position, Vector2 direction)
+    {
+        GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+        if (coin != null) coin.transform.position = position;
+
+        PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
+        if (coinScriptInstance != null)
+        {
+            coinScriptInstance.playerPickupAble = true;
+            coinScriptInstance.denizensPickupAble = false;
+            coinScriptInstance.floating = false;
+            coinScriptInstance.CallFunctionCoolDown("Denizens");
+            InitializeCoinThrow(coin, direction);
+        }
+
+        return coin;
+    }
 
     #endregion
 

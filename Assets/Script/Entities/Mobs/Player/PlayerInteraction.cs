@@ -16,6 +16,7 @@ namespace Script.Game.Player
 
         // === INTERACTION LOGIC ===
         private List<IPlayerInteractable> interactablesInRange = new List<IPlayerInteractable>();
+        private HashSet<IPlayerInteractable> interactablesWithEnterCalled = new HashSet<IPlayerInteractable>();
         public IPlayerInteractable currentInteractable;
 
         private float _interactionCheckTimer = 0f;
@@ -44,37 +45,47 @@ namespace Script.Game.Player
             // HPText: cùng điều kiện overlap với IPlayerInteractable (tường solid vẫn báo từ phía player).
             var hpText = other.GetComponentInParent<HPText>(true);
             if (hpText != null)
-                hpText.OnPlayerProximityEnter();
-
-            // Xử lý IPlayerInteractable
-            IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
-            if (interactable != null)
             {
-                if (!interactablesInRange.Contains(interactable))
+                hpText.OnPlayerProximityEnter();
+            }
+
+            // Xử lý IPlayerInteractable - lấy tất cả trên GameObject
+            var interactables = other.GetComponents<IPlayerInteractable>();
+            foreach (var interactable in interactables)
+            {
+                if (interactable != null && !interactablesInRange.Contains(interactable))
                 {
                     interactablesInRange.Add(interactable);
-                    UpdateCurrentInteractable();
+                    // Call OnPlayerEnter immediately for all interactables on this GameObject
+                    if (!interactablesWithEnterCalled.Contains(interactable))
+                    {
+                        interactable.OnPlayerEnter(playerBehavior);
+                        interactablesWithEnterCalled.Add(interactable);
+                    }
                 }
             }
+            UpdateCurrentInteractable();
         }
 
         private void OnTriggerExit2D(Collider2D other)
         {
-            // Xử lý IPlayerInteractable
-            IPlayerInteractable interactable = other.GetComponent<IPlayerInteractable>();
-            if (interactable != null)
+            // Xử lý IPlayerInteractable - lấy tất cả trên GameObject
+            var interactables = other.GetComponents<IPlayerInteractable>();
+            foreach (var interactable in interactables)
             {
-                if (interactablesInRange.Contains(interactable))
+                if (interactable != null && interactablesInRange.Contains(interactable))
                 {
                     interactablesInRange.Remove(interactable);
-                    
+                    // Remove from tracking set and call OnPlayerExit
+                    interactablesWithEnterCalled.Remove(interactable);
+                    interactable.OnPlayerExit(playerBehavior);
+
                     // Nếu đang tương tác với đối tượng này thì tắt đi
                     if (currentInteractable == interactable)
                     {
-                        interactable.OnPlayerExit(playerBehavior);
                         currentInteractable = null;
                     }
-                    
+
                     UpdateCurrentInteractable();
                 }
             }
@@ -115,7 +126,7 @@ namespace Script.Game.Player
                 }
 
                 currentInteractable = candidate;
-                
+
                 if (currentInteractable != null)
                 {
                     currentInteractable.OnPlayerEnter(playerBehavior);

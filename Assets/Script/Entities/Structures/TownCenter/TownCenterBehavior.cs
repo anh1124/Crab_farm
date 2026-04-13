@@ -8,6 +8,7 @@ using Script.Manager.Building;
 using UnityEngine.Serialization;
 using Script.Interfaces;
 using Script.Game.Mobs.MobsManager;
+using Script.Game.Player;
 
 namespace Script.Game.Structures.TownCenter
 {
@@ -16,15 +17,17 @@ namespace Script.Game.Structures.TownCenter
     /*
      hiện tại,dùng tạm data trong TownCenterDataList,chưa táoave như bên  wall vì bên wall cần collider
      */
-    [RequireComponent(typeof(TownCenterStatus))]    
-    [RequireComponent(typeof(CoinUser))]    
-    public class TownCenterBehavior : MonoBehaviour, ISaveable, IDamageable, ICoinUserOwner
+    [RequireComponent(typeof(TownCenterStatus))]
+    [RequireComponent(typeof(CoinUser))]
+    [RequireComponent(typeof(TownCenterCoinHandler))]
+    public class TownCenterBehavior : MonoBehaviour, ISaveable, IDamageable, ICoinUserOwner, IPlayerInteractable
     {
         
-        public TownCenterStatus status ;
+        public TownCenterStatus status;
         public float plazaDistance = 20f;
         public CoinUser coinUser;
         [FormerlySerializedAs("currentPrefab")] public GameObject curentPrefab;
+        private TownCenterCoinHandler coinHandler;
         
         [Header("Debug")]
         [Header("Debug")]
@@ -36,6 +39,7 @@ namespace Script.Game.Structures.TownCenter
         private void Awake()
         {
             if (coinUser == null) coinUser = GetComponent<CoinUser>();
+            if (coinHandler == null) coinHandler = GetComponent<TownCenterCoinHandler>();
         }
 
         private void Start()
@@ -50,6 +54,7 @@ namespace Script.Game.Structures.TownCenter
                 Debug.LogError("[TownCenterBehavior] Missing required component TownCenterStatus");
                 return;
             }
+
 
            // Debug.Log($"[TownCenterBehavior] Starting. Current tier: {status.tier}");
 
@@ -430,6 +435,7 @@ namespace Script.Game.Structures.TownCenter
             public int buildProgressMax;
             public float currentHp;
             public float maxHp;
+            public int storedCoinCount;
         }
         public string GetPrefabID() => $"town_center_{status.tier}";
         public object CaptureData() => new TownCenterData
@@ -441,7 +447,8 @@ namespace Script.Game.Structures.TownCenter
             buildProgress = status.buildProgress,
             buildProgressMax = status.buildProgressMax,
             currentHp = status.currentHp,
-            maxHp = status.maxHp
+            maxHp = status.maxHp,
+            storedCoinCount = status.storedCoinCount
         };
         public void RestoreData(object data)
         {
@@ -472,6 +479,7 @@ namespace Script.Game.Structures.TownCenter
             status.buildProgressMax = d.buildProgressMax;
             status.currentHp = d.currentHp;
             status.maxHp = d.maxHp;
+            status.storedCoinCount = d.storedCoinCount;
             if (coinUser != null)
             {
                 coinUser.SetBuildingInfo(BuildingType.TownCenter, status.tier);
@@ -534,6 +542,45 @@ namespace Script.Game.Structures.TownCenter
             {
                 Debug.LogWarning($"[TownCenterBehavior] Failed to infer tier from visuals: {e.Message}");
             }
+        }
+
+        // --- IPlayerInteractable Implementation ---
+        public void OnPlayerEnter(PlayerBehavior player)
+        {
+            Debug.Log($"[TownCenterBehavior] OnPlayerEnter CALLED. Player: {player?.name}, CoinUser: {coinUser != null}, CoinHandler: {coinHandler != null}");
+
+            // Delegate to CoinUser for upgrade UI
+            if (coinUser != null)
+            {
+                coinUser.OnPlayerEnter(player);
+            }
+            // Delegate to TownCenterCoinHandler for coin dispensing
+            if (coinHandler != null)
+            {
+                coinHandler.OnPlayerEnter(player);
+            }
+        }
+
+        public void OnPlayerExit(PlayerBehavior player)
+        {
+            // Delegate to CoinUser for upgrade UI
+            if (coinUser != null)
+            {
+                coinUser.OnPlayerExit(player);
+            }
+            // Delegate to TownCenterCoinHandler for coin dispensing
+            if (coinHandler != null)
+            {
+                coinHandler.OnPlayerExit(player);
+            }
+        }
+
+        public bool CanInteract()
+        {
+            // Can interact if either CoinUser needs coins or TownCenter has stored coins
+            bool coinUserCanInteract = coinUser != null && coinUser.CanInteract();
+            bool coinHandlerCanInteract = coinHandler != null && coinHandler.CanInteract();
+            return coinUserCanInteract || coinHandlerCanInteract;
         }
     }
 }

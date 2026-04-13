@@ -49,6 +49,8 @@ GameObject:
   - component: {fileID: 7436913070661543536}
   - component: {fileID: 3707126787337948279}
   - component: {fileID: 2397579267779056357}
+  - component: {fileID: 5850781020114817498}
+  - component: {fileID: 8405274900508887912}
   m_Layer: 12
   m_Name: Unlit campfire
   m_TagString: TownCenter
@@ -160,6 +162,7 @@ MonoBehaviour:
   buildProgressMax: 0
   maxHp: 1
   _currentHp: 1
+  storedCoinCount: 0
 --- !u!114 &6899957883843830173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -282,6 +285,45 @@ MonoBehaviour:
   triggerDisplayDuration: 1
   fadeSpeed: 2
   useFade: 1
+--- !u!50 &5850781020114817498
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8972918622944182515}
+  m_BodyType: 2
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &8405274900508887912
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8972918622944182515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eabc3bebfcecc474b92a4c5d61061df6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &6807876492406318198
 PrefabInstance:
   m_ObjectHideFlags: 0
