@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 1185166644503604080}
   - component: {fileID: 6916635577820106134}
   - component: {fileID: 693544475102828204}
+  - component: {fileID: 6875560327967451391}
+  - component: {fileID: 1348830885067966692}
   m_Layer: 0
   m_Name: hammer
   m_TagString: Hammer
@@ -149,7 +151,36 @@ MonoBehaviour:
   denizensPickupAble: 1
   enemyPickupAble: 1
   pickupAbleCooldown: 3
+--- !u!114 &6875560327967451391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4558516452142004041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70df7ff86d7dd18428d7721f22b77811, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   floating: 0
   rayLength: 0.6
-  fallSpeed: 10
-  throwGravity: 20
+  fallSpeed: 4
+  throwGravity: 9.81
+--- !u!114 &1348830885067966692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4558516452142004041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb1a9e8a305f5cb44b6c61c720a1146c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _playerPickupCooldown: 0
+  _denizenPickupCooldown: 0
+  _enemyPickupCooldown: 0
+  _townCenterPickupCooldown: 0
+  _townCenterPickupCooldownDebug: 0

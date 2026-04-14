@@ -3,6 +3,7 @@ using UnityEngine;
 using Script.Game.Structures.Wall_And_Stump;
 using Script.Manager.WorldManager;
 using Script.Manager.Building;
+using Script.Manager.NatureManager;
 
 namespace Script.Game.Mobs.MobsManager
 {
@@ -85,6 +86,12 @@ namespace Script.Game.Mobs.MobsManager
                 }
                 
                 if (guardManager != null) guardManager.DebugLog($"[GuardWallSystem] Updated {(isLeft ? "LEFT" : "RIGHT")} defensive wall to: {currentWall?.name ?? "NULL"}");
+                
+                // Notify RabbitBushManager that kingdom zone changed
+                if (RabbitBushManager.Instance != null)
+                {
+                    RabbitBushManager.Instance.NotifyKingdomZoneChanged();
+                }
             }
         }
         

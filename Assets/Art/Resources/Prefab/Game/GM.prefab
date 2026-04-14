@@ -40,6 +40,7 @@ Transform:
   - {fileID: 471920209248215435}
   - {fileID: 1023114066770394473}
   - {fileID: 8317557543024542006}
+  - {fileID: 9035251194628705496}
   m_Father: {fileID: 8862165295465698764}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4930023356812252655
@@ -299,7 +300,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba1b93a3aec310d449a9d21fd1234486, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pauseMenuPanel: {fileID: 0}
   timeManager: {fileID: 0}
   techManager: {fileID: 0}
   chunkManager: {fileID: 0}
@@ -442,6 +442,52 @@ MonoBehaviour:
   detectionLayer:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!1 &3332464358544057224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9035251194628705496}
+  - component: {fileID: 7852803714012744235}
+  m_Layer: 0
+  m_Name: MobFarm
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9035251194628705496
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3332464358544057224}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1109258664885330200}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7852803714012744235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3332464358544057224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 683804e01375b3c4384525fb427bec2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxBushesPerSide: 2
+  isDebug: 0
 --- !u!1 &3590571741115332272
 GameObject:
   m_ObjectHideFlags: 0
@@ -620,7 +666,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   guidePrefab: {fileID: 0}
+  arrowSprite: {fileID: 0}
+  coinSprite: {fileID: 0}
+  xSprite: {fileID: 0}
   spawnOffset: {x: 0, y: 8, z: 0}
+  guideScale: {x: 1, y: 1, z: 1}
+  lifetime: 5
+  moveSpeed: 8
+  rotationSpeed: 10
+  reachThreshold: 0.5
+  shakeIntensity: 0.1
+  shakeSpeed: 10
+  pulseSpeed: 2
+  pulseMaxScale: 1.2
+  defaultSpriteDirection: 0
 --- !u!1 &5220092303427870795
 GameObject:
   m_ObjectHideFlags: 0

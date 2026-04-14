@@ -216,7 +216,7 @@ namespace Script.Data_Model
         [Space(15)] 
         public int maxDistanceFromBush = 5;
         public GameObject rabbitBush;
-        public int maxRabbitLimit;
+        public int maxRabbitLimit = 5;
         
         [Space(15)] 
         public GameObject rabbit;
@@ -303,7 +303,10 @@ namespace Script.Data_Model
             prefabDict.Add("hammer", hammer);
             prefabDict.Add("denizen", denizen);
             prefabDict.Add("EnemyPortalPrefab_ID", summoningPortal);
+            prefabDict.Add("rabbit", rabbit);
+            prefabDict.Add("rabbit_bush", rabbitBush);
             
+
         }
         
         public GameObject GetPrefabByID(string id)

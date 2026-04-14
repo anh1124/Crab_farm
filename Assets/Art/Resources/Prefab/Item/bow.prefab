@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 7539941659094670562}
   - component: {fileID: 3123133262392536791}
   - component: {fileID: 6687723087257802704}
+  - component: {fileID: 2687371995877129160}
+  - component: {fileID: 2812193611935652538}
   m_Layer: 0
   m_Name: bow
   m_TagString: Untagged
@@ -149,7 +151,36 @@ MonoBehaviour:
   denizensPickupAble: 1
   enemyPickupAble: 1
   pickupAbleCooldown: 3
+--- !u!114 &2687371995877129160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6363175895146240729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70df7ff86d7dd18428d7721f22b77811, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   floating: 0
   rayLength: 0.6
-  fallSpeed: 10
-  throwGravity: 20
+  fallSpeed: 4
+  throwGravity: 9.81
+--- !u!114 &2812193611935652538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6363175895146240729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb1a9e8a305f5cb44b6c61c720a1146c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _playerPickupCooldown: 0
+  _denizenPickupCooldown: 0
+  _enemyPickupCooldown: 0
+  _townCenterPickupCooldown: 0
+  _townCenterPickupCooldownDebug: 0

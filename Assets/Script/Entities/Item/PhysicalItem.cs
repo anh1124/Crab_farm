@@ -37,7 +37,7 @@ namespace Script.Game.Item.Coin
         public bool floating
         {
             get => _fallBehavior != null ? _fallBehavior.floating : false;
-            set { if (_fallBehavior != null) _fallBehavior.floating = value; }
+            set { if (_fallBehavior != null) _fallBehavior.SetFloating(value); }
         }
 
         // Event for TownCenter pickup system

@@ -38,7 +38,7 @@ namespace Script.Manager
         
         public GameObject structureContainer;//công trình của làng
         
-        public GameObject natureContainer; //spawm cây,RabbitBushStatus
+        public GameObject natureContainer; //spawn cây,RabbitBushBehavior
         public GameObject animalsContainer;//spawn thỏ
         
         public GameObject enemyContainer;//chứa portal và enemy
@@ -706,19 +706,20 @@ namespace Script.Manager
 
                 if (savedObjects.Count == 0)
                 {
-                    if (isDebug) Debug.LogWarning($"No saveable objects found in {container.name}");
+                    if (isDebug) Debug.LogWarning($"No saveable objects found in {container.name}, skipping save to preserve existing data");
+                    return; // Skip saving to preserve existing data
                 }
 
                 var json = JsonConvert.SerializeObject(savedObjects, Formatting.Indented,
                     new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
-                
+
                 // Kiểm tra LoadFromSave.Instance tồn tại
                 if (LoadFromSave.Instance == null || string.IsNullOrEmpty(LoadFromSave.Instance.saveFilePath))
                 {
                     Debug.LogError("LoadFromSave.Instance hoặc saveFilePath là null, không thể lưu container");
                     return;
                 }
-                
+
                 var path = Path.Combine(LoadFromSave.Instance.saveFilePath, $"{container.name}.json");
                 if (isDebug) Debug.Log($"Saving to path: {path}");
                 File.WriteAllText(path, json);

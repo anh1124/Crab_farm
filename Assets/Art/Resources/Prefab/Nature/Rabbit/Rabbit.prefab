@@ -162,10 +162,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1797552028611793394}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1fa56da0a73d43fd8029043b0a8a84e4, type: 3}
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hp: 0
-  speed: 0
-  rabbitDieReward: 0
-  rabbitBush: {fileID: 0}
+  hp: 1
+  speed: 1
+  isDebug: 0
+  canMove: 1
+  isMove: 0
+  _bushID: 
+  _currentStateName: None
+  _currentTargetPosition: {x: 0, y: 0, z: 0}

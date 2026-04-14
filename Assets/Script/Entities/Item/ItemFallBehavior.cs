@@ -68,6 +68,23 @@ namespace Script.Game.Item
             _previousFloating = false;
         }
 
+        public void SetFloating(bool value)
+        {
+            floating = value;
+            if (floating)
+            {
+                CheckPivotOnLanding();
+            }
+        }
+
+        private void CheckPivotOnLanding()
+        {
+            if (transform.position.y < 0f)
+            {
+                transform.position = new Vector3(transform.position.x, 0f, transform.position.z);
+            }
+        }
+
         public void UpdateFallPhysics()
         {
             if (floating) return;
@@ -98,14 +115,8 @@ namespace Script.Game.Item
                 {
                     OnReadyForTownCenterPickup?.Invoke(_physicalItem);
                 }
-                floating = true;
+                SetFloating(true);
                 _previousFloating = floating;
-
-                // Safety check: if y < 0, set to 1.5f (tilemap is at y=0, coin radius is 1.5f)
-                if (transform.position.y < 0f)
-                {
-                    transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
-                }
 
                 StartRotate();
             }
@@ -143,7 +154,7 @@ namespace Script.Game.Item
             if (hit.collider != null)
             {
                 isThrown = false;
-                floating = true;
+                SetFloating(true);
                 StartRotate();
             }
         }

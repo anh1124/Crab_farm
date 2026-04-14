@@ -194,6 +194,54 @@ public class Spawner : MonoBehaviour
 
     #endregion
 
+    #region Rabbit and Bush Spawn
+
+    /// <summary>
+    /// Spawn a rabbit at the given position, parented to animalsContainer
+    /// </summary>
+    public GameObject SpawnRabbit(Vector2 position)
+    {
+        GameObject rabbitPrefab = PrefabData.Instance.rabbit;
+        if (rabbitPrefab == null)
+        {
+            Debug.LogError("[Spawner.SpawnRabbit] Rabbit prefab not found in PrefabData!");
+            return null;
+        }
+
+        if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.animalsContainer == null)
+        {
+            Debug.LogError("[Spawner.SpawnRabbit] EntitySaveManager.Instance or animalsContainer is null!");
+            return null;
+        }
+
+        GameObject rabbitObj = Instantiate(rabbitPrefab, position, Quaternion.identity, EntitySaveManager.Instance.animalsContainer.transform);
+        return rabbitObj;
+    }
+
+    /// <summary>
+    /// Spawn a rabbit bush at the given position, parented to natureContainer
+    /// </summary>
+    public GameObject SpawnRabbitBush(Vector3 position)
+    {
+        GameObject bushPrefab = PrefabData.Instance.rabbitBush;
+        if (bushPrefab == null)
+        {
+            Debug.LogError("[Spawner.SpawnRabbitBush] RabbitBush prefab not found in PrefabData!");
+            return null;
+        }
+
+        if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.natureContainer == null)
+        {
+            Debug.LogError("[Spawner.SpawnRabbitBush] EntitySaveManager.Instance or natureContainer is null!");
+            return null;
+        }
+
+        GameObject bushObj = Instantiate(bushPrefab, position, Quaternion.identity, EntitySaveManager.Instance.natureContainer.transform);
+        return bushObj;
+    }
+
+    #endregion
+
     #region Item Drop
 
     /// <summary>

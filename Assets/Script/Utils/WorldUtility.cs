@@ -4,6 +4,13 @@ using Script.Manager.Building;
 
 namespace Script.Utils
 {
+    public enum KingdomSide
+    {
+        Left,
+        Right,
+        None
+    }
+
     public static class WorldUtility
     {
         private static Script.Manager.Building.BuildingManager _bm;
@@ -179,6 +186,67 @@ namespace Script.Utils
             // Đi săn thường ở xa tường thành một chút
             bool isRight = Random.value > 0.5f;
             return GetRandomOutsideSafePos(isRight, 5f, 50f).x;
+        }
+
+        public static KingdomSide GetNearestHuntingSide(Vector3 position)
+        {
+            if (BM == null || BM.currentTownCenter == null) return KingdomSide.None;
+
+            float townCenterX = BM.currentTownCenter.transform.position.x;
+            
+            // Tìm bức tường xa nhất về trái và phải
+            GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
+            float farthestLeft = townCenterX;
+            float farthestRight = townCenterX;
+            
+            foreach (var wall in walls)
+            {
+                float wx = wall.transform.position.x;
+                if (wx < farthestLeft) farthestLeft = wx;
+                if (wx > farthestRight) farthestRight = wx;
+            }
+            
+            // Nếu không có tường, coi bãi săn bắt đầu từ Plaza + offset
+            if (farthestLeft == townCenterX) farthestLeft -= 15f;
+            if (farthestRight == townCenterX) farthestRight += 15f;
+            
+            float distToLeft = Mathf.Abs(position.x - farthestLeft);
+            float distToRight = Mathf.Abs(position.x - farthestRight);
+            
+            return distToLeft < distToRight ? KingdomSide.Left : KingdomSide.Right;
+        }
+
+        public static KingdomSide GetObjectSideInKingdom(Vector3 position)
+        {
+            if (BM == null || BM.currentTownCenter == null)
+            {
+                return KingdomSide.None;
+            }
+
+            float townCenterX = BM.currentTownCenter.transform.position.x;
+            float posX = position.x;
+
+            if (posX < townCenterX)
+            {
+                return KingdomSide.Left;
+            }
+            else if (posX > townCenterX)
+            {
+                return KingdomSide.Right;
+            }
+            else
+            {
+                return KingdomSide.None; // Exactly at town center
+            }
+        }
+
+        public static KingdomSide GetObjectSideInKingdom(GameObject obj)
+        {
+            if (obj == null)
+            {
+                return KingdomSide.None;
+            }
+            return GetObjectSideInKingdom(obj.transform.position);
         }
 
         public static Vector2 GetWallPosition(bool getLeftWall)
