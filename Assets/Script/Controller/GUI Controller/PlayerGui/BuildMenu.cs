@@ -45,6 +45,9 @@ public class BuildMenu : MonoBehaviour
     private BuildingPlacementManager _bpm;
     private BuildingPlacementManager BPM => _bpm != null ? _bpm : (_bpm = FindObjectOfType<BuildingPlacementManager>());
 
+    private BuildingRegistry _br;
+    private BuildingRegistry BR => _br != null ? _br : (_br = BuildingRegistry.Instance);
+
     private void Awake()
     {
         if (instance == null)
@@ -125,7 +128,14 @@ public class BuildMenu : MonoBehaviour
     {
         // Clear the existing list
         buildableStructures.Clear();
-        
+
+        // Make sure BuildingRegistry exists
+        if (BR == null)
+        {
+            Debug.LogError("[BuildMenu] BuildingRegistry is not available in scene. Cannot update buildable structures.");
+            return;
+        }
+
         // Make sure BuildingManager exists
         if (BM == null)
         {
@@ -205,68 +215,75 @@ public class BuildMenu : MonoBehaviour
     // Helper method to get the prefabWall for a given building type
     private GameObject GetBuildingPrefab(BuildingType buildingType, int maxTier = 0)
     {
-        switch (buildingType)
+        if (BR == null)
         {
-            case BuildingType.TownCenter:
-                return PrefabData.Instance.townCenterList[0];
-                
-            case BuildingType.Wall:
-                return PrefabData.Instance.prefabWall;
-                
-            case BuildingType.HammerVendor:
-                return PrefabData.Instance.hammerVendor;
-                
-            case BuildingType.BowVendor:
-                return PrefabData.Instance.bowVendor;
-                
-            default:
-                Debug.LogWarning($"Unknown building type: {buildingType}");
-                return null;
+            Debug.LogError($"[BuildMenu] BuildingRegistry is not available in scene. Cannot get prefab for {buildingType}");
+            return null;
         }
+
+        GameObject prefab = BR.GetPrefab(buildingType);
+        if (prefab == null)
+        {
+            Debug.LogError($"[BuildMenu] BuildingRegistry does not contain prefab for {buildingType}");
+            return null;
+        }
+
+        return prefab;
     }
     
   
     private void PopulateBuildButtons()
     {
+        if (BR == null)
+        {
+            Debug.LogError("[BuildMenu] BuildingRegistry is not available in scene. Cannot populate build buttons.");
+            return;
+        }
+
         foreach (GameObject prefab in buildableStructures)
         {
             Button btn = Instantiate(buildButtonPrefab, buildButtonContainer);
             btn.gameObject.SetActive(true);
 
-            // Set sprite từ prefab
+            // Get building type from prefab
+            BuildingType? buildingType = GetBuildingTypeFromPrefab(prefab);
+            if (!buildingType.HasValue)
+            {
+                Debug.LogError($"[BuildMenu] Cannot determine BuildingType for prefab {prefab.name}. Skipping button creation.");
+                Destroy(btn.gameObject);
+                continue;
+            }
+
+            // Set sprite từ BuildingRegistry
             Image btnImage = btn.GetComponent<Image>();
             if (btnImage != null)
             {
-                // Tìm SpriteRenderer từ prefab (có thể ở root hoặc child)
-                SpriteRenderer sr = prefab.GetComponent<SpriteRenderer>();
-                if (sr == null)
+                Sprite uiSprite = BR.GetUISprite(buildingType.Value);
+                if (uiSprite == null)
                 {
-                    // Nếu không tìm thấy ở root, tìm trong children
-                    sr = prefab.GetComponentInChildren<SpriteRenderer>();
+                    Debug.LogError($"[BuildMenu] BuildingRegistry does not contain UI sprite for {buildingType.Value}. Skipping button creation.");
+                    Destroy(btn.gameObject);
+                    continue;
                 }
 
-                if (sr != null)
-                {
-                    btnImage.sprite = sr.sprite;
-                    // Preserve aspect ratio để tránh bị méo sprite
-                    btnImage.preserveAspect = true;
-                    Debug.Log($"[BuildMenu] Set sprite for {prefab.name}. Sprite: {sr.sprite?.name ?? "null"}, SpriteRenderer on: {sr.gameObject.name}");
-                }
-                else
-                {
-                    Debug.LogWarning($"[BuildMenu] No SpriteRenderer found in prefab {prefab.name}");
-                }
+                btnImage.sprite = uiSprite;
+                btnImage.type = Image.Type.Simple;
+                btnImage.preserveAspect = true;
             }
             else
             {
                 Debug.LogError("[BuildMenu] Button Image component is null!");
+                Destroy(btn.gameObject);
+                continue;
             }
-            
-            // Set tên công trình
+
+            // Set tên công trình từ BuildingRegistry
             Text btnText = btn.GetComponentInChildren<Text>();
             if (btnText != null)
-                btnText.text = prefab.name;
-            
+            {
+                btnText.text = BR.GetDisplayName(buildingType.Value);
+            }
+
             GameObject prefabCopy = prefab;
             btn.onClick.AddListener(() =>
             {
@@ -274,6 +291,24 @@ public class BuildMenu : MonoBehaviour
                 StartBuildingPreview(prefabCopy);
             });
         }
+    }
+
+    // Helper method to determine BuildingType from prefab (for BuildingRegistry lookup)
+    private BuildingType? GetBuildingTypeFromPrefab(GameObject prefab)
+    {
+        if (prefab == null) return null;
+
+        // Try to match prefab with PrefabData references to determine type
+        if (prefab == PrefabData.Instance.townCenterList[0])
+            return BuildingType.TownCenter;
+        if (prefab == PrefabData.Instance.prefabWall)
+            return BuildingType.Wall;
+        if (prefab == PrefabData.Instance.hammerVendor)
+            return BuildingType.HammerVendor;
+        if (prefab == PrefabData.Instance.bowVendor)
+            return BuildingType.BowVendor;
+
+        return null;
     }
     
     private void ClearDynamicBuildButtons()

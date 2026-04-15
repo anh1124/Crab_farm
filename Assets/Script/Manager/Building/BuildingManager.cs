@@ -44,6 +44,7 @@ namespace Script.Manager.Building
     }
 
     #endregion
+    [RequireComponent(typeof(BuildingRegistry))]
     public class BuildingManager : MonoBehaviour, IBuildingProvider
     {
         

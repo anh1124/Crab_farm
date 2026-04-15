@@ -2443,6 +2443,70 @@ PrefabInstance:
       propertyPath: defaultSpriteDirection
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[0].prefab
+      value: 
+      objectReference: {fileID: 8972918622944182515, guid: e035a2bb45d8d754a882514a7f0cbe61, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[1].prefab
+      value: 
+      objectReference: {fileID: 5531189184210328128, guid: fc3652b63499fa040a69edc628fd5dce, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[2].prefab
+      value: 
+      objectReference: {fileID: 8435948595016383760, guid: 2924dde1c8b980840bdb397795e30461, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[3].prefab
+      value: 
+      objectReference: {fileID: 8435948595016383760, guid: 2924dde1c8b980840bdb397795e30461, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[0].uiSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: ee020035bc850a347912656a80465f69, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[1].uiSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a9cc30d28d2d6444fbc0ea71e16f9586, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[2].uiSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: d2a5ae42e80838f46875d18a7b6a8946, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[3].uiSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: d2a5ae42e80838f46875d18a7b6a8946, type: 3}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[0].displayName
+      value: campfire
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[1].displayName
+      value: wall
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[2].displayName
+      value: bow vendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[3].displayName
+      value: bow vendor
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[1].buildingType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[2].buildingType
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7840119539270536339, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: buildingEntries.Array.data[3].buildingType
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 8206099037918200606, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: greed
       value: 
