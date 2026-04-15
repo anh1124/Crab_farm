@@ -28,6 +28,9 @@ namespace Script.Manager.Building
 
             [Tooltip("Tên hiển thị trên UI (nếu null sẽ dùng prefab.name)")]
             public string displayName;
+
+            [Tooltip("Khoảng cách tối thiểu bắt buộc khi đặt công trình (0 = không check raycast khoảng cách)")]
+            public float minimumDistance = 0f;
         }
 
         [Header("Building Entries")]
@@ -171,6 +174,20 @@ namespace Script.Manager.Building
         public bool HasBuilding(BuildingType buildingType)
         {
             return buildingDict.ContainsKey(buildingType);
+        }
+
+        /// <summary>
+        /// Lấy khoảng cách tối thiểu cho một loại công trình
+        /// </summary>
+        public float GetMinimumDistance(BuildingType buildingType)
+        {
+            if (buildingDict.TryGetValue(buildingType, out BuildingEntry entry))
+            {
+                return entry.minimumDistance;
+            }
+
+            Debug.LogWarning($"[BuildingRegistry] No minimum distance found for BuildingType: {buildingType}");
+            return 0f;
         }
     }
 }

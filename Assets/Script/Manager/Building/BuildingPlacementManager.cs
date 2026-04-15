@@ -89,8 +89,27 @@ namespace Script.Manager.Building
             CleanupPreview();
 
             structureToPlace = structurePrefab;
-            var distanceComponent = structurePrefab.GetComponent<IMinimumDistance>();
-            minimumDistance = distanceComponent?.MinimumDistance;
+
+            // Get minimumDistance from BuildingRegistry
+            var buildingRegistry = BuildingRegistry.Instance;
+            if (buildingRegistry != null)
+            {
+                BuildingType? buildingType = GetBuildingTypeFromPrefab(structurePrefab);
+                if (buildingType.HasValue)
+                {
+                    minimumDistance = buildingRegistry.GetMinimumDistance(buildingType.Value);
+                }
+                else
+                {
+                    Debug.LogWarning($"[BuildingPlacementManager] Cannot determine BuildingType for prefab {structurePrefab.name}. Minimum distance will be 0.");
+                    minimumDistance = 0f;
+                }
+            }
+            else
+            {
+                Debug.LogError("[BuildingPlacementManager] BuildingRegistry is not available in scene. Minimum distance will be 0.");
+                minimumDistance = 0f;
+            }
 
             previewInstance = Instantiate(structurePrefab);
             previewInstance.SetActive(true);
@@ -570,6 +589,24 @@ namespace Script.Manager.Building
             if (rightDistanceLine != null)
                 rightDistanceLine.gameObject.SetActive(false);
         }
+
+        // Helper method to determine BuildingType from prefab
+        private BuildingType? GetBuildingTypeFromPrefab(GameObject prefab)
+        {
+            if (prefab == null) return null;
+
+            // Try to match prefab with PrefabData references to determine type
+            if (prefab == Script.Data_Model.PrefabData.Instance.townCenterList[0])
+                return BuildingType.TownCenter;
+            if (prefab == Script.Data_Model.PrefabData.Instance.prefabWall)
+                return BuildingType.Wall;
+            if (prefab == Script.Data_Model.PrefabData.Instance.hammerVendor)
+                return BuildingType.HammerVendor;
+            if (prefab == Script.Data_Model.PrefabData.Instance.bowVendor)
+                return BuildingType.BowVendor;
+
+            return null;
+        }
     }
-    
+
 }

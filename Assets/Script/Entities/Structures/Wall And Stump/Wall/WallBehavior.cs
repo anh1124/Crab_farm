@@ -18,7 +18,7 @@ namespace Script.Game.Structures.Wall_And_Stump
 {
     //wall tier 0 không nhận dame
     // Chứa logic behavior của Wall, sử dụng WallStatus để quản lý state
-    public class WallBehavior : MonoBehaviour, IMinimumDistance, ISaveable, IDamageable, ICoinUserOwner
+    public class WallBehavior : MonoBehaviour, ISaveable, IDamageable, ICoinUserOwner
     {
         // wall có 2 trạng thái là wall và stump
         //khi trở thành stump sẽ unactive gameobejct chứa collider chặn enemy
@@ -60,10 +60,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         
         #region Properties
         public WallStatus Status => status;
-        
-        // IMinimumDistance Implementation
-        public float MinimumDistance => status.minimumDistance;
-        
+
         // Upgrade State Properties
         public int Tier { get => status.tier; set => status.tier = value; }
         public int UpgradeCost { get => status.upgradeCost; set => status.upgradeCost = value; }
