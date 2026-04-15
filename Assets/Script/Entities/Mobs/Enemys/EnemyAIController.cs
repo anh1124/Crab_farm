@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Script.Game.Enemy.Core
 {
     [RequireComponent(typeof(Script.Game.PlayerCharacter.Skills.SkillManager))]
-    public class EnemyAIController : MonoBehaviour, INPCBehavior
+    public class EnemyAIController : MonoBehaviour, INPCBehavior, IItemHandle
     {
         [Header("Debug Info")]
         public bool isDebug = false;
@@ -345,6 +345,45 @@ namespace Script.Game.Enemy.Core
             {
                 _ctx.Animator.SetTrigger(exactTrigger);
             }
+        }
+
+        // --- IItemHandle Implementation ---
+        
+        /// <summary>
+        /// Xử lý khi enemy nhặt item: trừ HP tương ứng (coin: -2 HP, tool: -3 HP)
+        /// </summary>
+        public bool HandleItem(GameObject item)
+        {
+            if (_ctx.Status == null) return false;
+
+            var physicalItem = item.GetComponent<Script.Game.Item.Coin.PhysicalItem>();
+            if (physicalItem == null) return false;
+
+            float hpDamage = 0f;
+            string itemType = "";
+
+            switch (physicalItem.itemType)
+            {
+                case Script.Game.Item.Coin.ItemType.Coin:
+                    hpDamage = 2f;
+                    itemType = "Coin";
+                    break;
+                case Script.Game.Item.Coin.ItemType.Tool_Bow:
+                case Script.Game.Item.Coin.ItemType.Tool_Hammer:
+                case Script.Game.Item.Coin.ItemType.Tool_Scythe:
+                    hpDamage = 3f;
+                    itemType = "Tool";
+                    break;
+            }
+
+            if (hpDamage > 0)
+            {
+                _ctx.Status.TakeDamage(hpDamage);
+                if (isDebug)
+                    Debug.Log($"[EnemyAIController] {gameObject.name} nhặt {itemType}, trừ {hpDamage} HP. HP còn lại: {_ctx.Status.CurrentHp}/{_ctx.Status.MaxHp}");
+            }
+
+            return true;
         }
     }
 }

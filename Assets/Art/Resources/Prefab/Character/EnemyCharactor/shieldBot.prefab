@@ -305,8 +305,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canPickupCoin: 1
   canPickupTool: 1
-  autoPickupWithoutReceiver: 1
-  isDebug: 0
+  autoPickupWithoutReceiver: 0
+  isDebug: 1
 --- !u!1 &8997399569110945392
 GameObject:
   m_ObjectHideFlags: 0

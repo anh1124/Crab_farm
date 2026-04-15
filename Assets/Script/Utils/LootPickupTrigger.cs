@@ -178,21 +178,49 @@ namespace Script.Utils
         private bool CheckItemRule(PhysicalItem drop)
         {
             // Đã có chủ nhặt trước
-            if (drop.pickedBy != null) return false;
+            if (drop.pickedBy != null)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: drop.pickedBy = {drop.pickedBy.name}");
+                return false;
+            }
 
             // Loại item có được phép không
-            if (drop.itemType == ItemType.Coin && !canPickupCoin) return false;
-            if (drop.itemType != ItemType.Coin && !canPickupTool) return false;
+            if (drop.itemType == ItemType.Coin && !canPickupCoin)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: Coin nhưng canPickupCoin = false");
+                return false;
+            }
+            if (drop.itemType != ItemType.Coin && !canPickupTool)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: Tool nhưng canPickupTool = false");
+                return false;
+            }
 
             // Coin đang bay (floating) và chưa cho phép nhặt
             if (drop.itemType == ItemType.Coin && drop.floating && !drop.playerPickupAble && !drop.denizensPickupAble)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: Coin floating và không cho phép nhặt");
                 return false;
+            }
 
             // Quyền nhặt theo phe
-            if (_isPlayer && !drop.playerPickupAble) return false;
-            if (_isEnemy && !drop.enemyPickupAble) return false;
-            if (!_isPlayer && !_isEnemy && !drop.denizensPickupAble) return false;
+            if (_isPlayer && !drop.playerPickupAble)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: Player nhưng playerPickupAble = false");
+                return false;
+            }
+            if (_isEnemy && !drop.enemyPickupAble)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: Enemy nhưng enemyPickupAble = false. _isEnemy={_isEnemy}, enemyPickupAble={drop.enemyPickupAble}");
+                return false;
+            }
+            if (!_isPlayer && !_isEnemy && !drop.denizensPickupAble)
+            {
+                if (isDebug) Debug.Log($"[LootPickup] CheckItemRule FAIL: Denizen nhưng denizensPickupAble = false");
+                return false;
+            }
 
+            if (isDebug) Debug.Log($"[LootPickup] CheckItemRule PASS");
             return true;
         }
 

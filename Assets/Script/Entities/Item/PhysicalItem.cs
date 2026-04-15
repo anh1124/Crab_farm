@@ -26,9 +26,10 @@ namespace Script.Game.Item.Coin
 
         public bool playerPickupAble = true;
         public bool denizensPickupAble = true;
-        public bool enemyPickupAble = false;
+        public bool enemyPickupAble = true;
         public float pickupAbleCooldown = 3f;
         public bool droppedByAnimal = false;
+        public bool onSellerStock = false; // Đánh dấu item đang trong stock của seller (để tránh save 2 lần)
 
         // Behavior components
         private ItemFallBehavior _fallBehavior;
@@ -106,7 +107,7 @@ namespace Script.Game.Item.Coin
             pickedBy = null;
             playerPickupAble = true;
             denizensPickupAble = true;
-            enemyPickupAble = false;
+            enemyPickupAble = true;
 
             _fallBehavior.ResetFallState();
             _cooldownBehavior.ResetCooldowns();

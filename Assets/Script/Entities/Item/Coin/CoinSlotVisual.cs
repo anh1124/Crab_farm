@@ -134,6 +134,7 @@ namespace Script.Game.Item.Coin
                         coinScript.floating = false;
                         coinScript.playerPickupAble = true;
                         coinScript.denizensPickupAble = true;
+                        coinScript.enemyPickupAble = true; // Cho phép enemy nhặt coin
                     }
 
                     RestoreCoinCollidersAfterTransit(transitCoin);
@@ -187,6 +188,7 @@ namespace Script.Game.Item.Coin
             {
                 coinScript.playerPickupAble = false;
                 coinScript.denizensPickupAble = false;
+                coinScript.enemyPickupAble = true; // Cho phép enemy nhặt coin
                 coinScript.floating = true;
             }
             

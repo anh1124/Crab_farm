@@ -13,7 +13,7 @@ namespace Script.Game.Item.Coin
         [Header("Pool Configuration")]
         [SerializeField] private GameObject coinPrefab;
         [SerializeField] private int minPoolSize = 30;   // Preload
-        [SerializeField] private int maxPoolSize = 250;  // Hard limit
+        [SerializeField] private int maxPoolSize = 350;  // Hard limit
         
         private Queue<GameObject> pool = new Queue<GameObject>();
         private int totalCreated = 0;

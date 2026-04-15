@@ -687,6 +687,13 @@ namespace Script.Manager
                     // Chỉ save những object đang hoạt động (không phải pool members đang ẩn)
                     if (!mb.gameObject.activeInHierarchy) continue;
                     
+                    // Skip PhysicalItem đang trong stock của seller (đã được save bởi ItemSeller)
+                    var physicalItem = mb.GetComponent<Script.Game.Item.Coin.PhysicalItem>();
+                    if (physicalItem != null && physicalItem.onSellerStock)
+                    {
+                        continue;
+                    }
+                    
                     try
                     {
                         savedObjects.Add(new SavedObject

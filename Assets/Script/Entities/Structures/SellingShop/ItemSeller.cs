@@ -167,14 +167,24 @@ namespace Script.Game.Structures.SellingShop
             Transform emptySlot = FindEmptySlot();
             if (emptySlot != null)
             {
-                GameObject newItem = Instantiate(itemPrefab, emptySlot.position, Quaternion.identity);
-                newItem.transform.SetParent(emptySlot);
+                // Dùng Spawner để spawn tool để đảm bảo enemyPickupAble được set đúng
+                // ignoreOffset = true để tool nằm im trên kệ không bị offset cộng thêm
+                GameObject newItem = Spawner.Instance.DropItem(itemPrefab, emptySlot.position, playerPickupAble: false, denizensPickupAble: true, ignoreOffset: true);
                 
-                // Vô hiệu hóa trọng lực để đồ vật nằm im trên kệ
+                if (newItem == null)
+                {
+                    Debug.LogError("[ItemSeller] DropItem trả về null!");
+                    return;
+                }
+
+                // Đặt item vào slot và vô hiệu hóa trọng lực
+                newItem.transform.SetParent(emptySlot);
                 PhysicalItem physItem = newItem.GetComponent<PhysicalItem>();
                 if (physItem != null)
                 {
                     physItem.floating = true;
+                    physItem.onSellerStock = true; // Đánh dấu đang trong stock để tránh save 2 lần
+                    // Spawner đã set enemyPickupAble = true rồi
                 }
                 
                 currentItems.Add(newItem);
@@ -285,13 +295,42 @@ namespace Script.Game.Structures.SellingShop
             
             // Initialize components and data
             InitializeComponents();
-            InitializeData();
+            // KHÔNG gọi InitializeData() ở đây vì nó sẽ gọi CheckInventory() và có thể gây vấn đề
+            // maxSellableItems = itemSlot.Count(); // Sẽ được set sau
             
-            // Restore the items
+            // Restore the items bằng cách Instantiate trực tiếp (không dùng Spawner để tránh physics)
             for (int i = 0; i < sellerData.currentItemCount; i++)
             {
-                AddItem();
+                Transform emptySlot = FindEmptySlot();
+                if (emptySlot != null)
+                {
+                    GameObject newItem = Instantiate(itemPrefab, emptySlot.position, Quaternion.identity);
+                    newItem.transform.SetParent(emptySlot);
+                    
+                    // Set properties cho item
+                    PhysicalItem physItem = newItem.GetComponent<PhysicalItem>();
+                    if (physItem != null)
+                    {
+                        physItem.floating = true;
+                        physItem.enemyPickupAble = true; // Cho phép enemy nhặt tool
+                        physItem.onSellerStock = true; // Đánh dấu đang trong stock để tránh save 2 lần
+                    }
+                    
+                    currentItems.Add(newItem);
+
+                    // Gắn SellerItemNotifier
+                    SellerItemNotifier notifier = newItem.GetComponent<SellerItemNotifier>();
+                    if (notifier == null)
+                    {
+                        notifier = newItem.AddComponent<SellerItemNotifier>();
+                    }
+                    notifier.seller = this;
+                }
             }
+            
+            // Sau khi restore xong, mới gọi CheckInventory() để cập nhật state
+            maxSellableItems = itemSlot.Count();
+            CheckInventory();
         }
         #endregion
     }

@@ -71,6 +71,7 @@ public class Spawner : MonoBehaviour
         StartCoroutine(DropCoinsInternalCoroutine(position, direction, amount, (script) => {
             script.playerPickupAble = true;
             script.denizensPickupAble = true;
+            script.enemyPickupAble = true; // Cho phép enemy nhặt coin
             script.floating = false;
             script.droppedByAnimal = true; // Mark as loot for archers
         }, defaultDropYOffset, 0.1f));
@@ -81,6 +82,7 @@ public class Spawner : MonoBehaviour
         StartCoroutine(DropCoinsInternalCoroutine(position, direction, amount, (script) => {
             script.playerPickupAble = false;
             script.denizensPickupAble = true;
+            script.enemyPickupAble = true; // Cho phép enemy nhặt coin
             script.floating = false;
             script.CallFunctionCoolDown("Player");
         }, defaultDropYOffset, 0f));
@@ -91,6 +93,7 @@ public class Spawner : MonoBehaviour
         StartCoroutine(DropCoinsInternalCoroutine(position, direction, amount, (script) => {
             script.playerPickupAble = true;
             script.denizensPickupAble = false;
+            script.enemyPickupAble = true; // Cho phép enemy nhặt coin
             script.floating = false;
             if (denizenPickupCooldown >= 0f)
                 script.CallFunctionCoolDown("Denizens", denizenPickupCooldown);
@@ -154,6 +157,7 @@ public class Spawner : MonoBehaviour
         {
             coinScriptInstance.playerPickupAble = true;
             coinScriptInstance.denizensPickupAble = false;
+            coinScriptInstance.enemyPickupAble = true; // Cho phép enemy nhặt coin
             coinScriptInstance.floating = false;
             coinScriptInstance.CallFunctionCoolDown("Denizens");
             ThrowCoin(coin, direction);
@@ -221,7 +225,8 @@ public class Spawner : MonoBehaviour
     /// <param name="position">Vị trí spawn (thường là transform.position của người drop)</param>
     /// <param name="playerPickupAble">Player có nhặt được không</param>
     /// <param name="denizensPickupAble">Denizen khác có nhặt được không</param>
-    public GameObject DropItem(GameObject prefab, Vector2 position, bool playerPickupAble, bool denizensPickupAble = true)
+    /// <param name="ignoreOffset">Bỏ qua offset và throw animation (cho vendor)</param>
+    public GameObject DropItem(GameObject prefab, Vector2 position, bool playerPickupAble, bool denizensPickupAble = true, bool ignoreOffset = false)
     {
         if (prefab == null)
         {
@@ -235,7 +240,13 @@ public class Spawner : MonoBehaviour
         }
 
         Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
-        Vector2 spawnPos = new Vector2(position.x, position.y + itemDropYOffset);
+        Vector2 spawnPos = position;
+        
+        // Chỉ thêm offset nếu không ignoreOffset
+        if (!ignoreOffset)
+        {
+            spawnPos = new Vector2(position.x, position.y + itemDropYOffset);
+        }
 
         Transform container = EntitySaveManager.Instance.otherContainer != null
             ? EntitySaveManager.Instance.otherContainer.transform
@@ -255,8 +266,14 @@ public class Spawner : MonoBehaviour
         // Item vừa spawn đã bị LootPickupTrigger của chính người drop kích hoạt ngay lập tức.
         // CallFunctionCoolDown("Denizens") sẽ bật denizensPickupAble lại sau một khoảng delay.
         itemScript.denizensPickupAble = false;
+        itemScript.enemyPickupAble = true; // Cho phép enemy nhặt tool
         itemScript.floating = false;
-        itemScript.InitializeThrow(dropDirection, coinThrowForce, coinThrowDistance);
+        
+        // Chỉ throw nếu không ignore offset (vendor items nằm im trên kệ)
+        if (!ignoreOffset)
+        {
+            itemScript.InitializeThrow(dropDirection, coinThrowForce, coinThrowDistance);
+        }
 
         if (denizensPickupAble)
         {

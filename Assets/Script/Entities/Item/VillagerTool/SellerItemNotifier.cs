@@ -17,6 +17,7 @@ namespace Script.Game.Item
             // Khi item bị disable (ví dụ: bị village lấy hoặc set inactive), thông báo cho seller loại bỏ nó khỏi danh sách
             if (!isRemoved && seller != null)
             {
+                SetNotOnSellerStock();
                 seller.RemoveItem(gameObject);
                 isRemoved = true;
             }
@@ -27,8 +28,18 @@ namespace Script.Game.Item
         {
             if (!isRemoved && seller != null)
             {
+                SetNotOnSellerStock();
                 seller.RemoveItem(gameObject);
                 isRemoved = true;
+            }
+        }
+
+        private void SetNotOnSellerStock()
+        {
+            var physicalItem = GetComponent<Script.Game.Item.Coin.PhysicalItem>();
+            if (physicalItem != null)
+            {
+                physicalItem.onSellerStock = false;
             }
         }
     }

@@ -143,6 +143,9 @@ namespace Script.Manager.GamePlayManager
         {
             Debug.Log($"[EnemyWaveManager - DEV TEST] Bắt đầu gọi Wave với power {customWavePower}...");
             
+            // Debug: Set time to night, spawn random portal, and activate it
+            SetupDebugEnvironment();
+
             if (_enemyPool != null && _enemyDataProvider != null && _enemyPool.GetPoolCount() == 0)
             {
                 _enemyPool.InitializePools();
@@ -188,7 +191,45 @@ namespace Script.Manager.GamePlayManager
         public void TestTriggerNightWave()
         {
             Debug.Log("[EnemyWaveManager - DEV TEST] Bắt đầu gọi TriggerNightWave bằng tay...");
+            
+            // Debug: Set time to night, spawn random portal, and activate it
+            SetupDebugEnvironment();
+            
             TriggerNightWave();
+        }
+
+        private void SetupDebugEnvironment()
+        {
+            // 1. Set time to night
+            var timeManager = FindObjectOfType<GameTimeManager>();
+            if (timeManager != null)
+            {
+                timeManager.SetTimeToNight();
+                Debug.Log("[EnemyWaveManager - DEBUG] Đã chuyển thời gian về ban đêm (19:00).");
+            }
+            else
+            {
+                Debug.LogWarning("[EnemyWaveManager - DEBUG] Không tìm thấy GameTimeManager để set time về đêm.");
+            }
+
+            // 2. Spawn random portal
+            var portalManager = FindObjectOfType<EnemyPortalManager>();
+            if (portalManager != null)
+            {
+                portalManager.TestSpawnRandomPortal();
+                Debug.Log("[EnemyWaveManager - DEBUG] Đã sinh portal ngẫu nhiên.");
+            }
+            else
+            {
+                Debug.LogWarning("[EnemyWaveManager - DEBUG] Không tìm thấy EnemyPortalManager để sinh portal.");
+            }
+
+            // 3. Set all portals active
+            if (portalManager != null)
+            {
+                portalManager.SetAllPortalsActive();
+                Debug.Log("[EnemyWaveManager - DEBUG] Đã kích hoạt tất cả portal.");
+            }
         }
 
         private void OnDestroy()
