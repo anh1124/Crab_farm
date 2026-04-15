@@ -22,7 +22,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             {
                 Context.CircleDetect.OnDetectedObjectsChanged -= OnObjectsDetected;
                 Context.CircleDetect.OnDetectedObjectsChanged += OnObjectsDetected;
-                Context.CircleDetect.tagsToDetect = new List<string>(TargetLists.ArcherTargets) { GameTags.Player };
+                Context.CircleDetect.tagsToDetect = new List<string>(TargetLists.ArcherTargets) { GameTags.Player, GameTags.Coin };
                 Context.CircleDetect.detectRadius = Context.Status.archerDetectRange;
                 Context.CircleDetect.IsActive = true;
             }

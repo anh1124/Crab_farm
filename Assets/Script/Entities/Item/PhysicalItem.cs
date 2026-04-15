@@ -28,6 +28,7 @@ namespace Script.Game.Item.Coin
         public bool denizensPickupAble = true;
         public bool enemyPickupAble = false;
         public float pickupAbleCooldown = 3f;
+        public bool droppedByAnimal = false;
 
         // Behavior components
         private ItemFallBehavior _fallBehavior;
@@ -109,6 +110,7 @@ namespace Script.Game.Item.Coin
 
             _fallBehavior.ResetFallState();
             _cooldownBehavior.ResetCooldowns();
+            droppedByAnimal = false;
         }
 
         // --- Public methods delegated to behaviors ---
@@ -157,6 +159,7 @@ namespace Script.Game.Item.Coin
             public float positionY;
             public bool floating;
             public string itemCategory;
+            public bool droppedByAnimal;
         }
 
         public string GetPrefabID()
@@ -177,7 +180,8 @@ namespace Script.Game.Item.Coin
                 positionX = transform.position.x,
                 positionY = transform.position.y,
                 floating = floating,
-                itemCategory = itemType.ToString()
+                itemCategory = itemType.ToString(),
+                droppedByAnimal = droppedByAnimal
             };
         }
 
@@ -191,6 +195,7 @@ namespace Script.Game.Item.Coin
             {
                 itemType = parsedType;
             }
+            droppedByAnimal = itemData.droppedByAnimal;
 
             StopRotate();
         }

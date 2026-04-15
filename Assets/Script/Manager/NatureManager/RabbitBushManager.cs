@@ -114,6 +114,7 @@ namespace Script.Manager.NatureManager
 
         private void OnMidnight()
         {
+            if (Script.Utility.GetTownCenterTier() < 1) return;
 #if UNITY_EDITOR
             if (isDebug) Debug.Log($"[RabbitBushManager] OnMidnight — L:{GetCount(true)}/{maxBushesPerSide}, R:{GetCount(false)}/{maxBushesPerSide}");
 #endif
@@ -150,6 +151,8 @@ namespace Script.Manager.NatureManager
         /// </summary>
         private void ExecuteOnAllBushes(System.Action<RabbitBushBehavior> action)
         {
+            if (Script.Utility.GetTownCenterTier() < 1) return;
+
             foreach (var bush in _bushes[true].ToList())
             {
                 if (bush != null) action(bush);

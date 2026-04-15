@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 8024802097094593828}
   - component: {fileID: 7233424117442376579}
   - component: {fileID: 2553195277133583850}
+  - component: {fileID: -3394162569831186193}
   m_Layer: 7
   m_Name: shieldBot
   m_TagString: Enemy
@@ -289,6 +290,22 @@ MonoBehaviour:
   - skill: {fileID: 11400000, guid: b695168b6e8a0684aae14873579fee50, type: 2}
     state: 0
     cooldownTimer: 0
+  isDebug: 0
+--- !u!114 &-3394162569831186193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132874606585159244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 106f39c8cdd0857499f2b2e14dbf7ea7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canPickupCoin: 1
+  canPickupTool: 1
+  autoPickupWithoutReceiver: 1
   isDebug: 0
 --- !u!1 &8997399569110945392
 GameObject:

@@ -140,7 +140,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (Context.Status.CurrentCoins > 0)
             {
                 Context.Status.SubtractCoin(1);
-                global::Spawner.Instance?.DropCoinFromDenizenHit(Context.transform.position);
+                global::Spawner.Instance?.DropFromDenizenHit(Context.transform.position);
             }
 
             if (Context.Status.CurrentCoins <= 0)

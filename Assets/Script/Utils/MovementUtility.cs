@@ -24,7 +24,6 @@ namespace Script.Utils
             return Mathf.Abs(current - previous) > epsilon;
         }
 
-   
         /// Di chuyển một GameObject đến vị trí mục tiêu với tốc độ cho trước (chỉ di chuyển theo trục X)
         /// Trả về true nếu đã đến nơi.
         public static bool MoveTowardsTarget(GameObject objectToMove, Vector3 target, float speed)

@@ -15,7 +15,7 @@ public class Spawner : MonoBehaviour
      * hàm chung cho việc spawn mob ở bất cứ đâu
    
      */
-    //thêm cho coin nảy 2 lần khi chạm đất
+   
     
     public static Spawner Instance { get; private set; }
     public float coinThrowForce = 5f;
@@ -23,7 +23,7 @@ public class Spawner : MonoBehaviour
     [Header("Denizen Drop Config")]
     [Tooltip("Cooldown (giây) cho Denizen khác nhặt coin khi coin được drop do bị tấn công.")]
     public float denizenHitDropCoinCooldown = 10f;
-    public GameObject coinPrefab;
+    private GameObject coinPrefab;
     
     private ICoinPool _coinPool;
     private IEnemyPool _enemyPool;
@@ -34,8 +34,9 @@ public class Spawner : MonoBehaviour
         _enemyPool = enemyPool;
     }
 
-    
-    int yOffset = 2;
+    public float defaultDropYOffset = 2f;
+    public float itemDropYOffset = 1.5f;
+
     private void Awake()
     {
         // Implementing the singleton pattern
@@ -48,49 +49,64 @@ public class Spawner : MonoBehaviour
         {
             Destroy(gameObject);
         }
-    }
-
-    private void Start()
-    {
         
-        coinPrefab = PrefabData.Instance.coinPrefab;
-   
     }
-
+    private void Start()  
+    {
+        coinPrefab = PrefabData.Instance.coinPrefab;
+        if(coinPrefab == null)
+        {
+            Debug.LogError("[Spawner]: Coin prefab is null");
+        }
+    }
+   
 
  
     #region Coin Spawn
-    public int GetRandomNumber( int max)
-    {
-        return Random.Range(0, max); 
-    }
+    
      
     // Phương thức để drop coin khi cây bị đốn
     public void DropByNature(Vector2 position, int amount, Vector2 direction)
     {
-        // Chờ đợi và spawn coin, gọi một coroutine
-        StartCoroutine(DropByNatureCoroutine(position, direction, amount));
+        StartCoroutine(DropCoinsInternalCoroutine(position, direction, amount, (script) => {
+            script.playerPickupAble = true;
+            script.denizensPickupAble = true;
+            script.floating = false;
+            script.droppedByAnimal = true; // Mark as loot for archers
+        }, defaultDropYOffset, 0.1f));
     }
 
     public void DropByPlayer(Vector2 position, int amount, Vector2 direction)
     {
-        StartCoroutine(DropByPlayerCoroutine(position, direction, amount));
+        StartCoroutine(DropCoinsInternalCoroutine(position, direction, amount, (script) => {
+            script.playerPickupAble = false;
+            script.denizensPickupAble = true;
+            script.floating = false;
+            script.CallFunctionCoolDown("Player");
+        }, defaultDropYOffset, 0f));
     }
 
     public void DropByDenizen(Vector2 position, int amount, Vector2 direction, float denizenPickupCooldown = -1f)
     {
-        StartCoroutine(DropByDenizenCoroutine(position, direction, amount, denizenPickupCooldown));
+        StartCoroutine(DropCoinsInternalCoroutine(position, direction, amount, (script) => {
+            script.playerPickupAble = true;
+            script.denizensPickupAble = false;
+            script.floating = false;
+            if (denizenPickupCooldown >= 0f)
+                script.CallFunctionCoolDown("Denizens", denizenPickupCooldown);
+            else
+                script.CallFunctionCoolDown("Denizens");
+        }, defaultDropYOffset, 0f));
     }
 
-    public void DropCoinFromDenizenHit(Vector2 denizenPosition, int amount = 1)
+    public void DropFromDenizenHit(Vector2 denizenPosition, int amount = 1)
     {
         Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
         if (dropDirection.sqrMagnitude < 0.01f) dropDirection = Vector2.right;
-        Vector2 spawnPosition = new Vector2(denizenPosition.x, denizenPosition.y + 2f);
-        DropByDenizen(spawnPosition, amount, dropDirection, denizenHitDropCoinCooldown);
+        DropByDenizen(denizenPosition, amount, dropDirection, denizenHitDropCoinCooldown);
     }
 
-    public void InitializeCoinThrow(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
+    public void ThrowCoin(GameObject coin, Vector2 direction, float randomVariation = 0.2f)
     {
         PhysicalItem coinScript = coin.GetComponent<PhysicalItem>();
         if (coinScript != null)
@@ -103,68 +119,21 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    private IEnumerator DropByNatureCoroutine(Vector2 position, Vector2 direction, int amount)
+    private IEnumerator DropCoinsInternalCoroutine(Vector2 position, Vector2 direction, int amount, Action<PhysicalItem> configureAction, float startYOffset, float spreadY)
     {
         for (int i = 0; i < amount; i++)
         {
-            Vector2 newPosition = new Vector2(position.x, position.y + yOffset + (i * 0.1f));
-            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+            Vector2 newPosition = new Vector2(position.x, position.y + startYOffset + (i * spreadY));
+            
+            Transform parentTransform = EntitySaveManager.Instance != null && EntitySaveManager.Instance.coinContainer != null ? EntitySaveManager.Instance.coinContainer.transform : null;
+            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, parentTransform);
             if (coin != null) coin.transform.position = newPosition;
 
             PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
             if (coinScriptInstance != null)
             {
-                coinScriptInstance.playerPickupAble = true;
-                coinScriptInstance.denizensPickupAble = true;
-                coinScriptInstance.floating = false;
-                InitializeCoinThrow(coin, direction);
-            }
-
-            yield return new WaitForSeconds(0.3f);
-        }
-    }
-
-    private IEnumerator DropByPlayerCoroutine(Vector2 position, Vector2 direction, int amount)
-    {
-        for (int i = 0; i < amount; i++)
-        {
-            Vector2 newPosition = new Vector2(position.x, position.y + yOffset);
-            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
-            if (coin != null) coin.transform.position = newPosition;
-
-            PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
-            if (coinScriptInstance != null)
-            {
-                coinScriptInstance.playerPickupAble = false;
-                coinScriptInstance.denizensPickupAble = true;
-                coinScriptInstance.floating = false;
-                coinScriptInstance.CallFunctionCoolDown("Player");
-                InitializeCoinThrow(coin, direction);
-            }
-
-            yield return new WaitForSeconds(0.3f);
-        }
-    }
-
-    private IEnumerator DropByDenizenCoroutine(Vector2 position, Vector2 direction, int amount, float denizenPickupCooldown = -1f)
-    {
-        for (int i = 0; i < amount; i++)
-        {
-            Vector2 newPosition = new Vector2(position.x, position.y);
-            GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
-            if (coin != null) coin.transform.position = newPosition;
-
-            PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
-            if (coinScriptInstance != null)
-            {
-                coinScriptInstance.playerPickupAble = true;
-                coinScriptInstance.denizensPickupAble = false;
-                coinScriptInstance.floating = false;
-                if (denizenPickupCooldown >= 0f)
-                    coinScriptInstance.CallFunctionCoolDown("Denizens", denizenPickupCooldown);
-                else
-                    coinScriptInstance.CallFunctionCoolDown("Denizens");
-                InitializeCoinThrow(coin, direction);
+                configureAction?.Invoke(coinScriptInstance);
+                ThrowCoin(coin, direction);
             }
 
             yield return new WaitForSeconds(0.3f);
@@ -176,7 +145,8 @@ public class Spawner : MonoBehaviour
     /// </summary>
     public GameObject DropByTownCenter(Vector2 position, Vector2 direction)
     {
-        GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, EntitySaveManager.Instance.coinContainer.transform);
+        Transform parentTransform = EntitySaveManager.Instance != null && EntitySaveManager.Instance.coinContainer != null ? EntitySaveManager.Instance.coinContainer.transform : null;
+        GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, parentTransform);
         if (coin != null) coin.transform.position = position;
 
         PhysicalItem coinScriptInstance = coin.GetComponent<PhysicalItem>();
@@ -186,7 +156,7 @@ public class Spawner : MonoBehaviour
             coinScriptInstance.denizensPickupAble = false;
             coinScriptInstance.floating = false;
             coinScriptInstance.CallFunctionCoolDown("Denizens");
-            InitializeCoinThrow(coin, direction);
+            ThrowCoin(coin, direction);
         }
 
         return coin;
@@ -265,7 +235,7 @@ public class Spawner : MonoBehaviour
         }
 
         Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
-        Vector2 spawnPos = new Vector2(position.x, position.y + 1.5f);
+        Vector2 spawnPos = new Vector2(position.x, position.y + itemDropYOffset);
 
         Transform container = EntitySaveManager.Instance.otherContainer != null
             ? EntitySaveManager.Instance.otherContainer.transform

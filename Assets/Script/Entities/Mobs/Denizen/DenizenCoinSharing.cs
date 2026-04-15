@@ -55,8 +55,7 @@ namespace Script.Game.Mobs.Subjects
             {
                 // Dùng pool của Spawner để tránh memory allocation liên tục
                 Vector2 dropDirection = UnityEngine.Random.insideUnitCircle.normalized;
-                Vector2 spawnPosition = new Vector2(transform.position.x, transform.position.y + 2f);
-                Spawner.Instance.DropByDenizen(spawnPosition, 1, dropDirection);
+                Spawner.Instance.DropByDenizen(transform.position, 1, dropDirection);
             }
         }
     }

@@ -25,9 +25,9 @@ namespace Script.Manager.GamePlayManager
             // Đăng ký ngay khi Setup() được gọi để tránh race condition với Start()
             if (_timeProvider != null && !_isSubscribedToTime)
             {
-                _timeProvider.SubscribeToHourlyEvent(6, CheckAndSpawnPortals);
+                _timeProvider.SubscribeToHourlyEvent(6, SpawnAvailablePortal);
                 _isSubscribedToTime = true;
-                Debug.Log("[EnemyPortalManager] Đã đăng ký CheckAndSpawnPortals vào giờ 6:00 AM.");
+                Debug.Log("[EnemyPortalManager] Đã đăng ký SpawnAvailablePortal vào giờ 6:00 AM.");
             }
             else if (_timeProvider == null)
             {
@@ -64,7 +64,7 @@ namespace Script.Manager.GamePlayManager
                 if (tp != null)
                 {
                     _timeProvider = tp;
-                    _timeProvider.SubscribeToHourlyEvent(6, CheckAndSpawnPortals);
+                    _timeProvider.SubscribeToHourlyEvent(6, SpawnAvailablePortal);
                     _isSubscribedToTime = true;
                     Debug.LogWarning("[EnemyPortalManager] Start() fallback: auto-found timeProvider và đăng ký ngưỡng 6:00 AM.");
                 }
@@ -75,17 +75,7 @@ namespace Script.Manager.GamePlayManager
             }
         }
 
-        private void CheckAndSpawnPortals()
-        {
-            // Nếu chưa có TownCenter hoặc TownCenter tier = 0 thì không sinh cổng
-            if (Utility.GetTownCenterTier() == 0)
-            {
-                Debug.Log("[EnemyPortalManager] Chưa có TownCenter hoặc Tier = 0, hủy sinh cổng hôm nay.");
-                return;
-            }
-
-            SpawnAvailablePortal();
-        }
+      
 
         [ContextMenu("Test Spawn Random Portal")]
         public void TestSpawnRandomPortal()
@@ -231,7 +221,7 @@ namespace Script.Manager.GamePlayManager
         {
             if (_timeProvider != null && _isSubscribedToTime)
             {
-                _timeProvider.UnsubscribeFromHourlyEvent(6, CheckAndSpawnPortals);
+                _timeProvider.UnsubscribeFromHourlyEvent(6, SpawnAvailablePortal);
             }
         }
     }

@@ -63,10 +63,10 @@ namespace Script.Manager.GamePlayManager
                 return;
             }
 
-            // Nếu chưa có TownCenter hoặc TownCenter tier = 0 thì không sinh wave
-            if (Utility.GetTownCenterTier() == 0)
+            // Nếu chưa có TownCenter hoặc TownCenter tier < 1 thì không sinh wave
+            if (Script.Utility.GetTownCenterTier() < 1)
             {
-                Debug.Log("[EnemyWaveManager] Chưa có TownCenter hoặc Tier = 0, hủy sinh wave đêm nay.");
+                Debug.Log("[EnemyWaveManager] Chưa có TownCenter hoặc Tier < 1, hủy sinh wave đêm nay.");
                 return;
             }
 

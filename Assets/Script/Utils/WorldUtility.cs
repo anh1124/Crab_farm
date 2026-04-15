@@ -129,7 +129,7 @@ namespace Script.Utils
             float townCenterZ = townCenterPos.z;
 
             GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
-            
+
             // Tìm bức tường xa nhất theo hướng được chọn
             float farthestWallX = townCenterX;
             bool wallFound = false;
@@ -155,11 +155,16 @@ namespace Script.Utils
                 }
             }
 
-            // Nếu không tìm thấy tường nào ở hướng đó, dùng TownCenter làm mốc + fallback offset
+            // Nếu không tìm thấy tường nào ở hướng đó, dùng điểm xa nhất của plaza làm mốc
             float referenceX = farthestWallX;
             if (!wallFound)
             {
-                referenceX = isRight ? (townCenterX + noWallFallbackDistance) : (townCenterX - noWallFallbackDistance);
+                // Lấy plaza distance từ TownCenterBehavior
+                float plazaDistance = 10f; // default
+                var tcBehavior = BM.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+                if (tcBehavior != null) plazaDistance = tcBehavior.plazaDistance;
+
+                referenceX = isRight ? (townCenterX + plazaDistance) : (townCenterX - plazaDistance);
             }
 
             // Tính toán khoảng min, max thực tế dựa trên hướng
@@ -193,26 +198,33 @@ namespace Script.Utils
             if (BM == null || BM.currentTownCenter == null) return KingdomSide.None;
 
             float townCenterX = BM.currentTownCenter.transform.position.x;
-            
+
             // Tìm bức tường xa nhất về trái và phải
             GameObject[] walls = GameObject.FindGameObjectsWithTag("Wall");
             float farthestLeft = townCenterX;
             float farthestRight = townCenterX;
-            
+
             foreach (var wall in walls)
             {
                 float wx = wall.transform.position.x;
                 if (wx < farthestLeft) farthestLeft = wx;
                 if (wx > farthestRight) farthestRight = wx;
             }
-            
-            // Nếu không có tường, coi bãi săn bắt đầu từ Plaza + offset
-            if (farthestLeft == townCenterX) farthestLeft -= 15f;
-            if (farthestRight == townCenterX) farthestRight += 15f;
-            
+
+            // Nếu không có tường, coi bãi săn bắt đầu từ điểm xa nhất của plaza
+            if (farthestLeft == townCenterX || farthestRight == townCenterX)
+            {
+                float plazaDistance = 10f; // default
+                var tcBehavior = BM.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+                if (tcBehavior != null) plazaDistance = tcBehavior.plazaDistance;
+
+                if (farthestLeft == townCenterX) farthestLeft -= plazaDistance;
+                if (farthestRight == townCenterX) farthestRight += plazaDistance;
+            }
+
             float distToLeft = Mathf.Abs(position.x - farthestLeft);
             float distToRight = Mathf.Abs(position.x - farthestRight);
-            
+
             return distToLeft < distToRight ? KingdomSide.Left : KingdomSide.Right;
         }
 

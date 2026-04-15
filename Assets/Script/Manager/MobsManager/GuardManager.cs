@@ -124,9 +124,18 @@ namespace Script.Game.Mobs.MobsManager
             GameObject wall = isLeft ? Wall?.currentLeftWall : Wall?.currentRightWall;
             if (wall != null) return wall.transform.position;
 
-            // Fallback to TownCenter if no wall found
-            if (BM != null && BM.currentTownCenter != null) 
-                return BM.currentTownCenter.transform.position;
+            // Fallback to farthest point of plaza if no wall found
+            if (BM != null && BM.currentTownCenter != null)
+            {
+                var tc = BM.currentTownCenter.transform.position;
+                var tcBehavior = BM.currentTownCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+                float plazaDistance = 10f; // default
+                if (tcBehavior != null) plazaDistance = tcBehavior.plazaDistance;
+
+                // Bắt đầu từ điểm xa nhất của plaza
+                float plazaEdgeX = isLeft ? (tc.x - plazaDistance) : (tc.x + plazaDistance);
+                return new Vector3(plazaEdgeX, tc.y, tc.z);
+            }
 
             return null;
         }

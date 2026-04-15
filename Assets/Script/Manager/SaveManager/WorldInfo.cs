@@ -21,7 +21,7 @@ namespace Script.Save_Controller
         public bool TechAdhesive;     // make wall better
 
         public WorldInfo(string name, string creationDate, int seed,
-            int gameHour = 0, int gameMinute = 0, int gameDay = 1,
+            int gameHour = 7, int gameMinute = 0, int gameDay = 1,
             int gameMonth = 1, int gameYear = 1,
             bool techFireArrow = false, bool techPenetrating = false, 
             bool techForge = false, bool techAdhesive = false,

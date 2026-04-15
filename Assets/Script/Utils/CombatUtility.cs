@@ -177,10 +177,8 @@ namespace Script.Utils
             }
         }
 
-        /// <summary>
         /// Gỡ tất cả ArrowController khỏi parent (dùng khi Entity chết để mũi tên không bị destroy cùng).
         /// Mũi tên sau khi gỡ sẽ tự phát hiện target đã biến mất và quay về pool.
-        /// </summary>
         public static void UnparentAllArrows(Transform parent)
         {
             if (parent == null) return;

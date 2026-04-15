@@ -28,21 +28,37 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             var archerJob = ctx.ArcherJob;
             if (archerJob == null) return;
 
-            // Đêm xuống → phòng thủ
+            // 1. Kiểm tra thời gian (Đêm xuống -> Về căn cứ)
+            if (HandleTimeTransition(ctx, archerJob)) return;
+
+            // 2. Kiểm tra mục tiêu chiến đấu
+            if (HandleCombatTransitions(ctx, archerJob)) return;
+
+            // 3. Quét tiền thưởng (Loot)
+            if (HandleLootCollection(ctx, archerJob)) return;
+
+            // 4. Di chuyển săn bắn ngẫu nhiên
+            HandleRandomHunting(ctx, archerJob);
+        }
+
+        private bool HandleTimeTransition(DenizenContext ctx, ArcherJob archerJob)
+        {
             if (ctx.TimeManager != null && !ctx.TimeManager.IsDaytime)
             {
                 archerJob.ChangeState(archerJob.ReturnToBaseState);
-                return;
+                return true;
             }
+            return false;
+        }
 
-            // Phát hiện mục tiêu
+        private bool HandleCombatTransitions(DenizenContext ctx, ArcherJob archerJob)
+        {
             if (ctx.Status.currentTarget != null)
             {
-                // Chỉ chuẩn bị tấn công nếu Skill đã hồi chiêu xong
                 if (ctx.SkillManager != null && ctx.SkillManager.IsReady(0))
                 {
-                    // Animal và EnemyPortal nằm cùng cấp -> săn nã tự do
-                    bool isHuntingTarget = ctx.Status.currentTarget.CompareTag(GameTags.Animal) || ctx.Status.currentTarget.CompareTag(GameTags.EnemyPortal);
+                    bool isHuntingTarget = ctx.Status.currentTarget.CompareTag(GameTags.Animal) || 
+                                         ctx.Status.currentTarget.CompareTag(GameTags.EnemyPortal);
                     
                     if (isHuntingTarget)
                     {
@@ -50,36 +66,77 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                     }
                     else
                     {
-                        // Đích thị là Enemy đang tiến quân -> phải kiểm tra kỷ luật vị trí
                         if (archerJob.CanAttackFromHere())
                             archerJob.ChangeState(archerJob.AttackState);
                         else
-                            archerJob.ChangeState(archerJob.ReturnToBaseState); // Về nơi an toàn trước
+                            archerJob.ChangeState(archerJob.ReturnToBaseState);
                     }
-                    return;
+                    return true;
                 }
             }
+            return false;
+        }
 
-            // Đi săn lang lang trong vùng bãi săn được định nghĩa trong GuardManager
+        private bool HandleLootCollection(DenizenContext ctx, ArcherJob archerJob)
+        {
+            if (ctx.Status != null && !ctx.Status.IsFull)
+            {
+                var detectedObjects = ctx.CircleDetect?.GetDetectedObjects();
+                if (detectedObjects != null)
+                {
+                    GameObject nearestCoin = null;
+                    float minDist = float.MaxValue;
+
+                    foreach (var obj in detectedObjects)
+                    {
+                        if (obj == null || !obj.CompareTag(GameTags.Coin)) continue;
+
+                        var coinScript = obj.GetComponent<Script.Game.Item.Coin.PhysicalItem>();
+                        if (coinScript != null && coinScript.droppedByAnimal && 
+                            coinScript.denizensPickupAble && coinScript.IsAvailable())
+                        {
+                            float dist = Vector3.Distance(ctx.Transform.position, obj.transform.position);
+                            if (dist < minDist)
+                            {
+                                minDist = dist;
+                                nearestCoin = obj;
+                            }
+                        }
+                    }
+
+                    if (nearestCoin != null)
+                    {
+                        _huntingTarget = nearestCoin.transform.position;
+                        _hasTarget = true;
+                        archerJob.SetMoveTarget(_huntingTarget);
+                        
+                        if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
+                            ctx.Animator.Play("archerMove");
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private void HandleRandomHunting(DenizenContext ctx, ArcherJob archerJob)
+        {
             if (!_hasTarget && Time.time >= _nextReevaluate)
             {
-                bool isLeft = !ctx.Status.isLeftFlank; // Hướng bãi săn ngược với cánh đứng 
                 if (ctx.GuardManager != null)
                 {
                     var bounds = WorldUtility.GetHuntingBounds(ctx.GuardManager, ctx.Status.isLeftFlank);
                     float randomX = Random.Range(bounds.start, bounds.end);
                     _huntingTarget = new Vector3(randomX, ctx.Transform.position.y, 0f);
-                    _hasTarget = true;
-                    archerJob.SetMoveTarget(_huntingTarget);
                 }
                 else
                 {
-                    // Fallback nếu không có GuardManager
                     float randomX = Script.Utility.GetRandomHuntingPos(); 
                     _huntingTarget = new Vector3(randomX, ctx.Transform.position.y, 0f);
-                    _hasTarget = true;
-                    archerJob.SetMoveTarget(_huntingTarget);
                 }
+                
+                _hasTarget = true;
+                archerJob.SetMoveTarget(_huntingTarget);
                 
                 if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
                     ctx.Animator.Play("archerMove");

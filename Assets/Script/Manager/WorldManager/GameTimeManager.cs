@@ -149,6 +149,9 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
         {
             yield return null; // Tick mỗi frame
             
+            // [ANTI-CHEAT] Nếu chưa có TownCenter hoặc Tier 0 -> đóng băng thời gian
+            if (Script.Utility.GetTownCenterTier() < 1) continue;
+
             // Cập nhật lại _secondsPerMinute mỗi frame để hệ số thay đổi có hiệu lực ngay
             RecalculateSecondsPerMinute();
 

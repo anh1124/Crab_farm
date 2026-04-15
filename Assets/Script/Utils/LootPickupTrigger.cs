@@ -2,122 +2,200 @@ using UnityEngine;
 using Script.Data_Model;
 using Script.Data_Model.Interfaces;
 using Script.Game.Enemy;
-using Script.Game.Item.Coin; // For PhysicalItem
-using Script.Game.Player; // Sửa lỗi thiếu namespace PlayerBehavior
+using Script.Game.Item.Coin;
+using Script.Game.Player;
 
 namespace Script.Utils
 {
     public class LootPickupTrigger : MonoBehaviour
     {
-        [Header("owner có thể nhặt loại item nào")]
+        #region Inspector Fields
+
+        [Header("Loại Item Có Thể Nhặt")]
         public bool canPickupCoin = true;
         public bool canPickupTool = true;
+
+        [Header("Chế Độ Tự Động")]
+        [Tooltip("Bật để tự động nhặt item khi chạm, bỏ qua IItemHandle (chỉ cần CheckItemRule pass).")]
+        public bool autoPickupWithoutReceiver = false;
+
+        [Header("Debug")]
         public bool isDebug = false;
 
-        private MonoBehaviour _ownerNpc;
-        private IItemHandle _itemReceiver;
+        #endregion
+
+        #region Private Fields
+
+        private MonoBehaviour _ownerNpc;         // Đối tượng sở hữu trigger (thường là NPC/Player)
+        private IItemHandle _itemReceiver;      // Bộ não xử lý item (nếu có)
         private bool _isPlayer;
         private bool _isEnemy;
-        private PlayerBehavior _playerBehavior; // Cache PlayerBehavior if it's the player
+        private PlayerBehavior _playerBehavior; // Cache riêng cho Player để kiểm tra túi đầy
         private ICoinPool _coinPool;
+
+        #endregion
+
+        #region Initialization
 
         public void Setup(ICoinPool coinPool)
         {
             _coinPool = coinPool;
         }
+
         private void Awake()
         {
-            // Tự động lấy script có chức năng xử lý item trong gameobject này hoặc parent cha
+            CacheReceiverAndOwner();
+            CacheFactionFlags();
+        }
+
+        /// <summary>
+        /// Tìm IItemHandle trên GameObject hoặc parent, gán _ownerNpc và _itemReceiver.
+        /// </summary>
+        private void CacheReceiverAndOwner()
+        {
             _itemReceiver = GetComponentInParent<IItemHandle>();
-            if (isDebug) 
-                Debug.Log($"[LootPickup] Awake on {gameObject.name}. Found receiver: {(_itemReceiver != null ? (_itemReceiver as MonoBehaviour)?.name : "NULL")}");
-            
+
+            if (isDebug)
+                Debug.Log($"[LootPickup] Awake on {gameObject.name}. Receiver: {(_itemReceiver as MonoBehaviour)?.name ?? "NULL"}");
+
             if (_itemReceiver != null)
             {
                 _ownerNpc = _itemReceiver as MonoBehaviour;
-                
-                // Cache trạng thái phe phái để dùng trong CheckItemRule không tốn CPU
-                _isPlayer = _ownerNpc.CompareTag(Script.Utils.GameTags.Player) || CompareTag(Script.Utils.GameTags.Player);
-                _isEnemy = _ownerNpc.CompareTag(Script.Utils.GameTags.Enemy) || CompareTag(Script.Utils.GameTags.Enemy);
-                
-                if (_isPlayer)
-                {
-                    _playerBehavior = _ownerNpc.GetComponent<PlayerBehavior>();
-                }
+            }
+            // Nếu không có receiver, _ownerNpc giữ null -> sẽ không thể hỏi ý kiến, chỉ dùng auto mode.
+        }
+
+        /// <summary>
+        /// Xác định phe (Player/Enemy/Denizen) dựa trên tag của _ownerNpc.
+        /// </summary>
+        private void CacheFactionFlags()
+        {
+            if (_ownerNpc == null) return;
+
+            _isPlayer = _ownerNpc.CompareTag(GameTags.Player);
+            _isEnemy = _ownerNpc.CompareTag(GameTags.Enemy);
+
+            if (_isPlayer)
+            {
+                _playerBehavior = _ownerNpc.GetComponent<PlayerBehavior>();
             }
         }
 
+        #endregion
+
+        #region Trigger Handling
+
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (_ownerNpc == null || _itemReceiver == null)
-            {
-                if (isDebug)
-                    Debug.LogWarning($"[LootPickup] {gameObject.name}: ownerNpc or itemReceiver is NULL — Awake may not have found IItemHandle.");
-                return;
-            }
-            
             PhysicalItem drop = other.GetComponent<PhysicalItem>();
             if (drop == null) return;
 
             if (isDebug)
-                Debug.Log($"[LootPickup] {_ownerNpc.name} touched item: {drop.name}, type={drop.itemType}, pickedBy={drop.pickedBy}, denizensPickupAble={drop.denizensPickupAble}");
+                Debug.Log($"[LootPickup] {GetOwnerName()} touched {drop.name}");
 
-            // 1. Kiểm tra trạng thái item
-            bool rulePass = CheckItemRule(drop);
-            if (isDebug)
-                Debug.Log($"[LootPickup] CheckItemRule = {rulePass}, isPlayer={_isPlayer}, isEnemy={_isEnemy}");
-            
-            if (!rulePass) return;
+            // 1. Kiểm tra điều kiện cơ bản từ item
+            if (!CheckItemRule(drop)) return;
 
-            // Tối ưu cực mạnh cho Player: Nếu full túi thì skip gọi HandleItem luôn
-            if (_isPlayer && _playerBehavior != null)
+            // 2. Kiểm tra đặc biệt cho Player (full coin)
+            if (IsPlayerFullOfCoin(drop)) return;
+
+            // 3. Quyết định có nhặt hay không
+            bool canPick = DecidePickup(drop.gameObject);
+            if (!canPick) return;
+
+            // 4. Thực hiện nhặt
+            ExecutePickup(drop, other.gameObject);
+        }
+
+        /// <summary>
+        /// Kiểm tra nếu là Player và đã đầy Coin thì bỏ qua.
+        /// </summary>
+        private bool IsPlayerFullOfCoin(PhysicalItem drop)
+        {
+            if (!_isPlayer || _playerBehavior == null) return false;
+            if (drop.itemType != ItemType.Coin) return false;
+
+            return _playerBehavior.Coin >= _playerBehavior.MaxCoins;
+        }
+
+        /// <summary>
+        /// Quyết định nhặt dựa trên chế độ auto hoặc hỏi IItemHandle.
+        /// </summary>
+        private bool DecidePickup(GameObject itemObject)
+        {
+            if (autoPickupWithoutReceiver)
             {
-                if (drop.itemType == ItemType.Coin && _playerBehavior.Coin >= _playerBehavior.MaxCoins)
-                    return;
+                return true; // Luôn nhặt nếu rule cho phép
             }
 
-            // 2. Trao quyền Quyết Định cho Não bộ NPC
-            bool canPick = _itemReceiver.HandleItem(other.gameObject);
-            if (isDebug)
-                Debug.Log($"[LootPickup] {_ownerNpc.name} HandleItem returned: {canPick}");
-
-            // 3. Nếu đồng ý nhận: đánh dấu & hủy vật phẩm
-            if (canPick)
+            // Cần có IItemHandle để hỏi
+            if (_itemReceiver == null)
             {
-                drop.pickedBy = _ownerNpc.gameObject;
-                drop.StopAllCoroutines();
-                
-                // Vô hiệu hóa ngay lập tức để tránh double-trigger
-                other.gameObject.SetActive(false);
+                if (isDebug)
+                    Debug.LogWarning($"[LootPickup] {gameObject.name}: Không có IItemHandle mà autoPickupWithoutReceiver = false -> không thể nhặt.");
+                return false;
+            }
 
-                if (drop.itemType == ItemType.Coin && _coinPool != null)
-                {
-                    _coinPool.ReturnCoin(other.gameObject);
-                }
-                else
-                {
-                    Destroy(other.gameObject, 0.1f);
-                }
+            bool result = _itemReceiver.HandleItem(itemObject);
+            if (isDebug)
+                Debug.Log($"[LootPickup] {GetOwnerName()} HandleItem returned: {result}");
+
+            return result;
+        }
+
+        /// <summary>
+        /// Đánh dấu item đã được nhặt và hủy nó (qua Pool hoặc Destroy).
+        /// </summary>
+        private void ExecutePickup(PhysicalItem drop, GameObject itemObject)
+        {
+            // Đánh dấu chủ sở hữu (nếu có _ownerNpc, ngược lại lấy gameObject của trigger)
+            drop.pickedBy = _ownerNpc != null ? _ownerNpc.gameObject : gameObject;
+            drop.StopAllCoroutines();
+            itemObject.SetActive(false);
+
+            if (drop.itemType == ItemType.Coin && _coinPool != null)
+            {
+                _coinPool.ReturnCoin(itemObject);
+            }
+            else
+            {
+                Destroy(itemObject, 0.1f);
             }
         }
-        
+
+        private string GetOwnerName()
+        {
+            return _ownerNpc != null ? _ownerNpc.name : gameObject.name;
+        }
+
+        #endregion
+
+        #region Rule Checking
+
+        /// <summary>
+        /// Kiểm tra các quy tắc cơ bản: ai được nhặt, loại item, trạng thái đặc biệt.
+        /// </summary>
         private bool CheckItemRule(PhysicalItem drop)
         {
-            // Xác thực xem có ai đã đặt trước item này trong pickerby chưa
+            // Đã có chủ nhặt trước
             if (drop.pickedBy != null) return false;
 
-            // Kiểm tra thể loại và Cho phép
+            // Loại item có được phép không
             if (drop.itemType == ItemType.Coin && !canPickupCoin) return false;
             if (drop.itemType != ItemType.Coin && !canPickupTool) return false;
 
-            // Coin đang bay tới slot CoinUser: floating=true + chưa cho nhặt — không coi là loot rơi (collider cũng tắt lúc bay).
-            if (drop.itemType == ItemType.Coin && drop.floating && !drop.playerPickupAble && !drop.denizensPickupAble) return false;
+            // Coin đang bay (floating) và chưa cho phép nhặt
+            if (drop.itemType == ItemType.Coin && drop.floating && !drop.playerPickupAble && !drop.denizensPickupAble)
+                return false;
 
+            // Quyền nhặt theo phe
             if (_isPlayer && !drop.playerPickupAble) return false;
             if (_isEnemy && !drop.enemyPickupAble) return false;
             if (!_isPlayer && !_isEnemy && !drop.denizensPickupAble) return false;
 
             return true;
         }
+
+        #endregion
     }
 }
