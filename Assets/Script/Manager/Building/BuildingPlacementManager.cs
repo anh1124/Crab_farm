@@ -537,19 +537,30 @@ namespace Script.Manager.Building
 
             if (overallValid && _saveManager != null)
             {
-                // Just store the scale, we'll set rotation to identity
-                Vector3 previewScale = previewInstance.transform.localScale;
-
                 GameObject newStructure = _saveManager.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
-                    // Force rotation to identity (no rotation) and apply only the scale from preview
+                    // Áp dụng cùng logic lật như preview
+                    Vector3 previewScale = previewInstance.transform.localScale;
+                    bool shouldFlip = previewScale.x < 0;
+
                     newStructure.transform.rotation = Quaternion.identity;
                     newStructure.transform.localScale = previewScale;
-                    
+
+                    // Đảo ngược lại scale của tất cả children để chúng giữ nguyên hướng
+                    if (shouldFlip)
+                    {
+                        foreach (Transform child in newStructure.transform)
+                        {
+                            Vector3 childScale = child.localScale;
+                            childScale.x *= -1f;
+                            child.localScale = childScale;
+                        }
+                    }
+
                     // Add debug logging
                     Debug.Log($"New structure created with rotation: {newStructure.transform.rotation.eulerAngles}, scale: {newStructure.transform.localScale}");
-            
+
                     CleanupPreview();
                     
                     // Notifying UI and logic - ideally these would also be injected

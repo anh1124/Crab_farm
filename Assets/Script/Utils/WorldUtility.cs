@@ -27,7 +27,9 @@ namespace Script.Utils
 
             Vector3 directionFromTownCenter = referencePos - townCenterPos;
 
-            if (directionFromTownCenter.x < 0)
+            bool shouldFlip = directionFromTownCenter.x < 0;
+
+            if (shouldFlip)
             {
                 scale.x = -1f * Mathf.Abs(scale.x);
             }
@@ -38,11 +40,23 @@ namespace Script.Utils
 
             if (Utility.isDebug)
             {
-                Debug.Log($"Utility.RotateObjectTowardsTownCenter: Object {obj.name} at pos {referencePos}, town center at {townCenterPos}, direction {directionFromTownCenter}, scale.x={scale.x}");
+                Debug.Log($"Utility.RotateObjectTowardsTownCenter: Object {obj.name} at pos {referencePos}, town center at {townCenterPos}, direction {directionFromTownCenter}, shouldFlip={shouldFlip}, scale.x={scale.x}");
             }
-            
+
+            // Lật root
             obj.transform.localScale = scale;
             obj.transform.rotation = Quaternion.identity;
+
+            // Đảo ngược lại scale của tất cả children để chúng giữ nguyên hướng
+            if (shouldFlip)
+            {
+                foreach (Transform child in obj.transform)
+                {
+                    Vector3 childScale = child.localScale;
+                    childScale.x *= -1f;
+                    child.localScale = childScale;
+                }
+            }
         }
 
         public static float GetRandomPlazaPos()
