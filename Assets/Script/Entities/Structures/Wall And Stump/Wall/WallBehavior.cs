@@ -18,6 +18,7 @@ namespace Script.Game.Structures.Wall_And_Stump
 {
     //wall tier 0 không nhận dame
     // Chứa logic behavior của Wall, sử dụng WallStatus để quản lý state
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     public class WallBehavior : MonoBehaviour, ISaveable, IDamageable, ICoinUserOwner
     {
         // wall có 2 trạng thái là wall và stump

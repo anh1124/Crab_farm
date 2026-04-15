@@ -14,6 +14,7 @@ using System;
 namespace Script.Entities.Structures.SummondPortal
 {
     [RequireComponent(typeof(EnemyPortalStatus))]
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     public class EnemyPortalBehavior : MonoBehaviour, IDamageable, ISaveable
     {
         private EnemyPortalStatus status;

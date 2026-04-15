@@ -28,7 +28,8 @@ namespace Script.Game.Mobs.Denizen.Core
     [RequireComponent(typeof(SpriteRenderer))]
     [RequireComponent(typeof(DenizenContext))]
     [RequireComponent(typeof(Script.Game.PlayerCharacter.Skills.SkillManager))]
-    public class DenizenRoleController : MonoBehaviour, ISaveable, IDamageable
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
+    public class DenizenRoleController : MonoBehaviour, ISaveable, IDamageable, Script.Interfaces.IHealthReactive
     {
         [Header("Role Configuration")]
         public NPCRole CurrentRole = NPCRole.Vagrant;//role mặc định tránh lỗi khởi tạo
@@ -75,9 +76,18 @@ namespace Script.Game.Mobs.Denizen.Core
 
         public DenizenJob JobBrain => _currentJob;
 
+        public event System.Action<GameObject> OnDieEvent;
+        public event System.Action<bool> OnIgnoreReturnToPortalChanged;
+
+        // IHealthReactive events
+        public event System.Action<float, float> OnHealthChanged;
+        public event System.Action<float> OnTakeDamageEvent;
+
         public void ReceiveDamage(float damage, GameObject instigator)
         {
             if (damage <= 0f) return;
+
+            OnTakeDamageEvent?.Invoke(damage);
 
             // Root nhận damage, sau đó route về job đang active để xử lý hành vi cụ thể theo role.
             var activeJob = _currentJob != null && _currentJob.enabled ? _currentJob : _context?.CurrentJob;

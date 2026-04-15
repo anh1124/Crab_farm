@@ -11,6 +11,7 @@ using UnityEngine;
 
 namespace Script.Game.Other.Nature
 {
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     public class RabbitBehavior : MonoBehaviour, ISaveable, INPCBehavior, Script.Interfaces.IDamageable, Script.Interfaces.IDie
     {
         [Serializable]

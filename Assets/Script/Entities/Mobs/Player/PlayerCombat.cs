@@ -12,6 +12,7 @@ namespace Script.Game.Player
     /// </summary>
     [RequireComponent(typeof(PlayerStatus))]
     [RequireComponent(typeof(PlayerBehavior))]
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     public class PlayerCombat : MonoBehaviour, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop
     {
         private PlayerStatus status;

@@ -7,6 +7,7 @@ using static Script.Game.Enemy.TotalEnemyList;
 
 namespace Script.Game.Enemy
 {
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     public class EnemyStatus : MonoBehaviour, IHealth, IHealthReactive, IDie, ICoinable, IDamageable, ISaveable
     {
         [Header("Debug Stats")]

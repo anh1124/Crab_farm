@@ -39,7 +39,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 float newX = Script.Utility.GetRandomPlazaPos();
                 _townCenterPos = new Vector3(newX, ctx.Transform.position.y, 0f);
-                ctx.Movement?.SetTarget(_townCenterPos);
+                ctx.Movement?.SetTarget(_townCenterPos, ctx.Status != null ? ctx.Status.runSpeed : -1f);
             }
 
             // Chuyển về Idle khi hết sợ hãi

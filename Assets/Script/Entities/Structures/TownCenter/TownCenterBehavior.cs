@@ -20,6 +20,7 @@ namespace Script.Game.Structures.TownCenter
     [RequireComponent(typeof(TownCenterStatus))]
     [RequireComponent(typeof(CoinUser))]
     [RequireComponent(typeof(TownCenterCoinHandler))]
+    [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     public class TownCenterBehavior : MonoBehaviour, ISaveable, IDamageable, ICoinUserOwner, IPlayerInteractable
     {
         
