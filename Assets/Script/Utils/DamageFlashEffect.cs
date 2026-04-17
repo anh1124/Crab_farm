@@ -1,5 +1,6 @@
 using UnityEngine;
 using Script.Interfaces;
+using Script.Audio;
 
 namespace Script.Utils
 {
@@ -15,6 +16,10 @@ namespace Script.Utils
 
         [Tooltip("Màu flash đỏ sau đó")]
         [SerializeField] private Color flashRedColor = new Color(1f, 0f, 0f, 0.5f);
+
+        [Header("Audio Settings")]
+        [Tooltip("Key âm thanh hit từ SoundRegistry (để trống nếu không muốn phát âm thanh)")]
+        [SerializeField] private string hitSoundKey = "onhitsound";
 
         [Tooltip("Thời gian flash trắng (giây)")]
         [SerializeField] private float flashWhiteDuration = 0.1f;
@@ -88,6 +93,13 @@ namespace Script.Utils
         {
             if (damage <= 0f) return;
             Debug.Log($"[DamageFlashEffect] OnTakeDamage called with damage: {damage} on {gameObject.name}", this);
+
+            // Phát âm thanh hit nếu có key được cấu hình
+            if (!string.IsNullOrEmpty(hitSoundKey) && AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFXByKey(hitSoundKey, transform.position);
+            }
+
             TriggerFlash();
         }
 

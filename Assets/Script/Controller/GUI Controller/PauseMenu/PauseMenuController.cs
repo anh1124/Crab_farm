@@ -233,7 +233,10 @@ namespace Script.GUI_Controller.PauseMenu
 
         public void OpenOption()
         {
-            
+            if (guiCanvasManager != null)
+            {
+                guiCanvasManager.ShowSoundSetting();
+            }
         }
 
         public void SaveAndExit()
