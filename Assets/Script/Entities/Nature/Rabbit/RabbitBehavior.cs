@@ -12,7 +12,7 @@ using UnityEngine;
 namespace Script.Game.Other.Nature
 {
     [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
-    public class RabbitBehavior : MonoBehaviour, ISaveable, INPCBehavior, Script.Interfaces.IDamageable, Script.Interfaces.IDie
+    public class RabbitBehavior : MonoBehaviour, ISaveable, INPCBehavior, Script.Interfaces.IDamageable, Script.Interfaces.IDie, Script.Interfaces.IHealthReactive
     {
         [Serializable]
         public class RabbitSaveData
@@ -28,6 +28,10 @@ namespace Script.Game.Other.Nature
         [Header("Settings")]
         [SerializeField] private int hp = 1;
         [SerializeField] private int speed = 3;
+
+        // IHealthReactive events
+        public event System.Action<float, float> OnHealthChanged;
+        public event System.Action<float> OnTakeDamageEvent;
 
         [Header("Death Settings")]
         [SerializeField] private float destroyDelay = 3f;
@@ -266,6 +270,8 @@ namespace Script.Game.Other.Nature
 #endif
 
             hp -= Mathf.CeilToInt(damage);
+            OnTakeDamageEvent?.Invoke(damage);
+            OnHealthChanged?.Invoke(hp, hp); // Rabbit doesn't have maxHp, use current for both
             if (hp <= 0)
             {
                 Die();

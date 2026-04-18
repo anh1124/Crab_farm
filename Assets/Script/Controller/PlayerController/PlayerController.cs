@@ -4,6 +4,7 @@ using Script.Controller;
 using Script.Game.PlayerCharacter;
 using Script.Game.Item.Coin;
 using Script.Game.PlayerCharacter.Skills;
+using Script.Audio;
 
 
 namespace Script.Controller.PlayerController
@@ -66,6 +67,19 @@ namespace Script.Controller.PlayerController
             playerBehavior = player.GetComponent<PlayerBehavior>();
             SkillManager = player.GetComponent<PlayerSkillManager>();
             isActiveUpdate = true;
+
+            // Tự động gắn PlayerAudioZone nếu chưa có
+            if (player.GetComponent<PlayerAudioZone>() == null)
+            {
+                player.AddComponent<PlayerAudioZone>();
+                Debug.Log("[PlayerController] Đã tự động gắn PlayerAudioZone lên player");
+            }
+
+            // Set player transform cho AudioManager (PlayerAudioZone sẽ làm việc này trong Start)
+            if (Script.Audio.AudioManager.Instance != null)
+            {
+                Script.Audio.AudioManager.Instance.PlayerTransform = player.transform;
+            }
         }
 
         private void Update()

@@ -16,6 +16,13 @@ namespace Script.Audio
     [Tooltip("Số AudioSource tạo sẵn khi khởi động")]
     [SerializeField] private int initialPoolSize = 12;
 
+    [Tooltip("Số AudioSource tối đa (dynamic expansion)")]
+    [SerializeField] private int maxPoolSize = 50;
+
+    [Header("Debug (read-only)")]
+    [SerializeField] private int _availableCount;
+    [SerializeField] private int _inUseCount;
+
     private readonly Queue<AudioSource>  _available = new Queue<AudioSource>();
     private readonly HashSet<AudioSource> _inUse    = new HashSet<AudioSource>();
 
@@ -35,10 +42,17 @@ namespace Script.Audio
 
     /// <summary>
     /// Lấy một AudioSource từ pool, đặt tại worldPosition.
-    /// Pool sẽ tự mở rộng nếu hết nguồn.
+    /// Pool sẽ tự mở rộng nếu hết nguồn (tới maxPoolSize).
     /// </summary>
     public AudioSource Get(Vector3 worldPosition)
     {
+        // Check nếu đã vượt quá maxPoolSize
+        if (_available.Count == 0 && _inUse.Count >= maxPoolSize)
+        {
+            Debug.LogWarning($"[AudioPool] Đã đạt giới hạn maxPoolSize ({maxPoolSize}). Không thể phát thêm âm thanh.");
+            return null;
+        }
+
         AudioSource source = (_available.Count > 0)
             ? _available.Dequeue()
             : CreateSource();
@@ -47,6 +61,10 @@ namespace Script.Audio
         source.transform.position = worldPosition;
 
         _inUse.Add(source);
+        UpdateDebugCount();
+
+        Debug.Log($"[AudioPool] Get: source={source.name}, active={source.gameObject.activeSelf}, parent={source.transform.parent.name}");
+
         return source;
     }
 
@@ -70,6 +88,7 @@ namespace Script.Audio
 
         _inUse.Remove(source);
         _available.Enqueue(source);
+        UpdateDebugCount();
     }
 
     /// <summary>Thu hồi tất cả AudioSource đang dùng về pool (ví dụ: khi chuyển Scene).</summary>
@@ -79,6 +98,16 @@ namespace Script.Audio
         var snapshot = new List<AudioSource>(_inUse);
         foreach (var s in snapshot)
             Return(s);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Debug
+    // ─────────────────────────────────────────────
+
+    private void UpdateDebugCount()
+    {
+        _availableCount = _available.Count;
+        _inUseCount = _inUse.Count;
     }
 
     // ─────────────────────────────────────────────
@@ -92,10 +121,25 @@ namespace Script.Audio
 
         var source = go.AddComponent<AudioSource>();
         source.outputAudioMixerGroup = sfxMixerGroup;
-        // spatialBlend = 0 (2D) - chúng ta tự tính volume theo khoảng cách
-        // để tránh hiện tượng âm thanh lệch phase kỳ lạ trong game 2D
-        source.spatialBlend = 0f;
+        // spatialBlend = 1 (3D) - để Unity tự tính distance attenuation
+        source.spatialBlend = 1f;
         source.playOnAwake  = false;
+
+        // Cấu hình 3D spatial audio với custom curve
+        // Tại maxDistance vẫn còn 30% volume
+        source.rolloffMode = AudioRolloffMode.Custom;
+
+        AnimationCurve rolloffCurve = new AnimationCurve();
+        // Tại 0 distance: volume = 1.0
+        rolloffCurve.AddKey(0f, 1f);
+        // Tại minDistance (2m): volume = 1.0 (full volume trong bán kính min)
+        rolloffCurve.AddKey(2f, 1f);
+        // Tại maxDistance (15m): volume = 0.3 (30% volume ở xa nhất)
+        rolloffCurve.AddKey(15f, 0.3f);
+
+        source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
+        source.minDistance = 2f;
+        source.maxDistance = 15f;
 
         go.SetActive(false);
         _available.Enqueue(source);

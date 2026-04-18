@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -42,18 +43,31 @@ namespace Script.Audio
     [Header("Player - dùng để tính khoảng cách âm thanh")]
     [SerializeField] private Transform playerTransform;
 
+    public Transform PlayerTransform
+    {
+        get => playerTransform;
+        set => playerTransform = value;
+    }
+
+    [Header("Distance Culling")]
+    [Tooltip("Khoảng cách tối đa để phát âm thanh xa player (như Minecraft lazy chunk)")]
+    [SerializeField] private float cullingDistance = 50f;
+
+    public float CullingDistance => cullingDistance;
+
     [Header("Sound Registry")]
     [SerializeField] private SoundRegistry soundRegistry;
 
     public SoundRegistry SoundRegistry => soundRegistry;
+    public AudioPool Pool => _pool;
 
     // ─────────────────────────────────────────────
     //  Private State
     // ─────────────────────────────────────────────
 
-    private AudioPool       _pool;
+    private AudioPool _pool;
     private MusicController _music;
-    private VolumeSettings  _volume;
+    private VolumeSettings _volume;
 
     // ─────────────────────────────────────────────
     //  Unity Lifecycle
@@ -79,6 +93,34 @@ namespace Script.Audio
         _music  = new MusicController(bgmSourceA, bgmSourceB, this);
         _volume = new VolumeSettings(audioMixer);
         _volume.LoadAndApply();
+
+        // Auto-set cullingDistance từ maxDistance lớn nhất trong SoundRegistry
+        AutoSetCullingDistanceFromRegistry();
+    }
+
+    private void AutoSetCullingDistanceFromRegistry()
+    {
+        if (soundRegistry == null) return;
+
+        float maxDistanceFound = 0f;
+
+        // Tìm maxDistance lớn nhất từ tất cả SoundEntry
+        var allKeys = soundRegistry.GetAllKeys();
+        foreach (var key in allKeys)
+        {
+            var entry = soundRegistry.GetEntry(key);
+            if (entry != null && entry.maxDistance > maxDistanceFound)
+            {
+                maxDistanceFound = entry.maxDistance;
+            }
+        }
+
+        // Set cullingDistance = maxDistance lớn nhất
+        if (maxDistanceFound > 0f)
+        {
+            cullingDistance = maxDistanceFound;
+            Debug.Log($"[AudioManager] Auto-set cullingDistance to {cullingDistance}f (max distance from SoundRegistry)");
+        }
     }
 
     private IEnumerator Start()
@@ -137,21 +179,49 @@ namespace Script.Audio
     /// <param name="minDistance">Khoảng cách (trục X) mà âm thanh to tối đa (đơn vị Unity).</param>
     /// <param name="maxDistance">Khoảng cách (trục X) âm thanh hoàn toàn im.</param>
     /// <param name="volumeScale">Nhân thêm âm lượng (0-1).</param>
+    /// <param name="bypassCulling">Bỏ qua distance culling (cho âm thanh quan trọng).</param>
     public void PlaySFXAtPosition(
         AudioClip clip,
         Vector3   worldPosition,
         float     minDistance  = 2f,
         float     maxDistance  = 15f,
-        float     volumeScale  = 1f)
+        float     volumeScale  = 1f,
+        bool      bypassCulling = false)
     {
         if (clip == null) return;
 
-        float volume = CalculateDistanceVolume(worldPosition, minDistance, maxDistance) * volumeScale;
-        if (volume <= 0.001f) return; // Quá xa, không phát tiết kiệm tài nguyên
+        // Check distance TRƯỚC khi xin pool để tối ưu
+        if (playerTransform != null)
+        {
+            float distance = Vector3.Distance(playerTransform.position, worldPosition);
+
+            // Distance culling: dùng max của cullingDistance và maxDistance
+            // Để sound với maxDistance lớn vẫn được phát ngay cả khi xa
+            float effectiveCullingDistance = Mathf.Max(cullingDistance, maxDistance);
+            if (!bypassCulling && distance > effectiveCullingDistance)
+            {
+                return; // Quá xa, không phát
+            }
+
+            // Kiểm tra nếu quá xa maxDistance, không phát để tiết kiệm tài nguyên
+            if (distance > maxDistance) return;
+        }
 
         AudioSource source = _pool.Get(worldPosition);
+        if (source == null) return; // Pool đã hết (đạt maxPoolSize)
+
         source.clip   = clip;
-        source.volume = volume;
+        source.volume = volumeScale;
+        source.minDistance = minDistance;
+        source.maxDistance = maxDistance;
+
+        // Tạo custom rolloff curve: full volume trong min, 30% volume tại max
+        AnimationCurve rolloffCurve = new AnimationCurve();
+        rolloffCurve.AddKey(0f, 1f);
+        rolloffCurve.AddKey(minDistance, 1f);
+        rolloffCurve.AddKey(maxDistance, 0.3f);
+        source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
+
         source.loop   = false;
         source.Play();
 
@@ -203,12 +273,14 @@ namespace Script.Audio
     /// <param name="minDistance">Khoảng cách (trục X) mà âm thanh to tối đa (đơn vị Unity).</param>
     /// <param name="maxDistance">Khoảng cách (trục X) âm thanh hoàn toàn im.</param>
     /// <param name="volumeScale">Nhân thêm âm lượng (0-1).</param>
+    /// <param name="bypassCulling">Bỏ qua distance culling (cho âm thanh quan trọng).</param>
     public void PlaySFXByKey(
         string soundKey,
         Vector3 worldPosition,
         float minDistance = 0f,
         float maxDistance = 0f,
-        float volumeScale = 1f)
+        float volumeScale = 1f,
+        bool bypassCulling = false)
     {
         if (soundRegistry == null)
         {
@@ -227,7 +299,7 @@ namespace Script.Audio
         float actualMinDist = minDistance > 0 ? minDistance : entry.minDistance;
         float actualMaxDist = maxDistance > 0 ? maxDistance : entry.maxDistance;
 
-        PlaySFXAtPosition(entry.clip, worldPosition, actualMinDist, actualMaxDist, volumeScale);
+        PlaySFXAtPosition(entry.clip, worldPosition, actualMinDist, actualMaxDist, volumeScale, bypassCulling);
     }
 
     /// <summary>
@@ -264,6 +336,26 @@ namespace Script.Audio
         float actualMaxDist = maxDistance > 0 ? maxDistance : entry.maxDistance;
 
         return PlaySFXFollowing(entry.clip, target, loop, actualMinDist, actualMaxDist);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Pool API - cho AudioEmitter
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Lấy AudioSource từ pool (dùng bởi AudioEmitter).
+    /// </summary>
+    public AudioSource GetAudioSourceFromPool(Vector3 worldPosition)
+    {
+        return _pool.Get(worldPosition);
+    }
+
+    /// <summary>
+    /// Trả AudioSource về pool (dùng bởi AudioEmitter).
+    /// </summary>
+    public void ReturnAudioSourceToPool(AudioSource source)
+    {
+        _pool.Return(source);
     }
 
     // ─────────────────────────────────────────────

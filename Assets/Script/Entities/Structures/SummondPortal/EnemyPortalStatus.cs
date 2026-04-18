@@ -5,7 +5,7 @@ using Script.Data_Model.Interfaces;
 
 namespace Script.Entities.Structures.SummondPortal
 {
-    public class EnemyPortalStatus : MonoBehaviour, IHealth
+    public class EnemyPortalStatus : MonoBehaviour, IHealth, IHealthReactive
     {
         [Header("Portal States")]
         public bool isReadyToSpawn = false;
@@ -45,12 +45,18 @@ namespace Script.Entities.Structures.SummondPortal
         public Action<float> OnHealed;
         public Action OnDeath;
 
+        // IHealthReactive events
+        public event System.Action<float, float> OnHealthChanged;
+        public event System.Action<float> OnTakeDamageEvent;
+
         // --- IHealth Implementation ---
         public void TakeDamage(float amount)
         {
             if (currentHp <= 0) return;
             currentHp -= amount;
             OnDamaged?.Invoke(amount);
+            OnTakeDamageEvent?.Invoke(amount);
+            OnHealthChanged?.Invoke(currentHp, maxHp);
             if (currentHp <= 0)
             {
                 currentHp = 0;
@@ -62,6 +68,7 @@ namespace Script.Entities.Structures.SummondPortal
         {
             currentHp = Mathf.Min(currentHp + amount, maxHp);
             OnHealed?.Invoke(amount);
+            OnHealthChanged?.Invoke(currentHp, maxHp);
         }
 
         public void Die()

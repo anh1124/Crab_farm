@@ -13,10 +13,14 @@ namespace Script.Game.Player
     [RequireComponent(typeof(PlayerStatus))]
     [RequireComponent(typeof(PlayerBehavior))]
     [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
-    public class PlayerCombat : MonoBehaviour, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop
+    public class PlayerCombat : MonoBehaviour, IHealth, IDie, IDamageable, ICoinShield, IDeathDrop, IHealthReactive
     {
         private PlayerStatus status;
         private PlayerBehavior playerBehavior;
+
+        // IHealthReactive events
+        public event System.Action<float, float> OnHealthChanged;
+        public event System.Action<float> OnTakeDamageEvent;
 
         private void Awake()
         {
@@ -42,6 +46,7 @@ namespace Script.Game.Player
 
         private void HandleHPChanged(float current, float max)
         {
+            OnHealthChanged?.Invoke(current, max);
             if (current <= 0 && !IsDead)
             {
                 Die(null);
@@ -99,6 +104,7 @@ namespace Script.Game.Player
             {
                 playerBehavior.SubtractCoin(1);
                 DropCoin(instigator);
+                OnTakeDamageEvent?.Invoke(damage);
                 return;
             }
 
@@ -106,6 +112,7 @@ namespace Script.Game.Player
             if (HasHp)
             {
                 status.HP.Reduce(damage);
+                OnTakeDamageEvent?.Invoke(damage);
                 if (status.HP.Current <= 0)
                 {
                     Die(instigator);

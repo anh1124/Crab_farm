@@ -2,6 +2,13 @@ using UnityEngine;
 
 namespace Script.Audio
 {
+    public enum AudioChannelType
+    {
+        SFX, // Sound Effects
+        BGM, // Background Music
+        ENV  // Environment
+    }
+
     /// <summary>
     /// Script test đơn giản để test âm thanh từ SoundRegistry.
     /// Gắn vào GameObject bất kỳ, nhập key từ SoundRegistry, nhấn T để test.
@@ -9,6 +16,9 @@ namespace Script.Audio
     public class AudioTest : MonoBehaviour
     {
         [Header("Cài đặt test")]
+        [Tooltip("Chọn channel âm thanh")]
+        [SerializeField] private AudioChannelType channelType = AudioChannelType.SFX;
+
         [Tooltip("Chọn key âm thanh từ SoundRegistry để test")]
         [SerializeField] private int selectedKeyIndex = 0;
 
@@ -22,9 +32,27 @@ namespace Script.Audio
         [Tooltip("Object được tạo ra khi test (sẽ tái sử dụng object này)")]
         public GameObject testObj;
 
+        // AudioEmitter component để quản lý âm thanh
+        private AudioEmitter _audioEmitter;
+
         // Cache min/max distance từ SoundEntry để vẽ debug
         private float _cachedMinDistance;
         private float _cachedMaxDistance;
+
+        private void Awake()
+        {
+            // Populate keys khi runtime
+            if (AudioManager.Instance != null && AudioManager.Instance.SoundRegistry != null)
+            {
+                availableKeys = AudioManager.Instance.SoundRegistry.GetAllKeys();
+
+                // Sync testKey với selectedKeyIndex
+                if (availableKeys != null && selectedKeyIndex >= 0 && selectedKeyIndex < availableKeys.Length)
+                {
+                    testKey = availableKeys[selectedKeyIndex];
+                }
+            }
+        }
 
         private void Update()
         {
@@ -64,9 +92,30 @@ namespace Script.Audio
                 return;
             }
 
+            // Populate keys nếu testKey rỗng hoặc availableKeys rỗng
+            if (string.IsNullOrEmpty(testKey) || availableKeys == null || availableKeys.Length == 0)
+            {
+                availableKeys = AudioManager.Instance.SoundRegistry.GetAllKeys();
+                if (availableKeys != null && availableKeys.Length > 0)
+                {
+                    // Sử dụng key đầu tiên nếu selectedKeyIndex không hợp lệ
+                    if (selectedKeyIndex < 0 || selectedKeyIndex >= availableKeys.Length)
+                    {
+                        selectedKeyIndex = 0;
+                    }
+                    testKey = availableKeys[selectedKeyIndex];
+                    Debug.Log($"[AudioTest] Auto-selected key: {testKey} (index: {selectedKeyIndex})");
+                }
+                else
+                {
+                    Debug.LogError("[AudioTest] SoundRegistry không có keys nào!");
+                    return;
+                }
+            }
+
             if (string.IsNullOrEmpty(testKey))
             {
-                Debug.LogWarning("[AudioTest] testKey đang rỗng! Hãy nhập key từ SoundRegistry.");
+                Debug.LogWarning("[AudioTest] testKey vẫn đang rỗng sau khi populate!");
                 return;
             }
 
@@ -87,11 +136,67 @@ namespace Script.Audio
             {
                 testObj = new GameObject($"[AudioTest_{testKey}]");
                 testObj.transform.position = Vector3.zero;
-                Debug.Log($"[AudioTest] Đã tạo test object tại (0,0,0)");
+                // Thêm AudioEmitter component
+                _audioEmitter = testObj.AddComponent<AudioEmitter>();
+                Debug.Log($"[AudioTest] Đã tạo test object với AudioEmitter tại (0,0,0)");
             }
 
-            Debug.Log($"[AudioTest] Phát âm thanh: {testKey} | Vị trí: {testObj.transform.position} | MinDistance: {_cachedMinDistance}m | MaxDistance: {_cachedMaxDistance}m");
-            AudioManager.Instance.PlaySFXByKey(testKey, testObj.transform.position, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance);
+            // Kiểm tra nếu AudioEmitter chưa có (trường hợp object đã tồn tại từ trước)
+            if (_audioEmitter == null)
+            {
+                _audioEmitter = testObj.GetComponent<AudioEmitter>();
+                if (_audioEmitter == null)
+                {
+                    _audioEmitter = testObj.AddComponent<AudioEmitter>();
+                }
+            }
+
+            // Check range ngay lập tức trước khi phát (bypass poll delay)
+            if (AudioManager.Instance?.PlayerTransform != null)
+            {
+                var playerZone = AudioManager.Instance.PlayerTransform.GetComponent<PlayerAudioZone>();
+                if (playerZone != null)
+                {
+                    playerZone.CheckEmitterImmediate(_audioEmitter);
+                }
+            }
+
+            // Lấy thông tin player và camera
+            Vector3 playerPos = Vector3.zero;
+            if (AudioManager.Instance.PlayerTransform != null)
+            {
+                playerPos = AudioManager.Instance.PlayerTransform.position;
+            }
+
+            // Kiểm tra xem obj có nằm trong camera không
+            bool isInCamera = false;
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null && testObj != null)
+            {
+                Vector3 viewportPoint = mainCamera.WorldToViewportPoint(testObj.transform.position);
+                isInCamera = viewportPoint.x >= 0 && viewportPoint.x <= 1 &&
+                             viewportPoint.y >= 0 && viewportPoint.y <= 1 &&
+                             viewportPoint.z > 0;
+            }
+
+            Debug.Log($"[AudioTest] Phát âm thanh: {testKey} | Channel: {channelType} | Vị trí phát: {testObj.transform.position} | Vị trí Player: {playerPos} | Trong Camera: {(isInCamera ? "Có" : "Không")} | MinDistance: {_cachedMinDistance}m | MaxDistance: {_cachedMaxDistance}m");
+
+            // Phát âm thanh dựa trên channel được chọn
+            // AudioTest chỉ tương tác với AudioEmitter, không gọi AudioManager trực tiếp
+            switch (channelType)
+            {
+                case AudioChannelType.SFX:
+                    _audioEmitter.PlaySound(testKey, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    break;
+                case AudioChannelType.BGM:
+                    // BGM nên dùng AudioManager.PlayBGM trực tiếp, không dùng AudioEmitter
+                    // Nhưng để test, ta dùng AudioEmitter với loop
+                    _audioEmitter.PlaySound(testKey, loop: true, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    break;
+                case AudioChannelType.ENV:
+                    _audioEmitter.PlaySound(testKey, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    break;
+            }
         }
 
         /// <summary>
@@ -122,11 +227,67 @@ namespace Script.Audio
             {
                 testObj = new GameObject($"[AudioTest_{key}]");
                 testObj.transform.position = Vector3.zero;
-                Debug.Log($"[AudioTest] Đã tạo test object tại (0,0,0)");
+                // Thêm AudioEmitter component
+                _audioEmitter = testObj.AddComponent<AudioEmitter>();
+                Debug.Log($"[AudioTest] Đã tạo test object với AudioEmitter tại (0,0,0)");
             }
 
-            Debug.Log($"[AudioTest] Phát âm thanh: {key} | Vị trí: {testObj.transform.position} | MinDistance: {_cachedMinDistance}m | MaxDistance: {_cachedMaxDistance}m");
-            AudioManager.Instance.PlaySFXByKey(key, testObj.transform.position, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance);
+            // Kiểm tra nếu AudioEmitter chưa có (trường hợp object đã tồn tại từ trước)
+            if (_audioEmitter == null)
+            {
+                _audioEmitter = testObj.GetComponent<AudioEmitter>();
+                if (_audioEmitter == null)
+                {
+                    _audioEmitter = testObj.AddComponent<AudioEmitter>();
+                }
+            }
+
+            // Check range ngay lập tức trước khi phát (bypass poll delay)
+            if (AudioManager.Instance?.PlayerTransform != null)
+            {
+                var playerZone = AudioManager.Instance.PlayerTransform.GetComponent<PlayerAudioZone>();
+                if (playerZone != null)
+                {
+                    playerZone.CheckEmitterImmediate(_audioEmitter);
+                }
+            }
+
+            // Lấy thông tin player và camera
+            Vector3 playerPos = Vector3.zero;
+            if (AudioManager.Instance.PlayerTransform != null)
+            {
+                playerPos = AudioManager.Instance.PlayerTransform.position;
+            }
+
+            // Kiểm tra xem obj có nằm trong camera không
+            bool isInCamera = false;
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null && testObj != null)
+            {
+                Vector3 viewportPoint = mainCamera.WorldToViewportPoint(testObj.transform.position);
+                isInCamera = viewportPoint.x >= 0 && viewportPoint.x <= 1 &&
+                             viewportPoint.y >= 0 && viewportPoint.y <= 1 &&
+                             viewportPoint.z > 0;
+            }
+
+            Debug.Log($"[AudioTest] Phát âm thanh: {key} | Channel: {channelType} | Vị trí phát: {testObj.transform.position} | Vị trí Player: {playerPos} | Trong Camera: {(isInCamera ? "Có" : "Không")} | MinDistance: {_cachedMinDistance}m | MaxDistance: {_cachedMaxDistance}m");
+
+            // Phát âm thanh dựa trên channel được chọn
+            // AudioTest chỉ tương tác với AudioEmitter, không gọi AudioManager trực tiếp
+            switch (channelType)
+            {
+                case AudioChannelType.SFX:
+                    _audioEmitter.PlaySound(key, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    break;
+                case AudioChannelType.BGM:
+                    // BGM nên dùng AudioManager.PlayBGM trực tiếp, không dùng AudioEmitter
+                    // Nhưng để test, ta dùng AudioEmitter với loop
+                    _audioEmitter.PlaySound(key, loop: true, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    break;
+                case AudioChannelType.ENV:
+                    _audioEmitter.PlaySound(key, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    break;
+            }
         }
 
         // ------------------------------------------------------------------
