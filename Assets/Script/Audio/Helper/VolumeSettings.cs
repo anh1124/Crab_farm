@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using UnityEngine.Audio;
 
 namespace Script.Audio
@@ -21,7 +22,7 @@ namespace Script.Audio
 
     public VolumeSettings(AudioMixer mixer)
     {
-        _mixer = mixer;
+        _mixer = mixer ?? throw new ArgumentNullException(nameof(mixer), "AudioMixer cannot be null");
     }
 
     public AudioMixer GetMixer() => _mixer;
@@ -86,11 +87,13 @@ namespace Script.Audio
     /// </summary>
     private void ApplyVolume(string paramName, float normalizedValue)
     {
-        float dB = (normalizedValue > 0.0001f)
+        float dB = (normalizedValue > AudioConstants.VOLUME_DAMPING)
             ? Mathf.Log10(normalizedValue) * 20f
-            : -80f;
+            : AudioConstants.MUTED_DB;
 
-        Debug.Log($"[VolumeSettings] Mixer instance ID: {_mixer.GetInstanceID()}, setting {paramName} = {dB} dB");
+        // Only log if AudioManager isDebug is enabled
+        if (AudioManager.Instance != null && AudioManager.Instance.IsDebug)
+            Debug.Log($"[VolumeSettings] Mixer instance ID: {_mixer.GetInstanceID()}, setting {paramName} = {dB} dB");
         _mixer.SetFloat(paramName, dB);
     }
 }

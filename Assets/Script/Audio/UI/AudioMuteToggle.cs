@@ -34,6 +34,9 @@ namespace Script.Audio
 
     private void OnEnable()
     {
+        // Khởi tạo _lastVolume với giá trị hiện tại từ AudioManager
+        _lastVolume = GetCurrentVolume();
+
         string muteKey = GetMuteKey();
         bool isMuted = PlayerPrefs.GetInt(muteKey, 0) == 1;
 
@@ -42,8 +45,7 @@ namespace Script.Audio
 
         if (isMuted)
         {
-            // Lưu lại giá trị hiện tại trước khi mute
-            _lastVolume = GetCurrentVolume();
+            // Lưu lại giá trị hiện tại trước khi mute (đã được load ở trên)
             SetVolume(0f);
             if (linkedSlider != null) linkedSlider.SetValueWithoutNotify(0f);
         }
@@ -86,25 +88,32 @@ namespace Script.Audio
 
     private float GetCurrentVolume()
     {
-        return channel switch
+        // Convert to AudioVolumeSlider.AudioChannel to use helper method
+        AudioVolumeSlider.AudioChannel sliderChannel = channel switch
         {
-            AudioChannel.Master => AudioManager.Instance.GetMasterVolume(),
-            AudioChannel.BGM    => AudioManager.Instance.GetBGMVolume(),
-            AudioChannel.ENV    => AudioManager.Instance.GetENVVolume(),
-            AudioChannel.SFX    => AudioManager.Instance.GetSFXVolume(),
-            _ => 1f
+            AudioChannel.Master => AudioVolumeSlider.AudioChannel.Master,
+            AudioChannel.BGM    => AudioVolumeSlider.AudioChannel.BGM,
+            AudioChannel.ENV    => AudioVolumeSlider.AudioChannel.ENV,
+            AudioChannel.SFX    => AudioVolumeSlider.AudioChannel.SFX,
+            _ => AudioVolumeSlider.AudioChannel.Master
         };
+
+        return AudioManager.Instance.GetVolumeForChannel(sliderChannel);
     }
 
     private void SetVolume(float value)
     {
-        switch (channel)
+        // Convert to AudioVolumeSlider.AudioChannel to use helper method
+        AudioVolumeSlider.AudioChannel sliderChannel = channel switch
         {
-            case AudioChannel.Master: AudioManager.Instance.SetMasterVolume(value); break;
-            case AudioChannel.BGM:    AudioManager.Instance.SetBGMVolume(value);    break;
-            case AudioChannel.ENV:    AudioManager.Instance.SetENVVolume(value);    break;
-            case AudioChannel.SFX:    AudioManager.Instance.SetSFXVolume(value);    break;
-        }
+            AudioChannel.Master => AudioVolumeSlider.AudioChannel.Master,
+            AudioChannel.BGM    => AudioVolumeSlider.AudioChannel.BGM,
+            AudioChannel.ENV    => AudioVolumeSlider.AudioChannel.ENV,
+            AudioChannel.SFX    => AudioVolumeSlider.AudioChannel.SFX,
+            _ => AudioVolumeSlider.AudioChannel.Master
+        };
+
+        AudioManager.Instance.SetVolumeForChannel(sliderChannel, value);
     }
 
     private string GetMuteKey() => $"Mute_{channel}";

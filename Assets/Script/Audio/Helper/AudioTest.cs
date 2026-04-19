@@ -186,15 +186,15 @@ namespace Script.Audio
             switch (channelType)
             {
                 case AudioChannelType.SFX:
-                    _audioEmitter.PlaySound(testKey, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    _audioEmitter.PlaySound(testKey, forceReplace: true);
                     break;
                 case AudioChannelType.BGM:
                     // BGM nên dùng AudioManager.PlayBGM trực tiếp, không dùng AudioEmitter
                     // Nhưng để test, ta dùng AudioEmitter với loop
-                    _audioEmitter.PlaySound(testKey, loop: true, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    _audioEmitter.PlaySound(testKey, loop: true, forceReplace: true);
                     break;
                 case AudioChannelType.ENV:
-                    _audioEmitter.PlaySound(testKey, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    _audioEmitter.PlaySound(testKey, forceReplace: true);
                     break;
             }
         }
@@ -277,15 +277,15 @@ namespace Script.Audio
             switch (channelType)
             {
                 case AudioChannelType.SFX:
-                    _audioEmitter.PlaySound(key, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    _audioEmitter.PlaySound(key, forceReplace: true);
                     break;
                 case AudioChannelType.BGM:
                     // BGM nên dùng AudioManager.PlayBGM trực tiếp, không dùng AudioEmitter
                     // Nhưng để test, ta dùng AudioEmitter với loop
-                    _audioEmitter.PlaySound(key, loop: true, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    _audioEmitter.PlaySound(key, loop: true, forceReplace: true);
                     break;
                 case AudioChannelType.ENV:
-                    _audioEmitter.PlaySound(key, minDistance: _cachedMinDistance, maxDistance: _cachedMaxDistance, forceReplace: true);
+                    _audioEmitter.PlaySound(key, forceReplace: true);
                     break;
             }
         }

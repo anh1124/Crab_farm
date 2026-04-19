@@ -131,7 +131,8 @@ namespace Script.Audio
     public string[] GetAllKeys()
     {
         if (_clipLookup == null) Initialize();
-        
+        if (_clipLookup == null) return new string[0]; // Guard nếu Initialize thất bại
+
         var keys = new string[_clipLookup.Count];
         _clipLookup.Keys.CopyTo(keys, 0);
         return keys;

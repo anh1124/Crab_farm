@@ -56,6 +56,11 @@ namespace Script.Audio
     [Tooltip("Khoảng cách tối đa để phát âm thanh xa player (như Minecraft lazy chunk)")]
     [SerializeField] private float cullingDistance = 50f;
 
+    [Header("Debug")]
+    [Tooltip("Bật/tắt debug log trong Console")]
+    [SerializeField] private bool isDebug = false;
+
+    public bool IsDebug => isDebug;
     public float CullingDistance => cullingDistance;
 
     [Header("Sound Registry")]
@@ -95,12 +100,12 @@ namespace Script.Audio
         // Chờ 1 frame để AudioMixer Snapshot finish apply
         yield return null;
         _volume.LoadAndApply();
-        Debug.Log("[AudioManager] Volume applied after snapshot");
+        if (isDebug) Debug.Log("[AudioManager] Volume applied after snapshot");
 
-        // Chờ 3 giây để check playerTransform
-        yield return new WaitForSeconds(3f);
+        // Chờ để check playerTransform
+        yield return new WaitForSeconds(AudioConstants.PLAYER_CHECK_DELAY);
         if (playerTransform == null)
-            Debug.LogWarning("[AudioManager] Player Transform chưa được gán! Âm thanh sẽ không suy giảm theo khoảng cách.");
+            if (isDebug) Debug.LogWarning("[AudioManager] Player Transform chưa được gán! Âm thanh sẽ không suy giảm theo khoảng cách.");
     }
 
     private void Initialize()
@@ -134,7 +139,7 @@ namespace Script.Audio
         if (maxDistanceFound > 0f)
         {
             cullingDistance = maxDistanceFound;
-            Debug.Log($"[AudioManager] Auto-set cullingDistance to {cullingDistance}f (max distance from SoundRegistry)");
+            if (isDebug) Debug.Log($"[AudioManager] Auto-set cullingDistance to {cullingDistance}f (max distance from SoundRegistry)");
         }
     }
 
@@ -189,25 +194,25 @@ namespace Script.Audio
     {
         if (soundRegistry == null)
         {
-            Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
+            if (isDebug) Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
             return;
         }
 
         var entry = soundRegistry.GetEntry(soundKey);
         if (entry == null)
         {
-            Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
+            if (isDebug) Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
             return;
         }
 
         if (uiSource == null)
         {
-            Debug.LogError("[AudioManager] uiSource chưa được gán trong Inspector!");
+            if (isDebug) Debug.LogError("[AudioManager] uiSource chưa được gán trong Inspector!");
             return;
         }
 
-        Debug.Log($"[AudioManager] MixerGroup mixer ID: {uiSource.outputAudioMixerGroup?.audioMixer.GetInstanceID()}");
-        if (uiSource.outputAudioMixerGroup?.audioMixer != null && uiSource.outputAudioMixerGroup.audioMixer.GetFloat("UIVolume", out float actual))
+        if (isDebug) Debug.Log($"[AudioManager] MixerGroup mixer ID: {uiSource.outputAudioMixerGroup?.audioMixer.GetInstanceID()}");
+        if (isDebug && uiSource.outputAudioMixerGroup?.audioMixer != null && uiSource.outputAudioMixerGroup.audioMixer.GetFloat("UIVolume", out float actual))
             Debug.Log($"[AudioManager] Actual UIVolume in mixer: {actual} dB");
 
         uiSource.clip = entry.clip;
@@ -335,14 +340,14 @@ namespace Script.Audio
     {
         if (soundRegistry == null)
         {
-            Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
+            if (isDebug) Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
             return;
         }
 
         var entry = soundRegistry.GetEntry(soundKey);
         if (entry == null)
         {
-            Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
+            if (isDebug) Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
             return;
         }
 
@@ -371,14 +376,14 @@ namespace Script.Audio
     {
         if (soundRegistry == null)
         {
-            Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
+            if (isDebug) Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
             return null;
         }
 
         var entry = soundRegistry.GetEntry(soundKey);
         if (entry == null)
         {
-            Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
+            if (isDebug) Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
             return null;
         }
 
@@ -427,6 +432,37 @@ namespace Script.Audio
 
     public void ResetAllVolumes()  => _volume.ResetToDefaults();
 
+    /// <summary>
+    /// Helper method để lấy volume theo channel enum (dùng bởi UI components).
+    /// </summary>
+    public float GetVolumeForChannel(AudioVolumeSlider.AudioChannel channel)
+    {
+        return channel switch
+        {
+            AudioVolumeSlider.AudioChannel.Master => GetMasterVolume(),
+            AudioVolumeSlider.AudioChannel.BGM    => GetBGMVolume(),
+            AudioVolumeSlider.AudioChannel.ENV    => GetENVVolume(),
+            AudioVolumeSlider.AudioChannel.SFX    => GetSFXVolume(),
+            AudioVolumeSlider.AudioChannel.UI     => GetUIVolume(),
+            _ => 1f
+        };
+    }
+
+    /// <summary>
+    /// Helper method để set volume theo channel enum (dùng bởi UI components).
+    /// </summary>
+    public void SetVolumeForChannel(AudioVolumeSlider.AudioChannel channel, float value)
+    {
+        switch (channel)
+        {
+            case AudioVolumeSlider.AudioChannel.Master: SetMasterVolume(value); break;
+            case AudioVolumeSlider.AudioChannel.BGM:    SetBGMVolume(value);    break;
+            case AudioVolumeSlider.AudioChannel.ENV:    SetENVVolume(value);    break;
+            case AudioVolumeSlider.AudioChannel.SFX:    SetSFXVolume(value);    break;
+            case AudioVolumeSlider.AudioChannel.UI:     SetUIVolume(value);     break;
+        }
+    }
+
     // ─────────────────────────────────────────────
     //  Debug
     // ─────────────────────────────────────────────
@@ -440,14 +476,14 @@ namespace Script.Audio
     {
         // Check 1: Mixer instance match
         var sourceMixer = uiSource?.outputAudioMixerGroup?.audioMixer;
-        Debug.Log($"[AudioManager] VolumeSettings mixer: {_volume.GetMixer()?.name} (ID: {_volume.GetMixer()?.GetInstanceID()})");
-        Debug.Log($"[AudioManager] uiSource mixer: {sourceMixer?.name} (ID: {sourceMixer?.GetInstanceID()})");
+        if (isDebug) Debug.Log($"[AudioManager] VolumeSettings mixer: {_volume.GetMixer()?.name} (ID: {_volume.GetMixer()?.GetInstanceID()})");
+        if (isDebug) Debug.Log($"[AudioManager] uiSource mixer: {sourceMixer?.name} (ID: {sourceMixer?.GetInstanceID()})");
 
         // Check 2: Actual value in mixer
         if (sourceMixer != null && sourceMixer.GetFloat("UIVolume", out float actual))
-            Debug.Log($"[AudioManager] Actual UIVolume in mixer: {actual} dB");
+            if (isDebug) Debug.Log($"[AudioManager] Actual UIVolume in mixer: {actual} dB");
         else
-            Debug.LogError("[AudioManager] Cannot read UIVolume from mixer!");
+            if (isDebug) Debug.LogError("[AudioManager] Cannot read UIVolume from mixer!");
     }
 
     /// <summary>
@@ -459,7 +495,7 @@ namespace Script.Audio
     {
         if (soundRegistry == null)
         {
-            Debug.LogError("[AudioManager] SoundRegistry is null!");
+            if (isDebug) Debug.LogError("[AudioManager] SoundRegistry is null!");
             return;
         }
 
@@ -481,7 +517,7 @@ namespace Script.Audio
             }
         }
 
-        Debug.Log(logBuilder.ToString());
+        if (isDebug) Debug.Log(logBuilder.ToString());
     }
 
     // ─────────────────────────────────────────────
@@ -535,8 +571,8 @@ namespace Script.Audio
     /// <summary>Chờ clip phát xong thì trả AudioSource về pool.</summary>
     private IEnumerator ReturnAfterClip(AudioSource source, float clipLength)
     {
-        // Chờ thêm 0.15s buffer để tránh cắt tiếng đột ngột
-        yield return new WaitForSeconds(clipLength + 0.15f);
+        // Chờ thêm buffer để tránh cắt tiếng đột ngột
+        yield return new WaitForSeconds(clipLength + AudioConstants.BUFFER_TIME);
 
         // Double-check: nếu source đã được pool trả lại (Return() gọi từ nơi khác), bỏ qua
         if (source != null && !source.isPlaying)

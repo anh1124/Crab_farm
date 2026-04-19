@@ -18,7 +18,7 @@ namespace Script.Audio
     /// ─────────────────────────────────────────────────────────────────────────
     /// </summary>
     [RequireComponent(typeof(Slider))]
-    public class AudioVolumeSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler
+    public class AudioVolumeSlider : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler
 {
     // ─────────────────────────────────────────────
     //  Inspector Fields
@@ -47,12 +47,7 @@ namespace Script.Audio
 
     private Slider _slider;
     private bool   _isInitializing; // Tránh vòng lặp khi set value lúc init
-    private float  _previousValue;  // Theo dõi giá trị trước đó để tránh phát khi load
     private bool   _isDragging;     // Theo dõi khi user đang drag slider
-    private bool   _canvasIsReady;  // Canvas đã hoàn tất load chưa
-
-    // Static AudioSource riêng để phát âm thanh test cho tất cả slider
-    private static AudioSource _testAudioSource;
 
     // ─────────────────────────────────────────────
     //  Unity Lifecycle
@@ -63,16 +58,6 @@ namespace Script.Audio
         _slider = GetComponent<Slider>();
         _slider.minValue = 0f;
         _slider.maxValue = 1f;
-
-        // Tạo static AudioSource nếu chưa có
-        if (_testAudioSource == null)
-        {
-            GameObject testAudioObj = new GameObject("[TestAudioSource]");
-            DontDestroyOnLoad(testAudioObj);
-            _testAudioSource = testAudioObj.AddComponent<AudioSource>();
-            _testAudioSource.playOnAwake = false;
-            _testAudioSource.loop = true; // Loop khi hết âm thanh
-        }
     }
 
     private void OnEnable()
@@ -109,20 +94,10 @@ namespace Script.Audio
 
         _isInitializing = true;
 
-        float savedValue = channel switch
-        {
-            AudioChannel.Master => AudioManager.Instance.GetMasterVolume(),
-            AudioChannel.BGM    => AudioManager.Instance.GetBGMVolume(),
-            AudioChannel.ENV    => AudioManager.Instance.GetENVVolume(),
-            AudioChannel.SFX    => AudioManager.Instance.GetSFXVolume(),
-            AudioChannel.UI     => AudioManager.Instance.GetUIVolume(),
-            _                   => 1f
-        };
+        float savedValue = AudioManager.Instance.GetVolumeForChannel(channel);
 
         _slider.value   = savedValue;
-        _previousValue = savedValue; // Lưu giá trị để tránh phát âm thanh khi load
         _isInitializing = false;
-        _canvasIsReady = true; // Canvas đã sẵn sàng
 
         UpdateVolumeText(savedValue);
 
@@ -135,22 +110,14 @@ namespace Script.Audio
         // Bỏ qua sự kiện khi đang init (tránh gọi Set khi chưa cần)
         if (_isInitializing || AudioManager.Instance == null) return;
 
-        switch (channel)
-        {
-            case AudioChannel.Master: AudioManager.Instance.SetMasterVolume(value); break;
-            case AudioChannel.BGM:    AudioManager.Instance.SetBGMVolume(value);    break;
-            case AudioChannel.ENV:    AudioManager.Instance.SetENVVolume(value);    break;
-            case AudioChannel.SFX:    AudioManager.Instance.SetSFXVolume(value);    break;
-            case AudioChannel.UI:     AudioManager.Instance.SetUIVolume(value);     break;
-        }
+        AudioManager.Instance.SetVolumeForChannel(channel, value);
 
         UpdateVolumeText(value);
 
-        // Phát âm thanh test khi đang drag slider và value thay đổi
-        if (_isDragging && Mathf.Abs(value - _previousValue) > 0.001f)
+        // Phát âm thanh test khi đang drag slider
+        if (_isDragging)
         {
             PlayTestSound(value);
-            _previousValue = value;
         }
 
         // Tự động bật/tắt mute toggle khi slider về/trên 0
@@ -160,12 +127,12 @@ namespace Script.Audio
             if (toggleComponent != null)
             {
                 // Nếu slider về 0, tự động bật mute (không kích hoạt sự kiện)
-                if (value <= 0.001f && !toggleComponent.isOn)
+                if (value <= AudioConstants.VOLUME_EPSILON && !toggleComponent.isOn)
                 {
                     toggleComponent.SetIsOnWithoutNotify(true);
                 }
                 // Nếu slider tăng lên trên 0, tự động tắt mute (không kích hoạt sự kiện)
-                else if (value > 0.001f && toggleComponent.isOn)
+                else if (value > AudioConstants.VOLUME_EPSILON && toggleComponent.isOn)
                 {
                     toggleComponent.SetIsOnWithoutNotify(false);
                 }
@@ -175,8 +142,8 @@ namespace Script.Audio
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        // Không phát nếu đang init hoặc canvas chưa sẵn sàng
-        if (_isInitializing || !_canvasIsReady) return;
+        // Không phát nếu đang init
+        if (_isInitializing) return;
 
         _isDragging = true;
         // Phát âm thanh test khi user bắt đầu drag
@@ -191,16 +158,6 @@ namespace Script.Audio
     public void OnPointerEnter(PointerEventData eventData)
     {
         // Không phát âm thanh khi hover, chỉ phát khi click/drag
-        // PlayTestSound(_slider.value);
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        // Khi không hover, set loop = false để âm thanh phát hết rồi dừng
-        if (_testAudioSource != null && _testAudioSource.isPlaying)
-        {
-            _testAudioSource.loop = false;
-        }
     }
 
     private void UpdateVolumeText(float value)
@@ -214,31 +171,11 @@ namespace Script.Audio
 
     private void PlayTestSound(float sliderValue)
     {
-        // Không phát nếu đang init, key rỗng, AudioManager không tồn tại hoặc testAudioSource không tồn tại
-        if (_isInitializing || string.IsNullOrEmpty(testSoundKey) || AudioManager.Instance == null || _testAudioSource == null) return;
+        // Không phát nếu đang init, key rỗng, hoặc AudioManager không tồn tại
+        if (_isInitializing || string.IsNullOrEmpty(testSoundKey) || AudioManager.Instance == null) return;
 
-        // Lấy AudioClip từ SoundRegistry
-        AudioClip clip = AudioManager.Instance.SoundRegistry.GetClip(testSoundKey);
-        if (clip == null)
-        {
-            Debug.LogWarning($"[AudioVolumeSlider] Không tìm thấy AudioClip với key '{testSoundKey}' trong SoundRegistry");
-            return;
-        }
-
-        // Nếu cùng clip đang phát, chỉ cập nhật volume (không restart)
-        if (_testAudioSource.isPlaying && _testAudioSource.clip == clip)
-        {
-            _testAudioSource.volume = sliderValue;
-            // Đảm bảo loop = true khi đang hover
-            _testAudioSource.loop = true;
-            return;
-        }
-
-        // Nếu khác clip hoặc chưa phát, phát mới với loop = true
-        _testAudioSource.clip = clip;
-        _testAudioSource.volume = sliderValue;
-        _testAudioSource.loop = true;
-        _testAudioSource.Play();
+        // Sử dụng AudioManager.PlayUISound thay vì static AudioSource
+        AudioManager.Instance.PlayUISound(testSoundKey, sliderValue);
     }
 }
 }

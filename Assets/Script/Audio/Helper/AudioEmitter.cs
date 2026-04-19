@@ -43,6 +43,10 @@ namespace Script.Audio
         private Dictionary<string, bool> _loopFlags
             = new Dictionary<string, bool>();
 
+        // soundKey → coroutine đang chạy ReturnAfterClip
+        private Dictionary<string, Coroutine> _activeCoroutines
+            = new Dictionary<string, Coroutine>();
+
         // ─────────────────────────────────────────────
         //  Debug
         // ─────────────────────────────────────────────
@@ -153,7 +157,7 @@ namespace Script.Audio
             if (_activeSounds.ContainsKey(soundKey))
             {
                 if (!forceReplace) return;
-                StopSound(soundKey); // Force replace → dừng cái cũ
+                StopSound(soundKey); // Force replace → dừng cái cũ (bao gồm cả coroutine)
             }
 
             Debug.Log($"[AudioEmitter] PlaySound('{soundKey}') started, inRange={_isInRange}");
@@ -192,10 +196,7 @@ namespace Script.Audio
             source.loop         = loop;
             source.spatialBlend = 1f;
 
-            AnimationCurve curve = new AnimationCurve();
-            curve.AddKey(0f,        1f);
-            curve.AddKey(actualMin, 1f);
-            curve.AddKey(actualMax, 0f); // Volume về 0 tại maxDistance
+            AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, 0f);
             source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
 
             // Bám theo transform (vẫn di chuyển cùng obj)
@@ -213,13 +214,23 @@ namespace Script.Audio
 
             // Chỉ auto-return khi one-shot
             if (!loop)
-                StartCoroutine(ReturnAfterClip(soundKey, source, entry.clip.length));
+            {
+                Coroutine coroutine = StartCoroutine(ReturnAfterClip(soundKey, source, entry.clip.length));
+                _activeCoroutines[soundKey] = coroutine;
+            }
         }
 
         /// <summary>Dừng âm thanh cụ thể và trả pool về.</summary>
         public void StopSound(string soundKey)
         {
             if (!_activeSounds.TryGetValue(soundKey, out AudioSource source)) return;
+
+            // Dừng coroutine nếu đang chạy
+            if (_activeCoroutines.TryGetValue(soundKey, out Coroutine coroutine))
+            {
+                StopCoroutine(coroutine);
+                _activeCoroutines.Remove(soundKey);
+            }
 
             source.Stop();
             source.transform.SetParent(AudioManager.Instance.Pool.transform);
@@ -253,11 +264,14 @@ namespace Script.Audio
         private IEnumerator ReturnAfterClip(string soundKey, AudioSource source, float clipLength)
         {
             // Buffer nhỏ để tránh cắt tiếng đột ngột
-            yield return new WaitForSeconds(clipLength + 0.1f);
+            yield return new WaitForSeconds(clipLength + AudioConstants.BUFFER_TIME);
 
             // Chỉ trả pool nếu âm thanh vẫn còn trong dict (chưa bị StopSound())
             if (_activeSounds.ContainsKey(soundKey))
+            {
+                _activeCoroutines.Remove(soundKey); // Xóa reference trước khi StopSound
                 StopSound(soundKey);
+            }
         }
     }
 }

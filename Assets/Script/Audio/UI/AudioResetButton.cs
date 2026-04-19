@@ -20,6 +20,7 @@ namespace Script.Audio
 {
     [Header("Thành phần cần reset")]
     [SerializeField] private Slider[] slidersToReset;
+    [SerializeField] private AudioVolumeSlider.AudioChannel[] sliderChannels; // Channel tương ứng với mỗi slider
     [SerializeField] private AudioMuteToggle[] muteToggles;
 
     private void Awake()
@@ -35,27 +36,20 @@ namespace Script.Audio
         AudioManager.Instance.ResetAllVolumes();
 
         // Reset tất cả slider về giá trị mặc định thực tế từ AudioManager
-        foreach (var slider in slidersToReset)
+        for (int i = 0; i < slidersToReset.Length; i++)
         {
+            var slider = slidersToReset[i];
             if (slider == null) continue;
-            
-            // Lấy component AudioVolumeSlider để biết channel
-            var volSlider = slider.GetComponent<AudioVolumeSlider>();
-            if (volSlider != null)
+
+            // Lấy channel từ mảng sliderChannels
+            if (i < sliderChannels.Length)
             {
-                float val = volSlider.Channel switch
-                {
-                    AudioVolumeSlider.AudioChannel.Master => AudioManager.Instance.GetMasterVolume(),
-                    AudioVolumeSlider.AudioChannel.BGM    => AudioManager.Instance.GetBGMVolume(),
-                    AudioVolumeSlider.AudioChannel.ENV    => AudioManager.Instance.GetENVVolume(), // Sẽ là 0.7
-                    AudioVolumeSlider.AudioChannel.SFX    => AudioManager.Instance.GetSFXVolume(),
-                    _ => 1f
-                };
+                float val = AudioManager.Instance.GetVolumeForChannel(sliderChannels[i]);
                 slider.value = val;
             }
             else
             {
-                slider.value = 1f; // Fallback nếu không có AudioVolumeSlider
+                slider.value = 1f; // Fallback nếu không có channel tương ứng
             }
         }
 

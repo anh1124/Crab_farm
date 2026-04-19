@@ -14,10 +14,10 @@ namespace Script.Audio
     [SerializeField] private AudioMixerGroup sfxMixerGroup;
 
     [Tooltip("Số AudioSource tạo sẵn khi khởi động")]
-    [SerializeField] private int initialPoolSize = 12;
+    [SerializeField] private int initialPoolSize = AudioConstants.DEFAULT_POOL_SIZE;
 
     [Tooltip("Số AudioSource tối đa (dynamic expansion)")]
-    [SerializeField] private int maxPoolSize = 50;
+    [SerializeField] private int maxPoolSize = AudioConstants.MAX_POOL_SIZE;
 
     [Header("Debug (read-only)")]
     [SerializeField] private int _availableCount;
@@ -25,6 +25,8 @@ namespace Script.Audio
 
     private readonly Queue<AudioSource>  _available = new Queue<AudioSource>();
     private readonly HashSet<AudioSource> _inUse    = new HashSet<AudioSource>();
+
+    private static int _totalCreated = 0; // Counter để đặt tên unique cho pooled sources
 
     // ─────────────────────────────────────────────
     //  Unity Lifecycle
@@ -116,7 +118,8 @@ namespace Script.Audio
 
     private AudioSource CreateSource()
     {
-        var go = new GameObject($"PooledAudio_{_available.Count + _inUse.Count:00}");
+        var go = new GameObject($"PooledAudio_{_totalCreated:00}");
+        _totalCreated++;
         go.transform.SetParent(transform);
 
         var source = go.AddComponent<AudioSource>();
@@ -129,17 +132,14 @@ namespace Script.Audio
         // Tại maxDistance vẫn còn 30% volume
         source.rolloffMode = AudioRolloffMode.Custom;
 
-        AnimationCurve rolloffCurve = new AnimationCurve();
-        // Tại 0 distance: volume = 1.0
-        rolloffCurve.AddKey(0f, 1f);
-        // Tại minDistance (2m): volume = 1.0 (full volume trong bán kính min)
-        rolloffCurve.AddKey(2f, 1f);
-        // Tại maxDistance (15m): volume = 0.3 (30% volume ở xa nhất)
-        rolloffCurve.AddKey(15f, 0.3f);
+        AnimationCurve rolloffCurve = AudioCurveCache.GetDefaultRolloffCurve(
+            AudioConstants.DEFAULT_MIN_DISTANCE,
+            AudioConstants.DEFAULT_MAX_DISTANCE,
+            AudioConstants.DEFAULT_VOLUME_AT_MAX);
 
         source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
-        source.minDistance = 2f;
-        source.maxDistance = 15f;
+        source.minDistance = AudioConstants.DEFAULT_MIN_DISTANCE;
+        source.maxDistance = AudioConstants.DEFAULT_MAX_DISTANCE;
 
         go.SetActive(false);
         _available.Enqueue(source);

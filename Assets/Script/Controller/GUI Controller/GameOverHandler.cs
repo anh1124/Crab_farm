@@ -65,7 +65,11 @@ namespace Script.GUI_Controller
         {
             IsActive = true;
             EnsureReferences();
-            
+
+            // Phát âm thanh game over
+            if (Script.Audio.AudioManager.Instance != null)
+                Script.Audio.AudioManager.Instance.PlayUISound("Player_Lose");
+
             var gtm = FindObjectOfType<GameTimeManager>();
             int survivedDays = gtm != null ? gtm.GetElapsedDays() : 0;
             Time.timeScale = 0f; // Pause game
