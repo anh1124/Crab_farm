@@ -13,7 +13,7 @@ namespace Script.Audio
     /// ─── SETUP ────────────────────────────────────────────────────────────────
     /// 1. Tạo Slider trong Canvas (Settings Panel).
     /// 2. Gắn AudioVolumeSlider vào cùng GameObject đó.
-    /// 3. Chọn Channel (Master/BGM/ENV/SFX) trong Inspector.
+    /// 3. Chọn Channel (Master/BGM/ENV/SFX/UI) trong Inspector.
     /// 4. Xong. Script tự kết nối OnValueChanged và load giá trị đã lưu.
     /// ─────────────────────────────────────────────────────────────────────────
     /// </summary>
@@ -24,7 +24,7 @@ namespace Script.Audio
     //  Inspector Fields
     // ─────────────────────────────────────────────
 
-    public enum AudioChannel { Master, BGM, ENV, SFX }
+    public enum AudioChannel { Master, BGM, ENV, SFX, UI }
 
     [Tooltip("Kênh âm lượng mà slider này điều khiển")]
     [SerializeField] private AudioChannel channel = AudioChannel.Master;
@@ -115,6 +115,7 @@ namespace Script.Audio
             AudioChannel.BGM    => AudioManager.Instance.GetBGMVolume(),
             AudioChannel.ENV    => AudioManager.Instance.GetENVVolume(),
             AudioChannel.SFX    => AudioManager.Instance.GetSFXVolume(),
+            AudioChannel.UI     => AudioManager.Instance.GetUIVolume(),
             _                   => 1f
         };
 
@@ -140,6 +141,7 @@ namespace Script.Audio
             case AudioChannel.BGM:    AudioManager.Instance.SetBGMVolume(value);    break;
             case AudioChannel.ENV:    AudioManager.Instance.SetENVVolume(value);    break;
             case AudioChannel.SFX:    AudioManager.Instance.SetSFXVolume(value);    break;
+            case AudioChannel.UI:     AudioManager.Instance.SetUIVolume(value);     break;
         }
 
         UpdateVolumeText(value);
@@ -188,8 +190,8 @@ namespace Script.Audio
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        // Phát hoặc cập nhật âm thanh khi hover
-        PlayTestSound(_slider.value);
+        // Không phát âm thanh khi hover, chỉ phát khi click/drag
+        // PlayTestSound(_slider.value);
     }
 
     public void OnPointerExit(PointerEventData eventData)

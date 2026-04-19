@@ -15,6 +15,7 @@ namespace Script.Audio
     public const string PARAM_BGM    = "BGMVolume";
     public const string PARAM_ENV    = "ENVVolume";
     public const string PARAM_SFX    = "SFXVolume";
+    public const string PARAM_UI     = "UIVolume";
 
     private readonly AudioMixer _mixer;
 
@@ -23,6 +24,8 @@ namespace Script.Audio
         _mixer = mixer;
     }
 
+    public AudioMixer GetMixer() => _mixer;
+
     // ─────────────────────────────────────────────
     //  Public API
     // ─────────────────────────────────────────────
@@ -30,10 +33,17 @@ namespace Script.Audio
     /// <summary>Đọc PlayerPrefs và áp dụng tất cả volume ngay khi khởi động.</summary>
     public void LoadAndApply()
     {
-        ApplyVolume(PARAM_MASTER, PlayerPrefs.GetFloat(PARAM_MASTER, 1f));
-        ApplyVolume(PARAM_BGM,    PlayerPrefs.GetFloat(PARAM_BGM,    1f));
-        ApplyVolume(PARAM_ENV,    PlayerPrefs.GetFloat(PARAM_ENV,    0.7f));
-        ApplyVolume(PARAM_SFX,    PlayerPrefs.GetFloat(PARAM_SFX,    1f));
+        float masterVol = PlayerPrefs.GetFloat(PARAM_MASTER, 1f);
+        float bgmVol = PlayerPrefs.GetFloat(PARAM_BGM, 1f);
+        float envVol = PlayerPrefs.GetFloat(PARAM_ENV, 0.7f);
+        float sfxVol = PlayerPrefs.GetFloat(PARAM_SFX, 1f);
+        float uiVol = PlayerPrefs.GetFloat(PARAM_UI, 1f);
+
+        ApplyVolume(PARAM_MASTER, masterVol);
+        ApplyVolume(PARAM_BGM,    bgmVol);
+        ApplyVolume(PARAM_ENV,    envVol);
+        ApplyVolume(PARAM_SFX,    sfxVol);
+        ApplyVolume(PARAM_UI,     uiVol);
     }
 
     /// <summary>
@@ -62,6 +72,7 @@ namespace Script.Audio
         SetVolume(PARAM_BGM,    1f);
         SetVolume(PARAM_ENV,    0.7f);
         SetVolume(PARAM_SFX,    1f);
+        SetVolume(PARAM_UI,     1f);
     }
 
     // ─────────────────────────────────────────────
@@ -79,6 +90,7 @@ namespace Script.Audio
             ? Mathf.Log10(normalizedValue) * 20f
             : -80f;
 
+        Debug.Log($"[VolumeSettings] Mixer instance ID: {_mixer.GetInstanceID()}, setting {paramName} = {dB} dB");
         _mixer.SetFloat(paramName, dB);
     }
 }

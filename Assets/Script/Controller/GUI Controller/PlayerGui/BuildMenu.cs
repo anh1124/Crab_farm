@@ -360,7 +360,7 @@ public class BuildMenu : MonoBehaviour
     {
         if (BPM.TryPlaceBuilding())
         {
-            
+
             ResetBuildState();
         }
         else

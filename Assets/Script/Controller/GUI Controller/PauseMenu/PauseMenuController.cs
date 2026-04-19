@@ -52,6 +52,9 @@ namespace Script.GUI_Controller.PauseMenu
 
         public void Resume()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             guiCanvasManager.ResumeGame();
         }
         public void OpenMenu()
@@ -233,6 +236,9 @@ namespace Script.GUI_Controller.PauseMenu
 
         public void OpenOption()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             if (guiCanvasManager != null)
             {
                 guiCanvasManager.ShowSoundSetting();
@@ -241,6 +247,9 @@ namespace Script.GUI_Controller.PauseMenu
 
         public void SaveAndExit()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             WorldFileManager.Instance.SaveCurrentMap();
             SceneManager.LoadScene("MainMenuScene");
         }

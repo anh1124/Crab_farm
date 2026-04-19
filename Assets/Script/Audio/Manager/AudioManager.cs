@@ -40,6 +40,9 @@ namespace Script.Audio
     [Header("ENV Source (tạo 1 child GameObject với AudioSource)")]
     [SerializeField] private AudioSource envSource;
 
+    [Header("UI Source (tạo 1 child GameObject với AudioSource)")]
+    [SerializeField] private AudioSource uiSource;
+
     [Header("Player - dùng để tính khoảng cách âm thanh")]
     [SerializeField] private Transform playerTransform;
 
@@ -87,12 +90,24 @@ namespace Script.Audio
         Initialize();
     }
 
+    private IEnumerator Start()
+    {
+        // Chờ 1 frame để AudioMixer Snapshot finish apply
+        yield return null;
+        _volume.LoadAndApply();
+        Debug.Log("[AudioManager] Volume applied after snapshot");
+
+        // Chờ 3 giây để check playerTransform
+        yield return new WaitForSeconds(3f);
+        if (playerTransform == null)
+            Debug.LogWarning("[AudioManager] Player Transform chưa được gán! Âm thanh sẽ không suy giảm theo khoảng cách.");
+    }
+
     private void Initialize()
     {
         _pool   = GetComponent<AudioPool>();
         _music  = new MusicController(bgmSourceA, bgmSourceB, this);
         _volume = new VolumeSettings(audioMixer);
-        _volume.LoadAndApply();
 
         // Auto-set cullingDistance từ maxDistance lớn nhất trong SoundRegistry
         AutoSetCullingDistanceFromRegistry();
@@ -121,13 +136,6 @@ namespace Script.Audio
             cullingDistance = maxDistanceFound;
             Debug.Log($"[AudioManager] Auto-set cullingDistance to {cullingDistance}f (max distance from SoundRegistry)");
         }
-    }
-
-    private IEnumerator Start()
-    {
-        yield return new WaitForSeconds(3f);
-        if (playerTransform == null)
-            Debug.LogWarning("[AudioManager] Player Transform chưa được gán! Âm thanh sẽ không suy giảm theo khoảng cách.");
     }
 
     // ─────────────────────────────────────────────
@@ -165,6 +173,49 @@ namespace Script.Audio
 
     /// <summary>Dừng âm thanh môi trường.</summary>
     public void StopENV() => envSource.Stop();
+
+    // ─────────────────────────────────────────────
+    //  UI API - 2D sound, không distance culling
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Phát âm thanh UI (button click, menu navigation...).
+    /// Luôn phát, không có distance culling, 2D sound.
+    /// Phù hợp cho: UI button clicks, menu sounds.
+    /// </summary>
+    /// <param name="soundKey">Key của âm thanh trong SoundRegistry.</param>
+    /// <param name="volumeScale">Nhân thêm âm lượng (0-1).</param>
+    public void PlayUISound(string soundKey, float volumeScale = 1f)
+    {
+        if (soundRegistry == null)
+        {
+            Debug.LogError("[AudioManager] SoundRegistry chưa được gán trong Inspector!");
+            return;
+        }
+
+        var entry = soundRegistry.GetEntry(soundKey);
+        if (entry == null)
+        {
+            Debug.LogWarning($"[AudioManager] Không tìm thấy âm thanh với key: {soundKey}");
+            return;
+        }
+
+        if (uiSource == null)
+        {
+            Debug.LogError("[AudioManager] uiSource chưa được gán trong Inspector!");
+            return;
+        }
+
+        Debug.Log($"[AudioManager] MixerGroup mixer ID: {uiSource.outputAudioMixerGroup?.audioMixer.GetInstanceID()}");
+        if (uiSource.outputAudioMixerGroup?.audioMixer != null && uiSource.outputAudioMixerGroup.audioMixer.GetFloat("UIVolume", out float actual))
+            Debug.Log($"[AudioManager] Actual UIVolume in mixer: {actual} dB");
+
+        uiSource.clip = entry.clip;
+        uiSource.volume = volumeScale;
+        uiSource.spatialBlend = 0f; // 2D sound
+        uiSource.loop = false;
+        uiSource.Play();
+    }
 
     // ─────────────────────────────────────────────
     //  SFX API - One-shot tại vị trí cố định
@@ -366,13 +417,72 @@ namespace Script.Audio
     public void SetBGMVolume(float value)    => _volume.SetVolume(VolumeSettings.PARAM_BGM, value);
     public void SetENVVolume(float value)    => _volume.SetVolume(VolumeSettings.PARAM_ENV, value);
     public void SetSFXVolume(float value)    => _volume.SetVolume(VolumeSettings.PARAM_SFX, value);
+    public void SetUIVolume(float value)     => _volume.SetVolume(VolumeSettings.PARAM_UI, value);
 
     public float GetMasterVolume() => _volume.GetVolume(VolumeSettings.PARAM_MASTER);
     public float GetBGMVolume()    => _volume.GetVolume(VolumeSettings.PARAM_BGM);
-    public float GetENVVolume()    => _volume.GetVolume(VolumeSettings.PARAM_ENV, 0.7f);
+    public float GetENVVolume()    => _volume.GetVolume(VolumeSettings.PARAM_ENV);
     public float GetSFXVolume()    => _volume.GetVolume(VolumeSettings.PARAM_SFX);
+    public float GetUIVolume()     => _volume.GetVolume(VolumeSettings.PARAM_UI);
 
     public void ResetAllVolumes()  => _volume.ResetToDefaults();
+
+    // ─────────────────────────────────────────────
+    //  Debug
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Debug: Kiểm tra mixer instance và actual volume value.
+    /// Có thể gọi từ Inspector (ContextMenu).
+    /// </summary>
+    [ContextMenu("Debug: Audio Mixer")]
+    public void DebugAudioMixer()
+    {
+        // Check 1: Mixer instance match
+        var sourceMixer = uiSource?.outputAudioMixerGroup?.audioMixer;
+        Debug.Log($"[AudioManager] VolumeSettings mixer: {_volume.GetMixer()?.name} (ID: {_volume.GetMixer()?.GetInstanceID()})");
+        Debug.Log($"[AudioManager] uiSource mixer: {sourceMixer?.name} (ID: {sourceMixer?.GetInstanceID()})");
+
+        // Check 2: Actual value in mixer
+        if (sourceMixer != null && sourceMixer.GetFloat("UIVolume", out float actual))
+            Debug.Log($"[AudioManager] Actual UIVolume in mixer: {actual} dB");
+        else
+            Debug.LogError("[AudioManager] Cannot read UIVolume from mixer!");
+    }
+
+    /// <summary>
+    /// Debug: Log toàn bộ sound trong SoundRegistry ra Console.
+    /// Có thể gọi từ Inspector (ContextMenu).
+    /// </summary>
+    [ContextMenu("Debug: Log SoundRegistry")]
+    public void DebugLogSoundRegistry()
+    {
+        if (soundRegistry == null)
+        {
+            Debug.LogError("[AudioManager] SoundRegistry is null!");
+            return;
+        }
+
+        var allKeys = soundRegistry.GetAllKeys();
+        var logBuilder = new System.Text.StringBuilder();
+        logBuilder.AppendLine($"[AudioManager] SoundRegistry Debug - Total sounds: {allKeys.Length}");
+
+        foreach (var key in allKeys)
+        {
+            var entry = soundRegistry.GetEntry(key);
+            if (entry != null)
+            {
+                string clipName = entry.clip != null ? entry.clip.name : "null";
+                logBuilder.AppendLine($"  - {key} | Clip: {clipName} | Min: {entry.minDistance}m | Max: {entry.maxDistance}m");
+            }
+            else
+            {
+                logBuilder.AppendLine($"  - {key} | NULL ENTRY");
+            }
+        }
+
+        Debug.Log(logBuilder.ToString());
+    }
 
     // ─────────────────────────────────────────────
     //  Runtime Configuration

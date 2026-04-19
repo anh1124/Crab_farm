@@ -86,7 +86,10 @@ namespace Script.GUI_Controller.StartMenu
                 Debug.LogError("[StartMenuController] WorldSaveListManager không tìm thấy trong scene! Hãy thêm nó vào MainMenuScene.");
             }
 
-            OpenHomeMenuPanel();
+            // OpenHomeMenuPanel(); // Không gọi ở Start() để tránh phát nhạc khi scene load
+            SetActiveFalseAllPanel();
+            homeMenuPanel.SetActive(true); // Active home menu thay vì gọi OpenHomeMenuPanel()
+
             AssignButtonActions();
             //chạy hàm kiểm tra và tạo thư mục lưu file saves
             if (WorldSaveListManager.Instance != null)
@@ -120,17 +123,17 @@ namespace Script.GUI_Controller.StartMenu
             chooseSavePanelBackBtn.onClick.AddListener(OpenHomeMenuPanel);
             optionsPanelBackBtn.onClick.AddListener(OpenHomeMenuPanel);
             backChooseSavePanel.onClick.AddListener(OpenChooseSavePanel);
-         
+
             newGame.onClick.AddListener(OpenCreateNewGamePanel);
-            
+
             openWorldInfoPanelBtn.onClick.AddListener(OpenShowWorldInfoPanel);
             //btn in show world info panel
             exitShowWorldInfoPanel.onClick.AddListener(ExitWorldInfoPanel);
-            
+
             //btn create new world
             createNewWorldBtn.onClick.AddListener(createNewWorldAction);
             deleteSaveBtn.onClick.AddListener(DeleteCurrentWorldSave);
-            
+
             //truyền save path đến screenGamePlay
             //đối với save đã có sẵn
             playBtn.onClick.AddListener(() => LoadSelectedWorldAndTransitionToGame(worldName.text));
@@ -139,6 +142,9 @@ namespace Script.GUI_Controller.StartMenu
 
         public void LoadSelectedWorldAndTransitionToGame(string worldName)
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             if (WorldSaveListManager.Instance == null) return;
             string worldFolderPath = WorldSaveListManager.Instance.GetWorldFolderPath(worldName);
 
@@ -152,6 +158,9 @@ namespace Script.GUI_Controller.StartMenu
         
         public void createNewWorldAction()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             if (WorldSaveListManager.Instance == null) return;
             bool createWorldDone = false;
             if (string.IsNullOrEmpty(inputWorldSeed.text))
@@ -160,7 +169,7 @@ namespace Script.GUI_Controller.StartMenu
             }
             createWorldDone = WorldSaveListManager.Instance.CreateWorldSave(inputWorldName.text,inputWorldSeed.text);//tạo thế giới mới dựa theo tên truyền vào
             //createWorldDone sẽ true nếu tạo thành công
-            
+
             if (createWorldDone)
             {
                 //mở thế giới vừa được tạo ra
@@ -176,6 +185,9 @@ namespace Script.GUI_Controller.StartMenu
         }
         public void PreSave()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             int preIndex = currentWorldIndex;//khởi tạo số trước giảm 1 đơn vị
             preIndex--;
             if (preIndex <= 0)//nếu số trước = 0
@@ -192,6 +204,9 @@ namespace Script.GUI_Controller.StartMenu
         }
         public void NextSave()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             int nextIndex = currentWorldIndex;
             nextIndex++;
             if (nextIndex >= totalWorld)
@@ -254,6 +269,9 @@ namespace Script.GUI_Controller.StartMenu
         #region Open panel metho
         public void OpenShowWorldInfoPanel()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             if (worldInfo != null)
             {
                 showWorldInfoPanel.SetActive(true);
@@ -262,7 +280,10 @@ namespace Script.GUI_Controller.StartMenu
         }
 
         public void ExitWorldInfoPanel()
-        { 
+        {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             showWorldInfoPanel.SetActive(false);
         }
 
@@ -286,32 +307,41 @@ namespace Script.GUI_Controller.StartMenu
 
         public void OpenHomeMenuPanel()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             SetActiveFalseAllPanel();
             homeMenuPanel.SetActive(true);
         }
 
         public void OpenCreateNewGamePanel()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             SetActiveFalseAllPanel();
             createNewWorldPanel.SetActive(true);
             ClearCreateNewGamePanel();
         }
- 
+
         public void ClearCreateNewGamePanel()
         {
             inputWorldName.text = "";
             inputWorldSeed.text = "";
         }
-        
+
         public void OpenChooseSavePanel()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             EmptyWorldSave();//mặc định là không tìm thấy thế giới
             currentWorldIndex = 1;//đặt bộ đếm thế giới hiện tại
             SetActiveFalseAllPanel();
             chooseSavePanel.SetActive(true);
-            
+
             if (WorldSaveListManager.Instance == null) return;
-            
+
             //cập nhật thế tổng số thế giới
             WorldSaveListManager.Instance.LoadWorldInfosToChooseSavePanel();
             UpdateTotalWorld(WorldSaveListManager.Instance.CountWorldArr());
@@ -330,6 +360,9 @@ namespace Script.GUI_Controller.StartMenu
         }
         public void OpenOptionsPanel()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             SetActiveFalseAllPanel();
             optionsPanel.SetActive(true);
         }
@@ -353,6 +386,9 @@ namespace Script.GUI_Controller.StartMenu
         
         public void DeleteCurrentWorldSave()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             if (confirmationPanel == null)
             {
                 Debug.LogError("confirmationPanel is null! Please assign the scene instance in the Inspector.");

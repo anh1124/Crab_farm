@@ -65,6 +65,9 @@ namespace Script.GUI_Controller
 
         public void ShowPauseMenu()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             Time.timeScale = 0; // Bật pause
             pauseMenu.SetActive(true);
 
@@ -77,12 +80,18 @@ namespace Script.GUI_Controller
 
         public void ShowSoundSetting()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             pauseMenu.SetActive(false);
             soundSettingCanvas.SetActive(true);
         }
 
         public void HideSoundSetting()
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             soundSettingCanvas.SetActive(false);
             pauseMenu.SetActive(true);
         }

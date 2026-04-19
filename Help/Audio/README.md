@@ -22,6 +22,23 @@ AudioEmitter (gắn trên GameObject)
 ├── OnRangeChanged Event
 └── PlaySound/StopSound API
 ```
+[AudioManager] SoundRegistry Debug - Total sounds: 16
+  - UI_Click | Clip: UI_Click | Min: 0m | Max: 0m
+  - Guide_Show | Clip: Guide_Show | Min: 0m | Max: 0m
+  - Player_Lose | Clip: Player_Lose | Min: 0m | Max: 0m
+  - Footstep_Run | Clip: Footstep_Run | Min: 2m | Max: 15m
+  - Footstep_Walk | Clip: Footstep_Walk | Min: 2m | Max: 10m
+  - Bow_Draw | Clip: Bow_Draw | Min: 3m | Max: 15m
+  - Bow_Release | Clip: Bow_Release | Min: 3m | Max: 20m
+  - Arrow_HitGround | Clip: Arrow_HitGround | Min: 2m | Max: 15m
+  - Coin_Pickup | Clip: Coin_Pickup | Min: 2m | Max: 10m
+  - Coin_Drop | Clip: Coin_Drop | Min: 2m | Max: 10m
+  - ShieldBot_Activate | Clip: ShieldBot_Activate | Min: 3m | Max: 15m
+  - ShieldBot_Shock | Clip: ShieldBot_Shock | Min: 3m | Max: 20m
+  - Portal_Activate | Clip: Portal_Activate | Min: 3m | Max: 15m
+  - Portal_Normal | Clip: Portal_Normal | Min: 3m | Max: 10m
+  - Denizen_JobChange | Clip: Denizen_JobChange | Min: 3m | Max: 15m
+  - Test_Sound | Clip: playerbosst | Min: 0m | Max: 0m
 
 ---
 
@@ -478,42 +495,6 @@ public class CampfireBehavior : MonoBehaviour
 
 ---
 
-## Performance Optimization
-
-### Tránh O(n) Trong Update()
-
-**Trước refactor**:
-- AudioManager.Update() → Iterate tất cả active AudioSource → Check distance
-- O(n) mỗi frame với n = số lượng active sounds
-
-**Sau refactor**:
-- PlayerAudioZone poll mỗi 0.1s → Iterate AudioEmitterRegistry → SetInRange()
-- AudioEmitter.PlaySound() chỉ check _isInRange (O(1))
-- Không có O(n) trong Update()
-
-### Object Pooling
-
-**Không dùng pool**:
-- Mỗi lần phát sound → new GameObject() → tốn CPU/GC
-- Hủy sau khi xong → garbage collection
-
-**Dùng pool**:
-- Tạo sẵn AudioSource → reuse nhiều lần
-- Không tạo/hủy → không tốn GC
-- Giới hạn maxPoolSize → tránh overflow
-
-### Distance Culling
-
-**Không culling**:
-- Tất cả sound phát → tốn pool
-- AudioSource ở xa vẫn chạy → tốn CPU
-
-**Có culling**:
-- Sound xa không phát → tiết kiệm pool
-- Chỉ sound gần player chạy → tiết kiệm CPU
-
----
-
 ## Debug & Testing
 
 ### AudioPool Debug
@@ -540,26 +521,6 @@ Trong Inspector của PlayerAudioZone:
 - CheckEmitterImmediate() trước khi phát
 - Debug log với distance info
 - Auto-select key với số
-
----
-
-## Checklist Kiểm Tra Sau Refactor
-
-### Compile Check
-- [ ] Không có compilation error
-- [ ] Tất cả script compile thành công
-
-### Runtime Check
-- [ ] Sound phát khi player vào vùng
-- [ ] Sound dừng khi player ra vùng
-- [ ] Loop sound hoạt động đúng
-- [ ] One-shot sound auto-return pool
-- [ ] Distance culling hoạt động đúng
-
-### Performance Check (Profiler)
-- [ ] Update() của AudioManager không trong Profiler
-- [ ] PlayerAudioZone.BatchCheck() chạy định kỳ (0.1s)
-- [ ] Pool ổn định, không leak
 
 ---
 

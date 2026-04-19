@@ -78,6 +78,9 @@ public class ConfirmationMenu : MonoBehaviour
         cancelButton.onClick.RemoveAllListeners();
         cancelButton.onClick.AddListener(() =>
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             req.OnCancel?.Invoke();
             CloseMenu(false);
         });
@@ -85,6 +88,9 @@ public class ConfirmationMenu : MonoBehaviour
         confirmButton.onClick.RemoveAllListeners();
         confirmButton.onClick.AddListener(() =>
         {
+            // Play UI click sound
+            Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
+
             req.OnConfirm?.Invoke();
             CloseMenu(false);
         });

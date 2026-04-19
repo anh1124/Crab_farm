@@ -76,9 +76,6 @@ namespace Script.Game.Mobs.Denizen.Core
 
         public DenizenJob JobBrain => _currentJob;
 
-        public event System.Action<GameObject> OnDieEvent;
-        public event System.Action<bool> OnIgnoreReturnToPortalChanged;
-
         // IHealthReactive events
         public event System.Action<float, float> OnHealthChanged;
         public event System.Action<float> OnTakeDamageEvent;
@@ -88,6 +85,7 @@ namespace Script.Game.Mobs.Denizen.Core
             if (damage <= 0f) return;
 
             OnTakeDamageEvent?.Invoke(damage);
+            OnHealthChanged?.Invoke(0f, 0f); // Dummy values - Denizen is immortal, no HP system
 
             // Root nhận damage, sau đó route về job đang active để xử lý hành vi cụ thể theo role.
             var activeJob = _currentJob != null && _currentJob.enabled ? _currentJob : _context?.CurrentJob;
