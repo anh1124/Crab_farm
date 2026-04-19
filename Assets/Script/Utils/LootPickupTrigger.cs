@@ -4,6 +4,7 @@ using Script.Data_Model.Interfaces;
 using Script.Game.Enemy;
 using Script.Game.Item.Coin;
 using Script.Game.Player;
+using Script.Audio;
 
 namespace Script.Utils
 {
@@ -32,6 +33,7 @@ namespace Script.Utils
         private bool _isEnemy;
         private PlayerBehavior _playerBehavior; // Cache riêng cho Player để kiểm tra túi đầy
         private ICoinPool _coinPool;
+        private AudioEmitter _audioEmitter;
 
         #endregion
 
@@ -46,6 +48,9 @@ namespace Script.Utils
         {
             CacheReceiverAndOwner();
             CacheFactionFlags();
+            // Get AudioEmitter from owner (parent) since trigger is on child GameObject
+            if (_ownerNpc != null)
+                _audioEmitter = _ownerNpc.GetComponent<AudioEmitter>();
         }
 
         /// <summary>
@@ -148,17 +153,44 @@ namespace Script.Utils
         /// </summary>
         private void ExecutePickup(PhysicalItem drop, GameObject itemObject)
         {
+            Debug.Log($"[LootPickup] ExecutePickup called. itemType={drop.itemType}, _coinPool={_coinPool != null}");
+
             // Đánh dấu chủ sở hữu (nếu có _ownerNpc, ngược lại lấy gameObject của trigger)
             drop.pickedBy = _ownerNpc != null ? _ownerNpc.gameObject : gameObject;
             drop.StopAllCoroutines();
             itemObject.SetActive(false);
 
-            if (drop.itemType == ItemType.Coin && _coinPool != null)
+            // Phát âm thanh khi nhặt coin (cho cả Player, Denizen, Enemy)
+            if (drop.itemType == ItemType.Coin)
             {
-                _coinPool.ReturnCoin(itemObject);
+                Debug.Log($"[LootPickup] Picking up coin. _audioEmitter={_audioEmitter != null}, owner={_ownerNpc?.name}");
+                if (_audioEmitter != null)
+                    _audioEmitter.PlaySound("Coin_Pickup", PlaySoundConfig.Default);
+                else
+                    Debug.LogWarning("[LootPickup] _audioEmitter is null! Cannot play Coin_Pickup sound.");
+            }
+
+            if (drop.itemType == ItemType.Coin)
+            {
+                // Return coin to pool - use FindObjectOfType if _coinPool not set (for Denizens/Enemies)
+                ICoinPool pool = _coinPool;
+                if (pool == null)
+                    pool = FindObjectOfType<Script.Game.Item.Coin.CoinPool>();
+
+                if (pool != null)
+                {
+                    pool.ReturnCoin(itemObject);
+                    Debug.Log($"[LootPickup] Coin returned to pool");
+                }
+                else
+                {
+                    Debug.LogWarning("[LootPickup] CoinPool not found! Destroying coin.");
+                    Destroy(itemObject, 0.1f);
+                }
             }
             else
             {
+                Debug.Log($"[LootPickup] Not coin. itemType={drop.itemType}");
                 Destroy(itemObject, 0.1f);
             }
         }

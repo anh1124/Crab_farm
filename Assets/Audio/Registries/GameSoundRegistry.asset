@@ -35,59 +35,73 @@ MonoBehaviour:
       maxDistance: 15
     - key: Footstep_Walk
       clip: {fileID: 8300000, guid: 5301839c5a9e8b04a9806794119ac897, type: 3}
-      minDistance: 2
-      maxDistance: 10
+      minDistance: 5
+      maxDistance: 35
+    - key: NPC_Blood_Dead
+      clip: {fileID: 8300000, guid: 214af3c9815a29a45925be902cbfbfb3, type: 3}
+      minDistance: 5
+      maxDistance: 35
+    - key: Power_Down
+      clip: {fileID: 8300000, guid: f212d27789b7e554da7c5d91ab279be3, type: 3}
+      minDistance: 5
+      maxDistance: 35
   - groupName: Item
     entries:
     - key: Bow_Draw
       clip: {fileID: 8300000, guid: 31b1cc5371943874e9dd026a36164a73, type: 3}
-      minDistance: 3
-      maxDistance: 15
+      minDistance: 5
+      maxDistance: 35
     - key: Bow_Release
       clip: {fileID: 8300000, guid: d24b89af6c111db4ba205a206ce2e2dd, type: 3}
-      minDistance: 3
-      maxDistance: 20
+      minDistance: 5
+      maxDistance: 35
     - key: Arrow_HitGround
       clip: {fileID: 8300000, guid: 5485d62b2a47cd64c8619b9bc4bd460b, type: 3}
-      minDistance: 2
-      maxDistance: 15
+      minDistance: 5
+      maxDistance: 35
     - key: Coin_Pickup
-      clip: {fileID: 8300000, guid: 758b14f823fb2dd4f995d1fd93b93c94, type: 3}
+      clip: {fileID: 8300000, guid: 9a8e73b4abbc1b74a9bc7173e6bb53cd, type: 3}
       minDistance: 2
-      maxDistance: 10
+      maxDistance: 35
     - key: Coin_Drop
       clip: {fileID: 8300000, guid: ffc97bdcd85789e40bb5cf08251a9cf7, type: 3}
       minDistance: 2
-      maxDistance: 10
+      maxDistance: 35
   - groupName: Enemy
     entries:
     - key: ShieldBot_Activate
       clip: {fileID: 8300000, guid: 26411b5f389aafa47baa762e928a3862, type: 3}
-      minDistance: 3
-      maxDistance: 15
+      minDistance: 10
+      maxDistance: 35
     - key: ShieldBot_Shock
       clip: {fileID: 8300000, guid: 8a13bc1bdb0888e4f9f490ce6b24edfd, type: 3}
-      minDistance: 3
-      maxDistance: 20
+      minDistance: 10
+      maxDistance: 35
   - groupName: Environment
     entries:
     - key: Portal_Activate
       clip: {fileID: 8300000, guid: 1b17c2303f002e442b3b0b2c118a3277, type: 3}
-      minDistance: 3
-      maxDistance: 15
+      minDistance: 10
+      maxDistance: 35
     - key: Portal_Normal
-      clip: {fileID: 8300000, guid: d7aad9aa2b8914444ab0da518fa6b5d3, type: 3}
-      minDistance: 3
-      maxDistance: 10
+      clip: {fileID: 8300000, guid: b8c31a946b0eb4541bc8a4a509f99d86, type: 3}
+      minDistance: 10
+      maxDistance: 35
   - groupName: NPC_Denizen
     entries:
     - key: Denizen_JobChange
       clip: {fileID: 8300000, guid: d8ca0fe4f3e38f2498d9bdebdfe8a7be, type: 3}
-      minDistance: 3
-      maxDistance: 15
+      minDistance: 10
+      maxDistance: 35
   - groupName: Test_Sound
     entries:
     - key: Test_Sound
       clip: {fileID: 8300000, guid: 78b426afc02a43440b805a78ccc5babd, type: 3}
       minDistance: 0
       maxDistance: 0
+  - groupName: Skill
+    entries:
+    - key: SwingWeapon
+      clip: {fileID: 8300000, guid: 4d8ca84beb918f24aaf1e21cf8818950, type: 3}
+      minDistance: 15
+      maxDistance: 35

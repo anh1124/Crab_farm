@@ -5,11 +5,13 @@ using Script.Game.Enemy.Core;
 using Script.Game.Enemy.States;
 using Script.Data_Model.Interfaces;
 using Script.Manager.GamePlayManager;
+using Script.Audio;
 using UnityEngine;
 
 namespace Script.Game.Enemy.Core
 {
     [RequireComponent(typeof(Script.Game.PlayerCharacter.Skills.SkillManager))]
+    [RequireComponent(typeof(AudioEmitter))]
     public class EnemyAIController : MonoBehaviour, INPCBehavior, IItemHandle
     {
         [Header("Debug Info")]
@@ -23,6 +25,9 @@ namespace Script.Game.Enemy.Core
         protected EnemyContext _ctx;
         protected EnemyState _currentState;
 
+        // Audio
+        protected AudioEmitter _audioEmitter;
+
         // Pre-allocated States
         protected IdleState _idleState;
         protected MoveToTargetState _moveState;
@@ -34,6 +39,7 @@ namespace Script.Game.Enemy.Core
         public EnemyState MoveStateInstance => _moveState;
         public EnemyState ReturnStateInstance => _returnState;
         public EnemyState AttackStateInstance => _attackState;
+        public EnemyState DeadStateInstance => _deadState;
 
         [SerializeField] protected string[] _animatorTriggers;
 
@@ -42,9 +48,10 @@ namespace Script.Game.Enemy.Core
             EnemyStatus status = GetComponent<EnemyStatus>();
             Animator animator = GetComponent<Animator>();
             RayCastHelper rch = GetComponent<RayCastHelper>();
-            
+            _audioEmitter = GetComponent<AudioEmitter>();
+
             // Xóa bỏ dòng overwrite isDebug để giữ nguyên giá trị bạn tích ở Inspector
-            
+
             _ctx = new EnemyContext
             {
                 Self           = gameObject,
@@ -52,7 +59,7 @@ namespace Script.Game.Enemy.Core
                 Animator       = animator,
                 Controller     = this,
                 Status         = status,
-                TargetManager  = EnemyTargetManager.Instance, 
+                TargetManager  = EnemyTargetManager.Instance,
                 RaycastHelper  = rch,
                 SkillManager   = GetComponent<Script.Game.PlayerCharacter.Skills.SkillManager>(),
                 IsAlive        = true
@@ -63,7 +70,7 @@ namespace Script.Game.Enemy.Core
             _moveState   = GetMoveState() as MoveToTargetState;
             _returnState = new ReturnToPortalState();
             _attackState = GetAttackState(); 
-            _deadState   = new DeadState();
+            _deadState   = GetDeadState();
 
             _currentState = _idleState;
             UpdateAnimatorTriggers();
@@ -225,7 +232,7 @@ namespace Script.Game.Enemy.Core
             currentStateName = _currentState.GetType().Name;
         }
 
-        public void ResetEnemy(GameObject portal)
+        public virtual void ResetEnemy(GameObject portal)
         {
             _ctx.IsAlive = true;
             _ctx.HomePortal = portal;
@@ -266,7 +273,8 @@ namespace Script.Game.Enemy.Core
         }
 
         public virtual EnemyState GetMoveState() => new MoveToTargetState();
-        public virtual AttackState GetAttackState() => new AttackState(); 
+        public virtual AttackState GetAttackState() => new AttackState();
+        public virtual DeadState GetDeadState() => new DeadState(); 
 
         [ContextMenu("Print Detailed Debug")]
         public virtual void PrintDetailedDebug()

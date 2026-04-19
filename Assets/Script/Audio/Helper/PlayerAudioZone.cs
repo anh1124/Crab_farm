@@ -16,36 +16,46 @@ namespace Script.Audio
     /// </summary>
     public class PlayerAudioZone : MonoBehaviour
     {
+        #region Inspector Fields
+
         [Header("Performance")]
-        [Tooltip("Giây giữa mỗi lần poll. 0.1s")]
+        [Tooltip("Giây giữa mỗi lần poll.")]
         [SerializeField] private float checkInterval = 0.1f;
 
         [Header("Debug")]
-        [SerializeField] private bool showGizmo = true;
-        [SerializeField] private int _emitterCountInRange; // Inspector debug
+        [SerializeField] private bool  showGizmo     = true;
+        [SerializeField] private Color gizmoFillColor = new Color(0f, 1f, 0.5f, 0.15f);
+        [SerializeField] private Color gizmoWireColor = new Color(0f, 1f, 0.5f, 0.8f);
+        [SerializeField] private int   _emitterCountInRange;
 
-        // ─────────────────────────────────────────────
-        //  Unity Lifecycle
-        // ─────────────────────────────────────────────
+        #endregion
+
+        #region Private Fields
+
+        private Vector2      _playerPos2D;   // Cache, update mỗi BatchCheck
+        private AudioManager _audioManager;  // Cache, tránh gọi Instance nhiều lần
+
+        #endregion
+
+        #region Unity Lifecycle
 
         private void Start()
         {
-            // Cập nhật AudioManager về PlayerTransform
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.PlayerTransform = transform;
+            _audioManager = AudioManager.Instance;
+
+            if (_audioManager != null)
+                _audioManager.PlayerTransform = transform;
 
             StartCoroutine(PollRoutine());
         }
 
-        // ─────────────────────────────────────────────
-        //  Poll
-        // ─────────────────────────────────────────────
+        #endregion
+
+        #region Poll
 
         private IEnumerator PollRoutine()
         {
-            // WaitForSeconds tạo một lần, tái sử dụng → không tốn GC
             var wait = new WaitForSeconds(checkInterval);
-
             while (true)
             {
                 yield return wait;
@@ -55,72 +65,91 @@ namespace Script.Audio
 
         private void BatchCheck()
         {
-            Vector2 playerPos = new Vector2(transform.position.x, transform.position.y);
-            int inRangeCount = 0;
+            // Cache playerPos và cullingDist 1 lần cho cả batch
+            _playerPos2D = transform.position;
+            float cullingDist = GetCullingDistance();
 
-            var emitters = AudioEmitterRegistry.All;
+            var emitters    = AudioEmitterRegistry.All;
+            int  inRangeCount = 0;
+
             for (int i = 0; i < emitters.Count; i++)
             {
                 var emitter = emitters[i];
                 if (emitter == null) continue;
 
-                // 2D: tính khoảng cách X và Y
-                Vector2 emitterPos = new Vector2(emitter.transform.position.x, emitter.transform.position.y);
-                float distance = Vector2.Distance(playerPos, emitterPos);
-
-                // Lấy cullingDistance từ AudioManager
-                float cullingDist = AudioManager.Instance?.CullingDistance ?? 50f;
-                bool inRange = distance <= cullingDist;
-
+                bool inRange = IsEmitterInRange(emitter, cullingDist);
                 emitter.SetInRange(inRange);
 
                 if (inRange) inRangeCount++;
             }
 
-            _emitterCountInRange = inRangeCount; // Inspector debug
+            _emitterCountInRange = inRangeCount;
         }
 
+        #endregion
+
+        #region Public API
+
         /// <summary>
-        /// Check ngay lập tức cho một emitter cụ thể (cho AudioTest).
+        /// Check ngay lập tức cho một emitter cụ thể (cho AudioTest / debug).
         /// </summary>
         public void CheckEmitterImmediate(AudioEmitter emitter)
         {
             if (emitter == null) return;
 
-            Vector2 playerPos = new Vector2(transform.position.x, transform.position.y);
-            Vector2 emitterPos = new Vector2(emitter.transform.position.x, emitter.transform.position.y);
-            float distance = Vector2.Distance(playerPos, emitterPos);
+            _playerPos2D = transform.position;
+            float cullingDist = GetCullingDistance();
+            bool  inRange     = IsEmitterInRange(emitter, cullingDist);
 
-            // Lấy cullingDistance từ AudioManager
-            float cullingDist = AudioManager.Instance?.CullingDistance ?? 50f;
-            bool inRange = distance <= cullingDist;
-
-            Debug.Log($"[PlayerAudioZone] CheckEmitterImmediate: distance={distance:F2}m, cullingDistance={cullingDist:F2}m, inRange={inRange}");
+            Debug.Log($"[PlayerAudioZone] CheckEmitterImmediate: " +
+                      $"distance={Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position):F2}m, " +
+                      $"cullingDistance={cullingDist:F2}m, inRange={inRange}");
 
             emitter.SetInRange(inRange);
         }
 
-        // ─────────────────────────────────────────────
-        //  Gizmo (Editor visualization)
-        // ─────────────────────────────────────────────
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Tính khoảng cách 2D giữa player và emitter, so sánh với cullingDist.
+        /// </summary>
+        private bool IsEmitterInRange(AudioEmitter emitter, float cullingDist)
+        {
+            Vector2 emitterPos = emitter.transform.position;
+            return Vector2.Distance(_playerPos2D, emitterPos) <= cullingDist;
+        }
+
+        /// <summary>
+        /// Lấy cullingDistance từ AudioManager đã cache.
+        /// Fallback về AudioConstants nếu manager chưa sẵn sàng.
+        /// </summary>
+        private float GetCullingDistance()
+            => _audioManager != null
+                ? _audioManager.CullingDistance
+                : AudioConstants.DEFAULT_CULLING_DISTANCE;
+
+        #endregion
+
+        #region Gizmo
 
         private void OnDrawGizmosSelected()
         {
             if (!showGizmo) return;
 
-            // Lấy cullingDistance từ AudioManager
-            float cullingDist = AudioManager.Instance?.CullingDistance ?? 50f;
+            // Dùng Instance trực tiếp vì Gizmo chạy trong Editor (không có Start)
+            float cullingDist = Application.isPlaying && _audioManager != null
+                ? _audioManager.CullingDistance
+                : AudioConstants.DEFAULT_CULLING_DISTANCE;
 
-            // Vẽ vùng culling dưới dạng hình chữ nhật (trục X là quan trọng)
-            Gizmos.color = new Color(0f, 1f, 0.5f, 0.15f);
-            Gizmos.DrawCube(
-                transform.position,
-                new Vector3(cullingDist * 2f, 20f, 1f));
+            Gizmos.color = gizmoFillColor;
+            Gizmos.DrawSphere(transform.position, cullingDist);
 
-            Gizmos.color = new Color(0f, 1f, 0.5f, 0.8f);
-            Gizmos.DrawWireCube(
-                transform.position,
-                new Vector3(cullingDist * 2f, 20f, 1f));
+            Gizmos.color = gizmoWireColor;
+            Gizmos.DrawWireSphere(transform.position, cullingDist);
         }
+
+        #endregion
     }
 }

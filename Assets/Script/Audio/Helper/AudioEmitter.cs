@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Script.Audio
@@ -17,6 +18,28 @@ namespace Script.Audio
     /// </summary>
     public class AudioEmitter : MonoBehaviour
     {
+        // ─────────────────────────────────────────────
+        //  Internal Types
+        // ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Handle gom nhóm state của một sound đang active.
+        /// Thay thế 3 dictionary song song (_activeSounds, _loopFlags, _activeCoroutines).
+        /// </summary>
+        private readonly struct ActiveSoundHandle
+        {
+            public readonly AudioSource Source;
+            public readonly bool IsLoop;
+            public readonly Coroutine ReturnCoroutine;
+
+            public ActiveSoundHandle(AudioSource source, bool isLoop, Coroutine returnCoroutine)
+            {
+                Source = source;
+                IsLoop = isLoop;
+                ReturnCoroutine = returnCoroutine;
+            }
+        }
+
         // ─────────────────────────────────────────────
         //  Events
         // ─────────────────────────────────────────────
@@ -35,17 +58,32 @@ namespace Script.Audio
 
         private bool _isInRange = false;
 
-        // soundKey → AudioSource đang dùng
-        private Dictionary<string, AudioSource> _activeSounds
-            = new Dictionary<string, AudioSource>();
+        // soundKey → ActiveSoundHandle gom nhóm AudioSource, loop flag, và coroutine
+        private readonly Dictionary<string, ActiveSoundHandle> _activeSounds = new();
+        private readonly Dictionary<string, float> _lastPlayTimes = new();
+        private const float MIN_PLAY_INTERVAL = 0.1f; // Minimum time between same sound plays
 
-        // soundKey → loop flag (để biết cái nào không dùng ReturnAfterClip)
-        private Dictionary<string, bool> _loopFlags
-            = new Dictionary<string, bool>();
+        // Demand queue: soundKey → PlaySoundConfig (chỉ loop sounds)
+        // PlayerAudioZone sẽ kích hoạt play khi emitter trong range
+        private readonly Dictionary<string, PlaySoundConfig> _demandedSounds = new();
 
-        // soundKey → coroutine đang chạy ReturnAfterClip
-        private Dictionary<string, Coroutine> _activeCoroutines
-            = new Dictionary<string, Coroutine>();
+        // Dependency injection cho audio source provider
+        private IAudioSourceProvider _provider;
+
+        /// <summary>
+        /// Setup provider qua dependency injection.
+        /// Nếu không gọi, sẽ fallback về AudioManager.Instance (backward compatible).
+        /// </summary>
+        public void Setup(IAudioSourceProvider provider)
+        {
+            _provider = provider;
+        }
+
+        /// <summary>
+        /// Provider với fallback: dùng injected provider hoặc AudioManager.Instance.
+        /// </summary>
+        private IAudioSourceProvider Provider
+            => _provider ?? AudioManager.Instance as IAudioSourceProvider;
 
         // ─────────────────────────────────────────────
         //  Debug
@@ -53,7 +91,11 @@ namespace Script.Audio
 
         [Header("Debug (read-only)")]
         [SerializeField] private bool _debugInRange;
-        [SerializeField] private List<string> _activeSoundsDebug = new List<string>();
+
+#if UNITY_EDITOR
+        /// <summary>Debug: danh sách sound keys đang active (Editor-only, auto-sync)</summary>
+        public IEnumerable<string> DebugActiveKeys => _activeSounds.Keys;
+#endif
 
         // ─────────────────────────────────────────────
         //  Unity Lifecycle
@@ -82,7 +124,7 @@ namespace Script.Audio
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// Được gọi bởi PlayerAudioZone mỗi 0.2s.
+        /// Được gọi bởi PlayerAudioZone mỗi 0.1s.
         /// Chỉ fire event khi trạng thái thực sự thay đổi (tránh spam).
         /// </summary>
         public void SetInRange(bool inRange)
@@ -93,7 +135,18 @@ namespace Script.Audio
             _debugInRange = inRange; // Inspector debug
 
             if (!inRange)
-                StopAll(); // Ra vùng → dừng hết âm thanh
+            {
+                // Ra vùng → dừng tất cả active sounds (nhưng giữ demand queue)
+                StopAllActiveSounds();
+            }
+            else
+            {
+                // Vào vùng → kích hoạt tất cả demanded loop sounds
+                foreach (var soundKey in _demandedSounds.Keys)
+                {
+                    TriggerDemandedPlay(soundKey);
+                }
+            }
 
             OnRangeChanged?.Invoke(inRange);
         }
@@ -115,10 +168,10 @@ namespace Script.Audio
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// Phát âm thanh theo soundKey từ SoundRegistry.
+        /// Phát âm thanh theo soundKey từ SoundRegistry (API mới với config).
         ///
         /// LOOP SOUND (lửa trại, bước chân...):
-        ///   PlaySound("Campfire_Crackle", loop: true)
+        ///   PlaySound("Campfire_Crackle", new PlaySoundConfig(loop: true))
         ///   → Tồn tại đến khi StopSound() hoặc SetInRange(false)
         ///
         /// ONE-SHOT (tiếng đánh, tiếng nhặt đồ...):
@@ -126,62 +179,60 @@ namespace Script.Audio
         ///   → Tự động trả pool khi clip xong
         /// </summary>
         /// <param name="soundKey">Key trong SoundRegistry.</param>
-        /// <param name="loop">true = loop liên tục, false = one-shot.</param>
-        /// <param name="minDistance">0 = dùng giá trị mặc định từ SoundEntry.</param>
-        /// <param name="maxDistance">0 = dùng giá trị mặc định từ SoundEntry.</param>
-        /// <param name="volumeScale">Nhân thêm âm lượng (0–1).</param>
-        /// <param name="forceReplace">Dừng và phát lại nếu đang phát cùng key.</param>
-        public void PlaySound(
-            string soundKey,
-            bool   loop         = false,
-            float  minDistance  = 0f,
-            float  maxDistance  = 0f,
-            float  volumeScale  = 1f,
-            bool   forceReplace = false)
+        /// <param name="config">Config tùy chọn (default = PlaySoundConfig.Default).</param>
+        public void PlaySound(string soundKey, PlaySoundConfig config = default)
         {
-            // Guard 1: Không trong vùng → không phát
-            if (!_isInRange)
+            // Guard: Provider chưa sẵn sàng
+            if (Provider == null)
             {
-                Debug.LogWarning($"[AudioEmitter] PlaySound('{soundKey}') skipped: not in range");
+                Debug.LogError("[AudioEmitter] Provider is null!");
                 return;
             }
 
-            // Guard 2: AudioManager chưa sẵn sàng
-            if (AudioManager.Instance == null)
+            // Guard: Chặn spam cùng sound quá nhanh (dưới 0.1s)
+            float currentTime = Time.time;
+            if (_lastPlayTimes.TryGetValue(soundKey, out float lastPlayTime))
             {
-                Debug.LogError("[AudioEmitter] AudioManager.Instance is null!");
+                if (currentTime - lastPlayTime < MIN_PLAY_INTERVAL)
+                {
+                    return; // Quá sát nhau, bỏ qua
+                }
+            }
+
+            // Loop sound: chỉ đăng ký demand, không play ngay
+            if (config.Loop)
+            {
+                _demandedSounds[soundKey] = config;
+                // Nếu đang trong range, kích hoạt play ngay
+                if (_isInRange)
+                {
+                    TriggerDemandedPlay(soundKey);
+                }
                 return;
             }
 
-            // Guard 3: Đang phát cùng key
-            if (_activeSounds.ContainsKey(soundKey))
-            {
-                if (!forceReplace) return;
-                StopSound(soundKey); // Force replace → dừng cái cũ (bao gồm cả coroutine)
-            }
+            // One-shot sound: play ngay lập tức
+            PlayOneShot(soundKey, config);
 
-            Debug.Log($"[AudioEmitter] PlaySound('{soundKey}') started, inRange={_isInRange}");
+            // Update last play time
+            _lastPlayTimes[soundKey] = Time.time;
+        }
 
-            // Lấy SoundEntry
-            var registry = AudioManager.Instance.SoundRegistry;
-            if (registry == null)
-            {
-                Debug.LogError("[AudioEmitter] SoundRegistry is null!");
-                return;
-            }
-
-            var entry = registry.GetEntry(soundKey);
+        /// <summary>Phát one-shot sound ngay lập tức (không demand).</summary>
+        private void PlayOneShot(string soundKey, PlaySoundConfig config)
+        {
+            var entry = Provider.GetEntry(soundKey);
             if (entry == null)
             {
                 Debug.LogWarning($"[AudioEmitter] Key không tồn tại: '{soundKey}'");
                 return;
             }
 
-            float actualMin = minDistance > 0f ? minDistance : entry.minDistance;
-            float actualMax = maxDistance > 0f ? maxDistance : entry.maxDistance;
+            float actualMin = config.MinDistance > 0f ? config.MinDistance : entry.minDistance;
+            float actualMax = config.MaxDistance > 0f ? config.MaxDistance : entry.maxDistance;
 
             // Xin pool
-            AudioSource source = AudioManager.Instance.GetAudioSourceFromPool(transform.position);
+            AudioSource source = Provider.Rent(transform.position);
             if (source == null)
             {
                 Debug.LogWarning("[AudioEmitter] Pool đã hết!");
@@ -190,69 +241,122 @@ namespace Script.Audio
 
             // Cấu hình source
             source.clip         = entry.clip;
-            source.volume       = volumeScale;
+            source.volume       = config.VolumeScale;
             source.minDistance  = actualMin;
             source.maxDistance  = actualMax;
-            source.loop         = loop;
+            source.loop         = false;
             source.spatialBlend = 1f;
 
-            AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, 0f);
+            AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
             source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
 
             // Bám theo transform (vẫn di chuyển cùng obj)
             source.transform.SetParent(transform);
             source.transform.localPosition = Vector3.zero;
 
-            // Lưu state
-            _activeSounds[soundKey] = source;
-            _loopFlags[soundKey]    = loop;
+            // Lưu state gom nhóm trong ActiveSoundHandle
+            string instanceId = $"{soundKey}_{Guid.NewGuid()}";
+            Coroutine returnCoroutine = StartCoroutine(ReturnAfterClip(instanceId, source, entry.clip.length));
 
-            // Debug list
-            _activeSoundsDebug.Add(soundKey);
+            _activeSounds[instanceId] = new ActiveSoundHandle(source, false, returnCoroutine);
 
             source.Play();
+        }
 
-            // Chỉ auto-return khi one-shot
-            if (!loop)
+        /// <summary>Kích hoạt play demanded sound (gọi bởi PlayerAudioZone khi vào range).</summary>
+        private void TriggerDemandedPlay(string soundKey)
+        {
+            if (!_demandedSounds.TryGetValue(soundKey, out var config)) return;
+            if (_activeSounds.ContainsKey(soundKey)) return; // Đang play rồi
+
+            var entry = Provider.GetEntry(soundKey);
+            if (entry == null)
             {
-                Coroutine coroutine = StartCoroutine(ReturnAfterClip(soundKey, source, entry.clip.length));
-                _activeCoroutines[soundKey] = coroutine;
+                Debug.LogWarning($"[AudioEmitter] Key không tồn tại: '{soundKey}'");
+                return;
             }
+
+            float actualMin = config.MinDistance > 0f ? config.MinDistance : entry.minDistance;
+            float actualMax = config.MaxDistance > 0f ? config.MaxDistance : entry.maxDistance;
+
+            AudioSource source = Provider.Rent(transform.position);
+            if (source == null)
+            {
+                Debug.LogWarning("[AudioEmitter] Pool đã hết!");
+                return;
+            }
+
+            // Cấu hình source
+            source.clip         = entry.clip;
+            source.volume       = config.VolumeScale;
+            source.minDistance  = actualMin;
+            source.maxDistance  = actualMax;
+            source.loop         = true;
+            source.spatialBlend = 1f;
+
+            AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
+            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
+
+            source.transform.SetParent(transform);
+            source.transform.localPosition = Vector3.zero;
+
+            _activeSounds[soundKey] = new ActiveSoundHandle(source, true, null);
+
+            source.Play();
         }
 
         /// <summary>Dừng âm thanh cụ thể và trả pool về.</summary>
         public void StopSound(string soundKey)
         {
-            if (!_activeSounds.TryGetValue(soundKey, out AudioSource source)) return;
+            // Find all instances that start with the soundKey prefix
+            var keysToRemove = _activeSounds.Keys.Where(k => k.StartsWith(soundKey)).ToList();
 
-            // Dừng coroutine nếu đang chạy
-            if (_activeCoroutines.TryGetValue(soundKey, out Coroutine coroutine))
+            foreach (var key in keysToRemove)
             {
-                StopCoroutine(coroutine);
-                _activeCoroutines.Remove(soundKey);
+                if (!_activeSounds.TryGetValue(key, out var handle)) continue;
+
+                // Dừng coroutine nếu đang chạy (chỉ có cho one-shot)
+                if (handle.ReturnCoroutine != null)
+                {
+                    StopCoroutine(handle.ReturnCoroutine);
+                }
+
+                // Dừng AudioSource
+                if (handle.Source != null)
+                {
+                    handle.Source.Stop();
+                    Provider?.Return(handle.Source);
+                }
+
+                // Xóa khỏi dict
+                _activeSounds.Remove(key);
             }
 
-            source.Stop();
-            source.transform.SetParent(AudioManager.Instance.Pool.transform);
-
-            AudioManager.Instance.ReturnAudioSourceToPool(source);
-            _activeSounds.Remove(soundKey);
-            _loopFlags.Remove(soundKey);
-            _activeSoundsDebug.Remove(soundKey);
+            // Xóa khỏi demand queue nếu là loop sound
+            _demandedSounds.Remove(soundKey);
         }
 
-        /// <summary>Dừng tất cả âm thanh. Gọi tự động khi ra khỏi vùng hoặc OnDisable.</summary>
-        public void StopAll()
+        /// <summary>Dừng tất cả âm thanh đang active (không clear demand queue).</summary>
+        private void StopAllActiveSounds()
         {
-            // Copy keys để tránh modify dict khi iterate
             var keys = new List<string>(_activeSounds.Keys);
             foreach (var key in keys)
                 StopSound(key);
         }
 
+        /// <summary>Dừng tất cả âm thanh và xóa demand queue.</summary>
+        public void StopAll()
+        {
+            StopAllActiveSounds();
+            _demandedSounds.Clear();
+        }
+
         /// <summary>Kiểm tra âm thanh đang phát theo key.</summary>
         public bool IsPlaying(string soundKey)
-            => _activeSounds.TryGetValue(soundKey, out var src) && src != null && src.isPlaying;
+            => _activeSounds.Keys.Any(k => k.StartsWith(soundKey) &&
+                _activeSounds.TryGetValue(k, out var handle) &&
+                handle.Source != null &&
+                handle.Source.isPlaying);
 
         /// <summary>Số âm thanh đang phát.</summary>
         public int ActiveSoundCount => _activeSounds.Count;
@@ -269,7 +373,6 @@ namespace Script.Audio
             // Chỉ trả pool nếu âm thanh vẫn còn trong dict (chưa bị StopSound())
             if (_activeSounds.ContainsKey(soundKey))
             {
-                _activeCoroutines.Remove(soundKey); // Xóa reference trước khi StopSound
                 StopSound(soundKey);
             }
         }

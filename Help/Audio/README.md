@@ -4,6 +4,42 @@
 
 Hệ thống audio sử dụng kiến trúc **Registry + Poll** để tối ưu hóa performance bằng cách tránh các operation O(n) trong Update() cho distance culling.
 
+## ⚠️ QUAN TRỌNG - YÊU CẦU BẮT BUỘC
+
+### TẤT CẢ SFX PHẢI DÙNG AudioEmitter
+
+**BẮT BUỘC**: Khi phát SFX (Sound Effects), **KHÔNG BAO GIỜ** gọi trực tiếp `AudioManager.PlaySFXByKey()` hoặc `AudioManager.GetAudioSourceFromPool()`.
+
+**ĐÚNG CÁCH**:
+```csharp
+// ✅ Đúng: Dùng AudioEmitter
+_audioEmitter.PlaySound("ShieldBot_Activate");
+```
+
+**SAI CÁCH**:
+```csharp
+// ❌ Sai: Không gọi trực tiếp AudioManager
+AudioManager.Instance.PlaySFXByKey("ShieldBot_Activate", transform.position);
+```
+
+### Tại Sao Phải Dùng AudioEmitter?
+
+1. **Lifecycle Management**: AudioEmitter tự gọi `StopAll()` trong `OnDisable()` → khi enemy die/disable, tất cả sounds tự dừng
+2. **Auto-Cleanup**: Không cần manual cleanup, tránh AudioSource leaks
+3. **Distance Culling**: PlayerAudioZone tự động set range, AudioEmitter tự stop khi player ra khỏi vùng
+4. **Architecture**: AudioEmitter làm middle layer giữa behavior và AudioManager, giúp quản lý sound theo vòng đời object
+
+### Khi Nào Dùng AudioManager Trực Tiếp?
+
+Chỉ dùng `AudioManager` trực tiếp cho:
+- **BGM**: `AudioManager.Instance.PlayBGM(clip)`
+- **ENV (Ambient)**: `AudioManager.Instance.PlayENV(clip)`
+- **UI Sound**: `AudioManager.Instance.PlayUISound(soundKey)`
+
+**KHÔNG** dùng cho SFX spatial sounds (enemy attack, footstep, v.v.)
+
+---
+
 ### Các Thành Phần Chính
 
 ```
@@ -77,20 +113,25 @@ public AudioPool Pool => _pool;
 
 **API quan trọng**:
 ```csharp
-// BGM
+// BGM (dùng trực tiếp cho background music)
 public void PlayBGM(AudioClip clip, float fadeDuration = 1.0f)
 public void StopBGM(float fadeDuration = 1.0f)
 
-// ENV
+// ENV (dùng trực tiếp cho ambient sound)
 public void PlayENV(AudioClip clip, bool loop = true)
 public void StopENV()
 
-// SFX
+// UI Sound (dùng trực tiếp cho UI sound 2D)
+public void PlayUISound(string soundKey)
+
+// ⚠️ SFX methods - KHÔNG DÙNG TRỰC TIẾP
+// Dùng AudioEmitter.PlaySound() thay vì các methods dưới đây
 public void PlaySFXAtPosition(AudioClip clip, Vector3 worldPosition, ...)
 public void PlaySFXByKey(string key, Vector3 worldPosition, ...)
 public void PlaySFXFollowing(AudioClip clip, Transform target, ...)
 
-// Pool
+// Pool methods - KHÔNG DÙNG TRỰC TIẾP
+// AudioEmitter tự quản lý pool
 public AudioSource GetAudioSourceFromPool(Vector3 worldPosition)
 public void ReturnAudioSourceToPool(AudioSource source)
 ```
@@ -179,6 +220,10 @@ public static int Count => _all.Count
 **Vị trí**: `Assets/Script/Audio/Helper/AudioEmitter.cs`
 
 **Mô tả**: Component gắn lên GameObject (enemy, NPC, campfire, VFX...) để phát sound.
+
+**⚠️ QUAN TRỌNG - API CHÍNH CHO SFX**
+
+AudioEmitter là **API CHÍNH** cho tất cả SFX spatial sounds. Không gọi AudioManager trực tiếp cho SFX.
 
 **Chức năng chính**:
 - Tự Register/Unregister vào AudioEmitterRegistry
@@ -323,6 +368,133 @@ public class SoundEntry
 
 ---
 
+## Luồng Channel - Cách Từng Channel Hoạt Động
+
+### 1. SFX Channel (Spatial Sound Effects)
+
+**Mục đích**: Tiếng động có vị trí không gian (enemy attack, footstep, explosion, v.v.)
+
+**Luồng dữ liệu**:
+```
+GameObject (Enemy/NPC)
+└── AudioEmitter component
+    ├── OnEnable() → Register vào AudioEmitterRegistry
+    └── Behavior script gọi PlaySound("key")
+        └── AudioManager.GetAudioSourceFromPool()
+            └── AudioPool.Get() → AudioSource từ pool
+                ├── Set clip, volume, minDistance, maxDistance
+                ├── Set custom rolloff curve
+                ├── Set parent vào AudioEmitter.transform
+                └── source.Play()
+                    └── One-shot: Auto-return pool sau clip
+                    └── Loop: Tồn tại đến khi StopSound()
+```
+
+**Distance culling**:
+```
+PlayerAudioZone (mỗi 0.1s)
+└── Poll AudioEmitterRegistry.All
+    └── Tính distance 2D giữa player và emitter
+        └── if distance > cullingDistance
+            └── emitter.SetInRange(false)
+                └── emitter.StopAll()
+                    └── Return tất cả AudioSource về pool
+```
+
+**Lifecycle cleanup**:
+```
+GameObject.Disable/Destroy
+└── AudioEmitter.OnDisable()
+    ├── Unregister khỏi AudioEmitterRegistry
+    └── StopAll()
+        └── Return tất cả AudioSource về pool
+```
+
+**Ví dụ**: ShieldBot spawn → PlaySound("ShieldBot_Activate") → Enemy die → OnDisable → StopAll → Pool returned
+
+---
+
+### 2. BGM Channel (Background Music)
+
+**Mục đích**: Nhạc nền game, crossfade khi đổi bài
+
+**Luồng dữ liệu**:
+```
+AudioManager
+├── 2 AudioSource (bgmSourceA, bgmSourceB) cho crossfade
+└── PlayBGM(clip, fadeDuration)
+    ├── Kiểm tra source nào đang play
+    ├── Fade out source hiện tại (volume 1 → 0)
+    ├── Fade in source mới (volume 0 → 1)
+    └── Loop = true
+```
+
+**Không dùng pool**: BGM dùng dedicated AudioSource, không qua AudioPool
+
+**Không có distance culling**: BGM play toàn scene, không phụ thuộc vị trí player
+
+**Ví dụ**: Change scene → Fade out current BGM → Fade in new BGM
+
+---
+
+### 3. ENV Channel (Ambient Sound)
+
+**Mục đích**: Tiếng môi trường (wind, water, birds, v.v.)
+
+**Luồng dữ liệu**:
+```
+AudioManager
+├── 1 AudioSource (envSource) cho ambient
+└── PlayENV(clip, loop)
+    ├── Set clip vào envSource
+    ├── Loop = true
+    └── Play()
+```
+
+**Không dùng pool**: ENV dùng dedicated AudioSource, không qua AudioPool
+
+**Không có distance culling**: ENV play toàn scene, không phụ thuộc vị trí player
+
+**Ví dụ**: Daytime → PlayENV("Birds") → Nighttime → PlayENV("Crickets")
+
+---
+
+### 4. UI Channel (UI Sound Effects)
+
+**Mục đích**: Tiếng giao diện UI (button click, hover, v.v.) - 2D sound
+
+**Luồng dữ liệu**:
+```
+UI Button/Slider
+└── OnClick/OnHover event
+    └── AudioManager.PlayUISound("key")
+        └── Get SoundEntry từ SoundRegistry
+            └── uiSource.PlayOneShot(clip) hoặc Play()
+                ├── spatialBlend = 0 (2D sound)
+                └── Không có distance attenuation
+```
+
+**Dedicated AudioSource**: UI dùng 1 AudioSource riêng (uiSource), không qua AudioPool
+
+**Không có distance culling**: UI sound là 2D, không phụ thuộc vị trí player
+
+**Volume control**: Volume được control qua AudioMixer PARAM_UI
+
+**Ví dụ**: Click button → PlayUISound("UI_Click") → 2D sound phát ngay lập tức
+
+---
+
+## Tóm Tắt Channel
+
+| Channel | AudioSource | Pool | Distance Culling | Spatial | Use Case |
+|---------|-------------|------|------------------|---------|----------|
+| **SFX** | Dynamic (AudioPool) | ✅ | ✅ (PlayerAudioZone) | ✅ (3D) | Enemy attack, footstep, explosion |
+| **BGM** | Dedicated (2 sources) | ❌ | ❌ | ❌ (2D) | Background music |
+| **ENV** | Dedicated (1 source) | ❌ | ❌ | ❌ (2D) | Ambient sound |
+| **UI** | Dedicated (1 source) | ❌ | ❌ | ❌ (2D) | Button click, hover |
+
+---
+
 ## Luồng Hoạt Động
 
 ### 1. Khởi Tạo (Startup)
@@ -451,7 +623,69 @@ source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
 
 ## Loop Sound Pattern
 
-### Sử Dụng OnRangeChanged Event
+### Demand-Based Audio System (Mới)
+
+**Mục đích**: Loop sounds theo vòng đời object (portal, campfire) không bị dừng khi player ra xa, nhưng chỉ rent AudioSource khi trong range để tiết kiệm pool.
+
+**Cơ chế hoạt động**:
+```
+Loop Sound Demand System
+├── PlaySound(key, loop: true)
+│   ├── Chỉ đăng ký demand (không rent AudioSource ngay)
+│   ├── Thêm vào _demandedSounds dictionary
+│   └── Nếu trong range → TriggerDemandedPlay() ngay
+│
+├── PlayerAudioZone (mỗi 0.1s)
+│   └── SetInRange(true/false)
+│       ├── Vào range: TriggerDemandedPlay() cho tất cả demanded sounds
+│       └── Ra range: StopAllActiveSounds() (nhưng giữ demand queue)
+│
+└── StopSound(key)
+    └── Xóa khỏi demand queue + stop active sound
+```
+
+**Lợi ích**:
+- **Loop sound luôn theo vòng đời**: Portal luôn demand "Portal_Normal" dù player ở xa
+- **Tiết kiệm pool**: Chỉ rent AudioSource khi thực sự trong range
+- **PlayerAudioZone như sensor**: Mỗi 0.1s kích hoạt play khi cần thiết
+- **Không lãng phí resources**: Loop sound ở xa không rent AudioSource từ pool
+
+**Ví dụ - EnemyPortalBehavior**:
+```csharp
+public class EnemyPortalBehavior : MonoBehaviour
+{
+    private AudioEmitter _audioEmitter;
+
+    public void Setup(...)
+    {
+        // Portal dormant → demand Portal_Normal loop
+        // Chỉ rent AudioSource khi player vào range
+        _audioEmitter?.PlaySound("Portal_Normal", new PlaySoundConfig(loop: true));
+    }
+
+    public void ForceActivate()
+    {
+        // Portal active → stop dormant, demand activate loop
+        _audioEmitter?.StopSound("Portal_Normal");
+        _audioEmitter?.PlaySound("Portal_Activate", new PlaySoundConfig(loop: true));
+    }
+
+    // KHÔNG cần OnRangeChanged logic - demand system tự handle
+    // KHÔNG cần IsInRange check - demand system tự handle
+}
+```
+
+**One-shot sounds vẫn play ngay lập tức**:
+- `PlaySound(key, loop: false)` → rent AudioSource ngay, không qua demand system
+- Loop sounds mới đi qua demand queue
+
+---
+
+### Sử Dụng OnRangeChanged Event (Legacy)
+
+**Lưu ý**: Với demand-based system mới, OnRangeChanged event không còn cần thiết cho loop sounds. Loop sounds tự demand và PlayerAudioZone tự kích hoạt play khi vào range.
+
+OnRangeChanged vẫn hữu ích cho các logic khác (ví dụ: visual effect khi player vào vùng).
 
 ```csharp
 public class CampfireBehavior : MonoBehaviour
@@ -461,22 +695,25 @@ public class CampfireBehavior : MonoBehaviour
     private void OnEnable()
     {
         _audioEmitter = GetComponent<AudioEmitter>();
-        _audioEmitter.OnRangeChanged += OnPlayerEnterRange;
-    }
+        // Với demand system, loop sound không cần OnRangeChanged
+        _audioEmitter.PlaySound("Campfire_Crackle", new PlaySoundConfig(loop: true));
 
-    private void OnDisable()
-    {
-        _audioEmitter.OnRangeChanged -= OnPlayerEnterRange;
+        // OnRangeChanged chỉ dùng cho logic khác
+        _audioEmitter.OnRangeChanged += OnPlayerEnterRange;
     }
 
     private void OnPlayerEnterRange(bool inRange)
     {
         if (inRange)
         {
-            // Player vào vùng → phát loop sound
-            _audioEmitter.PlaySound("Campfire_Crackle", loop: true);
+            // Logic visual effect khi player vào vùng
+            // Loop sound đã được demand system handle
         }
-        // Khi ra vùng, AudioEmitter tự StopAll(), không cần làm gì
+    }
+
+    private void OnDisable()
+    {
+        _audioEmitter.OnRangeChanged -= OnPlayerEnterRange;
     }
 }
 ```
@@ -485,13 +722,14 @@ public class CampfireBehavior : MonoBehaviour
 
 - **Tốn pool**: Mỗi lần play lấy AudioSource từ pool
 - **Tốn CPU**: Kiểm tra mỗi frame không cần thiết
-- **Không hiệu quả**: Loop sound đã có sẵn trong AudioSource
+- **Không hiệu quả**: Loop sound đã có sẵn trong demand queue
 
-### Ưu Điểm Event-Driven
+### Ưu Điểm Demand-Based
 
-- **Efficient**: Chỉ phát khi cần (player vào vùng)
-- **Auto-stop**: AudioEmitter tự StopAll() khi ra vùng
-- **Clean**: Không cần Update() trong Behavior
+- **Efficient**: Loop sound chỉ rent AudioSource khi trong range
+- **Lifecycle**: Loop sound luôn theo vòng đời object, không bị dừng
+- **Clean**: Không cần IsInRange check trong Behavior
+- **Auto-stop**: AudioEmitter tự StopAllActiveSounds() khi ra vùng (nhưng giữ demand)
 
 ---
 

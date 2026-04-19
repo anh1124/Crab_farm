@@ -1,5 +1,7 @@
 using UnityEngine;
 using Script.Game.Mobs.Denizen.Core;
+using Script.Game.Mobs.Denizen.Jobs.Archer;
+using Script.Audio;
 using Script.Utils;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Archer
@@ -55,7 +57,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 {
                     ctx.Status.isSkillCasting = true;
                     ctx.Animator?.Play("archerDraw");
-                    if (ctx.Status.debugDenizen) 
+
+                    // Phát âm thanh khi giương cung
+                    var emitter = ctx.GameObject.GetComponent<AudioEmitter>();
+                    if (emitter != null)
+                        emitter.PlaySound("Bow_Draw", PlaySoundConfig.Default);
+
+                    if (ctx.Status.debugDenizen)
                         Debug.Log($"<color=green>[AttackState]</color> {ctx.GameObject.name} giương cung nhắm {ctx.Status.currentTarget.name}");
                 }
                 else
@@ -67,7 +75,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             else
             {
                 // Skill còn hồi chiêu -> Về Idle
-                if (ctx.Status.debugDenizen) 
+                if (ctx.Status.debugDenizen)
                     Debug.Log($"[AttackState] {ctx.GameObject.name} skill đang hồi chiêu -> Idle");
                 archerJob.ChangeState(archerJob.IdleState);
             }
@@ -111,14 +119,19 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public void OnArrowRelease(DenizenContext ctx)
         {
+            // Phát âm thanh khi thả tên
+            var emitter = ctx.GameObject.GetComponent<AudioEmitter>();
+            if (emitter != null)
+                emitter.PlaySound("Bow_Release", PlaySoundConfig.Default);
+
             if (ctx.Status?.currentTarget != null && ctx.ArcherShooting != null)
                 ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);
 
             // Báo cho SkillManager biết animation đã kết thúc để bắt đầu cooldown
             ctx.SkillManager?.OnSkillAnimationEnd(0, ctx.GameObject);
-            
+
             if (ctx.Status != null) ctx.Status.isSkillCasting = false;
-            
+
             ctx.Animator?.Play("archerIdle");
             // Bắn xong → về Idle để tái đánh giá
             ctx.ArcherJob?.ChangeState(ctx.ArcherJob.IdleState);

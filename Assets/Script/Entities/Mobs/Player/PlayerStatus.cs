@@ -58,7 +58,7 @@ namespace Script.Data_Model.Status
         public bool isGround;
 
         // Coin sử dụng property để tự động bắn event khi thay đổi
-        [SerializeField] private int _coin;
+        [SerializeField] public int _coin;
         public int coin
         {
             get => _coin;

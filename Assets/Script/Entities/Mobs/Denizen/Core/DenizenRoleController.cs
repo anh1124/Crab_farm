@@ -14,6 +14,7 @@ using Script.Game.Structures.Wall_And_Stump;
 using Script.Save_Controller;
 using Newtonsoft.Json.Linq;
 using Script.Game.PlayerCharacter.Skills;
+using Script.Audio;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
@@ -29,6 +30,7 @@ namespace Script.Game.Mobs.Denizen.Core
     [RequireComponent(typeof(DenizenContext))]
     [RequireComponent(typeof(Script.Game.PlayerCharacter.Skills.SkillManager))]
     [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
+    [RequireComponent(typeof(AudioEmitter))]
     public class DenizenRoleController : MonoBehaviour, ISaveable, IDamageable, Script.Interfaces.IHealthReactive
     {
         [Header("Role Configuration")]
@@ -37,9 +39,13 @@ namespace Script.Game.Mobs.Denizen.Core
         [Header("Context Reference")]
         [SerializeField] private DenizenContext _context;//context chung
 
+        // Audio
+        protected AudioEmitter _audioEmitter;
+
         private DenizenJob _currentJob;//job hiện tại
         private DenizenStatus _status;//status hiện tại
         private NPCRole _previousRole = NPCRole.Vagrant;//role trước đó
+        private NPCRole? _pendingRoleFromSave = null;//role từ save chờ apply sau Setup
 
         private IDenizenProvider _denizenProvider;
         private IGuardProvider _guardProvider;
@@ -58,20 +64,23 @@ namespace Script.Game.Mobs.Denizen.Core
             _npcUpdateManager = npcUpdate;
             _arrowPool = arrowPool;
             _saveManager = save;
-            
+
             // Injects context and managers to jobs via private _context
             if (_context != null)
             {
                 _context.Setup(_guardProvider, _timeProvider, _wallManager, _npcUpdateManager, _arrowPool);
-                
+
                 if (_context.VagrantJob != null) _context.VagrantJob.InjectContext(_context);
                 if (_context.VillagerJob != null) _context.VillagerJob.InjectContext(_context);
                 if (_context.ArcherJob != null) _context.ArcherJob.InjectContext(_context);
             }
-            
+
             if (_denizenProvider != null) _denizenProvider.RegisterDenizen(gameObject);
-            
-            ApplyRole(CurrentRole);
+
+            // Apply role từ save hoặc current, đảm bảo _denizenProvider đã sẵn sàng
+            NPCRole roleToApply = _pendingRoleFromSave ?? CurrentRole;
+            _pendingRoleFromSave = null;
+            ApplyRole(roleToApply);
         }
 
         public DenizenJob JobBrain => _currentJob;
@@ -96,6 +105,7 @@ namespace Script.Game.Mobs.Denizen.Core
         {
             _status = GetComponent<DenizenStatus>();
             if (_context == null) _context = GetComponent<DenizenContext>();
+            _audioEmitter = GetComponent<AudioEmitter>();
 
             DisableAllJobs();
             _previousRole = CurrentRole;
@@ -273,8 +283,16 @@ namespace Script.Game.Mobs.Denizen.Core
             if (d == null || _status == null) return;
 
             _status.RestoreData(d, transform);
-            if (_status.Role != CurrentRole) ChangeRole(_status.Role);
-            else ApplyRole(CurrentRole);
+            if (_status.Role != CurrentRole)
+            {
+                // Không gọi ChangeRole ngay, lưu lại để Setup gọi
+                _pendingRoleFromSave = _status.Role;
+            }
+            else
+            {
+                _pendingRoleFromSave = null;
+            }
+            // KHÔNG gọi ApplyRole hay ChangeRole ở đây nữa
 
             var skillMgr = GetComponent<SkillManager>();
             SkillManagerSaveUtility.Restore(skillMgr, d.skillManager, gameObject);

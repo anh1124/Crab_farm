@@ -22,7 +22,7 @@ namespace Script.Audio
     /// ─────────────────────────────────────────────────────────────────────────
     /// </summary>
     [RequireComponent(typeof(AudioPool))]
-    public class AudioManager : MonoBehaviour
+    public class AudioManager : MonoBehaviour, IAudioSourceProvider
 {
     public static AudioManager Instance { get; private set; }
 
@@ -135,11 +135,11 @@ namespace Script.Audio
             }
         }
 
-        // Set cullingDistance = maxDistance lớn nhất
+        // Set cullingDistance = maxDistance lớn nhất + offset
         if (maxDistanceFound > 0f)
         {
-            cullingDistance = maxDistanceFound;
-            if (isDebug) Debug.Log($"[AudioManager] Auto-set cullingDistance to {cullingDistance}f (max distance from SoundRegistry)");
+            cullingDistance = maxDistanceFound + AudioConstants.CULLING_DISTANCE_OFFSET;
+            if (isDebug) Debug.Log($"[AudioManager] Auto-set cullingDistance to {cullingDistance}f (max distance from SoundRegistry + {AudioConstants.CULLING_DISTANCE_OFFSET}f offset)");
         }
     }
 
@@ -415,6 +415,29 @@ namespace Script.Audio
     }
 
     // ─────────────────────────────────────────────
+    //  IAudioSourceProvider Implementation
+    // ─────────────────────────────────────────────
+
+    /// <summary>Lấy AudioSource từ pool (interface implementation).</summary>
+    AudioSource IAudioSourceProvider.Rent(Vector3 worldPosition)
+    {
+        return _pool.Get(worldPosition);
+    }
+
+    /// <summary>Trả AudioSource về pool (interface implementation).</summary>
+    void IAudioSourceProvider.Return(AudioSource source)
+    {
+        _pool.Return(source);
+    }
+
+    /// <summary>Lấy SoundEntry từ registry (interface implementation).</summary>
+    SoundRegistry.SoundEntry IAudioSourceProvider.GetEntry(string soundKey)
+    {
+        if (soundRegistry == null) return null;
+        return soundRegistry.GetEntry(soundKey);
+    }
+
+    // ─────────────────────────────────────────────
     //  Volume API
     // ─────────────────────────────────────────────
 
@@ -574,9 +597,14 @@ namespace Script.Audio
         // Chờ thêm buffer để tránh cắt tiếng đột ngột
         yield return new WaitForSeconds(clipLength + AudioConstants.BUFFER_TIME);
 
-        // Double-check: nếu source đã được pool trả lại (Return() gọi từ nơi khác), bỏ qua
-        if (source != null && !source.isPlaying)
+        // Force return về pool dù source có đang play hay không
+        // để tránh leak nếu source bị stuck
+        if (source != null)
+        {
+            if (source.isPlaying)
+                source.Stop();
             _pool.Return(source);
+        }
     }
 }
 }

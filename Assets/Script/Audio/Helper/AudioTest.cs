@@ -6,7 +6,8 @@ namespace Script.Audio
     {
         SFX, // Sound Effects
         BGM, // Background Music
-        ENV  // Environment
+        ENV, // Environment
+        UI   // UI Sound (2D, no spatial)
     }
 
     /// <summary>
@@ -182,19 +183,22 @@ namespace Script.Audio
             Debug.Log($"[AudioTest] Phát âm thanh: {testKey} | Channel: {channelType} | Vị trí phát: {testObj.transform.position} | Vị trí Player: {playerPos} | Trong Camera: {(isInCamera ? "Có" : "Không")} | MinDistance: {_cachedMinDistance}m | MaxDistance: {_cachedMaxDistance}m");
 
             // Phát âm thanh dựa trên channel được chọn
-            // AudioTest chỉ tương tác với AudioEmitter, không gọi AudioManager trực tiếp
             switch (channelType)
             {
                 case AudioChannelType.SFX:
-                    _audioEmitter.PlaySound(testKey, forceReplace: true);
+                    _audioEmitter.PlaySound(testKey, new PlaySoundConfig(forceReplace: true));
                     break;
                 case AudioChannelType.BGM:
                     // BGM nên dùng AudioManager.PlayBGM trực tiếp, không dùng AudioEmitter
                     // Nhưng để test, ta dùng AudioEmitter với loop
-                    _audioEmitter.PlaySound(testKey, loop: true, forceReplace: true);
+                    _audioEmitter.PlaySound(testKey, new PlaySoundConfig(loop: true, forceReplace: true));
                     break;
                 case AudioChannelType.ENV:
-                    _audioEmitter.PlaySound(testKey, forceReplace: true);
+                    _audioEmitter.PlaySound(testKey, new PlaySoundConfig(forceReplace: true));
+                    break;
+                case AudioChannelType.UI:
+                    // UI sound dùng AudioManager.PlayUISound (2D, không có spatial)
+                    AudioManager.Instance.PlayUISound(testKey);
                     break;
             }
         }
@@ -277,15 +281,15 @@ namespace Script.Audio
             switch (channelType)
             {
                 case AudioChannelType.SFX:
-                    _audioEmitter.PlaySound(key, forceReplace: true);
+                    _audioEmitter.PlaySound(key, new PlaySoundConfig(forceReplace: true));
                     break;
                 case AudioChannelType.BGM:
                     // BGM nên dùng AudioManager.PlayBGM trực tiếp, không dùng AudioEmitter
                     // Nhưng để test, ta dùng AudioEmitter với loop
-                    _audioEmitter.PlaySound(key, loop: true, forceReplace: true);
+                    _audioEmitter.PlaySound(key, new PlaySoundConfig(loop: true, forceReplace: true));
                     break;
                 case AudioChannelType.ENV:
-                    _audioEmitter.PlaySound(key, forceReplace: true);
+                    _audioEmitter.PlaySound(key, new PlaySoundConfig(forceReplace: true));
                     break;
             }
         }

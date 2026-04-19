@@ -15,9 +15,11 @@ namespace Script.Entities.Structures.SummondPortal
 {
     [RequireComponent(typeof(EnemyPortalStatus))]
     [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
+    [RequireComponent(typeof(Script.Audio.AudioEmitter))]
     public class EnemyPortalBehavior : MonoBehaviour, IDamageable, ISaveable
     {
         private EnemyPortalStatus status;
+        private Script.Audio.AudioEmitter _audioEmitter;
 
         public bool IsReadyToSpawn 
         { 
@@ -54,6 +56,7 @@ namespace Script.Entities.Structures.SummondPortal
         {
             status = GetComponent<EnemyPortalStatus>();
             visualAnimator = GetComponentInChildren<PortalVisualAnimator>();
+            _audioEmitter = GetComponent<Script.Audio.AudioEmitter>();
         }
 
         private void Start()
@@ -106,7 +109,7 @@ namespace Script.Entities.Structures.SummondPortal
             _enemyPool = pool;
             _enemyDataProvider = dataProvider;
             _timeProvider = timeProvider;
-            
+
             // Set FPS visual Animator thành Dormant (nghỉ)
             if (visualAnimator)
             {
@@ -125,6 +128,9 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 _timeProvider.SubscribeToHourlyEvent(6, CheckActivation);
             }
+
+            // Play dormant loop sound (demand system sẽ handle range)
+            _audioEmitter?.PlaySound("Portal_Normal", new Script.Audio.PlaySoundConfig(loop: true));
         }
 
         private void CheckActivation()
@@ -146,7 +152,11 @@ namespace Script.Entities.Structures.SummondPortal
 
             status.isReadyToSpawn = true;
             Debug.Log($"[EnemyPortalBehavior] Cổng tại {transform.position} đã kích hoạt và sẵn sàng sinh quái!");
-            
+
+            // Stop dormant sound and play activate sound (demand system sẽ handle range)
+            _audioEmitter?.StopSound("Portal_Normal");
+            _audioEmitter?.PlaySound("Portal_Activate", new Script.Audio.PlaySoundConfig(loop: true));
+
             // Kích hoạt Visual Animator tăng frame rate lên bùng cháy
             if (visualAnimator)
             {
@@ -226,6 +236,9 @@ namespace Script.Entities.Structures.SummondPortal
 
         private void OnDestroy()
         {
+            // AudioEmitter là component trên cùng GameObject, tự handle cleanup trong OnDestroy của nó
+            // Không cần gọi _audioEmitter?.StopAll() ở đây
+
             // Báo Manager clear biến Left/Right của nó
             if (EnemyPortalManager.Instance)
             {

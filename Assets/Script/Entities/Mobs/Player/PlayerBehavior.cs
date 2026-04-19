@@ -10,6 +10,7 @@ using Script.Controller.PlayerController;
 using Art.Resources.Character.PlayerCharactor.Spear_Man;
 using Script.Game.Item.Coin;
 using Script.Game.PlayerCharacter.Skills;
+using Script.Audio;
 
 namespace Script.Game.Player
 {
@@ -23,6 +24,7 @@ namespace Script.Game.Player
     [RequireComponent(typeof(PlayerItemHandler))]
     [RequireComponent(typeof(PlayerUISetup))]
     [RequireComponent(typeof(PlayerStatRegenerator))]
+    [RequireComponent(typeof(AudioEmitter))]
     public class PlayerBehavior : MonoBehaviour
     {
         [Header("Player Status Data")]

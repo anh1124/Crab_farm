@@ -1,6 +1,7 @@
 using Script.Game.Enemy.Core;
 using Script.Game.Enemy.States;
 using Script.Game.Enemy.Variants.ShieldBot;
+using Script.Audio;
 using UnityEngine;
 
 namespace Script.Game.Enemy
@@ -28,11 +29,26 @@ namespace Script.Game.Enemy
         public GameObject ShockAttackCollider => shockAttackCollider;
 
         // [MỚI] Không cần ghi đè GetMoveState nữa vì MoveToTargetState cơ bản đã cực kỳ chuẩn theo Base.
+
+        public override void ResetEnemy(GameObject portal)
+        {
+            base.ResetEnemy(portal);
+
+            // Phát âm thanh khi ShieldBot được kích hoạt từ pool
+            if (_audioEmitter != null)
+                _audioEmitter.PlaySound("ShieldBot_Activate", PlaySoundConfig.Default);
+        }
         
         // [MỚI] Ghi đè chỉ để chọn đúng State Tấn công đặc thù
         public override AttackState GetAttackState()
         {
             return new ShieldBotAttackState();
+        }
+
+        // [MỚI] Ghi đè để chọn đúng DeadState với âm thanh Power_Down
+        public override DeadState GetDeadState()
+        {
+            return new ShieldBotDeadState();
         }
 
         // ==========================================
@@ -43,6 +59,10 @@ namespace Script.Game.Enemy
         {
             if (shockAttackCollider != null)
                 shockAttackCollider.SetActive(true);
+
+            // Phát âm thanh shock attack
+            if (_audioEmitter != null)
+                _audioEmitter.PlaySound("ShieldBot_Shock", PlaySoundConfig.Default);
 
             // [MỚI]: Thông báo cho SkillManager rằng đã tới frame gây sát thương
             // Điều này sẽ kích hoạt hàm OnHit trong EnemyAttackSkill

@@ -43,13 +43,11 @@ public class Spawner : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-           
         }
         else
         {
             Destroy(gameObject);
         }
-        
     }
     private void Start()  
     {
@@ -139,6 +137,9 @@ public class Spawner : MonoBehaviour
                 ThrowCoin(coin, direction);
             }
 
+            // Play coin drop sound at coin position
+            Script.Audio.AudioManager.Instance?.PlaySFXByKey("Coin_Drop", newPosition);
+
             yield return new WaitForSeconds(0.3f);
         }
     }
@@ -162,6 +163,9 @@ public class Spawner : MonoBehaviour
             coinScriptInstance.CallFunctionCoolDown("Denizens");
             ThrowCoin(coin, direction);
         }
+
+        // Play coin drop sound at coin position
+        Script.Audio.AudioManager.Instance?.PlaySFXByKey("Coin_Drop", position);
 
         return coin;
     }

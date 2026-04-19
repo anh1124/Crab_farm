@@ -1,6 +1,7 @@
 using UnityEngine;
 using Script.Controller.PlayerController;
 using Script.Utils;
+using Script.Audio;
 
 namespace Script.Game.PlayerCharacter.Skills
 {
@@ -51,12 +52,17 @@ namespace Script.Game.PlayerCharacter.Skills
         {
             LogBlue($"[SpearManChopDown] OnStart - Skill Execution started (animation trigger should happen now)");
             // Called khi skill bắt đầu execute
-            // Empty for now - có thể thêm VFX, sound effects sau
         }
         
         public override void OnHit(GameObject owner)
         {
             LogBlue($"[SpearManChopDown] OnHit - Animation Event Damage Frame reached");
+
+            // Phát âm thanh swing weapon khi animation event fire
+            var emitter = owner.GetComponent<AudioEmitter>();
+            if (emitter != null)
+                emitter.PlaySound("SwingWeapon", PlaySoundConfig.Default);
+
             // Tìm container chứa hitbox
             Transform container = owner.transform.Find("SkillContainer");
             if (container == null)

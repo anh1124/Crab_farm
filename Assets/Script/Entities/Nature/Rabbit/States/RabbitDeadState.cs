@@ -11,6 +11,10 @@ namespace Script.Game.Other.Nature.States
             if (ctx.IsDebug) Debug.Log("[RabbitDeadState] Enter");
 #endif
             ctx.PlayAnimation("die");
+
+            // Phát âm thanh khi rabbit chết
+            if (Script.Audio.AudioManager.Instance != null)
+                Script.Audio.AudioManager.Instance.PlaySFXByKey("NPC_Blood_Dead", ctx.transform.position);
         }
 
         public override void UpdateBehavior(RabbitBehavior ctx)

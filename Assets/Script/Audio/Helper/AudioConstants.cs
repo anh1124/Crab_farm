@@ -31,6 +31,12 @@ namespace Script.Audio
         /// <summary>Volume còn lại tại maxDistance mặc định (0.3 = 30%)</summary>
         public const float DEFAULT_VOLUME_AT_MAX = 0.3f;
 
+        /// <summary>Offset thêm vào culling distance khi auto-set từ SoundRegistry (đơn vị Unity)</summary>
+        public const float CULLING_DISTANCE_OFFSET = 35f;
+
+        /// <summary>Khoảng cách mặc định để culling audio khi chưa set từ AudioManager (đơn vị Unity)</summary>
+        public const float DEFAULT_CULLING_DISTANCE = 50f;
+
         // ─────────────────────────────────────────────
         //  Volume
         // ─────────────────────────────────────────────

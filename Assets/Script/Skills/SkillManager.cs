@@ -8,6 +8,7 @@ namespace Script.Game.PlayerCharacter.Skills
     /// Base class quản lý skill slot, cooldown và trạng thái.
     /// Dùng được cho Player, NPC, Enemy — KHÔNG chứa logic Player-specific hay UI-specific.
     /// </summary>
+    [RequireComponent(typeof(Script.Audio.AudioEmitter))]
     public class SkillManager : MonoBehaviour
     {
         // ── Nested Types ──────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 using Script.Game.Enemy.Core;
+using Script.Audio;
 using UnityEngine;
 
 namespace Script.Game.Enemy.States
@@ -24,6 +25,14 @@ namespace Script.Game.Enemy.States
             // Khóa di chuyển khi ngã xuống
             _moveTarget = null;
             if (ctx.Status != null) ctx.Status.IsMoving = false;
+
+            // Phát âm thanh khi enemy chết
+            PlayDeathSound(ctx);
+        }
+
+        protected virtual void PlayDeathSound(EnemyContext ctx)
+        {
+            // Base class không phát sound, derived class có thể override
         }
 
         public override void UpdateBehavior(EnemyContext ctx)
