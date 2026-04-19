@@ -85,11 +85,13 @@ namespace Script.Audio
         source.volume      = 1f;
         source.pitch       = 1f;
         source.spread      = 0f;
+        source.spatialBlend = 1f; // Mặc định Stereo cho lần dùng sau
+        source.panStereo    = 0f; // Reset panning
         source.gameObject.SetActive(false);
 
         // Tránh SetParent error khi parent GameObject đang được deactivate
         // Chỉ reparent nếu parent không phải là null và không đang bị destroy
-        if (source.transform.parent != null && source.transform.parent.gameObject.activeInHierarchy)
+        if (source.transform.parent != null && (source.transform.parent.gameObject == null || source.transform.parent.gameObject.activeInHierarchy))
         {
             source.transform.SetParent(transform);
         }
@@ -106,6 +108,16 @@ namespace Script.Audio
         var snapshot = new List<AudioSource>(_inUse);
         foreach (var s in snapshot)
             Return(s);
+    }
+
+    /// <summary>Tạm dừng hoặc tiếp tục tất cả âm thanh đang phát.</summary>
+    public void PauseAll(bool pause)
+    {
+        foreach (var source in _inUse)
+        {
+            if (source == null) continue;
+            if (pause) source.Pause(); else source.UnPause();
+        }
     }
 
     // ─────────────────────────────────────────────

@@ -55,6 +55,12 @@ namespace Script.Audio
             PlayerPrefs.SetInt(KEY_MONO_AUDIO, 0);
             PlayerPrefs.Save();
         }
+
+        // Áp dụng Mono audio ngay lúc khởi tạo
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.ApplyMonoAudioGlobally(GetMonoAudio());
+        }
     }
 
     /// <summary>Đặt chế độ mono audio (tắt stereo panning).</summary>
@@ -62,6 +68,12 @@ namespace Script.Audio
     {
         PlayerPrefs.SetInt(KEY_MONO_AUDIO, enabled ? 1 : 0);
         PlayerPrefs.Save();
+        
+        // Cập nhật cấu hình ngay lập tức trên toàn hệ thống
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.ApplyMonoAudioGlobally(enabled);
+        }
     }
 
     /// <summary>Lấy chế độ mono audio. Mặc định = false (stereo).</summary>

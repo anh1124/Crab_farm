@@ -76,19 +76,18 @@ namespace Script.Game.PlayerCharacter.Skills
         /// Được gọi khi skill bắt đầu thực thi (trước khi animation chạy)
         /// </summary>
         /// <param name="owner">GameObject của player sở hữu skill</param>
-        public abstract void OnStart(GameObject owner);
+        /// <param name="manager">SkillManager đang quản lý/thực thi skill này</param>
+        public abstract void OnStart(GameObject owner, SkillManager manager);
         
         /// <summary>
         /// Được gọi tại frame gây damage trong animation (từ Animation Event)
         /// Đây là nơi xử lý logic damage chính
         /// </summary>
-        /// <param name="owner">GameObject của player sở hữu skill</param>
-        public abstract void OnHit(GameObject owner);
+        public abstract void OnHit(GameObject owner, SkillManager manager);
         
         /// <summary>
         /// Được gọi khi animation kết thúc (từ Animation Event)
         /// </summary>
-        /// <param name="owner">GameObject của player sở hữu skill</param>
-        public abstract void OnEnd(GameObject owner);
+        public abstract void OnEnd(GameObject owner, SkillManager manager);
     }
 }

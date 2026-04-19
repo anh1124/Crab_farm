@@ -36,9 +36,11 @@ namespace Script.Game.PlayerCharacter.Skills
         [SerializeField] private bool isDebug = false;
 
         protected Transform _skillContainer;
+        protected Script.Audio.AudioEmitter _emitter;
 
         // ── Public API ────────────────────────────────────────────────────
 
+        public Script.Audio.AudioEmitter Emitter => _emitter;
         public int SlotCount => skillSlots.Length;
 
         public SkillState GetState(int index)
@@ -106,7 +108,7 @@ namespace Script.Game.PlayerCharacter.Skills
             // --- Execute ---
             OnBeforeExecute(index, instigator);
             slot.state = SkillState.Executing;
-            slot.skill.OnStart(instigator);
+            slot.skill.OnStart(instigator, this);
 
             LogDebug($"[SkillManager] Executed skill '{slot.skill.skillName}' at slot {index}");
 
@@ -129,7 +131,7 @@ namespace Script.Game.PlayerCharacter.Skills
             var slot = skillSlots[index];
             if (slot.skill != null && slot.state == SkillState.Executing)
             {
-                slot.skill.OnHit(instigator);
+                slot.skill.OnHit(instigator, this);
             }
         }
 
@@ -143,7 +145,7 @@ namespace Script.Game.PlayerCharacter.Skills
             var slot = skillSlots[index];
             if (slot.skill == null) return;
 
-            slot.skill.OnEnd(instigator);
+            slot.skill.OnEnd(instigator, this);
 
             OnAfterExecute(index, instigator);
 
@@ -199,6 +201,14 @@ namespace Script.Game.PlayerCharacter.Skills
 
         protected virtual void Awake()
         {
+            // Lấy AudioEmitter trên ĐÚNG GameObject chứa SkillManager này (nơi đặt script/inspector)
+            _emitter = this.gameObject.GetComponent<Script.Audio.AudioEmitter>();
+            
+            if (_emitter == null)
+            {
+                Debug.LogWarning($"[SkillManager] Không tìm thấy AudioEmitter trên '{this.gameObject.name}'. Vui lòng đính kèm component này.");
+            }
+
             if (skillSlots == null || skillSlots.Length == 0)
             {
                 skillSlots = new SkillSlot[0];

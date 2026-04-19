@@ -82,6 +82,7 @@ namespace Script.Audio
     // ─────────────────────────────────────────────
 
     public VolumeSettings VolumeSettings => _volume;
+    public bool IsPaused { get; private set; }
 
     // ─────────────────────────────────────────────
     //  Unity Lifecycle
@@ -99,15 +100,44 @@ namespace Script.Audio
         DontDestroyOnLoad(gameObject);
 
         Initialize();
+
+        // Load settings ngay lập tức để Emitters có thể truy cập trong Start/Awake của chúng
+        if (_volume != null)
+        {
+            _volume.LoadAndApply();
+            if (isDebug) Debug.Log("[AudioManager] Volume and Settings applied in Awake");
+        }
     }
+
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // Khi load scene mới, thường chúng ta muốn dọn dẹp các sound cũ đang dangling
+        // User yêu cầu "pause", nhưng trong thực tế chuyển scene nên là ReturnAll để giải phóng pool
+        if (isDebug) Debug.Log($"[AudioManager] Scene Loaded: {scene.name}. Returning all non-UI sounds to pool.");
+        
+        // Dọn dẹp BGM/ENV nếu cần (tùy game, ở đây giả định dọn sạch)
+        // StopBGM(0.5f); 
+        StopENV();
+        
+        if (_pool != null)
+            _pool.ReturnAll();
+        
+        IsPaused = false;
+    }
+
 
     private IEnumerator Start()
     {
-        // Chờ 1 frame để AudioMixer Snapshot finish apply
-        yield return null;
-        _volume.LoadAndApply();
-        if (isDebug) Debug.Log("[AudioManager] Volume applied after snapshot");
-
         // Chờ để check playerTransform
         yield return new WaitForSeconds(AudioConstants.PLAYER_CHECK_DELAY);
         if (playerTransform == null)
@@ -184,6 +214,56 @@ namespace Script.Audio
 
     /// <summary>Dừng âm thanh môi trường.</summary>
     public void StopENV() => envSource.Stop();
+
+    // ─────────────────────────────────────────────
+    //  Pause API
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Tạm dừng/Tiếp tục toàn bộ âm thanh (trừ UI).
+    /// Dùng khi Pause Game hoặc chuyển Scene.
+    /// </summary>
+    public void PauseNonUISounds(bool pause)
+    {
+        if (isDebug) Debug.Log($"[AudioManager] PauseNonUISounds: {pause}");
+        IsPaused = pause;
+
+        // 1. BGM
+        if (pause) bgmSourceA.Pause(); else bgmSourceA.UnPause();
+        if (pause) bgmSourceB.Pause(); else bgmSourceB.UnPause();
+
+        // 2. ENV
+        if (pause) envSource.Pause(); else envSource.UnPause();
+
+        // 3. Pooled SFX
+        if (_pool != null)
+            _pool.PauseAll(pause);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Mono Runtime Config
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Áp dụng chế độ Mono cho mọi âm thanh đang phát trong hệ thống.
+    /// Gọi đồng bộ từ VolumeSettings sau khi load hoặc đổi cài đặt.
+    /// </summary>
+    public void ApplyMonoAudioGlobally(bool isMono)
+    {
+        if (isDebug) Debug.Log($"[AudioManager] ApplyMonoAudioGlobally: {isMono}");
+
+        // Cập nhật cho tất cả AudioEmitter trong scene
+        var emitters = AudioEmitterRegistry.All;
+        for (int i = 0; i < emitters.Count; i++)
+        {
+            if (emitters[i] != null)
+                emitters[i].ApplyMonoSetting(isMono);
+        }
+
+        // Với các âm thanh ngắn gọn SFX do AudioManager tự quản (One-Shot), do quá nhanh nên không cần restart
+        // Nếu cần có thể bổ sung update cho active handle trong AudioManager sau.
+    }
+
 
     // ─────────────────────────────────────────────
     //  UI API - 2D sound, không distance culling
@@ -272,19 +352,32 @@ namespace Script.Audio
         AudioSource source = _pool.Get(worldPosition);
         if (source == null) return; // Pool đã hết (đạt maxPoolSize)
 
-        source.clip   = clip;
-        source.volume = volumeScale;
-        source.minDistance = minDistance;
-        source.maxDistance = maxDistance;
+        bool isMono = _volume != null && _volume.GetMonoAudio();
+        source.clip = clip;
+        source.loop = false;
 
-        // Tạo custom rolloff curve: full volume trong min, 30% volume tại max
-        AnimationCurve rolloffCurve = new AnimationCurve();
-        rolloffCurve.AddKey(0f, 1f);
-        rolloffCurve.AddKey(minDistance, 1f);
-        rolloffCurve.AddKey(maxDistance, 0.3f);
-        source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
+        if (isMono)
+        {
+            source.spatialBlend = 0f;
+            source.panStereo = 0f;
+            source.volume = volumeScale * CalculateDistanceVolume(worldPosition, minDistance, maxDistance);
+        }
+        else
+        {
+            source.spatialBlend = 1f;
+            source.panStereo = 0f;
+            source.volume = volumeScale;
+            source.minDistance = minDistance;
+            source.maxDistance = maxDistance;
 
-        source.loop   = false;
+            // Tạo custom rolloff curve: full volume trong min, 30% volume tại max
+            AnimationCurve rolloffCurve = new AnimationCurve();
+            rolloffCurve.AddKey(0f, 1f);
+            rolloffCurve.AddKey(minDistance, 1f);
+            rolloffCurve.AddKey(maxDistance, 0.3f);
+            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
+        }
+
         source.Play();
 
         StartCoroutine(ReturnAfterClip(source, clip.length));
@@ -313,9 +406,32 @@ namespace Script.Audio
         if (clip == null || target == null) return null;
 
         AudioSource source = _pool.Get(target.position);
-        source.clip   = clip;
+        source.clip = clip;
+        source.loop = loop;
+
+        bool isMono = _volume != null && _volume.GetMonoAudio();
+        if (isMono)
+        {
+            source.spatialBlend = 0f;
+            source.panStereo = 0f;
+        }
+        else
+        {
+            source.spatialBlend = 1f;
+            source.minDistance = minDistance;
+            source.maxDistance = maxDistance;
+            
+            // Reapply curve since it's stereof
+            AnimationCurve rolloffCurve = new AnimationCurve();
+            rolloffCurve.AddKey(0f, 1f);
+            rolloffCurve.AddKey(minDistance, 1f);
+            rolloffCurve.AddKey(maxDistance, 0.3f);
+            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
+        }
+        
+        // volume base calculation
         source.volume = CalculateDistanceVolume(target.position, minDistance, maxDistance);
-        source.loop   = loop;
+
         source.Play();
 
         var handle = new FollowingSound(source, target, this, minDistance, maxDistance);
@@ -442,6 +558,17 @@ namespace Script.Audio
         if (soundRegistry == null) return null;
         return soundRegistry.GetEntry(soundKey);
     }
+
+    /// <summary>
+    /// Tính volume dựa trên khoảng cách (interface implementation).
+    /// Dùng bởi AudioEmitter khi Mono mode để áp volume thủ công.
+    /// </summary>
+    float IAudioSourceProvider.CalculateDistanceVolume(Vector3 sourcePos, float minDist, float maxDist)
+        => CalculateDistanceVolume(sourcePos, minDist, maxDist);
+
+    /// <summary>Trả về trạng thái Mono Audio hiện tại (interface implementation).</summary>
+    bool IAudioSourceProvider.GetMonoAudio()
+        => _volume != null && _volume.GetMonoAudio();
 
     // ─────────────────────────────────────────────
     //  Volume API

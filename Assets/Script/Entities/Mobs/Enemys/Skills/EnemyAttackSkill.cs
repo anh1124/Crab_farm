@@ -13,7 +13,7 @@ namespace Script.Game.Enemy.Skills
     public class EnemyAttackSkill : SkillBase
     {
         // Ghi đè phương thức khởi động Skill
-        public override void OnStart(GameObject owner)
+        public override void OnStart(GameObject owner, SkillManager manager)
         {
             // Kiểm tra field animationTrigger có sẵn trong SkillBase chưa
             string trigger = string.IsNullOrEmpty(animationTrigger) ? "attack" : animationTrigger;
@@ -39,7 +39,7 @@ namespace Script.Game.Enemy.Skills
 
         // Logic gây sát thương (thường do Animation Event "AnimEvent_EnableShockCollider" hoặc tương tự gọi)
         // Nếu dùng hệ thống Collider trên GameObject con như ShieldBot, hàm này có thể để trống
-        public override void OnHit(GameObject owner)
+        public override void OnHit(GameObject owner, SkillManager manager)
         {
             // 1. Tìm Controller để lấy dữ liệu về Hitbox (Collider)
             var controller = owner.GetComponent<EnemyAIController>();
@@ -73,7 +73,7 @@ namespace Script.Game.Enemy.Skills
         }
 
         // Kết thúc Skill (được gọi bởi Animation Event OnEnd hoặc kết thúc đòn tấn công)
-        public override void OnEnd(GameObject owner)
+        public override void OnEnd(GameObject owner, SkillManager manager)
         {
             // Reset trạng thái thực thi nếu cần
         }

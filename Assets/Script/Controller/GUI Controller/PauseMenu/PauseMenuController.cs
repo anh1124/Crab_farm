@@ -251,6 +251,7 @@ namespace Script.GUI_Controller.PauseMenu
             Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
 
             WorldFileManager.Instance.SaveCurrentMap();
+            Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);
             SceneManager.LoadScene("MainMenuScene");
         }
     }

@@ -48,20 +48,21 @@ namespace Script.Game.PlayerCharacter.Skills
             runtimeHitbox.SetActive(false); // Ẩn mặc định
         }
         
-        public override void OnStart(GameObject owner)
+        public override void OnStart(GameObject owner, SkillManager manager)
         {
             LogBlue($"[SpearManChopDown] OnStart - Skill Execution started (animation trigger should happen now)");
             // Called khi skill bắt đầu execute
         }
         
-        public override void OnHit(GameObject owner)
+        public override void OnHit(GameObject owner, SkillManager manager)
         {
             LogBlue($"[SpearManChopDown] OnHit - Animation Event Damage Frame reached");
 
-            // Phát âm thanh swing weapon khi animation event fire
-            var emitter = owner.GetComponent<AudioEmitter>();
-            if (emitter != null)
-                emitter.PlaySound("SwingWeapon", PlaySoundConfig.Default);
+            // Phát âm thanh swing weapon sử dụng trực tiếp AudioEmitter từ SkillManager
+            if (manager != null && manager.Emitter != null)
+            {
+                manager.Emitter.PlaySound("SwingWeapon", PlaySoundConfig.Default);
+            }
 
             // Tìm container chứa hitbox
             Transform container = owner.transform.Find("SkillContainer");
@@ -89,7 +90,7 @@ namespace Script.Game.PlayerCharacter.Skills
             HitboxController.ActivateHitbox(hitbox, TotalDamage, owner);
         }
         
-        public override void OnEnd(GameObject owner)
+        public override void OnEnd(GameObject owner, SkillManager manager)
         {
             LogBlue($"[SpearManChopDown] OnEnd - Skill finished");
             // Called khi animation kết thúc

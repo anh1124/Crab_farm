@@ -19,7 +19,7 @@ namespace Script.Utils
 
         [Header("Audio Settings")]
         [Tooltip("Key âm thanh hit từ SoundRegistry (để trống nếu không muốn phát âm thanh)")]
-        [SerializeField] private string hitSoundKey = "onhitsound";
+        [SerializeField] private string hitSoundKey = "Hit";
 
         [Tooltip("Thời gian flash trắng (giây)")]
         [SerializeField] private float flashWhiteDuration = 0.1f;

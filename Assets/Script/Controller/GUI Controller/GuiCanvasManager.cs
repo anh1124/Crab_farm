@@ -71,6 +71,9 @@ namespace Script.GUI_Controller
             Time.timeScale = 0; // Bật pause
             pauseMenu.SetActive(true);
 
+            // Tạm dừng toàn bộ âm thanh thế giới (BGM, SFX, ENV)
+            Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);
+
             // Sử dụng SetActive(false) cho Canvas/panel thay vì cả GameObject
             playerHud.gameObject.SetActive(false);
             buildMenu.gameObject.SetActive(false);
@@ -102,6 +105,8 @@ namespace Script.GUI_Controller
             pauseMenu.SetActive(false);
             soundSettingCanvas.SetActive(false);
 
+            // Tiếp tục âm thanh thế giới
+            Script.Audio.AudioManager.Instance?.PauseNonUISounds(false);
 
             // Kích hoạt lại UI elements
             playerHud.gameObject.SetActive(true);

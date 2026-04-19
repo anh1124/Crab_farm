@@ -12,7 +12,7 @@ namespace Script.Game.PlayerCharacter.Skills
     [CreateAssetMenu(fileName = "SpawnVagrantSkill", menuName = "Skills/Player/SpawnVagrant")]
     public class SpawnVagrantSkill : SkillBase
     {
-        public override void OnStart(GameObject owner)
+        public override void OnStart(GameObject owner, SkillManager manager)
         {
             var vm = FindObjectOfType<VagrantManager>();
             if (vm == null)
@@ -29,12 +29,12 @@ namespace Script.Game.PlayerCharacter.Skills
             Debug.Log($"[SpawnVagrantSkill] Spawned 1 Vagrant at {spawnPos}");
         }
 
-        public override void OnHit(GameObject owner)
+        public override void OnHit(GameObject owner, SkillManager manager)
         {
             // Không có hitbox — spawn xảy ra ngay trong OnStart
         }
 
-        public override void OnEnd(GameObject owner)
+        public override void OnEnd(GameObject owner, SkillManager manager)
         {
             // Không cần cleanup
         }

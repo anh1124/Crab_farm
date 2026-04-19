@@ -9,12 +9,16 @@ namespace Script.Audio
     /// <summary>
     /// Component âm thanh gắn lên từng GameObject (enemy, NPC, campfire, VFX...).
     /// Tự đăng ký vào AudioEmitterRegistry khi Enable, tự hủy khi Disable.
-    /// Không cần Collider — PlayerAudioZone poll Registry mỗi 0.2s để set range.
+    /// Không cần Collider — PlayerAudioZone poll Registry mỗi 0.3s để set range.
     ///
     /// VÒNG ĐỜI CỦA MỘT SOUND:
     ///   PlayerAudioZone → SetInRange(true) → OnRangeChanged fired
     ///   → Behavior lắng nghe → PlaySound("key", loop: true)
     ///   → Player đi xa → SetInRange(false) → StopAll() tự động
+    ///
+    /// MONO AUDIO:
+    ///   Khi isMono=true: spatialBlend=0f (2D) + manual volume dựa trên khoảng cách.
+    ///   KHÔNG dùng spread=360 vì Unity vẫn dùng vị trí 3D để tính panning trái/phải.
     /// </summary>
     public class AudioEmitter : MonoBehaviour
     {
@@ -30,7 +34,7 @@ namespace Script.Audio
         {
             public readonly AudioSource Source;
             public readonly bool IsLoop;
-            public readonly Coroutine ReturnCoroutine;
+            public readonly Coroutine ReturnCoroutine; // one-shot: return timer | mono loop: volume updater
 
             public ActiveSoundHandle(AudioSource source, bool isLoop, Coroutine returnCoroutine)
             {
@@ -46,9 +50,8 @@ namespace Script.Audio
 
         /// <summary>
         /// Fired khi trạng thái in/out range thay đổi.
-        /// Behavior scripts lắng nghe event này để bật/tắt loop sound.
         /// true  = vào vùng nghe → nên bắt đầu phát
-        /// false = ra ngoài vùng → AudioEmitter đã StopAll(), không cần làm gì thêm
+        /// false = ra ngoài vùng → AudioEmitter đã StopAllActiveSounds(), không cần làm gì thêm
         /// </summary>
         public event Action<bool> OnRangeChanged;
 
@@ -61,10 +64,9 @@ namespace Script.Audio
         // soundKey → ActiveSoundHandle gom nhóm AudioSource, loop flag, và coroutine
         private readonly Dictionary<string, ActiveSoundHandle> _activeSounds = new();
         private readonly Dictionary<string, float> _lastPlayTimes = new();
-        private const float MIN_PLAY_INTERVAL = 0.1f; // Minimum time between same sound plays
+        private const float MIN_PLAY_INTERVAL = 0.1f;
 
         // Demand queue: soundKey → PlaySoundConfig (chỉ loop sounds)
-        // PlayerAudioZone sẽ kích hoạt play khi emitter trong range
         private readonly Dictionary<string, PlaySoundConfig> _demandedSounds = new();
 
         // Dependency injection cho audio source provider
@@ -115,7 +117,6 @@ namespace Script.Audio
         private void OnDestroy()
         {
             // OnDisable đã gọi StopAll() trước OnDestroy trong Unity
-            // Unregister lại để chắc chắn không còn reference
             AudioEmitterRegistry.Unregister(this);
         }
 
@@ -124,15 +125,15 @@ namespace Script.Audio
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// Được gọi bởi PlayerAudioZone mỗi 0.1s.
+        /// Được gọi bởi PlayerAudioZone mỗi 0.3s.
         /// Chỉ fire event khi trạng thái thực sự thay đổi (tránh spam).
         /// </summary>
         public void SetInRange(bool inRange)
         {
-            if (_isInRange == inRange) return; // Không đổi → bỏ qua
+            if (_isInRange == inRange) return;
 
             _isInRange = inRange;
-            _debugInRange = inRange; // Inspector debug
+            _debugInRange = inRange;
 
             if (!inRange)
             {
@@ -153,7 +154,6 @@ namespace Script.Audio
 
         /// <summary>
         /// Force set inRange = true (cho AudioTest hoặc debug).
-        /// Cẩn thận: chỉ dùng khi biết chắc chắn player gần emitter.
         /// </summary>
         public void ForceInRange()
         {
@@ -168,63 +168,54 @@ namespace Script.Audio
         // ─────────────────────────────────────────────
 
         /// <summary>
-        /// Phát âm thanh theo soundKey từ SoundRegistry (API mới với config).
+        /// Phát âm thanh theo soundKey từ SoundRegistry.
         ///
-        /// LOOP SOUND (lửa trại, bước chân...):
+        /// LOOP SOUND (lửa trại, portal...):
         ///   PlaySound("Campfire_Crackle", new PlaySoundConfig(loop: true))
-        ///   → Tồn tại đến khi StopSound() hoặc SetInRange(false)
+        ///   → Đăng ký demand, chỉ tiêu AudioSource khi Player trong vùng.
         ///
         /// ONE-SHOT (tiếng đánh, tiếng nhặt đồ...):
         ///   PlaySound("Sword_Hit")
-        ///   → Tự động trả pool khi clip xong
+        ///   → Phát ngay, tự trả pool khi xong.
         /// </summary>
-        /// <param name="soundKey">Key trong SoundRegistry.</param>
-        /// <param name="config">Config tùy chọn (default = PlaySoundConfig.Default).</param>
         public void PlaySound(string soundKey, PlaySoundConfig config = default)
         {
-            // Guard: Provider chưa sẵn sàng
             if (Provider == null)
             {
                 Debug.LogError("[AudioEmitter] Provider is null!");
                 return;
             }
 
-            // Guard: Chặn spam cùng sound quá nhanh (dưới 0.1s)
+            // Chặn spam cùng sound quá nhanh
             float currentTime = Time.time;
             if (_lastPlayTimes.TryGetValue(soundKey, out float lastPlayTime))
             {
                 if (currentTime - lastPlayTime < MIN_PLAY_INTERVAL)
-                {
-                    return; // Quá sát nhau, bỏ qua
-                }
+                    return;
             }
 
-            // Loop sound: chỉ đăng ký demand, không play ngay
             if (config.Loop)
             {
                 _demandedSounds[soundKey] = config;
-                // Nếu đang trong range, kích hoạt play ngay
                 if (_isInRange)
-                {
                     TriggerDemandedPlay(soundKey);
-                }
                 return;
             }
 
-            // One-shot sound: play ngay lập tức
             PlayOneShot(soundKey, config);
-
-            // Update last play time
             _lastPlayTimes[soundKey] = Time.time;
         }
+
+        // ─────────────────────────────────────────────
+        //  Private Playback
+        // ─────────────────────────────────────────────
 
         /// <summary>Phát one-shot sound ngay lập tức (không demand).</summary>
         private void PlayOneShot(string soundKey, PlaySoundConfig config)
         {
-            // Check culling range - one-shot sounds cũng phải respect culling distance
             if (!_isInRange)
             {
-                Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}' - Emitter outside culling range, SKIP");
+                Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}' - outside culling range, SKIP");
                 return;
             }
 
@@ -238,7 +229,6 @@ namespace Script.Audio
             float actualMin = config.MinDistance > 0f ? config.MinDistance : entry.minDistance;
             float actualMax = config.MaxDistance > 0f ? config.MaxDistance : entry.maxDistance;
 
-            // Xin pool
             AudioSource source = Provider.Rent(transform.position);
             if (source == null)
             {
@@ -246,67 +236,49 @@ namespace Script.Audio
                 return;
             }
 
-            // Cấu hình source
-            source.clip         = entry.clip;
-            source.volume       = config.VolumeScale;
-            source.minDistance  = actualMin;
-            source.maxDistance  = actualMax;
-            source.loop         = false;
+            bool isMono = Provider.GetMonoAudio();
 
-            // Luôn dùng spatialBlend=1 (3D) để có distance attenuation
-            source.spatialBlend = 1f;
-            source.spread = GetSpread();
+            source.clip = entry.clip;
+            source.loop = false;
 
-            Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}', spatialBlend={source.spatialBlend}, spread={source.spread}");
+            if (isMono)
+            {
+                // MONO FIX: spatialBlend=0f → 2D sound, equal volume cả 2 tai.
+                // Volume được tính thủ công theo khoảng cách do Unity không tự rolloff khi blend=0.
+                // spread=360 SAI vì Unity vẫn dùng vị trí AudioSource 3D để pan trái/phải.
+                source.spatialBlend = 0f;
+                source.panStereo    = 0f;
+                source.volume       = config.VolumeScale
+                    * Provider.CalculateDistanceVolume(transform.position, actualMin, actualMax);
+            }
+            else
+            {
+                // STEREO: spatialBlend=1f, Unity xử lý 3D panning + custom rolloff curve.
+                source.spatialBlend = 1f;
+                source.volume       = config.VolumeScale;
+                source.minDistance  = actualMin;
+                source.maxDistance  = actualMax;
 
-            AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
-            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
+                AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(
+                    actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
+                source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
+            }
 
-            // Bám theo transform (vẫn di chuyển cùng obj)
             source.transform.SetParent(transform);
             source.transform.localPosition = Vector3.zero;
 
-            // Lưu state gom nhóm trong ActiveSoundHandle
             string instanceId = $"{soundKey}_{Guid.NewGuid()}";
             Coroutine returnCoroutine = StartCoroutine(ReturnAfterClip(instanceId, source, entry.clip.length));
-
             _activeSounds[instanceId] = new ActiveSoundHandle(source, false, returnCoroutine);
 
             source.Play();
         }
 
-        /// <summary>
-        /// Lấy spread value dựa trên mono setting hiện tại.
-        /// spread=360 → âm thanh trải đều 2 tai (mono).
-        /// spread=0   → âm thanh định hướng theo vị trí 3D (stereo).
-        /// panStereo không dùng vì spatialBlend=1f khiến nó bị ignore.
-        /// </summary>
-        private float GetSpread()
-        {
-            bool isMono = Provider is AudioManager mgr && mgr.VolumeSettings != null
-                && mgr.VolumeSettings.GetMonoAudio();
-            return isMono ? 360f : 0f;
-        }
-
-        /// <summary>
-        /// Áp dụng mono/stereo setting lên tất cả sound đang phát.
-        /// Gọi khi user toggle trong Settings UI.
-        /// </summary>
-        public void ApplyMonoSetting(bool isMono)
-        {
-            float spread = isMono ? 360f : 0f;
-            foreach (var handle in _activeSounds.Values)
-            {
-                if (handle.Source != null)
-                    handle.Source.spread = spread;
-            }
-        }
-
-        /// <summary>Kích hoạt play demanded sound (gọi bởi PlayerAudioZone khi vào range).</summary>
+        /// <summary>Kích hoạt play demanded loop sound khi vào range.</summary>
         private void TriggerDemandedPlay(string soundKey)
         {
             if (!_demandedSounds.TryGetValue(soundKey, out var config)) return;
-            if (_activeSounds.ContainsKey(soundKey)) return; // Đang play rồi
+            if (_activeSounds.ContainsKey(soundKey)) return; // đang play rồi
 
             var entry = Provider.GetEntry(soundKey);
             if (entry == null)
@@ -318,14 +290,6 @@ namespace Script.Audio
             float actualMin = config.MinDistance > 0f ? config.MinDistance : entry.minDistance;
             float actualMax = config.MaxDistance > 0f ? config.MaxDistance : entry.maxDistance;
 
-            // Log distance check
-            var audioManager = Provider as AudioManager;
-            if (audioManager != null && audioManager.PlayerTransform != null)
-            {
-                float distanceToPlayer = Vector2.Distance(transform.position, audioManager.PlayerTransform.position);
-                Debug.Log($"[AudioEmitter] TriggerDemandedPlay: key='{soundKey}', Distance={distanceToPlayer:F2}m, MinDistance={actualMin:F2}m, MaxDistance={actualMax:F2}m");
-            }
-
             AudioSource source = Provider.Rent(transform.position);
             if (source == null)
             {
@@ -333,72 +297,78 @@ namespace Script.Audio
                 return;
             }
 
-            // Cấu hình source
-            source.clip         = entry.clip;
-            source.volume       = config.VolumeScale;
-            source.minDistance  = actualMin;
-            source.maxDistance  = actualMax;
-            source.loop         = true;
+            bool isMono = Provider.GetMonoAudio();
 
-            // Luôn dùng spatialBlend=1 (3D) để có distance attenuation
-            source.spatialBlend = 1f;
-            source.spread = GetSpread();
+            source.clip = entry.clip;
+            source.loop = true;
 
-            Debug.Log($"[AudioEmitter] TriggerDemandedPlay: key='{soundKey}', spatialBlend={source.spatialBlend}, spread={source.spread}");
+            if (isMono)
+            {
+                // MONO FIX: spatialBlend=0f + manual volume.
+                // MonoVolumeUpdater coroutine sẽ cập nhật volume mỗi frame khi Player di chuyển.
+                source.spatialBlend = 0f;
+                source.panStereo    = 0f;
+                source.volume       = config.VolumeScale
+                    * Provider.CalculateDistanceVolume(transform.position, actualMin, actualMax);
+            }
+            else
+            {
+                // STEREO: spatialBlend=1f, Unity tự xử lý rolloff.
+                source.spatialBlend = 1f;
+                source.volume       = config.VolumeScale;
+                source.minDistance  = actualMin;
+                source.maxDistance  = actualMax;
 
-            AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
-            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
+                AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(
+                    actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
+                source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
+            }
 
             source.transform.SetParent(transform);
             source.transform.localPosition = Vector3.zero;
 
-            _activeSounds[soundKey] = new ActiveSoundHandle(source, true, null);
+            // Mono loop cần coroutine để cập nhật volume liên tục khi Player di chuyển
+            Coroutine monoUpdater = isMono
+                ? StartCoroutine(MonoVolumeUpdater(source, config.VolumeScale, actualMin, actualMax))
+                : null;
+
+            _activeSounds[soundKey] = new ActiveSoundHandle(source, true, monoUpdater);
 
             source.Play();
         }
 
-        /// <summary>Dừng âm thanh cụ thể và trả pool về.</summary>
+        /// <summary>Dừng âm thanh cụ thể và trả pool.</summary>
         public void StopSound(string soundKey)
         {
             StopSound(soundKey, keepDemand: false);
         }
 
-        /// <summary>Dừng âm thanh cụ thể và trả pool về.</summary>
         /// <param name="keepDemand">Nếu true, giữ demand trong queue (dùng khi culling by range)</param>
         public void StopSound(string soundKey, bool keepDemand)
         {
-            // Find all instances that start with the soundKey prefix
             var keysToRemove = _activeSounds.Keys.Where(k => k.StartsWith(soundKey)).ToList();
 
             foreach (var key in keysToRemove)
             {
                 if (!_activeSounds.TryGetValue(key, out var handle)) continue;
 
-                // Dừng coroutine nếu đang chạy (chỉ có cho one-shot)
                 if (handle.ReturnCoroutine != null)
-                {
                     StopCoroutine(handle.ReturnCoroutine);
-                }
 
-                // Dừng AudioSource
                 if (handle.Source != null)
                 {
                     handle.Source.Stop();
                     Provider?.Return(handle.Source);
                 }
 
-                // Xóa khỏi dict
                 _activeSounds.Remove(key);
             }
 
-            // Xóa khỏi demand queue nếu là loop sound (trừ khi keepDemand = true)
             if (!keepDemand)
-            {
                 _demandedSounds.Remove(soundKey);
-            }
         }
 
-        /// <summary>Dừng tất cả âm thanh đang active (không clear demand queue).</summary>
+        /// <summary>Dừng tất cả active sounds nhưng giữ demand queue.</summary>
         private void StopAllActiveSounds()
         {
             var keys = new List<string>(_activeSounds.Keys);
@@ -424,18 +394,56 @@ namespace Script.Audio
         public int ActiveSoundCount => _activeSounds.Count;
 
         // ─────────────────────────────────────────────
-        //  Internal
+        //  Mono Setting API
         // ─────────────────────────────────────────────
 
+        /// <summary>
+        /// Áp dụng lại Mono/Stereo setting lên tất cả sound đang active.
+        /// Gọi khi user toggle trong Settings UI.
+        /// Loop sounds cần restart để switch spatialBlend đúng cách.
+        /// </summary>
+        public void ApplyMonoSetting(bool isMono)
+        {
+            // Lấy danh sách loop sounds đang active
+            var loopKeys = new List<string>();
+            foreach (var kvp in _activeSounds)
+            {
+                if (kvp.Value.IsLoop) loopKeys.Add(kvp.Key);
+            }
+
+            foreach (var key in loopKeys)
+            {
+                // Stop instance cũ nhưng giữ demand để trigger lại với setting mới
+                StopSound(key, keepDemand: true);
+                TriggerDemandedPlay(key);
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        //  Internal Coroutines
+        // ─────────────────────────────────────────────
+
+        /// <summary>Chờ clip phát xong thì trả AudioSource về pool.</summary>
         private IEnumerator ReturnAfterClip(string soundKey, AudioSource source, float clipLength)
         {
-            // Buffer nhỏ để tránh cắt tiếng đột ngột
             yield return new WaitForSeconds(clipLength + AudioConstants.BUFFER_TIME);
 
-            // Chỉ trả pool nếu âm thanh vẫn còn trong dict (chưa bị StopSound())
             if (_activeSounds.ContainsKey(soundKey))
-            {
                 StopSound(soundKey);
+        }
+
+        /// <summary>
+        /// Cập nhật volume mỗi frame cho loop sound ở Mono mode.
+        /// Cần thiết vì spatialBlend=0f nên Unity không tự rolloff theo khoảng cách.
+        /// Coroutine tự dừng khi AudioSource bị destroy hoặc stop.
+        /// </summary>
+        private IEnumerator MonoVolumeUpdater(AudioSource source, float baseVolume, float minDist, float maxDist)
+        {
+            while (source != null && source.isPlaying)
+            {
+                float vol = baseVolume * Provider.CalculateDistanceVolume(transform.position, minDist, maxDist);
+                source.volume = vol;
+                yield return null; // cập nhật mỗi frame
             }
         }
     }

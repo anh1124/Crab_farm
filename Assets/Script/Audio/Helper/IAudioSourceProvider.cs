@@ -17,5 +17,14 @@ namespace Script.Audio
 
         /// <summary>Lấy SoundEntry theo key từ registry.</summary>
         SoundRegistry.SoundEntry GetEntry(string soundKey);
+
+        /// <summary>
+        /// Tính volume (0-1) dựa trên khoảng cách từ sourcePos đến Player.
+        /// Dùng bởi AudioEmitter khi Mono mode để áp volume thủ công.
+        /// </summary>
+        float CalculateDistanceVolume(Vector3 sourcePos, float minDist, float maxDist);
+
+        /// <summary>Trả về trạng thái Mono Audio hiện tại.</summary>
+        bool GetMonoAudio();
     }
 }
