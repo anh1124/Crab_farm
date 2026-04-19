@@ -7,6 +7,7 @@ namespace Script.Game.Combat
 {
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(SpriteRenderer))]
+    [RequireComponent(typeof(Audio.AudioEmitter))]
     [DefaultExecutionOrder(500)]
     public class ArrowController : MonoBehaviour
     {
@@ -31,6 +32,7 @@ namespace Script.Game.Combat
         private Collider2D col; // Added Collider reference
         private SpriteRenderer spriteRenderer;
         private IArrowPool pool;
+        private Audio.AudioEmitter audioEmitter;
         #endregion
         
         #region Settings
@@ -89,6 +91,7 @@ namespace Script.Game.Combat
             rb = GetComponent<Rigidbody2D>();
             col = GetComponent<Collider2D>(); // Get Collider
             spriteRenderer = GetComponent<SpriteRenderer>();
+            audioEmitter = GetComponent<Audio.AudioEmitter>();
         }
         
         public void Initialize(Vector2 velocity, float launchAngle, float gravityScaleValue, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false)
@@ -370,6 +373,9 @@ namespace Script.Game.Combat
             // Dừng ngay lập tức
             rb.velocity = Vector2.zero;
             rb.angularVelocity = 0f;
+
+            // Phát âm thanh Arrow_Hit
+            audioEmitter?.PlaySound("Arrow_Hit");
 
             // 1. LUỒNG GÂY SÁT THƯƠNG (Chỉ thực hiện 1 lần)
             if (!hasDealtDamage)

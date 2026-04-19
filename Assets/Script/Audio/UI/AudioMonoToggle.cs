@@ -92,6 +92,14 @@ namespace Script.Audio
 
             AudioManager.Instance.VolumeSettings.SetMonoAudio(value);
             UpdateLabelText(value);
+
+            // Apply ngay cho tất cả emitter đang active (loop sounds như portal, campfire...)
+            var emitters = AudioEmitterRegistry.All;
+            for (int i = 0; i < emitters.Count; i++)
+            {
+                if (emitters[i] != null)
+                    emitters[i].ApplyMonoSetting(value);
+            }
         }
 
         private void UpdateLabelText(bool isMono)

@@ -80,6 +80,12 @@ namespace Script.Controller.PlayerController
             {
                 Script.Audio.AudioManager.Instance.PlayerTransform = player.transform;
             }
+
+            // Chuyển AudioListener sang player pivot (cho mono/stereo hoạt động đúng)
+            if (Script.Audio.AudioListenerManager.Instance != null)
+            {
+                Script.Audio.AudioListenerManager.Instance.SetListenerToPlayer(player.transform);
+            }
         }
 
         private void Update()
@@ -212,6 +218,12 @@ namespace Script.Controller.PlayerController
         {
             isAlive = false;
             player.SetActive(false);
+
+            // Chuyển AudioListener về camera khi player chết
+            if (Script.Audio.AudioListenerManager.Instance != null)
+            {
+                Script.Audio.AudioListenerManager.Instance.SetListenerToCamera();
+            }
         }
     }
 }

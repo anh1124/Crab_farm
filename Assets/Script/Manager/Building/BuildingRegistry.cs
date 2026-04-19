@@ -31,6 +31,9 @@ namespace Script.Manager.Building
 
             [Tooltip("Khoảng cách tối thiểu bắt buộc khi đặt công trình (0 = không check raycast khoảng cách)")]
             public float minimumDistance = 0f;
+
+            [Tooltip("Yêu cầu lật công trình khi xây 2 bên TownCenter không")]
+            public bool isFlipRequire = true;
         }
 
         [Header("Building Entries")]
@@ -188,6 +191,20 @@ namespace Script.Manager.Building
 
             Debug.LogWarning($"[BuildingRegistry] No minimum distance found for BuildingType: {buildingType}");
             return 0f;
+        }
+
+        /// <summary>
+        /// Kiểm tra xem một loại công trình có yêu cầu lật khi xây 2 bên TownCenter không
+        /// </summary>
+        public bool GetIsFlipRequire(BuildingType buildingType)
+        {
+            if (buildingDict.TryGetValue(buildingType, out BuildingEntry entry))
+            {
+                return entry.isFlipRequire;
+            }
+
+            Debug.LogWarning($"[BuildingRegistry] No isFlipRequire found for BuildingType: {buildingType}");
+            return true;
         }
     }
 }

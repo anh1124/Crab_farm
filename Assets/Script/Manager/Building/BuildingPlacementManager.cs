@@ -540,9 +540,17 @@ namespace Script.Manager.Building
                 GameObject newStructure = _saveManager.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
-                    // Áp dụng cùng logic lật như preview
+                    // Kiểm tra xem công trình có yêu cầu flip không
+                    BuildingType? buildingType = GetBuildingTypeFromPrefab(structureToPlace);
+                    bool isFlipRequire = true;
+                    if (buildingType.HasValue && BuildingRegistry.Instance != null)
+                    {
+                        isFlipRequire = BuildingRegistry.Instance.GetIsFlipRequire(buildingType.Value);
+                    }
+
+                    // Áp dụng cùng logic lật như preview (chỉ khi isFlipRequire = true)
                     Vector3 previewScale = previewInstance.transform.localScale;
-                    bool shouldFlip = previewScale.x < 0;
+                    bool shouldFlip = isFlipRequire && previewScale.x < 0;
 
                     newStructure.transform.rotation = Quaternion.identity;
                     newStructure.transform.localScale = previewScale;
@@ -559,7 +567,7 @@ namespace Script.Manager.Building
                     }
 
                     // Add debug logging
-                    Debug.Log($"New structure created with rotation: {newStructure.transform.rotation.eulerAngles}, scale: {newStructure.transform.localScale}");
+                    Debug.Log($"New structure created with rotation: {newStructure.transform.rotation.eulerAngles}, scale: {newStructure.transform.localScale}, isFlipRequire: {isFlipRequire}, shouldFlip: {shouldFlip}");
 
                     CleanupPreview();
                     

@@ -45,6 +45,10 @@ MonoBehaviour:
       clip: {fileID: 8300000, guid: f212d27789b7e554da7c5d91ab279be3, type: 3}
       minDistance: 5
       maxDistance: 35
+    - key: Hit
+      clip: {fileID: 8300000, guid: 0053adcb2b84fdb458aa5a1b01233620, type: 3}
+      minDistance: 5
+      maxDistance: 35
   - groupName: Item
     entries:
     - key: Bow_Draw
@@ -55,7 +59,7 @@ MonoBehaviour:
       clip: {fileID: 8300000, guid: d24b89af6c111db4ba205a206ce2e2dd, type: 3}
       minDistance: 5
       maxDistance: 35
-    - key: Arrow_HitGround
+    - key: Arrow_Hit
       clip: {fileID: 8300000, guid: 5485d62b2a47cd64c8619b9bc4bd460b, type: 3}
       minDistance: 5
       maxDistance: 35

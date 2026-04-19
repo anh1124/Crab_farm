@@ -1,5 +1,6 @@
 using UnityEngine;
 using Script.Interfaces;
+using Script.Audio;
 
 namespace Script.Utils
 {
@@ -45,7 +46,22 @@ namespace Script.Utils
                 }
             }
 
-            if (damaged) return true;
+            if (damaged)
+            {
+                // Phát âm thanh Hit
+                // Ưu tiên dùng AudioEmitter trên entity nếu có
+                var emitter = effectiveTarget.GetComponent<Audio.AudioEmitter>();
+                if (emitter != null)
+                {
+                    emitter.PlaySound("Hit");
+                }
+                else if (AudioManager.Instance != null)
+                {
+                    // Fallback: dùng AudioManager nếu không có AudioEmitter
+                    AudioManager.Instance.PlaySFXByKey("Hit", effectiveTarget.transform.position);
+                }
+                return true;
+            }
 
             // Không in log nếu trúng Tilemap (tránh spam khi arrow bắn xuống đất)
             if (!effectiveTarget.name.Contains("Tilemap") && effectiveTarget.GetComponent<UnityEngine.Tilemaps.Tilemap>() == null)

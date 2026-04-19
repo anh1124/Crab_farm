@@ -221,6 +221,13 @@ namespace Script.Audio
         /// <summary>Phát one-shot sound ngay lập tức (không demand).</summary>
         private void PlayOneShot(string soundKey, PlaySoundConfig config)
         {
+            // Check culling range - one-shot sounds cũng phải respect culling distance
+            if (!_isInRange)
+            {
+                Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}' - Emitter outside culling range, SKIP");
+                return;
+            }
+
             var entry = Provider.GetEntry(soundKey);
             if (entry == null)
             {
@@ -246,13 +253,11 @@ namespace Script.Audio
             source.maxDistance  = actualMax;
             source.loop         = false;
 
-            // Kiểm tra MonoAudio setting
-            bool monoAudio = Provider is AudioManager manager && manager.VolumeSettings != null
-                ? manager.VolumeSettings.GetMonoAudio()
-                : false;
-            source.spatialBlend = monoAudio ? 0f : 1f; // 0 = 2D (mono), 1 = 3D (stereo)
+            // Luôn dùng spatialBlend=1 (3D) để có distance attenuation
+            source.spatialBlend = 1f;
+            source.spread = GetSpread();
 
-            Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}', monoAudio={monoAudio}, spatialBlend={source.spatialBlend}");
+            Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}', spatialBlend={source.spatialBlend}, spread={source.spread}");
 
             AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
             source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
@@ -268,6 +273,33 @@ namespace Script.Audio
             _activeSounds[instanceId] = new ActiveSoundHandle(source, false, returnCoroutine);
 
             source.Play();
+        }
+
+        /// <summary>
+        /// Lấy spread value dựa trên mono setting hiện tại.
+        /// spread=360 → âm thanh trải đều 2 tai (mono).
+        /// spread=0   → âm thanh định hướng theo vị trí 3D (stereo).
+        /// panStereo không dùng vì spatialBlend=1f khiến nó bị ignore.
+        /// </summary>
+        private float GetSpread()
+        {
+            bool isMono = Provider is AudioManager mgr && mgr.VolumeSettings != null
+                && mgr.VolumeSettings.GetMonoAudio();
+            return isMono ? 360f : 0f;
+        }
+
+        /// <summary>
+        /// Áp dụng mono/stereo setting lên tất cả sound đang phát.
+        /// Gọi khi user toggle trong Settings UI.
+        /// </summary>
+        public void ApplyMonoSetting(bool isMono)
+        {
+            float spread = isMono ? 360f : 0f;
+            foreach (var handle in _activeSounds.Values)
+            {
+                if (handle.Source != null)
+                    handle.Source.spread = spread;
+            }
         }
 
         /// <summary>Kích hoạt play demanded sound (gọi bởi PlayerAudioZone khi vào range).</summary>
@@ -286,6 +318,14 @@ namespace Script.Audio
             float actualMin = config.MinDistance > 0f ? config.MinDistance : entry.minDistance;
             float actualMax = config.MaxDistance > 0f ? config.MaxDistance : entry.maxDistance;
 
+            // Log distance check
+            var audioManager = Provider as AudioManager;
+            if (audioManager != null && audioManager.PlayerTransform != null)
+            {
+                float distanceToPlayer = Vector2.Distance(transform.position, audioManager.PlayerTransform.position);
+                Debug.Log($"[AudioEmitter] TriggerDemandedPlay: key='{soundKey}', Distance={distanceToPlayer:F2}m, MinDistance={actualMin:F2}m, MaxDistance={actualMax:F2}m");
+            }
+
             AudioSource source = Provider.Rent(transform.position);
             if (source == null)
             {
@@ -300,13 +340,11 @@ namespace Script.Audio
             source.maxDistance  = actualMax;
             source.loop         = true;
 
-            // Kiểm tra MonoAudio setting
-            bool monoAudio = Provider is AudioManager manager && manager.VolumeSettings != null
-                ? manager.VolumeSettings.GetMonoAudio()
-                : false;
-            source.spatialBlend = monoAudio ? 0f : 1f; // 0 = 2D (mono), 1 = 3D (stereo)
+            // Luôn dùng spatialBlend=1 (3D) để có distance attenuation
+            source.spatialBlend = 1f;
+            source.spread = GetSpread();
 
-            Debug.Log($"[AudioEmitter] TriggerDemandedPlay: key='{soundKey}', monoAudio={monoAudio}, spatialBlend={source.spatialBlend}");
+            Debug.Log($"[AudioEmitter] TriggerDemandedPlay: key='{soundKey}', spatialBlend={source.spatialBlend}, spread={source.spread}");
 
             AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
             source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
@@ -321,6 +359,13 @@ namespace Script.Audio
 
         /// <summary>Dừng âm thanh cụ thể và trả pool về.</summary>
         public void StopSound(string soundKey)
+        {
+            StopSound(soundKey, keepDemand: false);
+        }
+
+        /// <summary>Dừng âm thanh cụ thể và trả pool về.</summary>
+        /// <param name="keepDemand">Nếu true, giữ demand trong queue (dùng khi culling by range)</param>
+        public void StopSound(string soundKey, bool keepDemand)
         {
             // Find all instances that start with the soundKey prefix
             var keysToRemove = _activeSounds.Keys.Where(k => k.StartsWith(soundKey)).ToList();
@@ -346,8 +391,11 @@ namespace Script.Audio
                 _activeSounds.Remove(key);
             }
 
-            // Xóa khỏi demand queue nếu là loop sound
-            _demandedSounds.Remove(soundKey);
+            // Xóa khỏi demand queue nếu là loop sound (trừ khi keepDemand = true)
+            if (!keepDemand)
+            {
+                _demandedSounds.Remove(soundKey);
+            }
         }
 
         /// <summary>Dừng tất cả âm thanh đang active (không clear demand queue).</summary>
@@ -355,7 +403,7 @@ namespace Script.Audio
         {
             var keys = new List<string>(_activeSounds.Keys);
             foreach (var key in keys)
-                StopSound(key);
+                StopSound(key, keepDemand: true);
         }
 
         /// <summary>Dừng tất cả âm thanh và xóa demand queue.</summary>

@@ -680,9 +680,10 @@ MonoBehaviour:
   bgmSourceA: {fileID: 2463356681153313270}
   bgmSourceB: {fileID: 760422506259668255}
   envSource: {fileID: 4745778094723510457}
-  uiSource: {fileID: 0}
+  uiSource: {fileID: 8658340183736603571}
   playerTransform: {fileID: 0}
   cullingDistance: 50
+  isDebug: 0
   soundRegistry: {fileID: 11400000, guid: 6dd5b41ff604f444eae1a8ea169f7e39, type: 2}
 --- !u!114 &6664596334241687807
 MonoBehaviour:

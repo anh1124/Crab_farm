@@ -28,8 +28,8 @@ namespace Script.Audio
         /// <summary>Khoảng cách mặc định âm thanh hoàn toàn im (đơn vị Unity)</summary>
         public const float DEFAULT_MAX_DISTANCE = 15f;
 
-        /// <summary>Volume còn lại tại maxDistance mặc định (0.3 = 30%)</summary>
-        public const float DEFAULT_VOLUME_AT_MAX = 0.3f;
+        /// <summary>Volume còn lại tại maxDistance mặc định (0 = hoàn toàn im)</summary>
+        public const float DEFAULT_VOLUME_AT_MAX = 0f;
 
         /// <summary>Offset thêm vào culling distance khi auto-set từ SoundRegistry (đơn vị Unity)</summary>
         public const float CULLING_DISTANCE_OFFSET = 35f;

@@ -84,9 +84,15 @@ namespace Script.Audio
         source.loop        = false;
         source.volume      = 1f;
         source.pitch       = 1f;
-        source.panStereo   = 0f;
+        source.spread      = 0f;
         source.gameObject.SetActive(false);
-        source.transform.SetParent(transform);
+
+        // Tránh SetParent error khi parent GameObject đang được deactivate
+        // Chỉ reparent nếu parent không phải là null và không đang bị destroy
+        if (source.transform.parent != null && source.transform.parent.gameObject.activeInHierarchy)
+        {
+            source.transform.SetParent(transform);
+        }
 
         _inUse.Remove(source);
         _available.Enqueue(source);

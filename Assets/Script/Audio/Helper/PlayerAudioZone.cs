@@ -8,6 +8,7 @@ namespace Script.Audio
     /// Poll AudioEmitterRegistry mỗi checkInterval giây.
     /// Tính khoảng cách 2D (X và Y) phù hợp game 2D.
     /// Không dùng Physics/Collider.
+    /// Chia làm 10 bucket để phân phối load qua các frame.
     ///
     /// SETUP:
     ///   1. Gắn component này lên Player
@@ -19,8 +20,8 @@ namespace Script.Audio
         #region Inspector Fields
 
         [Header("Performance")]
-        [Tooltip("Giây giữa mỗi lần poll.")]
-        [SerializeField] private float checkInterval = 0.1f;
+        [Tooltip("Giây giữa mỗi lần poll toàn bộ emitters.")]
+        [SerializeField] private float checkInterval = 0.3f;
 
         [Header("Debug")]
         [SerializeField] private bool  showGizmo     = true;
@@ -35,6 +36,10 @@ namespace Script.Audio
         private Vector2      _playerPos2D;   // Cache, update mỗi BatchCheck
         private AudioManager _audioManager;  // Cache, tránh gọi Instance nhiều lần
 
+        private float _timer = 0f;
+        private int _bucketIndex = 0;
+        private const int BUCKET_COUNT = 10; // Chia làm 10 nhóm để phân phối load
+
         #endregion
 
         #region Unity Lifecycle
@@ -45,45 +50,74 @@ namespace Script.Audio
 
             if (_audioManager != null)
                 _audioManager.PlayerTransform = transform;
+        }
 
-            StartCoroutine(PollRoutine());
+        private void Update()
+        {
+            var emitters = AudioEmitterRegistry.All;
+            if (emitters.Count == 0) return;
+
+            _timer += Time.deltaTime;
+
+            // Mỗi bucket được xử lý mỗi checkInterval (0.3s)
+            // Full cycle (10 buckets) mất 10 * 0.3s = 3s
+            if (_timer >= checkInterval)
+            {
+                _timer = 0f;
+                ProcessCurrentBucket();
+                _bucketIndex = (_bucketIndex + 1) % BUCKET_COUNT;
+            }
         }
 
         #endregion
 
         #region Poll
 
-        private IEnumerator PollRoutine()
+        private void ProcessCurrentBucket()
         {
-            var wait = new WaitForSeconds(checkInterval);
-            while (true)
-            {
-                yield return wait;
-                BatchCheck();
-            }
-        }
-
-        private void BatchCheck()
-        {
-            // Cache playerPos và cullingDist 1 lần cho cả batch
+            // Cache playerPos và cullingDist 1 lần cho cả bucket
             _playerPos2D = transform.position;
             float cullingDist = GetCullingDistance();
 
-            var emitters    = AudioEmitterRegistry.All;
-            int  inRangeCount = 0;
+            var emitters = AudioEmitterRegistry.All;
+            int count = emitters.Count;
+            if (count == 0) return;
 
-            for (int i = 0; i < emitters.Count; i++)
+            // Tính bucket size và range
+            int bucketSize = Mathf.CeilToInt((float)count / BUCKET_COUNT);
+            int startIndex = _bucketIndex * bucketSize;
+            int endIndex = Mathf.Min(startIndex + bucketSize, count);
+
+            if (startIndex >= count) return;
+
+            int inRangeCount = 0;
+
+            for (int i = startIndex; i < endIndex; i++)
             {
                 var emitter = emitters[i];
                 if (emitter == null) continue;
 
                 bool inRange = IsEmitterInRange(emitter, cullingDist);
+
+                // Debug log cho portal chỉ khi trong range
+                if (inRange && emitter.gameObject.name.Contains("Portal"))
+                {
+                    float distance = Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position);
+                    Debug.Log($"[PlayerAudioZone] Portal: {emitter.gameObject.name}, Distance: {distance:F2}m, Culling: {cullingDist:F2}m, InRange: {inRange}");
+                }
+
                 emitter.SetInRange(inRange);
 
                 if (inRange) inRangeCount++;
             }
 
             _emitterCountInRange = inRangeCount;
+        }
+
+        private void BatchCheck()
+        {
+            // Đã thay thế bằng ProcessCurrentBucket bucket-based
+            // Giữ lại cho backward compatibility nếu cần
         }
 
         #endregion
