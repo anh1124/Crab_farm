@@ -245,7 +245,14 @@ namespace Script.Audio
             source.minDistance  = actualMin;
             source.maxDistance  = actualMax;
             source.loop         = false;
-            source.spatialBlend = 1f;
+
+            // Kiểm tra MonoAudio setting
+            bool monoAudio = Provider is AudioManager manager && manager.VolumeSettings != null
+                ? manager.VolumeSettings.GetMonoAudio()
+                : false;
+            source.spatialBlend = monoAudio ? 0f : 1f; // 0 = 2D (mono), 1 = 3D (stereo)
+
+            Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}', monoAudio={monoAudio}, spatialBlend={source.spatialBlend}");
 
             AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
             source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
@@ -292,7 +299,14 @@ namespace Script.Audio
             source.minDistance  = actualMin;
             source.maxDistance  = actualMax;
             source.loop         = true;
-            source.spatialBlend = 1f;
+
+            // Kiểm tra MonoAudio setting
+            bool monoAudio = Provider is AudioManager manager && manager.VolumeSettings != null
+                ? manager.VolumeSettings.GetMonoAudio()
+                : false;
+            source.spatialBlend = monoAudio ? 0f : 1f; // 0 = 2D (mono), 1 = 3D (stereo)
+
+            Debug.Log($"[AudioEmitter] TriggerDemandedPlay: key='{soundKey}', monoAudio={monoAudio}, spatialBlend={source.spatialBlend}");
 
             AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
             source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
