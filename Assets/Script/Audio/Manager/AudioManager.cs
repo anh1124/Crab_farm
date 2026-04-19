@@ -78,6 +78,12 @@ namespace Script.Audio
     private VolumeSettings _volume;
 
     // ─────────────────────────────────────────────
+    //  Public Properties
+    // ─────────────────────────────────────────────
+
+    public VolumeSettings VolumeSettings => _volume;
+
+    // ─────────────────────────────────────────────
     //  Unity Lifecycle
     // ─────────────────────────────────────────────
 

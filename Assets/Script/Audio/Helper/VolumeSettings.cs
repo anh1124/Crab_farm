@@ -18,6 +18,9 @@ namespace Script.Audio
     public const string PARAM_SFX    = "SFXVolume";
     public const string PARAM_UI     = "UIVolume";
 
+    // PlayerPrefs key cho mono audio setting
+    public const string KEY_MONO_AUDIO = "MonoAudio";
+
     private readonly AudioMixer _mixer;
 
     public VolumeSettings(AudioMixer mixer)
@@ -45,6 +48,26 @@ namespace Script.Audio
         ApplyVolume(PARAM_ENV,    envVol);
         ApplyVolume(PARAM_SFX,    sfxVol);
         ApplyVolume(PARAM_UI,     uiVol);
+
+        // MonoAudio mặc định = false (stereo)
+        if (!PlayerPrefs.HasKey(KEY_MONO_AUDIO))
+        {
+            PlayerPrefs.SetInt(KEY_MONO_AUDIO, 0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    /// <summary>Đặt chế độ mono audio (tắt stereo panning).</summary>
+    public void SetMonoAudio(bool enabled)
+    {
+        PlayerPrefs.SetInt(KEY_MONO_AUDIO, enabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>Lấy chế độ mono audio. Mặc định = false (stereo).</summary>
+    public bool GetMonoAudio()
+    {
+        return PlayerPrefs.GetInt(KEY_MONO_AUDIO, 0) == 1;
     }
 
     /// <summary>
