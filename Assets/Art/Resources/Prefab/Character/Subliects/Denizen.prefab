@@ -533,7 +533,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   flashWhiteColor: {r: 1, g: 1, b: 1, a: 0.8}
   flashRedColor: {r: 1, g: 0, b: 0, a: 0.5}
-  hitSoundKey: onhitsound
+  hitSoundKey: Hit
   flashWhiteDuration: 0.1
   flashRedDuration: 0.1
   usePropertyBlock: 1

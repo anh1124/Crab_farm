@@ -70,11 +70,11 @@ namespace Script.Manager.WorldManager
             
             CreateInitialChunks(groundChunkCount);
             
-            // Save entity containers after world generation.
-            if (_saveManager != null)
-            {
-                _saveManager.SaveAllContainer();
-            }
+            // We no longer call SaveAllContainer here because the loading sequence 
+            // will follow immediately after if this is a new world, or the user
+            // will trigger an auto/manual save later. Calling it here causes 
+            // duplication when LoadEntitiesFromSave is called later in the bootstrap.
+
         }
 
         private void CreateInitialChunks(int count)
@@ -148,10 +148,9 @@ namespace Script.Manager.WorldManager
             factory.CreateImpassableRock(!toRight, chunkWidth, ref currentChunkLeftId, ref currentChunkRightId, _saveManager.chunkContainer, _chunkList);
             _chunkList.Sort((a, b) => a.positionX.CompareTo(b.positionX));
             
-            if (_saveManager != null)
-            {
-                _saveManager.SaveAllContainer();
-            }
+            // We no longer call SaveAllContainer here to avoid lag spikes.
+            // Map and entity persistence is handled by periodic auto-saves.
+
         }
 
         private void RemoveImpassableRock(bool fromRight)

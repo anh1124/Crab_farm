@@ -2187,6 +2187,10 @@ PrefabInstance:
       propertyPath: inspectorMonth
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3783545790959781085, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: m_Name
+      value: GuideManager
+      objectReference: {fileID: 0}
     - target: {fileID: 4067834079159621169, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: archerSlotSpacing
       value: 1.2

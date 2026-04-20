@@ -121,6 +121,8 @@ namespace Script.Manager.WorldManager
             if (diff > 0.5f)  diff -= 1f;
             if (diff < -0.5f) diff += 1f;
 
+            // Nếu lệch quá nhiều (ví dụ khi load save hoặc thay đổi giờ qua cheat)
+            // thì chúng ta snap thẳng tới giá trị mới.
             const float snapThreshold = 5f / 1440f;
             if (Mathf.Abs(diff) > snapThreshold)
             {
@@ -128,12 +130,23 @@ namespace Script.Manager.WorldManager
                 return;
             }
 
-            float progressPerSecond = 1f / 240f; // Default 240s per day if provider is missing SecondsPerDay property
-            // In a better design, SecondsPerDay should be in IGameTimeProvider
-            // For now, using the value from GameTimeManager or a constant
+            // [FIX] Chỉ advance smooth progress nếu thời gian đang trôi.
+            // Nếu thời gian đóng băng (TownCenter < 1), đứng yên tại chỗ để tránh jitter.
+            if (!_gameTimeProvider.IsTimeFlowing) return;
+
+            // Tính toán tốc độ di chuyển dựa trên SecondsPerDay của provider
+            float secondsPerDay = _gameTimeProvider.SecondsPerDay;
+            if (secondsPerDay <= 0) secondsPerDay = 240f; // Fallback
+            
+            float progressPerSecond = 1f / secondsPerDay;
+            
+            // Lưu ý: Để hoàn hảo nhất khi dùng speed-up cheat, 
+            // chúng ta có thể Scale tốc độ này theo gameTimeScale,
+            // nhưng hiện tại chỉ cần stop khi đóng băng là đã hết Rung Lắc/Jitter.
             _smoothDayProgress += progressPerSecond * Time.deltaTime;
             _smoothDayProgress %= 1f;
         }
+
 
         private float GetRawDayProgress()
         {

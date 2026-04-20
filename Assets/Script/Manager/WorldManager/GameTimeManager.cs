@@ -255,7 +255,10 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     /// CelestialManager dùng giá trị này để drive smooth movement theo Time.deltaTime.
     /// </summary>
     public float SecondsPerDay => realSecondsPerGameDay;
+
+    public bool IsTimeFlowing => gameTimeScale > 0f && Script.Utility.GetTownCenterTier() >= 1;
     #endregion
+
 
     private void OnValidate()
     {

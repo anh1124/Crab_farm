@@ -17,5 +17,12 @@ namespace Script.Manager.WorldManager
         void SubscribeToHourlyEvent(int hour, Action callback);
         void UnsubscribeFromHourlyEvent(int hour, Action callback);
         int GetElapsedDays();
+        
+        /// <summary> True nếu thời gian đang thực sự trôi (scale > 0 và đủ điều kiện gameplay). </summary>
+        bool IsTimeFlowing { get; }
+        
+        /// <summary> Số giây thực tế tương đương 1 ngày game. </summary>
+        float SecondsPerDay { get; }
     }
 }
+
