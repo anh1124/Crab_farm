@@ -28,6 +28,8 @@ namespace Script.Audio
         [SerializeField] private Color gizmoFillColor = new Color(0f, 1f, 0.5f, 0.15f);
         [SerializeField] private Color gizmoWireColor = new Color(0f, 1f, 0.5f, 0.8f);
         [SerializeField] private int   _emitterCountInRange;
+        [SerializeField] private bool  isDebug           = false;
+
 
         #endregion
 
@@ -100,11 +102,12 @@ namespace Script.Audio
                 bool inRange = IsEmitterInRange(emitter, cullingDist);
 
                 // Debug log cho portal chỉ khi trong range
-                if (inRange && emitter.gameObject.name.Contains("Portal"))
+                if (isDebug && inRange && emitter.gameObject.name.Contains("Portal"))
                 {
                     float distance = Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position);
                     Debug.Log($"[PlayerAudioZone] Portal: {emitter.gameObject.name}, Distance: {distance:F2}m, Culling: {cullingDist:F2}m, InRange: {inRange}");
                 }
+
 
                 emitter.SetInRange(inRange);
 
@@ -135,9 +138,13 @@ namespace Script.Audio
             float cullingDist = GetCullingDistance();
             bool  inRange     = IsEmitterInRange(emitter, cullingDist);
 
-            Debug.Log($"[PlayerAudioZone] CheckEmitterImmediate: " +
-                      $"distance={Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position):F2}m, " +
-                      $"cullingDistance={cullingDist:F2}m, inRange={inRange}");
+            if (isDebug)
+            {
+                Debug.Log($"[PlayerAudioZone] CheckEmitterImmediate: " +
+                          $"distance={Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position):F2}m, " +
+                          $"cullingDistance={cullingDist:F2}m, inRange={inRange}");
+            }
+
 
             emitter.SetInRange(inRange);
         }

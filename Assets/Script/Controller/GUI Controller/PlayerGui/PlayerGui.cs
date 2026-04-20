@@ -9,15 +9,20 @@ using Script.Game.Player;
 
 namespace Script.Controller.GUI_Controller.PlayerGui
 {
+    [RequireComponent(typeof(ButtonGoldPulseEffect))]
     public class PlayerGui : MonoBehaviour
     {
         public static PlayerGui Instance { get; private set; }
         
+        private ButtonGoldPulseEffect _coinPulseEffect;
+
         private void Awake()
         {
             if (Instance == null)
             {
                 Instance = this;
+                _coinPulseEffect = GetComponent<ButtonGoldPulseEffect>();
+                Debug.Log($"[PlayerGui] Awake: ButtonGoldPulseEffect found: {(_coinPulseEffect != null ? "YES" : "NO")}");
             }
             else
             {
@@ -51,6 +56,17 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         
         private void Start()
         {
+            // Cấu hình hiệu ứng Pulse cho nút dùng xu
+            if (_coinPulseEffect != null)
+            {
+                Debug.Log($"[PlayerGui] Start: Setting up pulse effect for useCoin: {(useCoin != null ? useCoin.name : "NULL")}");
+                _coinPulseEffect.Setup(useCoin);
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerGui] Start: _coinPulseEffect is NULL, pulse won't work!");
+            }
+
             // Add event triggers for move buttons
             // Redirect mobile UI buttons → InputManager (unified input state)
             AddEventTriggers(moveLeft,
@@ -209,5 +225,15 @@ namespace Script.Controller.GUI_Controller.PlayerGui
         }
         
     
+        // === GOLD PULSE EFFECT DELEGATION ===
+        public void StartGoldPulse()
+        {
+             _coinPulseEffect?.StartPulse();
+        }
+
+        public void StopGoldPulse()
+        {
+            _coinPulseEffect?.StopPulse();
+        }
     }
 }

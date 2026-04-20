@@ -41,6 +41,12 @@ namespace Script.Game.Item.Coin
         [SerializeField] private int cachedRequiredCoins;
 
         public bool playerTriggerActive => playerTrigger;
+        
+        /// <summary>
+        /// Trả về true nếu người chơi đang ở trong vùng tương tác VÀ công trình thực sự đang hiện CoinSlot (cần xu).
+        /// </summary>
+        public bool IsInteractionActive => playerTrigger && owner != null && owner.CanReceiveCoins() && owner.GetRequiredCoinCount() > 0;
+
 
         private void Reset()
         {

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Script.Interfaces;
 using Script.UI;
 using UnityEngine;
+using Script.Controller.GUI_Controller.PlayerGui;
 
 namespace Script.Game.Player
 {
@@ -13,6 +14,7 @@ namespace Script.Game.Player
     public class PlayerInteraction : MonoBehaviour
     {
         private PlayerBehavior playerBehavior;
+        [SerializeField] private bool isDebug = false;
 
         // === INTERACTION LOGIC ===
         private List<IPlayerInteractable> interactablesInRange = new List<IPlayerInteractable>();
@@ -132,7 +134,36 @@ namespace Script.Game.Player
                     currentInteractable.OnPlayerEnter(playerBehavior);
                 }
             }
+
+            // --- Cập nhật hiệu ứng Pulse cho nút UseCoin trên GUI ---
+            Script.Game.Item.Coin.CoinUser activeCoinUser = null;
+            if (currentInteractable is MonoBehaviour mb)
+            {
+                activeCoinUser = mb.GetComponent<Script.Game.Item.Coin.CoinUser>();
+            }
+
+            if (isDebug)
+            {
+                if (currentInteractable != null)
+                {
+                    string stateInfo = activeCoinUser != null ? $"IsInteractionActive={activeCoinUser.IsInteractionActive}" : "No CoinUser Component";
+                    Debug.Log($"[PlayerInteraction] Current: {currentInteractable.GetType().Name}, FoundCoinUser: {activeCoinUser != null}, {stateInfo}");
+                }
+            }
+
+            if (activeCoinUser != null && activeCoinUser.IsInteractionActive)
+            {
+                if (isDebug) Debug.Log($"[PlayerInteraction] TRIGGER PULSE START: {activeCoinUser.gameObject.name}");
+                PlayerGui.Instance?.StartGoldPulse();
+            }
+            else
+            {
+                PlayerGui.Instance?.StopGoldPulse();
+            }
         }
+
+
+
         
         // Validate interactable periodically or in Update
         private void ValidateInteraction()
