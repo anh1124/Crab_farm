@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using Script.Game.Player;
 using Script.Interfaces;
+using Script.Audio;
+
 
 namespace Script.Game.Item.Coin
 {
@@ -23,6 +25,7 @@ namespace Script.Game.Item.Coin
 
     [RequireComponent(typeof(CoinSlotVisual))]
     [RequireComponent(typeof(CoinCollectionTracker))]
+    [RequireComponent(typeof(AudioEmitter))]
     public class CoinUser : MonoBehaviour, IPlayerInteractable
     {
         [Header("Components")]
@@ -30,17 +33,29 @@ namespace Script.Game.Item.Coin
         [SerializeField] private CoinCollectionTracker tracker;
         [SerializeField] private ICoinUserOwner owner;
 
+
+
+
         [Header("State")]
         [SerializeField] private bool playerTrigger;
         [SerializeField] private int cachedRequiredCoins;
 
         public bool playerTriggerActive => playerTrigger;
 
-        private void Awake()
+        private void Reset()
         {
             visual = GetComponent<CoinSlotVisual>();
             tracker = GetComponent<CoinCollectionTracker>();
+            audioEmitter = GetComponent<AudioEmitter>();
         }
+
+        private void Awake()
+        {
+            if (visual == null) visual = GetComponent<CoinSlotVisual>();
+            if (tracker == null) tracker = GetComponent<CoinCollectionTracker>();
+            if (audioEmitter == null) audioEmitter = GetComponent<AudioEmitter>();
+        }
+
 
         private void Start()
         {
@@ -153,11 +168,35 @@ namespace Script.Game.Item.Coin
             return true;
         }
 
+
+
         private void OnCoinArrivedAtSlot(GameObject coin)
         {
             // Khi visual báo coin đã đáp vào slot, ta báo cho tracker biết
+            PlayCoinSound();
             tracker.TrackCoinArrival();
         }
+
+        [Header("Audio Settings")]
+        [SerializeField] private AudioEmitter audioEmitter;
+        [SerializeField] private string coinSoundKey = "UI_Click";
+     
+
+        private void PlayCoinSound()
+        {
+            if (audioEmitter != null && !string.IsNullOrEmpty(coinSoundKey))
+            {
+                audioEmitter.PlaySound(coinSoundKey);
+            }
+        }
+
+
+
+
+
+
+
+
 
         private void CheckUpgradeStatus(int totalCollectedData)
         {
@@ -188,7 +227,9 @@ namespace Script.Game.Item.Coin
             visual.StopAllCoinCoroutines();
             visual.ReleaseFloatingCoins();
             tracker.ResetCollection();
+            PlayCoinSound();
         }
+
 
         private void HandleCollectionTimeout()
         {

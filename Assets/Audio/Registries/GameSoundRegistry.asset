@@ -17,8 +17,8 @@ MonoBehaviour:
     entries:
     - key: UI_Click
       clip: {fileID: 8300000, guid: 0f4921dfa868eee40858df1c0ac82189, type: 3}
-      minDistance: 0
-      maxDistance: 0
+      minDistance: 10
+      maxDistance: 30
     - key: Guide_Show
       clip: {fileID: 8300000, guid: d2131b69b353e4240ae30e10b85eff5f, type: 3}
       minDistance: 0
@@ -47,6 +47,10 @@ MonoBehaviour:
       maxDistance: 35
     - key: Hit
       clip: {fileID: 8300000, guid: 0053adcb2b84fdb458aa5a1b01233620, type: 3}
+      minDistance: 5
+      maxDistance: 35
+    - key: CoinUser_Upgrade
+      clip: {fileID: 8300000, guid: 902a98aecf48b774cad305520a3f10a7, type: 3}
       minDistance: 5
       maxDistance: 35
   - groupName: Item

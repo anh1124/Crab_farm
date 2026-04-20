@@ -36,9 +36,18 @@ namespace Script.Game.Other
                 InstancePlayerAndSetCamera(); 
                 InitializePlayer(); 
 
+                
+                // Nếu đây là thế giới mới (vừa được Generate), lưu lại sau 1 giây để đảm bảo vạn vật đã khởi tạo xong hoàn toàn
+                if (LoadFromSave.Instance != null && LoadFromSave.Instance.IsNewWorld)
+                {
+                    StartCoroutine(DelayedInitialSave());
+                }
+
                 #if UNITY_EDITOR
                 DevelopTest();
                 #endif
+
+
             }
             catch (System.Exception ex)
             {
@@ -46,6 +55,17 @@ namespace Script.Game.Other
                 SceneManager.LoadScene("MainMenuScene");
             }
         }
+
+        private System.Collections.IEnumerator DelayedInitialSave()
+        {
+            yield return new WaitForSeconds(1f);
+            if (WorldFileManager.Instance != null)
+            {
+                Debug.Log("[StartGameScrene] Performing delayed initial save for new world.");
+                WorldFileManager.Instance.SaveCurrentMap();
+            }
+        }
+
 
         public static void DevelopTest()
         {

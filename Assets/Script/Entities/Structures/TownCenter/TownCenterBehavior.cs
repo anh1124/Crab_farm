@@ -9,6 +9,8 @@ using UnityEngine.Serialization;
 using Script.Interfaces;
 using Script.Game.Mobs.MobsManager;
 using Script.Game.Player;
+using Script.Audio;
+
 
 namespace Script.Game.Structures.TownCenter
 {
@@ -29,6 +31,12 @@ namespace Script.Game.Structures.TownCenter
         public CoinUser coinUser;
         [FormerlySerializedAs("currentPrefab")] public GameObject curentPrefab;
         private TownCenterCoinHandler coinHandler;
+        private AudioEmitter audioEmitter;
+        
+        [Header("Audio")]
+        [SerializeField] private string upgradeSoundKey = "CoinUser_Upgrade";
+
+
         
         [Header("Debug")]
         [Header("Debug")]
@@ -41,7 +49,9 @@ namespace Script.Game.Structures.TownCenter
         {
             if (coinUser == null) coinUser = GetComponent<CoinUser>();
             if (coinHandler == null) coinHandler = GetComponent<TownCenterCoinHandler>();
+            audioEmitter = GetComponent<AudioEmitter>();
         }
+
 
         private void Start()
         {
@@ -254,8 +264,13 @@ namespace Script.Game.Structures.TownCenter
 
         public void OnAllCoinsCollected()
         {
+            if (audioEmitter != null && !string.IsNullOrEmpty(upgradeSoundKey)) 
+                audioEmitter.PlaySound(upgradeSoundKey);
+            
             Upgrade();
         }
+
+
         // -------------------------------------
 
         private void Upgrade()

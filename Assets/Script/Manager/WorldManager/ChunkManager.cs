@@ -97,7 +97,20 @@ namespace Script.Manager.WorldManager
             currentChunkRightId = centerChunkId;
 
             // Spawn TownCenter level 0 at (0, 0, 0)
-            factory.SpawnInitialTownCenter();
+            GameObject townCenter = factory.SpawnInitialTownCenter();
+
+            // Đăng ký TownCenter vào BuildingManager ngay lập tức để Utility có thể tìm thấy vị trí trung tâm
+            var bm = FindObjectOfType<Script.Manager.Building.BuildingManager>();
+            if (bm != null && townCenter != null)
+            {
+                bm.currentTownCenter = townCenter;
+            }
+
+            // Sinh portal 2 bên cho thế giới mới
+            if (Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
+            {
+                Script.Manager.GamePlayManager.EnemyPortalManager.Instance.SpawnStartingPortals();
+            }
 
             // Create ground chunks to left and right
             for (int i = 1; i <= sideChunks; i++)

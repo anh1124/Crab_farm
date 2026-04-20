@@ -75,6 +75,38 @@ namespace Script.Manager.GamePlayManager
             }
         }
 
+        private void RescuePlayerIfStuck(Vector3 portalPos, bool isRightSide, Vector3 portalScale)
+        {
+            if (Script.Controller.PlayerController.PlayerController.Instance == null || 
+                Script.Controller.PlayerController.PlayerController.Instance.player == null) return;
+            
+            GameObject playerObj = Script.Controller.PlayerController.PlayerController.Instance.player;
+            float playerX = playerObj.transform.position.x;
+
+            if (isRightSide)
+            {
+                // Nếu player ở bên phải của portal phía bên phải (vùng bị kẹt)
+                if (playerX > portalPos.x)
+                {
+                    Vector3 newPos = playerObj.transform.position;
+                    newPos.x = portalPos.x - (portalScale.x * 2.5f); // Đẩy vào trong vương quốc
+                    playerObj.transform.position = newPos;
+                    Debug.LogWarning("[EnemyPortalManager] Giải cứu Player bị kẹt bên ngoài cổng PHẢI vừa sinh!");
+                }
+            }
+            else
+            {
+                // Nếu player ở bên trái của portal phía bên trái (vùng bị kẹt)
+                if (playerX < portalPos.x)
+                {
+                    Vector3 newPos = playerObj.transform.position;
+                    newPos.x = portalPos.x + (portalScale.x * 2.5f); // Đẩy vào trong vương quốc
+                    playerObj.transform.position = newPos;
+                    Debug.LogWarning("[EnemyPortalManager] Giải cứu Player bị kẹt bên ngoài cổng TRÁI vừa sinh!");
+                }
+            }
+        }
+
       
 
         [ContextMenu("Test Spawn Random Portal")]
@@ -82,6 +114,25 @@ namespace Script.Manager.GamePlayManager
         {
             Debug.Log("[EnemyPortalManager] ---> Nhận lệnh TestSpawnRandomPortal từ ContextMenu...");
             SpawnAvailablePortal();
+        }
+
+        [ContextMenu("Spawn Starting Portals")]
+        public void SpawnStartingPortals()
+        {
+            // Thử tìm lại trong scene nếu reference đang null (phòng trường hợp vừa load xong)
+            if (portalL == null) portalL = GameObject.Find("EnemyPortal_Left");
+            if (portalR == null) portalR = GameObject.Find("EnemyPortal_Right");
+
+            if (portalL == null)
+            {
+                Debug.Log("[EnemyPortalManager] Sinh cổng KHỞI ĐẦU bên TRÁI.");
+                SpawnPortal(false);
+            }
+            if (portalR == null)
+            {
+                Debug.Log("[EnemyPortalManager] Sinh cổng KHỞI ĐẦU bên PHẢI.");
+                SpawnPortal(true);
+            }
         }
 
         private void SpawnAvailablePortal()
@@ -150,6 +201,9 @@ namespace Script.Manager.GamePlayManager
                 // Gọi tới hàm setup của behavior với các dependency được tiêm vào
                 behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
             }
+
+            // Giải cứu player nếu lỡ đứng ở vị trí bị kẹt khi portal vừa xuất hiện
+            RescuePlayerIfStuck(spawnPos, isRightSide, newPortal.transform.localScale);
 
             Debug.Log($"[EnemyPortalManager] Đã tạo thành công cổng {(isRightSide ? "PHẢI" : "TRÁI")} tại: {spawnPos}");
         }

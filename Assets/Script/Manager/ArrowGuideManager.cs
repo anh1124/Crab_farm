@@ -95,6 +95,18 @@ namespace Script.Manager
         private void Start()
         {
             _buildingManager = FindObjectOfType<BuildingManager>();
+
+            // Nếu đây là game mới (Tier 0), hiện dẫn đường 1 lần sau 10s để người chơi biết cần đi về đâu
+            StartCoroutine(ShowArrowWithDelayCoroutine(10f));
+        }
+
+        private System.Collections.IEnumerator ShowArrowWithDelayCoroutine(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (Utility.GetTownCenterTier() == 0)
+            {
+                ShowArrow();
+            }
         }
 
         private void Update()

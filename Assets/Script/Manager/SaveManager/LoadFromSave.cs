@@ -19,6 +19,8 @@ public class LoadFromSave : MonoBehaviour
     public static LoadFromSave Instance { get; private set; }
     public string saveFilePath;
     public WorldInfo worldInfo;
+    public bool IsNewWorld { get; private set; }
+
    
     private void Awake()
     {
@@ -121,7 +123,9 @@ public class LoadFromSave : MonoBehaviour
     //khi file map.json không tồn tại, tạo map mới từ seed trong worldinfo từ saveFilePath hiện tại
     private void GenerateNewMap()
     {
+        IsNewWorld = true;
         try
+
         {
             // Verify worldInfo and seed are valid
             if (worldInfo == null)

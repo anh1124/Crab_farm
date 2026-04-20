@@ -12,7 +12,9 @@ using Script.Manager.Building;
 using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Script.Audio;
 using static Script.Utils.DebugUtility;
+
 
 namespace Script.Game.Structures.Wall_And_Stump
 {
@@ -44,7 +46,13 @@ namespace Script.Game.Structures.Wall_And_Stump
         [SerializeField] [Range(0.01f, 1f)] private float coinHealMaxHpFraction = 0.5f;
 
         private GuardManager _guardManager;
+        private AudioEmitter audioEmitter;
+        
+        [Header("Audio")]
+        [SerializeField] private string upgradeSoundKey = "CoinUser_Upgrade";
         #endregion
+
+
         
         [SerializeField] public WallDataList wallDataList;
        
@@ -527,6 +535,11 @@ namespace Script.Game.Structures.Wall_And_Stump
 
         public void OnAllCoinsCollected()
         {
+            // Phát sound upgrade/repair khi đã đủ coin
+            if (audioEmitter != null && !string.IsNullOrEmpty(upgradeSoundKey)) 
+                audioEmitter.PlaySound(upgradeSoundKey);
+
+
             if (status.state == WallState.Wall)
             {
                 if (status.currentHp < status.maxHp && !IsEnemyCombatBlockingCoinHeal())
@@ -546,6 +559,7 @@ namespace Script.Game.Structures.Wall_And_Stump
                 RepairStump();
             }
         }
+
         // -------------------------------------
         
         #endregion
@@ -556,6 +570,8 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             coinUser = this.DebugUtilityGetRequiredComponent<CoinUser>();
             status = this.DebugUtilityGetRequiredComponent<WallStatus>();
+            audioEmitter = GetComponent<AudioEmitter>();
+
             
             SpriteRenderer sr = GetComponent<SpriteRenderer>();
             if (sr == null) sr = gameObject.AddComponent<SpriteRenderer>();

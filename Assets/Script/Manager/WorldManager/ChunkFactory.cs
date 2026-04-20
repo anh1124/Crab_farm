@@ -113,7 +113,7 @@ namespace Script.Manager.WorldManager
             }
         }
 
-        public void SpawnInitialTownCenter()
+        public GameObject SpawnInitialTownCenter()
         {
             if (PrefabData.Instance != null && EntitySaveManager.Instance != null)
             {
@@ -121,13 +121,14 @@ namespace Script.Manager.WorldManager
                 if (tcPrefab != null)
                 {
                     Debug.Log("Spawning initial TownCenter Tier 0 at (0,0,0)");
-                    EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(tcPrefab, Vector3.zero);
+                    return EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(tcPrefab, Vector3.zero);
                 }
                 else
                 {
                     Debug.LogError("TownCenter Tier 0 prefab not found in PrefabData!");
                 }
             }
+            return null;
         }
     }
 }

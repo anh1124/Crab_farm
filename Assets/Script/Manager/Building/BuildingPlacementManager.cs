@@ -43,6 +43,10 @@ namespace Script.Manager.Building
         [Header("Runtime Debug Info")]
         [SerializeField] private List<string> detectedObjects = new List<string>();
 
+        [Header("Audio")]
+        [SerializeField] private string placeBuildingSoundKey = "CoinUser_Upgrade";
+
+
         private IBuildingProvider _buildingProvider;
         private EntitySaveManager _saveManager;
 
@@ -540,7 +544,15 @@ namespace Script.Manager.Building
                 GameObject newStructure = _saveManager.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
                 if (newStructure != null)
                 {
+                    // Phát âm thanh khi đặt công trình thành công
+                    if (!string.IsNullOrEmpty(placeBuildingSoundKey) && Audio.AudioManager.Instance != null)
+                    {
+                        Audio.AudioManager.Instance.PlaySFXByKey(placeBuildingSoundKey, previewPos);
+                    }
+
+
                     // Kiểm tra xem công trình có yêu cầu flip không
+
                     BuildingType? buildingType = GetBuildingTypeFromPrefab(structureToPlace);
                     bool isFlipRequire = true;
                     if (buildingType.HasValue && BuildingRegistry.Instance != null)

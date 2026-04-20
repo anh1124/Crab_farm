@@ -241,23 +241,25 @@ namespace Script.Audio
             source.clip = entry.clip;
             source.loop = false;
 
+            // Nếu volumeScale là 0 (do dùng default struct), ta mặc định là 1.0f
+            float volumeScale = config.VolumeScale > 0f ? config.VolumeScale : 1f;
+
             if (isMono)
             {
                 // MONO FIX: spatialBlend=0f → 2D sound, equal volume cả 2 tai.
-                // Volume được tính thủ công theo khoảng cách do Unity không tự rolloff khi blend=0.
-                // spread=360 SAI vì Unity vẫn dùng vị trí AudioSource 3D để pan trái/phải.
                 source.spatialBlend = 0f;
                 source.panStereo    = 0f;
-                source.volume       = config.VolumeScale
+                source.volume       = volumeScale
                     * Provider.CalculateDistanceVolume(transform.position, actualMin, actualMax);
             }
             else
             {
                 // STEREO: spatialBlend=1f, Unity xử lý 3D panning + custom rolloff curve.
                 source.spatialBlend = 1f;
-                source.volume       = config.VolumeScale;
+                source.volume       = volumeScale;
                 source.minDistance  = actualMin;
                 source.maxDistance  = actualMax;
+
 
                 AnimationCurve curve = AudioCurveCache.GetDefaultRolloffCurve(
                     actualMin, actualMax, AudioConstants.DEFAULT_VOLUME_AT_MAX);
