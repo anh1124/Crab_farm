@@ -771,11 +771,6 @@ namespace Script.Manager
 
                 if (isDebug) Debug.Log($"{container.name} cần load {savedObjects.Count} object.");
 
-                // Xóa sạch các đối tượng cũ/mặc định trong container trước khi load từ save
-                // Điều này cực kỳ quan trọng để tránh "double tree" (cây mặc định từ Chunk + cây từ save)
-                RemoveAllChildObjects(container);
-
-
                 // [POOL INITIALIZATION] Đảm bảo Pool đã được bơm đầy trước khi Load quái vật 
                 if (container == enemyContainer)
                 {

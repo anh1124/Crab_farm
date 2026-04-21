@@ -19,7 +19,7 @@ namespace Script.Game.Player
 
         private void Update()
         {
-            // [ANTI-CHEAT] Nếu chưa có TownCenter hoặc Tier 0 -> không hồi máu/mana
+            //Nếu chưa có TownCenter hoặc Tier 0 -> không hồi máu/mana
             if (Script.Utility.GetTownCenterTier() < 1) return;
 
             HandleManaRegen();

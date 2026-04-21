@@ -80,11 +80,21 @@ namespace Script.Game.Enemy
                 return null;
             }
 
-            GameObject enemy;
-            if (queue.Count == 0)
+            GameObject enemy = null;
+            
+            // LƯU Ý: Trong Unity, 'enemy != null' không phải là check active/inactive hay có HP.
+            // Nó kiểm tra xem GameObject C++ dưới nền đã bị gọi hàm Destroy() hay chưa.
+            // Nếu một Script khác (giống Save/Load System) lỡ Destroy() GameObject này đi thì nó không dùng được nữa.
+            while (queue.Count > 0)
+            {
+                enemy = queue.Dequeue();
+                if (enemy != null) break; 
+            }
+
+            if (enemy == null)
             {
                 // Dynamic pool expansion
-                Debug.LogWarning($"[EnemyPool] Pool '{enemyName}' is empty! Creating a new one dynamically...");
+                Debug.LogWarning($"[EnemyPool] Pool '{enemyName}' is empty or contains only destroyed objects! Creating a new one dynamically...");
                 
                 var data = _enemyDataProvider.ReadyToUseEnemyDataList.Find(d => d.enemyName == enemyName);
                 if (data == null || data.enemyPrefab == null) 
@@ -96,10 +106,6 @@ namespace Script.Game.Enemy
                 Transform parentTransform = _poolParent.Find($"Pool_{enemyName}");
                 if (parentTransform == null) parentTransform = _poolParent;
                 enemy = _CreateEnemy(data, parentTransform);
-            }
-            else
-            {
-                enemy = queue.Dequeue();
             }
 
             enemy.SetActive(true);
