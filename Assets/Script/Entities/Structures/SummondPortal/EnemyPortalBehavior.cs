@@ -189,12 +189,20 @@ namespace Script.Entities.Structures.SummondPortal
         #region ISaveable Implementation
 
         [Serializable]
+        public struct PendingWaveData
+        {
+            public string enemyName;
+            public int count;
+        }
+
+        [Serializable]
         public struct PortalSaveData
         {
             public int spawnDay;
             public bool isReadyToSpawn;
             public float currentHp;
             public float x, y, z;
+            public List<PendingWaveData> pendingWaves;
         }
 
         public string GetPrefabID()
@@ -204,6 +212,22 @@ namespace Script.Entities.Structures.SummondPortal
 
         public object CaptureData()
         {
+            List<PendingWaveData> pending = new List<PendingWaveData>();
+            if (enemyWaveData != null)
+            {
+                foreach (var wave in enemyWaveData)
+                {
+                    if (wave.count > 0 && wave.enemyData != null)
+                    {
+                        pending.Add(new PendingWaveData
+                        {
+                            enemyName = wave.enemyData.enemyName,
+                            count = wave.count
+                        });
+                    }
+                }
+            }
+
             return new PortalSaveData
             {
                 spawnDay = status.spawnDay,
@@ -211,7 +235,8 @@ namespace Script.Entities.Structures.SummondPortal
                 currentHp = status.CurrentHp,
                 x = transform.position.x,
                 y = transform.position.y,
-                z = transform.position.z
+                z = transform.position.z,
+                pendingWaves = pending
             };
         }
 
@@ -237,6 +262,36 @@ namespace Script.Entities.Structures.SummondPortal
                 {
                     // Nếu portal chưa active, đăng ký demand cho Portal_Normal sound
                     _audioEmitter?.PlaySound("Portal_Normal", new Script.Audio.PlaySoundConfig(loop: true));
+                }
+
+                // --- LOGIC PHỤC HỒI PENDING WAVES ---
+                if (saveData.pendingWaves != null && saveData.pendingWaves.Count > 0)
+                {
+                    var totalList = UnityEngine.Object.FindObjectOfType<TotalEnemyList>();
+                    if (totalList != null)
+                    {
+                        totalList.InitializeEnemyData(); // Đảm bảo list data đã sẵn sàng
+                        enemyWaveData = new List<EnemyWaveData>();
+                        
+                        foreach (var pending in saveData.pendingWaves)
+                        {
+                            var info = totalList.GetEnemyDataByName(pending.enemyName);
+                            if (info != null)
+                            {
+                                enemyWaveData.Add(new EnemyWaveData
+                                {
+                                    enemyData = info,
+                                    count = pending.count
+                                });
+                            }
+                        }
+
+                        if (enemyWaveData.Count > 0 && status.isReadyToSpawn)
+                        {
+                            Debug.Log($"[EnemyPortalBehavior] Phục hồi và tiếp tục đẻ {enemyWaveData.Count} loại quái dở dang từ file tải.");
+                            StartCoroutine(SpawnEnemies());
+                        }
+                    }
                 }
             }
         }
@@ -272,10 +327,20 @@ namespace Script.Entities.Structures.SummondPortal
 
         public void StartSpawning(List<EnemyWaveData> waveData)
         {
-            // Lấy danh sách enemy từ tham số truyền vào
-            enemyWaveData = waveData;
+            if (waveData == null) return;
             
-            if (enemyWaveData != null)
+            // Tạo bản copy độc lập để lưu trữ và trừ lùi trong lúc spawn 
+            // Tránh vạ lây nếu nhiều portal dùng chung reference List (bị gọi chung từ Manager)
+            enemyWaveData = new List<EnemyWaveData>();
+            foreach(var w in waveData)
+            {
+                enemyWaveData.Add(new EnemyWaveData {
+                    enemyData = w.enemyData,
+                    count = w.count
+                });
+            }
+            
+            if (enemyWaveData.Count > 0)
             {
                 Debug.Log($"[EnemyPortalBehavior - {gameObject.name}] Nhận lệnh xuất quân: {enemyWaveData.Count} loại enemy khác nhau.");
                 StartCoroutine(SpawnEnemies());
@@ -302,22 +367,27 @@ namespace Script.Entities.Structures.SummondPortal
             }
 
             int totalSpawned = 0;
-            foreach (var enemyData in enemyWaveData)
+            
+            // Dùng vòng lặp while để có thể chủ động trừ count trong object thực tế
+            while (enemyWaveData != null && enemyWaveData.Count > 0)
             {
-                for (int i = 0; i < enemyData.count; i++)
+                var wave = enemyWaveData[0];
+                if (wave.count > 0)
                 {
-                    // Kiểm tra prefab trước khi spawn để tránh lỗi null ref
-                    if (enemyData.enemyData.enemyPrefab == null)
+                    if (wave.enemyData != null && wave.enemyData.enemyPrefab != null)
                     {
-                       // Debug.LogWarning($"[EnemyPortalBehavior] Bỏ qua spawn {enemyData.enemyData.enemyName} vì prefab bị NULL .");
-                        continue;
+                        SpawnEnemy(wave.enemyData);
+                        totalSpawned++;
+                        Debug.Log($"[EnemyPortalBehavior - {gameObject.name}] >> Rớt ra quái thứ {totalSpawned}: {wave.enemyData.enemyName}");
                     }
-
-                    SpawnEnemy(enemyData.enemyData);
-                    totalSpawned++;
-                    Debug.Log($"[EnemyPortalBehavior - {gameObject.name}] >> Rớt ra quái thứ {totalSpawned}: {enemyData.enemyData.enemyName}");
                     
+                    wave.count--; // Trừ dần để CaptureData lấy được số lượng thực tế còn lại
                     yield return new WaitForSeconds(spawnInterval);
+                }
+                else
+                {
+                    // Loại quái này đã đẻ xong, vứt khỏi queue
+                    enemyWaveData.RemoveAt(0);
                 }
             }
             
