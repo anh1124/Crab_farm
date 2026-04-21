@@ -1,6 +1,8 @@
 using UnityEngine;
 using Script.Data_Model.Status;
 using Script.Game.Item.Coin;
+using Script.Controller.PlayerController;
+
 
 namespace Script.Game.Mobs.Subjects
 {
@@ -10,6 +12,10 @@ namespace Script.Game.Mobs.Subjects
         [Header("Coin Drop Settings")]
         [Tooltip("Thời gian tối thiểu giữa các lần drop coin khi gặp player (giây)")]
         public float COIN_DROP_COOLDOWN = 0.7f;
+        
+        [Tooltip("Khoảng cách tối đa mà player cần tiếp cận để Denizen bắt đầu nhả coin")]
+        public float DROP_DISTANCE = 3.5f;
+
         private float lastCoinDropTime = 0f;
 
         private DenizenStatus status;
@@ -25,7 +31,16 @@ namespace Script.Game.Mobs.Subjects
         /// </summary>
         public bool CanDropCoin()
         {
-            return status != null && status.CurrentCoins > 1;
+            if (status == null || status.CurrentCoins <= 1) return false;
+
+            // Kiểm tra khoảng cách đến player
+            if (PlayerController.Instance != null && PlayerController.Instance.player != null)
+            {
+                float distance = Vector3.Distance(transform.position, PlayerController.Instance.player.transform.position);
+                if (distance > DROP_DISTANCE) return false;
+            }
+            
+            return true;
         }
 
         /// <summary>
