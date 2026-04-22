@@ -88,28 +88,30 @@ public class LoadFromSave : MonoBehaviour
             
             if (File.Exists(mapFilePath))// File map đã tồn tại, load map từ file
             {
-                Debug.Log("Tìm thấy file map.json, đang load map...");
+                Debug.Log("[LoadFromSave] ===> FILE map.json ĐÃ TỒN TẠI <=== Load từ save, KHÔNG spawn cloud mới");
                 try
                 {
                     chunkManager.LoadMapFromJson(mapFilePath);
-                    Debug.Log("Đã load map từ file save.");
+                    IsNewWorld = false; // Đảm bảo đây không phải world mới
+                    Debug.Log("[LoadFromSave] Đã load map từ file save. IsNewWorld = false");
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Lỗi khi load map từ file: {ex.Message}");
-                    Debug.LogWarning("Thử tạo map mới do lỗi khi load...");
+                    Debug.LogError($"[LoadFromSave] Lỗi khi load map từ file: {ex.Message}");
+                    Debug.LogWarning("[LoadFromSave] Thử tạo map mới do lỗi khi load...");
                     GenerateNewMap();
                 }
             }
             else  // File map chưa tồn tại, tạo map mới từ seed
             {
+                Debug.Log("[LoadFromSave] ===> FILE map.json KHÔNG TỒN TẠI <=== WORLD MỚI - sẽ spawn cloud");
                 if (worldInfo != null)
                 {
-                    Debug.Log($"File map.json không tồn tại, tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
+                    Debug.Log($"[LoadFromSave] Tạo map mới với seed từ worldInfo.json: {worldInfo.Seed}");
                 }
                 else
                 {
-                    Debug.LogWarning("File map.json không tồn tại và worldInfo cũng null. Tạo map mới với seed mặc định (0).");
+                    Debug.LogWarning("[LoadFromSave] File map.json không tồn tại và worldInfo cũng null. Tạo map mới với seed mặc định (0).");
                 }
                 GenerateNewMap();
             }
@@ -123,6 +125,7 @@ public class LoadFromSave : MonoBehaviour
     //khi file map.json không tồn tại, tạo map mới từ seed trong worldinfo từ saveFilePath hiện tại
     private void GenerateNewMap()
     {
+        Debug.Log("[LoadFromSave] GenerateNewMap() được gọi - đây là WORLD MỚI");
         IsNewWorld = true;
         try
 
@@ -142,11 +145,67 @@ public class LoadFromSave : MonoBehaviour
                 
                 // Sau khi tạo map mới, lưu lại ngay
                 chunkManager.SaveMapToJson(saveFilePath);
+                
+                // Spawn CoinCloud cho world mới
+                SpawnCoinCloudForNewWorld();
             }
         }
         catch (Exception ex)
         {
             Debug.LogError($"Lỗi khi tạo map mới: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Spawn đám mây tiền khi world mới được tạo (CHỈ gọi khi IsNewWorld = true)
+    /// </summary>
+    private void SpawnCoinCloudForNewWorld()
+    {
+        Debug.Log($"[LoadFromSave] SpawnCoinCloudForNewWorld() được gọi - IsNewWorld = {IsNewWorld}");
+        
+        // Chỉ spawn khi đây là world mới
+        if (!IsNewWorld)
+        {
+            Debug.Log("[LoadFromSave] KHÔNG spawn cloud vì IsNewWorld = false (load từ save)");
+            return;
+        }
+        
+        try
+        {
+            if (PrefabData.Instance == null)
+            {
+                Debug.LogWarning("[LoadFromSave] PrefabData.Instance is null, cannot spawn CoinCloud");
+                return;
+            }
+            
+            if (PrefabData.Instance.coinCloudPrefab == null)
+            {
+                Debug.LogWarning("[LoadFromSave] coinCloudPrefab is null in PrefabData, please assign it in inspector");
+                return;
+            }
+            
+            // Lấy default spawn position từ prefab
+            Vector3 spawnPosition = Vector3.zero;
+            var cloudController = PrefabData.Instance.coinCloudPrefab.GetComponent<Script.Game.CoinCloud.CoinCloudController>();
+            if (cloudController != null)
+            {
+                spawnPosition = cloudController.defaultSpawnPosition;
+            }
+            
+            // Spawn CoinCloud (sau đó Start() sẽ random lại vị trí thực tế)
+            GameObject coinCloud = Instantiate(
+                PrefabData.Instance.coinCloudPrefab, 
+                spawnPosition, 
+                Quaternion.identity
+            );
+            if (coinCloud != null)
+            {
+                Debug.Log($"[LoadFromSave] CoinCloud spawned for new world at {spawnPosition}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[LoadFromSave] Error spawning CoinCloud: {ex.Message}");
         }
     }
   

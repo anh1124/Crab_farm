@@ -711,10 +711,10 @@ namespace Script.Manager
 
                 if (isDebug) Debug.Log($"Saving {container.name} with {savedObjects.Count} objects");
 
+                // Nếu không còn object nào, vẫn ghi file rỗng để xóa data cũ (tránh object đã destroy vẫn còn trong save)
                 if (savedObjects.Count == 0)
                 {
-                    if (isDebug) Debug.LogWarning($"No saveable objects found in {container.name}, skipping save to preserve existing data");
-                    return; // Skip saving to preserve existing data
+                    if (isDebug) Debug.Log($"No saveable objects found in {container.name}, saving empty list to clear old data");
                 }
 
                 var json = JsonConvert.SerializeObject(savedObjects, Formatting.Indented,

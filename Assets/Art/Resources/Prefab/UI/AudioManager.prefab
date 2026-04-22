@@ -524,7 +524,6 @@ GameObject:
   - component: {fileID: 280141234006950461}
   - component: {fileID: 4428938994098535037}
   - component: {fileID: 3058896408296419338}
-  - component: {fileID: 6664596334241687807}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -685,19 +684,3 @@ MonoBehaviour:
   cullingDistance: 50
   isDebug: 0
   soundRegistry: {fileID: 11400000, guid: 6dd5b41ff604f444eae1a8ea169f7e39, type: 2}
---- !u!114 &6664596334241687807
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3947718715027900217}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d092459ee35937d4cad2125854dfb596, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  channelType: 0
-  selectedKeyIndex: 0
-  availableKeys: []
-  testObj: {fileID: 0}

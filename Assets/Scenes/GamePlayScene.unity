@@ -2361,6 +2361,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1824331059}
     - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: coinCloudPrefab
+      value: 
+      objectReference: {fileID: 2885877462678522322, guid: 04c97a4ab2de3ae4d8c129acb267676f, type: 3}
+    - target: {fileID: 6834463355008516617, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: gameObjectHaveCanvas
       value: 
       objectReference: {fileID: 79677590}

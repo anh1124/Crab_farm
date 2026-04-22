@@ -74,6 +74,7 @@ namespace Script.Data_Model
         [Space(5)] 
         #region Coin
         public GameObject coinPrefab;
+        public GameObject coinCloudPrefab;
         
         public float coinMoveSpeed = 0.5f;
         public int fallSpeed = 15;
@@ -299,6 +300,7 @@ namespace Script.Data_Model
             prefabDict.Add("spike_vendor", upgradeHouse);
             prefabDict.Add("wall", prefabWall);
             prefabDict.Add("coin", coinPrefab);
+            prefabDict.Add("coin_cloud", coinCloudPrefab);
             prefabDict.Add("bow", bow);
             prefabDict.Add("hammer", hammer);
             prefabDict.Add("denizen", denizen);
@@ -495,6 +497,8 @@ namespace Script.Data_Model
                 Debug.LogError("spike_vendor not registered in prefabWall dictionary!");
             if (!prefabDict.ContainsKey("coin")) 
                 Debug.LogError("coin not registered in prefabWall dictionary!");
+            if (!prefabDict.ContainsKey("coin_cloud")) 
+                Debug.LogError("coin_cloud not registered in prefabWall dictionary!");
         }
         
         // New method to load player character data from JSON

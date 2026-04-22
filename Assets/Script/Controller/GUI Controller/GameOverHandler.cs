@@ -77,8 +77,8 @@ namespace Script.GUI_Controller
             if (GuiCanvasManager.Instance != null && GuiCanvasManager.Instance.confirmationMenu != null)
             {
                 GuiCanvasManager.Instance.confirmationMenu.Show(
-                    "Bạn đã thua",
-                    $"Bạn đã sống sót {survivedDays} ngày.\nBạn đã làm rất tốt!",
+                    "Game Over",
+                    $"You survived {survivedDays} days.\n",
                     onConfirm: () =>
                     {
                         Time.timeScale = 1f; // Bỏ pause trước khi load lại menu
