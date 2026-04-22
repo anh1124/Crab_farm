@@ -44,6 +44,10 @@ GameObject:
   - component: {fileID: 8607574719995925977}
   - component: {fileID: 4563411836016793751}
   - component: {fileID: 8696114519552286638}
+  - component: {fileID: 7579094742822413351}
+  - component: {fileID: 4694950402980747878}
+  - component: {fileID: 1714542661990054010}
+  - component: {fileID: 832533227697158402}
   m_Layer: 8
   m_Name: Tree_0
   m_TagString: Tree
@@ -108,7 +112,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: b04b0480444c1d4498f235eb9fb22406, type: 3}
+  m_Sprite: {fileID: 1017429382, guid: 51f12e29882c85642b432475babb2bd1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -131,8 +135,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a5e0abcfd2d4749aa9997247b234e8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  behavior: {fileID: 0}
   type: 0
+  currentWorkProgress: 0
+  maxWorkProgress: 0
+  isReadyToChop: 0
+  treeType: Default
+  treeLevel: 1
+  isSetupCalled: 0
 --- !u!114 &4563411836016793751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -145,19 +154,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36ff689cbc6e094c9855528add84755, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canAcceptCoins: 1
-  requiredCoins: 0
-  collectedCoins: 0
-  coinCollectionTimeout: 0
-  coinCollectionTimer: 0
-  coinSlotParent: {fileID: 0}
-  isReadyToUpgrade: 0
-  buildingType: 0
-  currentTier: 0
-  coinPrefab: {fileID: 0}
-  coinSlots: []
-  coinsInTransit: []
+  visual: {fileID: 0}
+  tracker: {fileID: 0}
   playerTrigger: 0
+  cachedRequiredCoins: 0
+  audioEmitter: {fileID: 0}
+  coinSoundKey: UI_Click
 --- !u!61 &8696114519552286638
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -190,16 +192,74 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.44013953, y: 1.8430319}
+  m_Offset: {x: -0.027993321, y: 1.8430319}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
-    oldSize: {x: 13.1, y: 12.9}
+    oldSize: {x: 9.6, y: 9.6}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1.4859071, y: 3.6860638}
+  m_Size: {x: 0.9501169, y: 3.6860638}
   m_EdgeRadius: 0
+--- !u!114 &7579094742822413351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3987282262224497692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bb935165caf1664dafbda5f34cbfe53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinUser: {fileID: 0}
+  status: {fileID: 0}
+  treeChopCost: 0
+--- !u!114 &4694950402980747878
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3987282262224497692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72c3739ed763d5942b1636e586274bd2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 0}
+  coinSlotParent: {fileID: 0}
+  coinSlots: []
+  coinsInTransit: []
+--- !u!114 &1714542661990054010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3987282262224497692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 082e10735547f8042ab26b493175587f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collectedCoins: 0
+  coinCollectionTimer: 0
+--- !u!114 &832533227697158402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3987282262224497692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f09cc8d5d3b296343bee5bce317fc93f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _debugInRange: 0
