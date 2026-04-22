@@ -51,6 +51,9 @@ GameObject:
   - component: {fileID: 2397579267779056357}
   - component: {fileID: 5850781020114817498}
   - component: {fileID: 8405274900508887912}
+  - component: {fileID: 6431258359585745220}
+  - component: {fileID: 9127146172269349043}
+  - component: {fileID: 5222687544558000564}
   m_Layer: 12
   m_Name: Unlit campfire
   m_TagString: TownCenter
@@ -143,6 +146,8 @@ MonoBehaviour:
   tracker: {fileID: 0}
   playerTrigger: 0
   cachedRequiredCoins: 0
+  audioEmitter: {fileID: 0}
+  coinSoundKey: UI_Click
 --- !u!114 &4723927770362981857
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,6 +184,7 @@ MonoBehaviour:
   plazaDistance: 20
   coinUser: {fileID: 0}
   curentPrefab: {fileID: 0}
+  upgradeSoundKey: CoinUser_Upgrade
   isDebugPlazaZone: 1
 --- !u!61 &6957750594159534712
 BoxCollider2D:
@@ -324,6 +330,57 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eabc3bebfcecc474b92a4c5d61061df6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  debugIsPlayerInRange: 0
+  debugPlayerTriggerTimer: 0
+  debugTimeUntilDrop: 0
+  droppedCoins: []
+--- !u!114 &6431258359585745220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8972918622944182515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f09cc8d5d3b296343bee5bce317fc93f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _debugInRange: 0
+--- !u!114 &9127146172269349043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8972918622944182515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80088dad74f9105468c72e48d085991a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flashWhiteColor: {r: 1, g: 1, b: 1, a: 0.8}
+  flashRedColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hitSoundKey: Hit
+  flashWhiteDuration: 0.1
+  flashRedDuration: 0.1
+  usePropertyBlock: 1
+  colorPropertyName: _Color
+--- !u!114 &5222687544558000564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8972918622944182515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1de9abf647682094c9a32023855e3d05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _hintDataList:
+  - {fileID: 11400000, guid: db27729b765ef944a8896729fbcf25ed, type: 2}
+  - {fileID: 11400000, guid: 7ee459337ff167446b51accf07b01502, type: 2}
 --- !u!1001 &6807876492406318198
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -133,7 +133,7 @@ namespace Script.Controller
             {
                 if (Input.GetKeyDown(keyMap.openPauseMenu))
                 {
-                    Script.GUI_Controller.GuiCanvasManager.Instance?.TogglePauseMenu();
+                    Script.GUI_Controller.GuiCanvasManager.Instance?.HandleEscapeKey();
                     SetAnyKeyUsed();
                 }
 

@@ -268,6 +268,10 @@ public class LoadFromSave : MonoBehaviour
                 WorldFileManager.Instance.NotifyWorldInfoChanged();
             }
 
+            // Load hint state cho world này
+            if (Script.Tutorial.HintSaveManager.Instance != null)
+                Script.Tutorial.HintSaveManager.Instance.Load(filePath);
+
             Debug.Log($"[LoadFromSave] Successfully loaded world info for: {worldInfo.Name}");
         }
         else

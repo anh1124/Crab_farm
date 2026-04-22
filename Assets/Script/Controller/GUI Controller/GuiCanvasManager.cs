@@ -6,10 +6,22 @@ using UnityEngine.UI;
 
 namespace Script.GUI_Controller
 {
+    public enum UIState
+    {
+        Normal,         // Game đang chạy bình thường, chỉ có PlayerHUD
+        PauseMenu,      // Pause menu đang mở
+        SoundSetting,   // Sound setting đang mở
+        HintPanel,      // Hint panel đang mở
+    }
+
     public class GuiCanvasManager : MonoBehaviour
     {
         public static GuiCanvasManager Instance { get; private set; }
-        
+
+        [Header("State")]
+        [SerializeField] private UIState _currentState = UIState.Normal;
+        public UIState CurrentState => _currentState;
+
         //button
         [Header("Button")]
         public Button pauseButton;
@@ -24,9 +36,12 @@ namespace Script.GUI_Controller
         [Header("Resource Bars")]
         public ResourceBarUI healBarUI;
         public ResourceBarUI manaBarUI;
-        
+
         public CoinUI coinUI;
-        
+
+        [Header("Hint UI")]
+        public GameObject hintUIPanel;
+
         [Header("Time Display")]
         public TextMeshProUGUI timeDisplay;
 
@@ -46,6 +61,10 @@ namespace Script.GUI_Controller
             {
                 closeSoundSettingButton.onClick.AddListener(HideSoundSetting);
             }
+
+            // Set hint panel inactive at start
+            if (hintUIPanel != null)
+                hintUIPanel.SetActive(false);
 
             ResumeGame();
         }
@@ -68,6 +87,10 @@ namespace Script.GUI_Controller
             // Play UI click sound
             Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
 
+            // Nếu đang có panel khác, đóng nó trước
+            CloseAnyOpenPanel();
+
+            _currentState = UIState.PauseMenu;
             Time.timeScale = 0; // Bật pause
             pauseMenu.SetActive(true);
 
@@ -86,6 +109,7 @@ namespace Script.GUI_Controller
             // Play UI click sound
             Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
 
+            _currentState = UIState.SoundSetting;
             pauseMenu.SetActive(false);
             soundSettingCanvas.SetActive(true);
         }
@@ -95,12 +119,14 @@ namespace Script.GUI_Controller
             // Play UI click sound
             Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
 
+            _currentState = UIState.PauseMenu;
             soundSettingCanvas.SetActive(false);
             pauseMenu.SetActive(true);
         }
 
         public void ResumeGame()
         {
+            _currentState = UIState.Normal;
             Time.timeScale = 1; // Bỏ pause game
             pauseMenu.SetActive(false);
             soundSettingCanvas.SetActive(false);
@@ -116,14 +142,101 @@ namespace Script.GUI_Controller
         }
 
         /// <summary>
-        /// Bật nếu đang tắt, tắt nếu đang bật. Dùng cho hotkey ESC.
+        /// Đóng bất kỳ panel nào đang mở (trừ PlayerHUD).
         /// </summary>
+        private void CloseAnyOpenPanel()
+        {
+            // Đóng hint panel nếu đang mở
+            if (hintUIPanel != null && hintUIPanel.activeSelf)
+            {
+                hintUIPanel.SetActive(false);
+                // Gọi HintManager để clear current data nếu cần
+                Script.Tutorial.HintManager.Instance?.ClosePanel();
+            }
+        }
+
+        /// <summary>
+        /// Xử lý phím ESC theo state hiện tại.
+        /// - Normal: Mở PauseMenu
+        /// - PauseMenu: Resume game
+        /// - SoundSetting: Quay về PauseMenu
+        /// - HintPanel: Đóng hint panel và resume
+        /// </summary>
+        public void HandleEscapeKey()
+        {
+            switch (_currentState)
+            {
+                case UIState.Normal:
+                    ShowPauseMenu();
+                    break;
+
+                case UIState.PauseMenu:
+                    ResumeGame();
+                    break;
+
+                case UIState.SoundSetting:
+                    // Từ sound setting quay về pause menu
+                    HideSoundSetting();
+                    break;
+
+                case UIState.HintPanel:
+                    // Đóng hint panel và resume
+                    HideHintPanel();
+                    ResumeGame();
+                    break;
+
+                default:
+                    ResumeGame();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Bật nếu đang tắt, tắt nếu đang bật. Dùng cho hotkey ESC (backward compatible).
+        /// </summary>
+        [Obsolete("Use HandleEscapeKey() instead for proper state management")]
         public void TogglePauseMenu()
         {
-            if (pauseMenu != null && pauseMenu.activeSelf)
-                ResumeGame();
+            HandleEscapeKey();
+        }
+
+        /// <summary>
+        /// Hiển thị Hint UI Panel.
+        /// </summary>
+        public void ShowHintPanel()
+        {
+            if (hintUIPanel != null)
+            {
+                hintUIPanel.SetActive(true);
+                _currentState = UIState.HintPanel;
+                // Pause game khi xem hint
+                Time.timeScale = 0;
+                Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);
+            }
             else
-                ShowPauseMenu();
+                Debug.LogWarning("[GuiCanvasManager] hintUIPanel chưa được gán trong Inspector!");
+        }
+
+        /// <summary>
+        /// Ẩn Hint UI Panel.
+        /// </summary>
+        public void HideHintPanel()
+        {
+            if (hintUIPanel != null)
+                hintUIPanel.SetActive(false);
+        }
+
+        /// <summary>
+        /// Đóng hint panel và resume game về trạng thái Normal.
+        /// Dùng cho nút close trong HintPanelUI.
+        /// </summary>
+        public void CloseHintAndResume()
+        {
+            if (_currentState == UIState.HintPanel)
+            {
+                HideHintPanel();
+                ResumeGame();
+            }
         }
     }
 }
