@@ -196,9 +196,15 @@ namespace Script.Audio
 
             if (config.Loop)
             {
+                bool wasAlreadyDemanded = _demandedSounds.ContainsKey(soundKey);
                 _demandedSounds[soundKey] = config;
-                if (_isInRange)
+
+                // FIX: Nếu đã in-range và demand mới được thêm (hoặc cập nhật), trigger play ngay
+                // Tránh trường hợp PlaySound được gọi trước khi PlayerAudioZone poll
+                if (_isInRange && !wasAlreadyDemanded)
+                {
                     TriggerDemandedPlay(soundKey);
+                }
                 return;
             }
 

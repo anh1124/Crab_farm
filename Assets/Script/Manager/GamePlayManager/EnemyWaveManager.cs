@@ -125,8 +125,12 @@ namespace Script.Manager.GamePlayManager
 
         private int CalculateWavePower(int daysElapsed)
         {
-            // Công thức: power = day + day*5 = day*6
-            return daysElapsed * 6;
+            // Ngày 1: 0 power (không spawn enemy)
+            // Từ ngày 2: tăng 5 power mỗi ngày (tuyến tính)
+            // Ngày 2: 5 power (1 enemy), Ngày 3: 10 power (2 enemy)
+            // Ngày 4: 15 power (3 enemy), Ngày 5: 20 power (4 enemy)...
+            if (daysElapsed <= 1) return 0;
+            return (daysElapsed - 1) * 5;
         }
 
         public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
