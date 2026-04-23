@@ -57,14 +57,14 @@ namespace Script.Manager.GamePlayManager
             }
         }
 
-        // Legacy: Giữ lại để tương thích với code cũ, sẽ được cập nhật từ danh sách mới
-        public GameObject portalL;
-        public GameObject portalR;
-
         // Storm Invasion: Danh sách quản lý tất cả portal theo bên
         [Header("Storm Invasion - Portal Lists")]
         [SerializeField] private List<EnemyPortalBehavior> leftPortals = new List<EnemyPortalBehavior>();
         [SerializeField] private List<EnemyPortalBehavior> rightPortals = new List<EnemyPortalBehavior>();
+
+        // Legacy properties - trả về portal tuyến đầu (index 0) hoặc null
+        public GameObject portalL => leftPortals.Count > 0 ? leftPortals[0].gameObject : null;
+        public GameObject portalR => rightPortals.Count > 0 ? rightPortals[0].gameObject : null;
 
         // Settings for spawning
         [Header("Spawn Settings")]
@@ -182,16 +182,13 @@ namespace Script.Manager.GamePlayManager
                 }
             }
 
-            // Thử tìm lại trong scene nếu reference đang null (phòng trường hợp vừa load xong)
-            if (portalL == null) portalL = GameObject.Find("EnemyPortal_Left");
-            if (portalR == null) portalR = GameObject.Find("EnemyPortal_Right");
-
-            if (portalL == null)
+            // Sinh cổng khởi đầu nếu chưa có
+            if (leftPortals.Count == 0)
             {
                 Debug.Log("[EnemyPortalManager] Sinh cổng KHỞI ĐẦU bên TRÁI.");
                 SpawnPortal(false);
             }
-            if (portalR == null)
+            if (rightPortals.Count == 0)
             {
                 Debug.Log("[EnemyPortalManager] Sinh cổng KHỞI ĐẦU bên PHẢI.");
                 SpawnPortal(true);
@@ -218,32 +215,34 @@ namespace Script.Manager.GamePlayManager
 
         private void SpawnAvailablePortal()
         {
-            // Storm Invasion: Check danh sách mới thay vì chỉ check portalL/R
-            bool needLeft = leftPortals.Count < maxPortalsPerSide;
-            bool needRight = rightPortals.Count < maxPortalsPerSide;
+            // Storm Invasion: Spawn đủ cổng cho mỗi bên cho đến khi đạt max
+            int leftNeeded = maxPortalsPerSide - leftPortals.Count;
+            int rightNeeded = maxPortalsPerSide - rightPortals.Count;
 
-            if (!needLeft && !needRight)
+            if (leftNeeded <= 0 && rightNeeded <= 0)
             {
                 Debug.Log($"[EnemyPortalManager] Đã đủ {maxPortalsPerSide} portal mỗi bên. Không thể sinh thêm.");
                 return;
             }
 
-            // Ưu tiên spawn bên nào thiếu, nếu cả 2 đều thiếu thì random
-            if (needLeft && needRight)
+            // Spawn đủ cổng bên trái
+            if (leftNeeded > 0)
             {
-                bool spawnRight = UnityEngine.Random.value > 0.5f;
-                Debug.Log($"[EnemyPortalManager] Cả 2 bên đều thiếu -> Random chọn sinh cổng {(spawnRight ? "PHẢI" : "TRÁI")}");
-                SpawnPortal(spawnRight);
+                Debug.Log($"[EnemyPortalManager] Cần sinh {leftNeeded} cổng bên TRÁI ({leftPortals.Count}/{maxPortalsPerSide})");
+                for (int i = 0; i < leftNeeded; i++)
+                {
+                    SpawnPortal(false);
+                }
             }
-            else if (needLeft)
+
+            // Spawn đủ cổng bên phải
+            if (rightNeeded > 0)
             {
-                Debug.Log($"[EnemyPortalManager] Bên trái thiếu ({leftPortals.Count}/{maxPortalsPerSide}) -> Sinh cổng Trái.");
-                SpawnPortal(false);
-            }
-            else
-            {
-                Debug.Log($"[EnemyPortalManager] Bên phải thiếu ({rightPortals.Count}/{maxPortalsPerSide}) -> Sinh cổng Phải.");
-                SpawnPortal(true);
+                Debug.Log($"[EnemyPortalManager] Cần sinh {rightNeeded} cổng bên PHẢI ({rightPortals.Count}/{maxPortalsPerSide})");
+                for (int i = 0; i < rightNeeded; i++)
+                {
+                    SpawnPortal(true);
+                }
             }
         }
 
@@ -267,8 +266,34 @@ namespace Script.Manager.GamePlayManager
                 Debug.LogWarning($"[EnemyPortalManager] _enemyDataProvider chưa được inject, auto-find: {_enemyDataProvider != null}");
             }
 
-            // Lấy vị trí an toàn ngoài bức tường
-            Vector3 spawnPos = Utility.GetRandomOutsideSafePos(isRightSide, minSpawnDistance, maxSpawnDistance);
+            // Sort trước để tìm portal xa nhất (farthest from TownCenter)
+            SortPortals();
+
+            Vector3 spawnPos;
+            var existingPortals = isRightSide ? rightPortals : leftPortals;
+            
+            if (existingPortals.Count > 0)
+            {
+                // Đã có portal - spawn SAU (xa hơn) portal xa nhất hiện tại
+                // Portal xa nhất = cuối danh sách sau khi sort (gần nhất = index 0)
+                float farthestX = existingPortals[existingPortals.Count - 1].transform.position.x;
+                float backOffset = backPortalSpawnOffset > 0 ? backPortalSpawnOffset : 100f;
+                
+                // Bên phải: xa hơn = +x, Bên trái: xa hơn = -x
+                float spawnX = isRightSide ? farthestX + backOffset : farthestX - backOffset;
+                
+                GameObject townCenter = Utility.GetTownCenter();
+                float yPos = townCenter != null ? townCenter.transform.position.y : 0f;
+                spawnPos = new Vector3(spawnX, yPos, 0f);
+                
+                Debug.Log($"[EnemyPortalManager] Spawn portal {(isRightSide ? "PHẢI" : "TRÁI")} SAU portal xa nhất: x={farthestX:F1} -> x={spawnX:F1}");
+            }
+            else
+            {
+                // Chưa có portal - spawn ở vị trí random ban đầu
+                spawnPos = Utility.GetRandomOutsideSafePos(isRightSide, minSpawnDistance, maxSpawnDistance);
+                Debug.Log($"[EnemyPortalManager] Spawn portal {(isRightSide ? "PHẢI" : "TRÁI")} ban đầu tại: {spawnPos}");
+            }
             
             // Vector3.zero được trả về nếu lỗi (không có TownCenter)
             if (spawnPos == Vector3.zero) return;
@@ -282,12 +307,6 @@ namespace Script.Manager.GamePlayManager
             {
                 newPortal.transform.SetParent(EntitySaveManager.Instance.enemyContainer.transform, true);
             }
-
-            // Lưu reference lại
-            if (isRightSide)
-                portalR = newPortal;
-            else
-                portalL = newPortal;
 
             // Khởi tạo Setup cho portal behavior
             var behavior = newPortal.GetComponent<EnemyPortalBehavior>();
@@ -314,13 +333,9 @@ namespace Script.Manager.GamePlayManager
         {
             if (portal == null) return;
 
-            // Xóa khỏi danh sách mới
+            // Xóa khỏi danh sách
             leftPortals.Remove(portal);
             rightPortals.Remove(portal);
-
-            // Cập nhật legacy references
-            if (portalL == portal.gameObject) portalL = null;
-            if (portalR == portal.gameObject) portalR = null;
 
             // Sắp xếp lại và cập nhật tuyến đầu
             SortPortals();
@@ -332,20 +347,24 @@ namespace Script.Manager.GamePlayManager
         [ContextMenu("Set All Portals Active")]
         public void SetAllPortalsActive()
         {
-            if (portalL != null)
+            // Active tất cả portal trong list (tuyến đầu sẽ được xử lý riêng)
+            foreach (var portal in leftPortals)
             {
-                portalL.SetActive(true);
-                var behaviorL = portalL.GetComponent<EnemyPortalBehavior>();
-                if (behaviorL) behaviorL.ForceActivate();
-                Debug.Log("[EnemyPortalManager] Đã bật và Kích Hoạt Sẵn Sàng (Active) cổng Trái.");
+                if (portal != null && portal.gameObject != null)
+                {
+                    portal.gameObject.SetActive(true);
+                    portal.ForceActivate();
+                }
             }
-            if (portalR != null)
+            foreach (var portal in rightPortals)
             {
-                portalR.SetActive(true);
-                var behaviorR = portalR.GetComponent<EnemyPortalBehavior>();
-                if (behaviorR) behaviorR.ForceActivate();
-                Debug.Log("[EnemyPortalManager] Đã bật và Kích Hoạt Sẵn Sàng (Active) cổng Phải.");
+                if (portal != null && portal.gameObject != null)
+                {
+                    portal.gameObject.SetActive(true);
+                    portal.ForceActivate();
+                }
             }
+            Debug.Log($"[EnemyPortalManager] Đã bật và Kích Hoạt tất cả {leftPortals.Count + rightPortals.Count} cổng.");
         }
 
         #region Storm Invasion System
@@ -372,8 +391,6 @@ namespace Script.Manager.GamePlayManager
                 if (!rightPortals.Contains(portal))
                 {
                     rightPortals.Add(portal);
-                    // Cập nhật legacy reference
-                    portalR = portal.gameObject;
                     Debug.Log($"[EnemyPortalManager] Thêm portal vào rightPortals. Count={rightPortals.Count}");
                 }
             }
@@ -382,8 +399,6 @@ namespace Script.Manager.GamePlayManager
                 if (!leftPortals.Contains(portal))
                 {
                     leftPortals.Add(portal);
-                    // Cập nhật legacy reference
-                    portalL = portal.gameObject;
                     Debug.Log($"[EnemyPortalManager] Thêm portal vào leftPortals. Count={leftPortals.Count}");
                 }
             }
@@ -416,12 +431,6 @@ namespace Script.Manager.GamePlayManager
                 return distA.CompareTo(distB);
             });
 
-            // Cập nhật legacy references
-            if (leftPortals.Count > 0) portalL = leftPortals[0].gameObject;
-            else portalL = null;
-
-            if (rightPortals.Count > 0) portalR = rightPortals[0].gameObject;
-            else portalR = null;
         }
 
         /// <summary>
@@ -550,6 +559,7 @@ namespace Script.Manager.GamePlayManager
 
         /// <summary>
         /// Spawn thêm 2 portal phía sau (1 trái, 1 phải) với offset cố định.
+        /// Cổng mới luôn nằm sau portal[0] (tuyến đầu) - xa TownCenter hơn.
         /// Chỉ gọi khi tạo world mới (không có map.json).
         /// </summary>
         public void SpawnBackPortals()
@@ -557,27 +567,35 @@ namespace Script.Manager.GamePlayManager
             GameObject townCenter = Utility.GetTownCenter();
             if (townCenter == null) return;
 
-            float centerX = townCenter.transform.position.x;
+            // SORT trước khi spawn để đảm bảo portal[0] là gần TownCenter nhất
+            SortPortals();
 
-            // Spawn portal trái phía sau (further left)
+            // Spawn portal trái phía sau - nằm sau (further from TownCenter) portal[0]
             if (leftPortals.Count > 0 && leftPortals.Count < maxPortalsPerSide)
             {
-                float nearestLeftX = leftPortals[0].transform.position.x;
-                float backLeftX = nearestLeftX - backPortalSpawnOffset;
+                // Portal trái có x < centerX. "Sau" = xa TownCenter hơn = nhỏ hơn (more negative)
+                float frontlineLeftX = leftPortals[0].transform.position.x;
+                float backLeftX = frontlineLeftX - backPortalSpawnOffset;
                 SpawnPortalAtPosition(backLeftX, isRightSide: false);
             }
 
-            // Spawn portal phải phía sau (further right)
+            // Spawn portal phải phía sau - nằm sau (further from TownCenter) portal[0]
             if (rightPortals.Count > 0 && rightPortals.Count < maxPortalsPerSide)
             {
-                float nearestRightX = rightPortals[0].transform.position.x;
-                float backRightX = nearestRightX + backPortalSpawnOffset;
+                // Portal phải có x > centerX. "Sau" = xa TownCenter hơn = lớn hơn (more positive)
+                float frontlineRightX = rightPortals[0].transform.position.x;
+                float backRightX = frontlineRightX + backPortalSpawnOffset;
                 SpawnPortalAtPosition(backRightX, isRightSide: true);
             }
+
+            // SORT sau khi spawn để cập nhật thứ tự
+            SortPortals();
+            UpdateFrontlineStatus();
         }
 
         /// <summary>
         /// Spawn portal tại vị trí X cụ thể.
+        /// Tự động đăng ký vào danh sách và không kích hoạt ngay (back portal).
         /// </summary>
         private void SpawnPortalAtPosition(float xPos, bool isRightSide)
         {
@@ -603,11 +621,12 @@ namespace Script.Manager.GamePlayManager
             if (behavior)
             {
                 behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
+                // Đăng ký ngay lập tức để có trong danh sách (không chờ Start)
+                RegisterPortal(behavior);
                 // Back portal không phải tuyến đầu nên không kích hoạt ngay
-                // Sẽ tự động được đăng ký vào Start()
             }
 
-            Debug.Log($"[EnemyPortalManager] Đã tạo portal phía sau {(isRightSide ? "PHẢI" : "TRÁI")} tại x={xPos:F1}");
+            Debug.Log($"[EnemyPortalManager] Đã tạo portal phía sau {(isRightSide ? "PHẢI" : "TRÁI")} tại x={xPos:F1} (sau portal[0])");
         }
 
         #endregion

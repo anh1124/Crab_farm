@@ -172,7 +172,7 @@ MonoBehaviour:
   isReadyToSpawn: 0
   activeDelay: 1
   spawnDay: 0
-  maxHp: 80
+  maxHp: 130
   currentHp: 0
 --- !u!61 &5780412298064932211
 BoxCollider2D:

@@ -38,6 +38,7 @@ namespace Script.Manager.Building
         private LineRenderer rightDistanceLine;
         private float? minimumDistance;  // Nếu prefabWall không có IMinimumDistance, giá trị này sẽ là null (hoặc ≤ 0)
         private bool isPlacing = false;
+        private bool isFlipRequireCurrent = true; // Lưu trữ isFlipRequire cho building hiện tại
         private Collider2D previewCollider;
 
         [Header("Runtime Debug Info")]
@@ -94,7 +95,7 @@ namespace Script.Manager.Building
 
             structureToPlace = structurePrefab;
 
-            // Get minimumDistance from BuildingRegistry
+            // Get minimumDistance và isFlipRequire từ BuildingRegistry
             var buildingRegistry = BuildingRegistry.Instance;
             if (buildingRegistry != null)
             {
@@ -102,17 +103,22 @@ namespace Script.Manager.Building
                 if (buildingType.HasValue)
                 {
                     minimumDistance = buildingRegistry.GetMinimumDistance(buildingType.Value);
+                    isFlipRequireCurrent = buildingRegistry.GetIsFlipRequire(buildingType.Value);
+                    if (showDebugLog)
+                        Debug.Log($"[StartPlacement] BuildingType: {buildingType.Value}, isFlipRequire: {isFlipRequireCurrent}");
                 }
                 else
                 {
-                    Debug.LogWarning($"[BuildingPlacementManager] Cannot determine BuildingType for prefab {structurePrefab.name}. Minimum distance will be 0.");
+                    Debug.LogWarning($"[BuildingPlacementManager] Cannot determine BuildingType for prefab {structurePrefab.name}. Using defaults.");
                     minimumDistance = 0f;
+                    isFlipRequireCurrent = true;
                 }
             }
             else
             {
-                Debug.LogError("[BuildingPlacementManager] BuildingRegistry is not available in scene. Minimum distance will be 0.");
+                Debug.LogError("[BuildingPlacementManager] BuildingRegistry is not available in scene. Using defaults.");
                 minimumDistance = 0f;
+                isFlipRequireCurrent = true;
             }
 
             previewInstance = Instantiate(structurePrefab);
@@ -120,7 +126,8 @@ namespace Script.Manager.Building
 
             SetupPreview(previewInstance);
 
-            if (_buildingProvider != null && _buildingProvider.currentTownCenter != null)
+            // Chỉ lật preview nếu isFlipRequireCurrent = true
+            if (isFlipRequireCurrent && _buildingProvider != null && _buildingProvider.currentTownCenter != null)
             {
                 Vector3 playerPos = PlayerController.Instance.player.transform.position;
                 Vector3 townCenterPos = _buildingProvider.currentTownCenter.transform.position;
@@ -232,8 +239,8 @@ namespace Script.Manager.Building
             Vector2 previewPos = PlayerController.Instance.player.transform.position;
             previewInstance.transform.position = previewPos;
             
-            // Nếu tag của preview nằm trong danh sách cần định hướng, gọi hàm xoay chung
-            if (_buildingProvider != null && _buildingProvider.currentTownCenter != null)
+            // Chỉ xoay preview nếu isFlipRequireCurrent = true
+            if (isFlipRequireCurrent && _buildingProvider != null && _buildingProvider.currentTownCenter != null)
             {
                 Vector3 playerPos = PlayerController.Instance.player.transform.position;
                 Vector3 townCenterPos = _buildingProvider.currentTownCenter.transform.position;
@@ -598,6 +605,7 @@ namespace Script.Manager.Building
             HideDistanceLines();
             structureToPlace = null;
             minimumDistance = null;
+            isFlipRequireCurrent = true; // Reset về default
             isPlacing = false;
         }
 

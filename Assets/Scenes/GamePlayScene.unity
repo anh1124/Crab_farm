@@ -2353,19 +2353,23 @@ PrefabInstance:
       objectReference: {fileID: 1353476662}
     - target: {fileID: 5832753685871575959, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: damageAlly
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5832753685871575959, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: infiniteHp
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5832753685871575959, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: infiniteMp
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5832753685871575959, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: infiniteCoin
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5832753685871575959, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: instanceKill
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5832753685871575959, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: addCurrentCoin
@@ -2395,6 +2399,10 @@ PrefabInstance:
       propertyPath: _hintButtonContainer
       value: 
       objectReference: {fileID: 1692718442}
+    - target: {fileID: 8651940488345645102, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: _archerHuntingRange
+      value: 50
+      objectReference: {fileID: 0}
     - target: {fileID: 8825931610287078424, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: skyRoot
       value: 

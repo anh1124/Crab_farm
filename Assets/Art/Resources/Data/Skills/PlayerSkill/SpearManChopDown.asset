@@ -13,13 +13,14 @@ MonoBehaviour:
   m_Name: SpearManChopDown
   m_EditorClassIdentifier: 
   resourceType: 0
-  resourceCost: 6
+  resourceCost: 2
   displayName: 
   icon: {fileID: -2007057588, guid: defd2f148e299c64fb36821d049b3682, type: 3}
   skillName: SpearManChopDown
-  damage: 10
+  damage: 1
   cooldown: 2
   allowMovementDuringSkill: 0
+  moveRequired: 0
   useAnimation: 1
   animationTrigger: ChopDown
   hitboxPrefab: {fileID: 7138325472076543894, guid: 3e5278dc97b535840bea76508714840b, type: 3}

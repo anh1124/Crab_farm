@@ -75,12 +75,9 @@ namespace Script.Manager.GamePlayManager
             var portalManager = FindObjectOfType<EnemyPortalManager>();
             if (portalManager == null) return;
 
-            GameObject pL = portalManager.portalL;
-            GameObject pR = portalManager.portalR;
-            
-            string logL = pL != null ? $"[Cổng Trái Tồn Tại - Ready: {pL.GetComponent<EnemyPortalBehavior>().IsReadyToSpawn}]" : "[Cổng Trái NULL]";
-            string logR = pR != null ? $"[Cổng Phải Tồn Tại - Ready: {pR.GetComponent<EnemyPortalBehavior>().IsReadyToSpawn}]" : "[Cổng Phải NULL]";
-            Debug.Log($"[EnemyWaveManager] Kích hoạt Wave Đêm. Report Các Cổng: {logL} | {logR}");
+            // Log tất cả portal hiện có
+            var activePortalsForLog = portalManager.GetActivePortals();
+            Debug.Log($"[EnemyWaveManager] Kích hoạt Wave Đêm. Số cổng sẵn sàng: {activePortalsForLog.Count}");
 
             // Hỏi EnemyPortalManager để lấy các cổng đã kích hoạt xong delay
             var activePortals = portalManager.GetActivePortals();
