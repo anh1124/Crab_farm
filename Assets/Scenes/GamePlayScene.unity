@@ -2507,7 +2507,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 935497633066549826, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_fontSize
-      value: 36.7
+      value: 25.45
       objectReference: {fileID: 0}
     - target: {fileID: 935497633066549826, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_fontAsset
@@ -2523,7 +2523,7 @@ PrefabInstance:
       objectReference: {fileID: 336240922796316949, guid: 8a3d71cc49f025441bac9acb3f722e97, type: 2}
     - target: {fileID: 935497633066549826, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_enableAutoSizing
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 935497633066549826, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_hasFontAssetChanged
@@ -2531,11 +2531,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1351890996464863894, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 20.974
+      value: 41.552
       objectReference: {fileID: 0}
     - target: {fileID: 1351890996464863894, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -18.432
+      value: -28.721
       objectReference: {fileID: 0}
     - target: {fileID: 1827995307714680709, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2615,7 +2615,7 @@ PrefabInstance:
       objectReference: {fileID: 336240922796316949, guid: 8a3d71cc49f025441bac9acb3f722e97, type: 2}
     - target: {fileID: 2571377895714627308, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_enableAutoSizing
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2571377895714627308, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_hasFontAssetChanged
@@ -2651,11 +2651,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3691128276321095870, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 168.24
+      value: 158.316
       objectReference: {fileID: 0}
     - target: {fileID: 3691128276321095870, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 97.30699
+      value: 92.345
       objectReference: {fileID: 0}
     - target: {fileID: 3696633747770218852, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_Color.a

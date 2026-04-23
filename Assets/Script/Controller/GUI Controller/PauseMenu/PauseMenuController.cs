@@ -158,7 +158,7 @@ namespace Script.GUI_Controller.PauseMenu
                     if (waveManager != null && gameTimeManager != null)
                     {
                         int daysElapsed = gameTimeManager.GetElapsedDays();
-                        int wavePower = (int)(100 * System.Math.Pow(1 + (waveManager.growthRate / 100f), daysElapsed) - 100);
+                        int wavePower = daysElapsed * 6;
                         sb.AppendLine($"Wave Power: {wavePower}");
                     }
                 }

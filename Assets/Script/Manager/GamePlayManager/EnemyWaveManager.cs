@@ -35,7 +35,6 @@ namespace Script.Manager.GamePlayManager
             }
         }
 
-        public int growthRate = 2; // Mỗi ngày tăng thêm 2 điểm power
         private int currentWavePower;
 
         private void Awake()
@@ -126,8 +125,8 @@ namespace Script.Manager.GamePlayManager
 
         private int CalculateWavePower(int daysElapsed)
         {
-            // Công thức: power = basePower × (1 + growthRate/100)^daysElapsed
-            return (int)(100 * Math.Pow(1 + (growthRate / 100f), daysElapsed) - 100);
+            // Công thức: power = day + day*5 = day*6
+            return daysElapsed * 6;
         }
 
         public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();

@@ -357,13 +357,19 @@ namespace Script.Manager
 
         private void UpdateGuideLogic()
         {
-            if (reachedTarget && !isMaxTier) return;
-
-            // Đếm ngược lifetime
+            // Đếm ngược lifetime - luôn chạy trước mọi điều kiện khác
             currentLifetime -= Time.deltaTime;
             if (currentLifetime <= 0f)
             {
                 guideObject.SetActive(false);
+                return;
+            }
+
+            // Khi đã đến target và hiển thị coin, chỉ chạy animation, không di chuyển/xoay nữa
+            if (reachedTarget && !isMaxTier)
+            {
+                HandleShakeAnimation();
+                HandlePulseAnimation();
                 return;
             }
 
