@@ -2324,6 +2324,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1658616174}
     - target: {fileID: 1182911642445597191, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
+      propertyPath: maxPortalsPerSide
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1182911642445597191, guid: 04e22062c18dfd24b93d37f45636de3c, type: 3}
       propertyPath: backPortalSpawnOffset
       value: 30
       objectReference: {fileID: 0}

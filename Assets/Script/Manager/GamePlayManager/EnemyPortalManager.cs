@@ -314,6 +314,18 @@ namespace Script.Manager.GamePlayManager
             {
                 // Gọi tới hàm setup của behavior với các dependency được tiêm vào
                 behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
+
+                // Tính toán và set MaxHP cho portal mới (không phải load từ save)
+                // Formula: BASE_MAX_HP + (currentDay * 10) - mỗi ngày tăng 10 HP
+                int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
+                float calculatedMaxHp = EnemyPortalStatus.BASE_MAX_HP + (currentDay * 10f);
+                var status = behavior.GetStatus();
+                if (status != null)
+                {
+                    status.MaxHp = calculatedMaxHp;
+                    status.CurrentHp = calculatedMaxHp; // Full HP khi spawn
+                    Debug.Log($"[EnemyPortalManager] Portal mới {(isRightSide ? "PHẢI" : "TRÁI")}: MaxHP = {calculatedMaxHp} (Base {EnemyPortalStatus.BASE_MAX_HP} + Day {currentDay} * 10)");
+                }
                 
                 // FIX: Đăng ký ngay lập tức thay vì chờ Start() frame sau
                 // Tránh race condition với ProcessFrontlineDelays (6:00)
@@ -621,6 +633,19 @@ namespace Script.Manager.GamePlayManager
             if (behavior)
             {
                 behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
+
+                // Tính toán và set MaxHP cho portal mới (không phải load từ save)
+                // Formula: BASE_MAX_HP + (currentDay * 10) - mỗi ngày tăng 10 HP
+                int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
+                float calculatedMaxHp = EnemyPortalStatus.BASE_MAX_HP + (currentDay * 10f);
+                var status = behavior.GetStatus();
+                if (status != null)
+                {
+                    status.MaxHp = calculatedMaxHp;
+                    status.CurrentHp = calculatedMaxHp;
+                    Debug.Log($"[EnemyPortalManager] Portal phía sau {(isRightSide ? "PHẢI" : "TRÁI")}: MaxHP = {calculatedMaxHp} (Base {EnemyPortalStatus.BASE_MAX_HP} + Day {currentDay} * 10)");
+                }
+
                 // Đăng ký ngay lập tức để có trong danh sách (không chờ Start)
                 RegisterPortal(behavior);
                 // Back portal không phải tuyến đầu nên không kích hoạt ngay

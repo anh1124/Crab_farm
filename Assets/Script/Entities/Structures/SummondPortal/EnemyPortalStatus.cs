@@ -7,6 +7,9 @@ namespace Script.Entities.Structures.SummondPortal
 {
     public class EnemyPortalStatus : MonoBehaviour, IHealth, IHealthReactive
     {
+        // Hằng số HP ban đầu cho portal
+        public const float BASE_MAX_HP = 100f;
+
         [Header("Portal States")]
         public bool isReadyToSpawn = false;
 

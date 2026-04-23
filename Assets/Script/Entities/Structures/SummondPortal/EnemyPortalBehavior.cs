@@ -342,6 +342,7 @@ namespace Script.Entities.Structures.SummondPortal
             public int spawnDay;
             public bool isReadyToSpawn;
             public float currentHp;
+            public float maxHp;
             public float x, y, z;
             public List<PendingWaveData> pendingWaves;
             // Storm Invasion: chỉ lưu isFrontline, delay được quản lý bởi status.activeDelay
@@ -382,6 +383,7 @@ namespace Script.Entities.Structures.SummondPortal
                 spawnDay = status.spawnDay,
                 isReadyToSpawn = status.isReadyToSpawn,
                 currentHp = status.CurrentHp,
+                maxHp = status.MaxHp,
                 x = transform.position.x,
                 y = transform.position.y,
                 z = transform.position.z,
@@ -406,6 +408,7 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 status.spawnDay = saveData.spawnDay;
                 status.isReadyToSpawn = saveData.isReadyToSpawn;
+                status.MaxHp = saveData.maxHp > 0 ? saveData.maxHp : EnemyPortalStatus.BASE_MAX_HP;
                 status.CurrentHp = saveData.currentHp;
                 transform.position = new Vector3(saveData.x, saveData.y, saveData.z);
 
