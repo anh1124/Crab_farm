@@ -73,7 +73,7 @@ namespace Script.Game.Enemy
             CurrentHp = MaxHp;
             IsDead = false;
             _enemyID = data.enemyName; // Lưu ID loại enemy từ database
-            
+
             MoveSpeed = data.speed;
             AttackCooldown = data.attackSpeed;
             AttackDamage = data.dame;
@@ -94,6 +94,25 @@ namespace Script.Game.Enemy
             }
 
             // Enemy dùng object-pool cần reset lại runtime flag mỗi lần spawn.
+            _ignoreReturnToPortal = _ignoreReturnToPortalDefault;
+        }
+
+        // Gọi từ EnemyAIController.ResetEnemy() khi enemy được lấy từ pool để tái sử dụng
+        public void SetupReset()
+        {
+            // Reset trạng thái chết để enemy có thể nhận sát thương lại
+            IsDead = false;
+            CurrentHp = MaxHp;
+            OnHealthChanged?.Invoke(CurrentHp, MaxHp);
+
+            // Reset combat flags
+            CanMove = true;
+            CanAction = true;
+            IsMoving = false;
+            IsSkillCasting = false;
+            SkillAllowsMovement = true;
+
+            // Reset runtime flag
             _ignoreReturnToPortal = _ignoreReturnToPortalDefault;
         }
 

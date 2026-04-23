@@ -237,6 +237,13 @@ namespace Script.Game.Enemy.Core
             _ctx.IsAlive = true;
             _ctx.HomePortal = portal;
             _ctx.CurrentTarget = null;
+
+            // Reset EnemyStatus để tránh bug "enemy bất tử" (IsDead vẫn = true từ lần chết trước)
+            if (_ctx.Status != null)
+            {
+                _ctx.Status.SetupReset();
+            }
+
             UpdateAnimatorTriggers(); // Đảm bảo trigger luôn sẵn sàng khi spawn lại
             ChangeState(_idleState);
         }

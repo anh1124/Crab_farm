@@ -104,12 +104,22 @@ namespace Script.Game.Combat
         public void ReturnArrow(GameObject arrow)
         {
             if (arrow == null) return;
-            
+
+            // Reset Rigidbody trước khi tắt để đảm bảo velocity không còn
+            Rigidbody2D rb = arrow.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.velocity = Vector2.zero;
+                rb.angularVelocity = 0f;
+                rb.simulated = false;
+            }
+
             arrow.SetActive(false);
             arrow.transform.SetParent(poolParent);
             arrow.transform.position = Vector3.zero;
             arrow.transform.rotation = Quaternion.identity;
-            
+            arrow.transform.localScale = Vector3.one;
+
             pool.Enqueue(arrow);
         }
         
