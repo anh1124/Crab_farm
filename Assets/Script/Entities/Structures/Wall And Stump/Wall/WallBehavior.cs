@@ -100,6 +100,9 @@ namespace Script.Game.Structures.Wall_And_Stump
             // [State First] Đảm bảo visual và data khớp với status.state trước khi chạy tiếp
             LoadFromCurrentStatus();
 
+            // Flip wall để hướng mặt đúng phía dựa trên vị trí so với TownCenter
+            Script.Utils.WorldUtility.FlipObjectToFaceTownCenter(gameObject);
+
             RegisterWithManager(); // Đăng ký với manager (đã bao gồm sync tag và list)
             
             SubscribeToWorldInfoChanges(); // Đăng ký buff máu từ thế giới

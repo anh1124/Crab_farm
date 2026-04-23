@@ -142,22 +142,14 @@ namespace Script.Audio
 
         var source = go.AddComponent<AudioSource>();
         source.outputAudioMixerGroup = sfxMixerGroup;
-        // spatialBlend = 1 (3D) - để Unity tự tính distance attenuation
-        source.spatialBlend = 1f;
+        // MONO: spatialBlend = 0 (2D) - không có 3D positioning
+        source.spatialBlend = 0f;
         source.playOnAwake  = false;
 
-        // Cấu hình 3D spatial audio với custom curve
-        // Tại maxDistance vẫn còn 30% volume
-        source.rolloffMode = AudioRolloffMode.Custom;
-
-        AnimationCurve rolloffCurve = AudioCurveCache.GetDefaultRolloffCurve(
-            AudioConstants.DEFAULT_MIN_DISTANCE,
-            AudioConstants.DEFAULT_MAX_DISTANCE,
-            AudioConstants.DEFAULT_VOLUME_AT_MAX);
-
-        source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
-        source.minDistance = AudioConstants.DEFAULT_MIN_DISTANCE;
-        source.maxDistance = AudioConstants.DEFAULT_MAX_DISTANCE;
+        // MONO: Không cần 3D spatial audio curves
+        source.rolloffMode = AudioRolloffMode.Linear;
+        source.minDistance = 0f;
+        source.maxDistance = 1f;
 
         go.SetActive(false);
         _available.Enqueue(source);

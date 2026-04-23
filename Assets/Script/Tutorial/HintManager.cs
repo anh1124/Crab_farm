@@ -134,6 +134,9 @@ namespace Script.Tutorial
             if (HintSaveManager.Instance != null && !HintSaveManager.Instance.IsRead(data.title))
                 HintSaveManager.Instance.SetRead(data.title);
 
+            // Cập nhật lại trạng thái hiển thị của tất cả hint buttons (unread dot)
+            RefreshAllHintButtons();
+
             bool isIgnored = HintSaveManager.Instance != null && 
                              HintSaveManager.Instance.IsIgnored(data.title);
 
@@ -188,7 +191,11 @@ namespace Script.Tutorial
             if (isIgnored)
             {
                 HintSaveManager.Instance.SetIgnored(title);
-                ClosePanel();
+                // Sử dụng CloseHintAndResume để đóng panel và resume game đúng cách
+                if (GuiCanvasManager.Instance != null)
+                    GuiCanvasManager.Instance.CloseHintAndResume();
+                else
+                    ClosePanel();
             }
             else
             {
@@ -200,6 +207,23 @@ namespace Script.Tutorial
         {
             return HintSaveManager.Instance != null && 
                    HintSaveManager.Instance.IsIgnored(title);
+        }
+
+        /// <summary>
+        /// Cập nhật trạng thái hiển thị (unread dot) của tất cả hint buttons đang active.
+        /// Gọi sau khi đọc hint để cập nhật UI ngay lập tức.
+        /// </summary>
+        private void RefreshAllHintButtons()
+        {
+            foreach (var btnGO in _activeButtons)
+            {
+                if (btnGO == null) continue;
+                var hintButton = btnGO.GetComponent<HintButton>();
+                if (hintButton != null)
+                {
+                    hintButton.UpdateUnreadState();
+                }
+            }
         }
     }
 

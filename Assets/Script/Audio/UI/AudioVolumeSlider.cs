@@ -24,15 +24,10 @@ namespace Script.Audio
     //  Inspector Fields
     // ─────────────────────────────────────────────
 
-    public enum AudioChannel { Master, BGM, ENV, SFX, UI }
-
     [Tooltip("Kênh âm lượng mà slider này điều khiển")]
-    [SerializeField] private AudioChannel channel = AudioChannel.Master;
+    [SerializeField] private Script.Audio.AudioChannel channel = Script.Audio.AudioChannel.Master;
 
-    public AudioChannel Channel => channel;
-
-    [Tooltip("Toggle Mute liên kết với slider này (tùy chọn)")]
-    [SerializeField] private AudioMuteToggle linkedMuteToggle;
+    public Script.Audio.AudioChannel Channel => channel;
 
     [Tooltip("TextMeshPro để hiển thị % volume (tùy chọn)")]
     [SerializeField] private TextMeshProUGUI volumeText;
@@ -81,6 +76,14 @@ namespace Script.Audio
         }
     }
 
+    /// <summary>
+    /// Refresh slider value from AudioManager. Call this when opening Settings Panel.
+    /// </summary>
+    public void Refresh()
+    {
+        LoadCurrentValue();
+    }
+
     // ─────────────────────────────────────────────
     //  Private Methods
     // ─────────────────────────────────────────────
@@ -118,25 +121,6 @@ namespace Script.Audio
         if (_isDragging)
         {
             PlayTestSound(value);
-        }
-
-        // Tự động bật/tắt mute toggle khi slider về/trên 0
-        if (linkedMuteToggle != null)
-        {
-            var toggleComponent = linkedMuteToggle.GetComponent<Toggle>();
-            if (toggleComponent != null)
-            {
-                // Nếu slider về 0, tự động bật mute (không kích hoạt sự kiện)
-                if (value <= AudioConstants.VOLUME_EPSILON && !toggleComponent.isOn)
-                {
-                    toggleComponent.SetIsOnWithoutNotify(true);
-                }
-                // Nếu slider tăng lên trên 0, tự động tắt mute (không kích hoạt sự kiện)
-                else if (value > AudioConstants.VOLUME_EPSILON && toggleComponent.isOn)
-                {
-                    toggleComponent.SetIsOnWithoutNotify(false);
-                }
-            }
         }
     }
 

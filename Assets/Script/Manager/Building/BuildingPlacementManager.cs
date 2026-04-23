@@ -560,26 +560,14 @@ namespace Script.Manager.Building
                         isFlipRequire = BuildingRegistry.Instance.GetIsFlipRequire(buildingType.Value);
                     }
 
-                    // Áp dụng cùng logic lật như preview (chỉ khi isFlipRequire = true)
-                    Vector3 previewScale = previewInstance.transform.localScale;
-                    bool shouldFlip = isFlipRequire && previewScale.x < 0;
-
+                    // Chỉ áp dụng scale từ preview cho root, không flip children
+                    // (Building Behavior sẽ tự xử lý flip trong Start())
                     newStructure.transform.rotation = Quaternion.identity;
-                    newStructure.transform.localScale = previewScale;
 
-                    // Đảo ngược lại scale của tất cả children để chúng giữ nguyên hướng
-                    if (shouldFlip)
+                    if (showDebugLog)
                     {
-                        foreach (Transform child in newStructure.transform)
-                        {
-                            Vector3 childScale = child.localScale;
-                            childScale.x *= -1f;
-                            child.localScale = childScale;
-                        }
+                        Debug.Log($"[BuildingPlacementManager] New structure {newStructure.name} placed at {newStructure.transform.position}. BuildingBehavior will handle flip in Start().");
                     }
-
-                    // Add debug logging
-                    Debug.Log($"New structure created with rotation: {newStructure.transform.rotation.eulerAngles}, scale: {newStructure.transform.localScale}, isFlipRequire: {isFlipRequire}, shouldFlip: {shouldFlip}");
 
                     CleanupPreview();
                     

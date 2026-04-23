@@ -365,6 +365,18 @@ namespace Script.GUI_Controller.StartMenu
 
             SetActiveFalseAllPanel();
             optionsPanel.SetActive(true);
+
+            // Refresh all volume sliders to ensure they display correct saved values
+            RefreshVolumeSliders();
+        }
+
+        private void RefreshVolumeSliders()
+        {
+            var sliders = optionsPanel.GetComponentsInChildren<Script.Audio.AudioVolumeSlider>(true);
+            foreach (var slider in sliders)
+            {
+                slider.Refresh();
+            }
         }
         //Cập nhật lại giao diện nếu tìm thấy thế giới
 

@@ -79,7 +79,8 @@ namespace Script.Audio
     /// <summary>Lấy chế độ mono audio. Mặc định = false (stereo).</summary>
     public bool GetMonoAudio()
     {
-        return PlayerPrefs.GetInt(KEY_MONO_AUDIO, 0) == 1;
+        // MONO: Luôn trả về true (force mono cho toàn bộ hệ thống)
+        return true;
     }
 
     /// <summary>

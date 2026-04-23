@@ -28,7 +28,7 @@ AudioManager.Instance.PlaySFXByKey("ShieldBot_Activate", transform.position);
 2. **Auto-Cleanup**: Tự động trả pool, tránh rò rỉ (leak) AudioSource.
 3. **Demand System**: Loop sounds chỉ chiếm AudioSource khi Player ở trong vùng nghe (tiết kiệm pool cực lớn).
 4. **Distance Culling**: PlayerAudioZone tự động kích hoạt/hủy sound dựa trên khoảng cách.
-5. **Mono/Stereo Support**: Tích hợp sẵn logic spread để hỗ trợ người dùng chuyển đổi chế độ Mono/Stereo.
+5. **Mono Audio**: Toàn bộ âm thanh được force về mono (spatialBlend = 0) để đơn giản hóa việc quản lý.
 
 ### Khi Nào Dùng AudioManager Trực Tiếp?
 
@@ -92,7 +92,8 @@ AudioEmitter (Component trên Entity)
 ### 5. VolumeSettings.cs
 **Vị trí**: `Assets/Script/Audio/Helper/VolumeSettings.cs`
 **Mô tả**: Quản lý lưu trữ cài đặt (Master, BGM, SFX, ENV, UI) vào `PlayerPrefs`.
-- **Mono Audio**: Hỗ trợ lưu trữ và áp dụng chế độ Mono cho người dùng khiếm thính hoặc tùy sở thích.
+- **Force Mono**: `GetMonoAudio()` luôn trả về `true` - toàn bộ hệ thống dùng mono audio.
+- **Volume Fields**: Giá trị volume được lưu vào `PlayerPrefs` và đồng bộ vào các fields trong `AudioManager`.
 
 ### 6. PlayerAudioZone.cs
 **Vị trí**: `Assets/Script/Audio/Helper/PlayerAudioZone.cs`
@@ -132,19 +133,18 @@ AudioEmitter (Component trên Entity)
 
 ---
 
-## Tùy Chọn Mono Audio
+## Mono Audio (Force Mono)
 
-Hệ thống hỗ trợ chuyển đổi Mono/Stereo tại runtime để hỗ trợ người dùng:
-- **Stereo (Mặc định)**: `spatialBlend = 1f`. Unity tự động xử lý panning trái/phải và rolloff curve dựa trên vị trí 3D của emitter so với Player.
-- **Mono**: `spatialBlend = 0f` (2D). Hệ thống tính toán volume thủ công dựa trên khoảng cách (`CalculateDistanceVolume`) và đặt `panStereo = 0` (chính giữa). Điều này đảm bảo âm thanh ở hai bên tai luôn bằng nhau tuyệt đối, loại bỏ lỗi "một bên to một bên nhỏ" của Unity khi dùng 3D audio.
-- **Cơ chế cập nhật**:
-    - Khi chuyển sang Mono, `AudioEmitter.ApplyMonoSetting()` sẽ restart các loop sounds để chuyển đổi mode.
-    - Đối với loop sounds ở mode Mono, một coroutine sẽ cập nhật volume liên tục mỗi frame theo vị trí của Player.
+Toàn bộ hệ thống audio được thiết kế để chạy ở chế độ **mono** để đơn giản hóa việc quản lý:
+- **Tất cả AudioSource**: `spatialBlend = 0f` (2D sound).
+- **BGM, ENV, UI Sources**: Được set mono trong `AudioManager.Initialize()`.
+- **Pooled SFX**: `AudioPool.CreateSource()` tạo sources với `spatialBlend = 0f`.
+- **AudioEmitter**: `VolumeSettings.GetMonoAudio()` luôn trả về `true`.
 
 ---
 
 ## Best Practices
-1. **Luôn dùng AudioEmitter**: Đây là tầng trung gian duy nhất xử lý đúng logic Mono/Stereo.
+1. **Luôn dùng AudioEmitter**: Đây là tầng trung gian duy nhất xử lý đúng logic âm thanh.
 2. **Key-based Sound**: Luôn cấu hình âm thanh trong `SoundRegistry` để tận dụng culling và attenuation mặc định.
 3. **Loop Sound cleanup**: Luôn gọi `StopSound()` hoặc đảm bảo GameObject bị Disable/Destroy để giải phóng pool.
 

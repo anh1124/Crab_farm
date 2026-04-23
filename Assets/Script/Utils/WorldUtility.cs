@@ -21,6 +21,66 @@ namespace Script.Utils
 
         private static Script.Game.Structures.Wall_And_Stump.WallAndStumpManager _wm;
         private static Script.Game.Structures.Wall_And_Stump.WallAndStumpManager WM => _wm != null ? _wm : (_wm = Object.FindObjectOfType<Script.Game.Structures.Wall_And_Stump.WallAndStumpManager>());
+        /// <summary>
+        /// Flip object và tất cả children để hướng mặt về phía TownCenter.
+        /// Khi root bị flip (scale.x = -1), children cũng bị flip giống root (scale.x = -1).
+        /// Dùng cho buildings khi được build hoặc load từ save.
+        /// </summary>
+        public static void FlipObjectToFaceTownCenter(GameObject obj)
+        {
+            if (obj == null) return;
+
+            var bm = BM;
+            if (bm == null || bm.currentTownCenter == null) return;
+
+            float townCenterX = bm.currentTownCenter.transform.position.x;
+            float objX = obj.transform.position.x;
+
+            Vector3 scale = obj.transform.localScale;
+
+            // Nếu object ở bên trái TownCenter, flip (scale.x âm)
+            bool shouldFlip = objX < townCenterX;
+            if (shouldFlip)
+            {
+                scale.x = -1f * Mathf.Abs(scale.x);
+            }
+            else
+            {
+                scale.x = Mathf.Abs(scale.x);
+            }
+
+            // Apply scale to root
+            obj.transform.localScale = scale;
+            obj.transform.rotation = Quaternion.identity;
+
+            // Flip tất cả children giống root (cùng scale.x âm khi root âm)
+            if (shouldFlip)
+            {
+                foreach (Transform child in obj.transform)
+                {
+                    Vector3 childScale = child.localScale;
+                    // Set scale.x âm giống root
+                    childScale.x = -1f * Mathf.Abs(childScale.x);
+                    child.localScale = childScale;
+                }
+            }
+            else
+            {
+                // Reset children scale về dương khi root không flip
+                foreach (Transform child in obj.transform)
+                {
+                    Vector3 childScale = child.localScale;
+                    childScale.x = Mathf.Abs(childScale.x);
+                    child.localScale = childScale;
+                }
+            }
+
+            if (Utility.isDebug)
+            {
+                Debug.Log($"[WorldUtility] FlipObjectToFaceTownCenter: {obj.name} at x={objX:F2}, townCenter at x={townCenterX:F2}, shouldFlip={shouldFlip}, rootScale.x={scale.x:F2}");
+            }
+        }
+
         public static void RotateObjectTowardsTownCenter(GameObject obj, Vector3 referencePos, Vector3 townCenterPos)
         {
             Vector3 scale = obj.transform.localScale;

@@ -8,6 +8,7 @@ using Script.Game.Mobs.MobsManager;
 using System.Linq;
 using UnityEngine;
 using Script.Data_Model.Interfaces;
+using Script.Audio;
 
 namespace Script.Game.Other
 {
@@ -42,6 +43,9 @@ namespace Script.Game.Other
         [SerializeField] private NPCUpdateManager npcUpdateManager;
         [SerializeField] private ArrowPool arrowPool;
         [SerializeField] private WallAndStumpManager wallManager;
+
+        [Header("Audio")]
+        [SerializeField] private AudioClip backgroundMusic;
 
         // ==================== PHASED LOADING METHODS ====================
 
@@ -295,6 +299,20 @@ namespace Script.Game.Other
                 arrowPool = poolObj.AddComponent<ArrowPool>();
             }
             arrowPool.Initialize(PrefabData.Instance.arrow);
+        }
+
+        private void PlayBackgroundMusic()
+        {
+            if (backgroundMusic == null) return;
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayBGM(backgroundMusic);
+                Debug.Log("[StartGameScrene] Playing background music: " + backgroundMusic.name);
+            }
+            else
+            {
+                Debug.LogWarning("[StartGameScrene] AudioManager.Instance is null, cannot play background music.");
+            }
         }
     }
 }

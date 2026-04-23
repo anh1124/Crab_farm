@@ -6,6 +6,18 @@ using UnityEngine.Audio;
 namespace Script.Audio
 {
     /// <summary>
+    /// Enum định nghĩa các audio channel trong hệ thống.
+    /// </summary>
+    public enum AudioChannel
+    {
+        Master,
+        BGM,
+        ENV,
+        SFX,
+        UI
+    }
+
+    /// <summary>
     /// Trái tim của hệ thống âm thanh. Singleton, không bị hủy khi chuyển Scene.
     ///
     /// ─── SETUP TRONG UNITY ───────────────────────────────────────────────────
@@ -84,6 +96,13 @@ namespace Script.Audio
     public VolumeSettings VolumeSettings => _volume;
     public bool IsPaused { get; private set; }
 
+    [Header("Debug - Current Volume Values (Read Only)")]
+    [SerializeField] private float _masterVolume;
+    [SerializeField] private float _bgmVolume;
+    [SerializeField] private float _envVolume;
+    [SerializeField] private float _sfxVolume;
+    [SerializeField] private float _uiVolume;
+
     // ─────────────────────────────────────────────
     //  Unity Lifecycle
     // ─────────────────────────────────────────────
@@ -103,10 +122,17 @@ namespace Script.Audio
 
         // Load settings ngay lập tức để Emitters có thể truy cập trong Start/Awake của chúng
         if (_volume != null)
-        {
-            _volume.LoadAndApply();
-            if (isDebug) Debug.Log("[AudioManager] Volume and Settings applied in Awake");
-        }
+            {
+                _volume.LoadAndApply();
+                if (isDebug) Debug.Log("[AudioManager] Volume and Settings applied in Awake");
+
+                // Đọc giá trị từ PlayerPrefs vào debug fields
+                _masterVolume = _volume.GetVolume(VolumeSettings.PARAM_MASTER);
+                _bgmVolume    = _volume.GetVolume(VolumeSettings.PARAM_BGM);
+                _envVolume    = _volume.GetVolume(VolumeSettings.PARAM_ENV);
+                _sfxVolume    = _volume.GetVolume(VolumeSettings.PARAM_SFX);
+                _uiVolume     = _volume.GetVolume(VolumeSettings.PARAM_UI);
+            }
     }
 
     private void OnEnable()
@@ -147,11 +173,26 @@ namespace Script.Audio
     private void Initialize()
     {
         _pool   = GetComponent<AudioPool>();
-        _music  = new MusicController(bgmSourceA, bgmSourceB, this);
+        _music  = new MusicController(bgmSourceA, bgmSourceB, this, () => _bgmVolume);
         _volume = new VolumeSettings(audioMixer);
+
+        // MONO: Set tất cả AudioSources thành 2D (mono)
+        SetupMonoSource(bgmSourceA);
+        SetupMonoSource(bgmSourceB);
+        SetupMonoSource(envSource);
+        SetupMonoSource(uiSource);
 
         // Auto-set cullingDistance từ maxDistance lớn nhất trong SoundRegistry
         AutoSetCullingDistanceFromRegistry();
+    }
+
+    private void SetupMonoSource(AudioSource source)
+    {
+        if (source != null)
+        {
+            source.spatialBlend = 0f; // 2D mono
+            source.panStereo = 0f;    // Center
+        }
     }
 
     private void AutoSetCullingDistanceFromRegistry()
@@ -209,6 +250,7 @@ namespace Script.Audio
         if (clip == null) return;
         envSource.clip = clip;
         envSource.loop = loop;
+        envSource.volume = _envVolume; // Dùng volume từ field
         envSource.Play();
     }
 
@@ -302,7 +344,7 @@ namespace Script.Audio
             Debug.Log($"[AudioManager] Actual UIVolume in mixer: {actual} dB");
 
         uiSource.clip = entry.clip;
-        uiSource.volume = volumeScale;
+        uiSource.volume = volumeScale * _uiVolume; // Nhân với volume từ field
         uiSource.spatialBlend = 0f; // 2D sound
         uiSource.loop = false;
         uiSource.Play();
@@ -580,26 +622,26 @@ namespace Script.Audio
     public void SetSFXVolume(float value)    => _volume.SetVolume(VolumeSettings.PARAM_SFX, value);
     public void SetUIVolume(float value)     => _volume.SetVolume(VolumeSettings.PARAM_UI, value);
 
-    public float GetMasterVolume() => _volume.GetVolume(VolumeSettings.PARAM_MASTER);
-    public float GetBGMVolume()    => _volume.GetVolume(VolumeSettings.PARAM_BGM);
-    public float GetENVVolume()    => _volume.GetVolume(VolumeSettings.PARAM_ENV);
-    public float GetSFXVolume()    => _volume.GetVolume(VolumeSettings.PARAM_SFX);
-    public float GetUIVolume()     => _volume.GetVolume(VolumeSettings.PARAM_UI);
+    public float GetMasterVolume() => _masterVolume;
+    public float GetBGMVolume()    => _bgmVolume;
+    public float GetENVVolume()    => _envVolume;
+    public float GetSFXVolume()    => _sfxVolume;
+    public float GetUIVolume()     => _uiVolume;
 
     public void ResetAllVolumes()  => _volume.ResetToDefaults();
 
     /// <summary>
     /// Helper method để lấy volume theo channel enum (dùng bởi UI components).
     /// </summary>
-    public float GetVolumeForChannel(AudioVolumeSlider.AudioChannel channel)
+    public float GetVolumeForChannel(AudioChannel channel)
     {
         return channel switch
         {
-            AudioVolumeSlider.AudioChannel.Master => GetMasterVolume(),
-            AudioVolumeSlider.AudioChannel.BGM    => GetBGMVolume(),
-            AudioVolumeSlider.AudioChannel.ENV    => GetENVVolume(),
-            AudioVolumeSlider.AudioChannel.SFX    => GetSFXVolume(),
-            AudioVolumeSlider.AudioChannel.UI     => GetUIVolume(),
+            AudioChannel.Master => GetMasterVolume(),
+            AudioChannel.BGM    => GetBGMVolume(),
+            AudioChannel.ENV    => GetENVVolume(),
+            AudioChannel.SFX    => GetSFXVolume(),
+            AudioChannel.UI     => GetUIVolume(),
             _ => 1f
         };
     }
@@ -607,16 +649,32 @@ namespace Script.Audio
     /// <summary>
     /// Helper method để set volume theo channel enum (dùng bởi UI components).
     /// </summary>
-    public void SetVolumeForChannel(AudioVolumeSlider.AudioChannel channel, float value)
+    public void SetVolumeForChannel(AudioChannel channel, float value)
     {
         switch (channel)
         {
-            case AudioVolumeSlider.AudioChannel.Master: SetMasterVolume(value); break;
-            case AudioVolumeSlider.AudioChannel.BGM:    SetBGMVolume(value);    break;
-            case AudioVolumeSlider.AudioChannel.ENV:    SetENVVolume(value);    break;
-            case AudioVolumeSlider.AudioChannel.SFX:    SetSFXVolume(value);    break;
-            case AudioVolumeSlider.AudioChannel.UI:     SetUIVolume(value);     break;
+            case AudioChannel.Master: SetMasterVolume(value); _masterVolume = value; break;
+            case AudioChannel.BGM:    SetBGMVolume(value);    _bgmVolume = value;    break;
+            case AudioChannel.ENV:    SetENVVolume(value);    _envVolume = value;    break;
+            case AudioChannel.SFX:    SetSFXVolume(value);    _sfxVolume = value;    break;
+            case AudioChannel.UI:     SetUIVolume(value);     _uiVolume = value;     break;
         }
+    }
+
+    /// <summary>
+    /// Cập nhật debug volume values trong Inspector.
+    /// </summary>
+    [ContextMenu("Refresh Debug Volumes")]
+    public void RefreshDebugVolumes()
+    {
+        _masterVolume = GetMasterVolume();
+        _bgmVolume    = GetBGMVolume();
+        _envVolume    = GetENVVolume();
+        _sfxVolume    = GetSFXVolume();
+        _uiVolume     = GetUIVolume();
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif
     }
 
     // ─────────────────────────────────────────────

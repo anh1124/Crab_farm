@@ -16,6 +16,7 @@ namespace Script.Audio
     private readonly AudioSource    _sourceA;
     private readonly AudioSource    _sourceB;
     private readonly MonoBehaviour  _coroutineRunner; // AudioManager chạy coroutine thay
+    private readonly System.Func<float> _getVolumeFunc; // Delegate để lấy BGM volume từ AudioManager
 
     private AudioSource _activeSource;   // Source đang phát hiện tại
     private Coroutine   _activeTransition;
@@ -23,11 +24,12 @@ namespace Script.Audio
     public AudioClip CurrentClip => _activeSource?.clip;
     public bool      IsPlaying   => _activeSource != null && _activeSource.isPlaying;
 
-    public MusicController(AudioSource sourceA, AudioSource sourceB, MonoBehaviour runner)
+    public MusicController(AudioSource sourceA, AudioSource sourceB, MonoBehaviour runner, System.Func<float> getVolumeFunc)
     {
         _sourceA         = sourceA;
         _sourceB         = sourceB;
         _coroutineRunner = runner;
+        _getVolumeFunc   = getVolumeFunc;
         _activeSource    = sourceA;
 
         // Khởi tạo cả hai về trạng thái sạch
@@ -103,13 +105,14 @@ namespace Script.Audio
 
         float elapsed = 0f;
         float startVolume = outgoing.volume;
+        float targetVolume = _getVolumeFunc != null ? _getVolumeFunc() : 1f; // Lấy BGM volume từ AudioManager
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
 
-            incoming.volume = Mathf.Lerp(0f, 1f, t);
+            incoming.volume = Mathf.Lerp(0f, targetVolume, t);
             outgoing.volume = Mathf.Lerp(startVolume, 0f, t);
 
             yield return null;
@@ -117,8 +120,8 @@ namespace Script.Audio
 
         outgoing.Stop();
         outgoing.clip   = null;
-        outgoing.volume = 1f; // Reset để lần sau dùng được ngay
-        incoming.volume = 1f;
+        outgoing.volume = targetVolume; // Reset về target volume
+        incoming.volume = targetVolume;
 
         _activeTransition = null;
     }

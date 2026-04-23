@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Script.Controller.PlayerController;
 using Script.Manager.GamePlayManager;
+using Script.Audio;
 
 namespace Script.Game.Other
 {
@@ -36,7 +37,9 @@ namespace Script.Game.Other
                 InstancePlayerAndSetCamera(); 
                 InitializePlayer(); 
 
-                
+                // ===== PHASE 7: BACKGROUND MUSIC =====
+                PlayBackgroundMusic();
+
                 // Nếu đây là thế giới mới (vừa được Generate), lưu lại sau 1 giây để đảm bảo vạn vật đã khởi tạo xong hoàn toàn
                 if (LoadFromSave.Instance != null && LoadFromSave.Instance.IsNewWorld)
                 {

@@ -24,11 +24,11 @@ graph TB
         BEH[Behavior Script<br/>CampfireBehavior]
     end
     
-    subgraph "Audio Sources"
-        BGM1[BGM Source A]
-        BGM2[BGM Source B]
-        ENV[ENV Source]
-        SFX[SFX Pool]
+    subgraph "Audio Sources (All Mono)"
+        BGM1[BGM Source A<br/>spatialBlend=0]
+        BGM2[BGM Source B<br/>spatialBlend=0]
+        ENV[ENV Source<br/>spatialBlend=0]
+        SFX[SFX Pool<br/>spatialBlend=0]
     end
     
     AM --> AP
@@ -66,8 +66,9 @@ graph LR
     AM[AudioManager] -->|Singleton| AM
     AM -->|Manages| AP[AudioPool]
     AM -->|References| SR[SoundRegistry]
-    AM -->|Controls| BGM[BGM Sources]
-    AM -->|Controls| ENV[ENV Source]
+    AM -->|Controls| BGM[BGM Sources<br/>Mono]
+    AM -->|Controls| ENV[ENV Source<br/>Mono]
+    AM -->|Debug Fields| DV[_masterVolume<br/>_bgmVolume<br/>_envVolume<br/>_sfxVolume<br/>_uiVolume]
     
     PAZ[PlayerAudioZone] -->|Polls| AER[AudioEmitterRegistry]
     PAZ -->|Sets Range| AE[AudioEmitter]
@@ -215,8 +216,8 @@ sequenceDiagram
     AP-->>AM: AudioSource
     AM-->>AE: AudioSource
     
-    AE->>AS: Configure (clip, volume, min/max, loop)
-    AE->>AS: Set Custom Rolloff Curve
+    AE->>AS: Configure (clip, volume, loop)
+    AE->>AS: Set Mono (spatialBlend=0)
     AE->>AS: Set Parent (AudioEmitter)
     AE->>AS: Play()
     
@@ -251,7 +252,7 @@ sequenceDiagram
     AP-->>AM: AudioSource
     AM-->>AE: AudioSource
     
-    AE->>AS: Configure (clip, volume, min/max, loop=false)
+    AE->>AS: Configure (clip, volume, loop=false)
     AE->>AS: Play()
     AE->>AE: StartCoroutine(ReturnAfterClip)
     
@@ -409,14 +410,16 @@ Assets/Script/Audio/
 │   └── AudioManager.cs
 │       ├── Singleton Pattern
 │       ├── AudioPool Management
-│       ├── BGM Crossfade
-│       ├── ENV Control
-│       ├── VolumeSettings
+│       ├── BGM Crossfade (with _bgmVolume field)
+│       ├── ENV Control (with _envVolume field)
+│       ├── VolumeSettings (PlayerPrefs)
+│       ├── Debug Volume Fields (_master, _bgm, _env, _sfx, _ui)
+│       ├── Force Mono Audio (spatialBlend=0)
 │       └── CullingDistance Auto-set
 │
 ├── Helper/
 │   ├── AudioPool.cs
-│   │   ├── Object Pooling
+│   │   ├── Object Pooling (Mono: spatialBlend=0)
 │   │   ├── Get/Return API
 │   │   └── Debug Count
 │   │
@@ -429,7 +432,7 @@ Assets/Script/Audio/
 │   │   ├── Register/Unregister
 │   │   ├── SetInRange
 │   │   ├── OnRangeChanged Event
-│   │   ├── PlaySound/StopSound
+│   │   ├── PlaySound/StopSound (Mono Mode)
 │   │   └── Loop Support
 │   │
 │   ├── PlayerAudioZone.cs
@@ -479,7 +482,12 @@ Assets/Script/Audio/
 - maxDistance: Per-sound attenuation
 - Auto-set cullingDistance từ SoundRegistry
 
-### 2D Side-Scroll Optimization
-- Distance calculation chỉ X và Y
-- Phù hợp game 2D platformer
-- Không cần full 3D distance
+### Mono Audio Architecture
+- Tất cả AudioSources: `spatialBlend = 0f` (2D)
+- Không có 3D positioning hay stereo panning
+- Volume controlled qua fields trong AudioManager
+
+### Debug Volume Fields
+- `_masterVolume`, `_bgmVolume`, `_envVolume`, `_sfxVolume`, `_uiVolume`
+- Hiển thị trong Inspector để debug
+- Được cập nhật khi `SetVolumeForChannel()` được gọi
