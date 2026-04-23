@@ -192,10 +192,23 @@ namespace Script.Game.Mobs.Subjects
                 }
             }
 
-            // Hard fallback: 45°, tốc độ cố định để tránh lực vô lý
-            cachedAngle = 45f;
-            cachedSpeed = projectileSpeed;
-            Debug.LogWarning($"[ArcherShooting] HARD FALLBACK 45° fixed speed={cachedSpeed:F1} (không tìm thấy quỹ đạo hợp lệ)");
+            // === TẦNG 4: Thử quét góc cao 70°-89° (không cần tính wall clear) ===
+            if (TryScanAngles(targetPosition, actualGravity,
+                              70f, 89f, 5f,
+                              preferLowest: false,
+                              out float angle4, out float speed4))
+            {
+                cachedAngle = angle4;
+                cachedSpeed = speed4;
+                if (showDebugInfo)
+                    Debug.Log($"[ArcherShooting] HIGH ARC FALLBACK {cachedAngle}° | speed={cachedSpeed:F1}");
+                return;
+            }
+
+            // Hard fallback: 70° với speed cố định (góc cao dễ vượt tường hơn)
+            cachedAngle = 70f;
+            cachedSpeed = Mathf.Min(projectileSpeed * 1.5f, 25f);
+            Debug.LogWarning($"[ArcherShooting] HARD FALLBACK 70° fixed speed={cachedSpeed:F1} (không tìm thấy quỹ đạo hợp lệ, target={targetPosition})");
         }
 
         // ─────────────────────────────────────────────────────────────────────

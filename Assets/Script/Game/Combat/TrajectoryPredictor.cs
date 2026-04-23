@@ -52,7 +52,7 @@ namespace Script.Game.Combat
 
         public static float CalculateLaunchSpeed(Vector2 start, Vector2 end, float angle, float gravity)
         {
-            float x = Vector2.Distance(new Vector2(start.x, 0), new Vector2(end.x, 0));
+            float x = Mathf.Abs(end.x - start.x);
             float y = end.y - start.y;
             float g = Mathf.Abs(gravity);
             float angleRad = angle * Mathf.Deg2Rad;
@@ -62,9 +62,24 @@ namespace Script.Game.Combat
 
             // Ballistic formula: v = (x / cos) * sqrt(g / 2(x*tan - y))
             float term = 2 * (x * tan - y);
-            if (term <= 0) return -1f; // Impossible to reach
+            
+            // Impossible to reach: góc quá thấp không thể đạt độ cao y
+            if (term <= 0.001f) return -1f;
+            
+            // Tránh speed quá lớn khi term rất nhỏ (target quá gần)
+            // Giới hạn term tối thiểu để speed không vượt quá 100
+            const float MIN_TERM = 0.02f;
+            if (term < MIN_TERM && x < 1f)
+            {
+                // Target quá gần, dùng công thức đơn giản: v = sqrt(g * x) với tolerance
+                term = MIN_TERM;
+            }
 
             float v = (x / cos) * Mathf.Sqrt(g / term);
+            
+            // Giới hạn speed tối đa để tránh giá trị vô lý
+            if (v > 100f) return -1f;
+            
             return v;
         }
 
