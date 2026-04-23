@@ -266,7 +266,10 @@ namespace Script.Game.Other
 
             if (timeManager == null) timeManager = FindObjectOfType<GameTimeManager>(true);
             waveManager.Setup(totalEnemyList, enemyPool, timeManager);
+            
+            Debug.Log($"[StartGameScrene] About to call portalManager.Setup(), portalManager={portalManager != null}, timeManager={timeManager != null}");
             portalManager.Setup(enemyPool, totalEnemyList, timeManager);
+            Debug.Log("[StartGameScrene] portalManager.Setup() completed!");
 
             totalEnemyList.InitializeEnemyData();
             enemyPool.InitializePools();

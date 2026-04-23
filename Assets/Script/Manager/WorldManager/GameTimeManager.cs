@@ -191,16 +191,26 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
             return;
         }
 
-        // Kích hoạt từng giờ bị bỏ qua theo thứ tự
+        // Kích hoạt từng giờ bị bỏ qua (từ hourBefore+1 đến GameHour)
+        // Ví dụ: từ 5:50 -> 6:10 (hoursAdvanced=0), không vào loop → CheckForHourlyEvent xử lý giờ 6
+        // Ví dụ: từ 5:50 -> 7:10 (hoursAdvanced=1), gọi event giờ 6, CheckForHourlyEvent xử lý giờ 7
         for (int i = 1; i <= hoursAdvanced; i++)
         {
             int skippedHour = (hourBefore + i) % 24;
             if (_hourlyEvents.TryGetValue(skippedHour, out Action action))
             {
+                Debug.Log($"[GameTimeManager] Gọi hourly event cho giờ {skippedHour}:00");
                 action?.Invoke();
+            }
+            else
+            {
+                Debug.Log($"[GameTimeManager] Không có event đăng ký cho giờ {skippedHour}:00");
             }
         }
 
+        // Xử lý giờ hiện tại (GameHour) sau khi đã fire các giờ bị skip
+        CheckForHourlyEvent();
+        
         _lastProcessedHour = GameHour;
     }
     public int GetElapsedDays()

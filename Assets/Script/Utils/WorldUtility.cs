@@ -457,34 +457,38 @@ namespace Script.Utils
         }
 
         /// <summary>
-        /// Lấy thông tin portal (isActive, remainingDays)
+        /// Lấy thông tin portal tuyến đầu (isActive, remainingDays)
+        /// Storm Invasion: Chỉ trả về thông tin portal tuyến đầu (index 0)
         /// </summary>
         public static (bool isActive, int remainingDays) GetPortalInfo(bool isRight)
         {
             var portalManager = Script.Manager.GamePlayManager.EnemyPortalManager.Instance;
             if (portalManager == null) return (false, 0);
             
-            var portal = isRight ? portalManager.portalR : portalManager.portalL;
-            if (portal == null) return (false, 0);
+            // Lấy danh sách tuyến đầu (chỉ chứa portal đã active)
+            var activeFrontline = portalManager.GetFrontlineActivePortals();
             
-            var portalStatus = portal.GetComponent<Script.Entities.Structures.SummondPortal.EnemyPortalStatus>();
-            if (portalStatus == null) return (false, 0);
+            // Tìm portal theo bên trong danh sách active
+            GameObject townCenter = GetTownCenter();
+            float centerX = townCenter != null ? townCenter.transform.position.x : 0f;
             
-            if (portalStatus.isReadyToSpawn) return (true, 0);
+            foreach (var portal in activeFrontline)
+            {
+                if (portal == null) continue;
+                float portalX = portal.transform.position.x;
+                bool portalIsRight = portalX > centerX;
+                if (portalIsRight == isRight)
+                {
+                    return (true, 0); // Đã active
+                }
+            }
             
-            // Tính ngày còn lại để active
-            var timeProvider = Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
-            if (timeProvider == null) return (false, 0);
-            
-            int currentDay = timeProvider.GetElapsedDays();
-            int activationDay = portalStatus.spawnDay + portalStatus.activeDelay;
-            int remainingDays = Mathf.Max(0, activationDay - currentDay);
-            
-            return (false, remainingDays);
+            // Portal chưa active, không thể biết remainingDays chính xác từ bên ngoài
+            // vì delay được quản lý trong status.activeDelay của portal
+            return (false, 0);
         }
 
         #endregion
     }
 }
-
 

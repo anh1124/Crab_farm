@@ -33,7 +33,14 @@ namespace Script.Entities.Structures.SummondPortal
         [Header("Spawn Settings")]
         [Tooltip("Thời gian giãn cách giữa mỗi lần sinh quái")]
         public float spawnInterval = 2f;
+
+        [Header("Storm Invasion - Frontline")]
+        [Tooltip("Có phải portal tuyến đầu không (do Manager set, index 0 sau sort)")]
+        [SerializeField] private bool isFrontline = false;
         
+        // [DEPRECATED] Logic mới dùng status.activeDelay thay cho các field này
+        // [SerializeField] private int frontlineStartDay = -1;
+
         // Dữ liệu mảng quái vật nhận từ Manager khi đêm xuống
         private List<EnemyWaveData> enemyWaveData;
         private IEnemyPool _enemyPool;
@@ -65,20 +72,8 @@ namespace Script.Entities.Structures.SummondPortal
             // tất cả Awake() đã chạy xong (kể cả EnemyPortalManager.Awake() set Instance).
             if (EnemyPortalManager.Instance != null)
             {
-                GameObject townCenter = Utility.GetTownCenter();
-                float centerPosX = townCenter != null ? townCenter.transform.position.x : 0f;
-
-                bool isRight = transform.position.x > centerPosX;
-                if (isRight)
-                {
-                    EnemyPortalManager.Instance.portalR = gameObject;
-                    Debug.Log($"[EnemyPortalBehavior] Start: Tự đăng ký vào portalR tại {transform.position}");
-                }
-                else
-                {
-                    EnemyPortalManager.Instance.portalL = gameObject;
-                    Debug.Log($"[EnemyPortalBehavior] Start: Tự đăng ký vào portalL tại {transform.position}");
-                }
+                // Storm Invasion: Đăng ký vào danh sách quản lý mới
+                EnemyPortalManager.Instance.RegisterPortal(this);
 
                 // Nhớ lại nhận pool và dependencies từ Manager nếu chưa có (load từ Save)
                 if (_enemyPool == null)
@@ -121,27 +116,64 @@ namespace Script.Entities.Structures.SummondPortal
 
             // Ghi lại ngày sinh ra cổng
             status.spawnDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
-            Debug.Log($"[EnemyPortal] Cổng vừa xuất hiện tại {transform.position}! Sẽ kích hoạt vào ngày {(status.spawnDay + status.activeDelay)}.");
+            Debug.Log($"[EnemyPortal] Cổng vừa xuất hiện tại {transform.position}! SpawnDay={status.spawnDay}. " +
+                      $"Delay trong Status.activeDelay: {status.activeDelay} ngày (quản lý bởi Manager khi thành tuyến đầu).");
 
-            // Đăng ký sự kiện kiểm tra mỗi giờ để xem cổng đã sẵn sàng chưa (check buổi sáng)
-            if (_timeProvider != null)
-            {
-                _timeProvider.SubscribeToHourlyEvent(6, CheckActivation);
-            }
+            // Storm Invasion: Manager sẽ xử lý delay cho portal tuyến đầu (index 0)
+            // Không cần đăng ký CheckActivation cá nhân nữa
+            Debug.Log($"[EnemyPortalBehavior] Portal tại {transform.position} được spawn. Manager sẽ xử lý delay cho tuyến đầu.");
 
             // Play dormant loop sound (demand system sẽ handle range)
             _audioEmitter?.PlaySound("Portal_Normal", new Script.Audio.PlaySoundConfig(loop: true));
         }
 
+        /// <summary>
+        /// [DEPRECATED - Storm Invasion] Logic này giờ trong TickDelay().
+        /// Phương thức này giữ lại để tương thích nếu cần.
+        /// </summary>
         private void CheckActivation()
         {
-            if (status.isReadyToSpawn) return;
+            // Storm Invasion: Không còn dùng - delay được quản lý trong status.activeDelay
+            // Manager gọi TickDelay() để trừ delay
+        }
 
-            int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
-            // Đã sống đủ ngưỡng delay
-            if (currentDay >= status.spawnDay + status.activeDelay)
+        /// <summary>
+        /// Được gọi từ EnemyPortalManager để đặt trạng thái tuyến đầu.
+        /// Manager sẽ xử lý delay, chỉ cần set flag ở đây.
+        /// </summary>
+        public void SetFrontline(bool isFront)
+        {
+            isFrontline = isFront;
+            Debug.Log($"[EnemyPortalBehavior] SetFrontline: portal tại {transform.position} isFrontline={isFrontline}");
+        }
+
+        /// <summary>
+        /// Kiểm tra có phải tuyến đầu không.
+        /// </summary>
+        public bool IsFrontline() => isFrontline;
+
+        /// <summary>
+        /// Lấy status để kiểm tra activeDelay (cho Manager log debug).
+        /// </summary>
+        public EnemyPortalStatus GetStatus()
+        {
+            if (status == null) status = GetComponent<EnemyPortalStatus>();
+            return status;
+        }
+
+        /// <summary>
+        /// Reset status.activeDelay về giá trị mặc định.
+        /// Được gọi từ Manager khi portal vừa lên index 0 (tuyến đầu).
+        /// </summary>
+        public void ResetToDefaultDelay()
+        {
+            // Lấy giá trị mặc định từ prefab (activeDelay ban đầu)
+            // Giả sử activeDelay ban đầu là giá trị mong muốn
+            if (status != null)
             {
-                ForceActivate();
+                // Reset về 1 (giá trị mặc định cho portal tuyến đầu)
+                status.activeDelay = 1;
+                Debug.Log($"[EnemyPortalBehavior] Portal tại {transform.position} reset delay về {status.activeDelay} ngày.");
             }
         }
 
@@ -168,10 +200,119 @@ namespace Script.Entities.Structures.SummondPortal
             CameraShake.Instance?.RequestShake(transform.position, activationShakeCount, activationInterval, activationTiltAngle);
 
             // Hủy đăng ký vì ngày nào sau đó cũng là Active rồi
-            if (_timeProvider != null)
+            // Note: Storm Invasion - Manager xử lý tập trung, không cần unsubscribe ở đây
+        }
+
+        /// <summary>
+        /// Được gọi từ Manager để trừ delay.
+        /// Chỉ portal tuyến đầu (index 0) mới được gọi.
+        /// Portal tự quyết định active hay không dựa trên status.activeDelay.
+        /// </summary>
+        public void TickDelay()
+        {
+            Debug.Log($"[EnemyPortalBehavior] TickDelay được gọi cho portal tại {transform.position}. isFrontline={isFrontline}, isReadyToSpawn={status?.isReadyToSpawn}, activeDelay={status?.activeDelay}");
+            
+            // Chỉ xử lý nếu là tuyến đầu và chưa active
+            if (!isFrontline) 
             {
-                _timeProvider.UnsubscribeFromHourlyEvent(6, CheckActivation);
+                Debug.Log($"[EnemyPortalBehavior] Portal không phải tuyến đầu, bỏ qua TickDelay");
+                return;
             }
+            if (status == null)
+            {
+                Debug.LogError($"[EnemyPortalBehavior] status NULL! Không thể TickDelay");
+                return;
+            }
+            if (status.isReadyToSpawn) 
+            {
+                Debug.Log($"[EnemyPortalBehavior] Portal đã ready, bỏ qua TickDelay");
+                return;
+            }
+
+            // Trừ delay trong status
+            status.activeDelay--;
+            
+            Debug.Log($"[EnemyPortalBehavior] Portal tại {transform.position} trừ delay: còn {status.activeDelay} ngày.");
+
+            // Nếu đủ delay thì active
+            if (status.activeDelay <= 0)
+            {
+                status.activeDelay = 0;
+                ForceActivate();
+            }
+        }
+
+        private Coroutine _moveCoroutine;
+        // Lưu trạng thái di chuyển để có thể save/load
+        private Vector3 _moveStartPos;
+        private Vector3 _moveTargetPos;
+        private float _moveElapsedTime;
+        private float _moveTotalDuration;
+        private bool _isMoving = false;
+
+        /// <summary>
+        /// Được gọi từ Manager để yêu cầu di chuyển.
+        /// Portal tự quyết định có di chuyển hay không (nếu chưa active thì không di chuyển).
+        /// Di chuyển mượt theo tốc độ cố định trong khoảng thời gian moveDuration.
+        /// </summary>
+        public void TryMoveTowards(float targetX, float moveSpeed, float moveDuration)
+        {
+            // Chỉ di chuyển nếu đã active
+            if (!status.isReadyToSpawn)
+            {
+                Debug.Log($"[EnemyPortalBehavior] Portal tại {transform.position} chưa active, không di chuyển.");
+                return;
+            }
+
+            // Hủy coroutine cũ nếu đang chạy
+            if (_moveCoroutine != null)
+            {
+                StopCoroutine(_moveCoroutine);
+            }
+
+            Vector3 pos = transform.position;
+            bool isRight = pos.x > targetX;
+            float direction = isRight ? -1f : 1f; // Right portal đi trái (giảm x), left đi phải (tăng x)
+            float newX = pos.x + direction * moveSpeed * moveDuration;
+
+            // Giới hạn không cho vượt qua TownCenter
+            if (!isRight && newX > targetX) newX = targetX; // Left portal không vượt
+            if (isRight && newX < targetX) newX = targetX;  // Right portal không vượt
+
+            // Giới hạn khoảng cách tối thiểu (không cho vào quá gần)
+            float minDistance = 15f;
+            if (Mathf.Abs(newX - targetX) < minDistance)
+            {
+                newX = isRight ? targetX + minDistance : targetX - minDistance;
+            }
+
+            // Lưu trạng thái để có thể save/load
+            _moveStartPos = transform.position;
+            _moveTargetPos = new Vector3(newX, pos.y, pos.z);
+            _moveTotalDuration = moveDuration;
+            _moveElapsedTime = 0f;
+            _isMoving = true;
+
+            _moveCoroutine = StartCoroutine(MoveSmoothly());
+            Debug.Log($"[EnemyPortalBehavior] Portal bắt đầu di chuyển từ x={pos.x:F1} đến x={newX:F1} trong {moveDuration}s");
+        }
+
+        private IEnumerator MoveSmoothly()
+        {
+            while (_moveElapsedTime < _moveTotalDuration)
+            {
+                _moveElapsedTime += Time.deltaTime;
+                float t = _moveElapsedTime / _moveTotalDuration;
+                // Smooth step interpolation
+                t = t * t * (3f - 2f * t);
+                transform.position = Vector3.Lerp(_moveStartPos, _moveTargetPos, t);
+                yield return null;
+            }
+
+            transform.position = _moveTargetPos;
+            _isMoving = false;
+            _moveCoroutine = null;
+            Debug.Log($"[EnemyPortalBehavior] Portal đã di chuyển xong đến x={_moveTargetPos.x:F1}");
         }
 
         // --- IDamageable Implementation ---
@@ -203,6 +344,14 @@ namespace Script.Entities.Structures.SummondPortal
             public float currentHp;
             public float x, y, z;
             public List<PendingWaveData> pendingWaves;
+            // Storm Invasion: chỉ lưu isFrontline, delay được quản lý bởi status.activeDelay
+            public bool isFrontline;
+            // Movement state for save/load
+            public bool isMoving;
+            public float moveStartX, moveStartY, moveStartZ;
+            public float moveTargetX, moveTargetY, moveTargetZ;
+            public float moveElapsedTime;
+            public float moveTotalDuration;
         }
 
         public string GetPrefabID()
@@ -236,7 +385,18 @@ namespace Script.Entities.Structures.SummondPortal
                 x = transform.position.x,
                 y = transform.position.y,
                 z = transform.position.z,
-                pendingWaves = pending
+                pendingWaves = pending,
+                isFrontline = this.isFrontline,
+                // Lưu trạng thái di chuyển
+                isMoving = _isMoving,
+                moveStartX = _moveStartPos.x,
+                moveStartY = _moveStartPos.y,
+                moveStartZ = _moveStartPos.z,
+                moveTargetX = _moveTargetPos.x,
+                moveTargetY = _moveTargetPos.y,
+                moveTargetZ = _moveTargetPos.z,
+                moveElapsedTime = _moveElapsedTime,
+                moveTotalDuration = _moveTotalDuration
             };
         }
 
@@ -248,6 +408,9 @@ namespace Script.Entities.Structures.SummondPortal
                 status.isReadyToSpawn = saveData.isReadyToSpawn;
                 status.CurrentHp = saveData.currentHp;
                 transform.position = new Vector3(saveData.x, saveData.y, saveData.z);
+
+                // Restore Storm Invasion data
+                this.isFrontline = saveData.isFrontline;
 
                 // --- LOGIC PHỤC HỒI BEHAVIOR ---
                 // Sau khi load xong data, nếu portal đã ready -> kích hoạt visual ngay lập tức
@@ -293,7 +456,40 @@ namespace Script.Entities.Structures.SummondPortal
                         }
                     }
                 }
+
+                // --- LOGIC PHỤC HỒI DI CHUYỂN ---
+                if (saveData.isMoving && saveData.moveTotalDuration > 0)
+                {
+                    _moveStartPos = new Vector3(saveData.moveStartX, saveData.moveStartY, saveData.moveStartZ);
+                    _moveTargetPos = new Vector3(saveData.moveTargetX, saveData.moveTargetY, saveData.moveTargetZ);
+                    _moveElapsedTime = saveData.moveElapsedTime;
+                    _moveTotalDuration = saveData.moveTotalDuration;
+                    _isMoving = true;
+                    
+                    // Tiếp tục di chuyển từ thời điểm đã lưu
+                    _moveCoroutine = StartCoroutine(ResumeMovement());
+                    Debug.Log($"[EnemyPortalBehavior] Phục hồi và tiếp tục di chuyển từ x={transform.position.x:F1} đến x={_moveTargetPos.x:F1} (đã trôi qua {_moveElapsedTime:F1}/{_moveTotalDuration:F1}s)");
+                }
             }
+        }
+
+        private IEnumerator ResumeMovement()
+        {
+            // Tiếp tục di chuyển từ thời điểm đã lưu
+            while (_moveElapsedTime < _moveTotalDuration)
+            {
+                _moveElapsedTime += Time.deltaTime;
+                float t = _moveElapsedTime / _moveTotalDuration;
+                // Smooth step interpolation
+                t = t * t * (3f - 2f * t);
+                transform.position = Vector3.Lerp(_moveStartPos, _moveTargetPos, t);
+                yield return null;
+            }
+
+            transform.position = _moveTargetPos;
+            _isMoving = false;
+            _moveCoroutine = null;
+            Debug.Log($"[EnemyPortalBehavior] Portal đã di chuyển xong đến x={_moveTargetPos.x:F1}");
         }
 
         #endregion
@@ -309,11 +505,7 @@ namespace Script.Entities.Structures.SummondPortal
                 EnemyPortalManager.Instance.OnPortalDestroyed(this);
             }
 
-            // Dọn dẹp event nếu nó chết lúc đang chờ
-            if (!status.isReadyToSpawn && _timeProvider != null)
-            {
-                _timeProvider.UnsubscribeFromHourlyEvent(6, CheckActivation);
-            }
+            // Storm Invasion: Không cần unsubscribe CheckActivation nữa vì Manager xử lý tập trung
 
             // Chỉ log khi đây là phá hủy thật trong game,
             // không log khi hệ thống save đang dọn container để load lại (RemoveAllChildObjects).

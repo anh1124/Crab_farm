@@ -102,14 +102,14 @@ namespace Script.GUI_Controller
                 if (cancelButton != null)
                 {
                     var btnText = cancelButton.GetComponentInChildren<TextMeshProUGUI>();
-                    if (btnText != null) btnText.text = "Load save lần cuối";
+                    if (btnText != null) btnText.text = "Load last save  ";
                 }
 
                 // Ghi đè chữ trên nút Confirm thành Về Menu chính
                 if (confirmButton != null)
                 {
                     var btnText = confirmButton.GetComponentInChildren<TextMeshProUGUI>();
-                    if (btnText != null) btnText.text = "Về Menu chính";
+                    if (btnText != null) btnText.text = "Main menu";
                 }
             }
         }
