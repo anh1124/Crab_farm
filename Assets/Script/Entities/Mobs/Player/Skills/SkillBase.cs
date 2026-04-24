@@ -34,6 +34,10 @@ namespace Script.Game.PlayerCharacter.Skills
         /// <summary>Damage gây ra từ skill config (float để đồng bộ với HP)</summary>
         public float damage;
         
+        /// <summary>Nếu true, cooldown không bị ảnh hưởng bởi time scale (luôn chạy theo thời gian thực)</summary>
+        [Tooltip("Cooldown không bị ảnh hưởng bởi time scale nếu bật")]
+        public bool ignoreTimeScale = false;
+        
         // ── Runtime: được set bởi PlayerSkillManager ngay trước OnHit() ──
         private float _bonusDamage = 0f;
 

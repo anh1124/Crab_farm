@@ -5,11 +5,12 @@ using Script.Data_Model.Interfaces;
 
 namespace Script.Entities.Structures.SummondPortal
 {
+    /// <summary>
+    /// Data container cho EnemyPortal - chỉ lưu trữ và hiển thị data.
+    /// Tất cả thông số ban đầu được quyết định bởi EnemyPortalManager (Factory pattern).
+    /// </summary>
     public class EnemyPortalStatus : MonoBehaviour, IHealth, IHealthReactive
     {
-        // Hằng số HP ban đầu cho portal
-        public const float BASE_MAX_HP = 100f;
-
         [Header("Portal States")]
         public bool isReadyToSpawn = false;
 
@@ -20,16 +21,13 @@ namespace Script.Entities.Structures.SummondPortal
         public int spawnDay;
 
         [Header("Health")]
+        [Tooltip("[DATA] Max HP - được set bởi EnemyPortalManager khi spawn")]
         [SerializeField] private float maxHp = 100f;
+        [Tooltip("[DATA] Current HP - được set bởi EnemyPortalManager khi spawn")]
         [SerializeField] private float currentHp;
 
-        private void Awake()
-        {
-            if (currentHp <= 0f)
-            {
-                currentHp = maxHp;
-            }
-        }
+        // Awake KHÔNG tự set HP nữa - để Manager (Factory) quyết định
+        // private void Awake() { }
 
         public float CurrentHp 
         { 
@@ -41,6 +39,16 @@ namespace Script.Entities.Structures.SummondPortal
         { 
             get => maxHp; 
             set => maxHp = Mathf.Max(1f, value); 
+        }
+
+        /// <summary>
+        /// [BUILD INTERFACE] Reset HP về max khi portal được spawn mới.
+        /// Được gọi bởi EnemyPortalManager sau khi Instantiate.
+        /// </summary>
+        public void ResetHealthToFull()
+        {
+            currentHp = maxHp;
+            Debug.Log($"[EnemyPortalStatus] {gameObject.name} HP reset to full: {currentHp}/{maxHp}");
         }
 
         // Events for Behavior to subscribe to

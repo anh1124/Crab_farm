@@ -8,6 +8,7 @@ using Script.Save_Controller;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Script.Manager.WorldManager;
+using Script.Game.Mobs.MobsManager;
 
 [DefaultExecutionOrder(-70)]
 public class LoadFromSave : MonoBehaviour
@@ -437,15 +438,105 @@ public class LoadFromSave : MonoBehaviour
 
         try
         {
+            // Set flag để tránh archer đăng ký liên tục gây phân công sai
+            EntitySaveManager.IsLoadingFromSave = true;
+            
             // Load all entities via EntitySaveManager
             EntitySaveManager.Instance.LoadAllContainer();
+            
+            // Clear flag sau khi load xong entities
+            EntitySaveManager.IsLoadingFromSave = false;
+            
+            // Khôi phục state machine cho tất cả Archer và Villager
+            // (OnEnable không chạy lại khi load nên cần reset thủ công)
+            ResetDenizenStatesAfterLoad();
+            
+            // Xếp lại archers vào đúng flank sau khi load xong tất cả
+            RearrangeArchersAfterLoad();
+            
             Debug.Log("[LoadFromSave] Entity loading completed successfully");
         }
         catch (System.Exception ex)
         {
+            EntitySaveManager.IsLoadingFromSave = false; // Đảm bảo clear flag khi lỗi
             Debug.LogError($"[LoadFromSave] Exception during entity loading: {ex.Message}");
         }
     }
 
+    #endregion
+
+    #region State Recovery After Load
+    /// <summary>
+    /// Khôi phục state machine cho tất cả Archer và Villager sau khi load.
+    /// OnEnable không chạy lại khi load từ save nên cần reset thủ công.
+    /// </summary>
+    private void ResetDenizenStatesAfterLoad()
+    {
+        // Reset state cho tất cả Archer
+        var archers = FindObjectsOfType<Script.Game.Mobs.Denizen.Jobs.Archer.ArcherJob>(true);
+        int archerCount = 0;
+        foreach (var archer in archers)
+        {
+            try
+            {
+                archer.ResetStateAfterLoad();
+                archerCount++;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LoadFromSave] Lỗi khi reset Archer state: {ex.Message}");
+            }
+        }
+        
+        // Reset state cho tất cả Villager
+        var villagers = FindObjectsOfType<Script.Game.Mobs.Denizen.Jobs.Villager.VillagerJob>(true);
+        int villagerCount = 0;
+        foreach (var villager in villagers)
+        {
+            try
+            {
+                villager.ResetStateAfterLoad();
+                villagerCount++;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[LoadFromSave] Lỗi khi reset Villager state: {ex.Message}");
+            }
+        }
+        
+        Debug.Log($"[LoadFromSave] Đã reset state cho {archerCount} Archer và {villagerCount} Villager");
+    }
+
+    /// <summary>
+    /// Xếp lại tất cả archers vào đúng flank sau khi load xong.
+    /// Tránh tình trạng archer bị phân công sai do đăng ký lần lượt trong quá trình load.
+    /// </summary>
+    private void RearrangeArchersAfterLoad()
+    {
+        var guardManager = FindObjectOfType<GuardManager>();
+        if (guardManager == null)
+        {
+            Debug.LogWarning("[LoadFromSave] Không tìm thấy GuardManager để rearrange archers");
+            return;
+        }
+
+        // Lấy tất cả archers hiện có trong scene
+        var archers = FindObjectsOfType<Script.Game.Mobs.Denizen.Jobs.Archer.ArcherJob>(true);
+        
+        // Đăng ký tất cả archers với GuardManager (bây giờ IsLoadingFromSave đã = false)
+        foreach (var archer in archers)
+        {
+            if (archer != null && archer.gameObject != null)
+            {
+                // Chỉ đăng ký nếu chưa được đăng ký
+                guardManager.RegisterArcher(archer.gameObject);
+            }
+        }
+
+        // Rebalance để đảm bảo phân bố đều 2 bên
+        guardManager.RebalanceSquads();
+        
+        Debug.Log($"[LoadFromSave] Đã rearrange {archers.Length} archers sau khi load");
+    }
     #endregion
 }

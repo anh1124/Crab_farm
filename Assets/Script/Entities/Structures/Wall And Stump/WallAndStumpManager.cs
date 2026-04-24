@@ -40,7 +40,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         [Header("Hồi máu theo giờ game")]
         [Tooltip("Mỗi lần đồng hồ game tới 12:00, mỗi tường (Wall) còn HP > 0 hồi thêm tỷ lệ maxHp này.")]
         [Range(0f, 1f)]
-        [SerializeField] private float noonWallHealFraction = 0.34f;
+        [SerializeField] private float noonWallHealFraction = 0.20f;
         #endregion
 
         private GameTimeManager _gameTimeManager;

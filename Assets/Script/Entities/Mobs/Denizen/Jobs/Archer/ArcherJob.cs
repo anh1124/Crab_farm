@@ -10,6 +10,7 @@ using Script.Manager.GamePlayManager;
 using Script.Data_Model;
 using Script.Game.Mobs.Subjects;
 using Script.Game.Item.Coin;
+using Script.Game.Other;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Archer
 {
@@ -84,6 +85,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             InitializeBrain();
             if (Context == null) return;
 
+            // [WATCHDOG] Tự động recovery nếu detector bị tắt bất thường
+            if (Context.CircleDetect != null && !Context.CircleDetect.IsActive)
+            {
+                if (Context.Status != null && Context.Status.debugDenizen)
+                    Debug.LogWarning($"[ArcherJob] Detector bị tắt, đang tự động bật lại...");
+                _sensor.Enable();
+            }
+
             // [DETECTOR] — Gọi scanner thủ công, giống Enemy
             if (Context.CircleDetect != null && Context.CircleDetect.IsActive)
                 Context.CircleDetect.ScanCircle();
@@ -157,8 +166,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         {
             if (Context != null)
             {
+                // Đảm bảo detector references tồn tại trước khi sử dụng
+                if (Context.CircleDetect == null)
+                    Context.CircleDetect = GetComponentInChildren<CircleDetectHelper>(true);
+                
                 Context.ResetDetectors(); // Swab previous job's detectors
                 _sensor.Enable();
+                
+                // Force scan ngay lập tức để detect enemy/coin ngay
+                if (Context.CircleDetect != null && Context.CircleDetect.IsActive)
+                    Context.CircleDetect.ScanCircle();
                 
                 if (Context.Status != null)
                 {
@@ -172,7 +189,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             var dm = FindObjectOfType<DenizenManager>();
             if (dm != null) dm.RegisterDenizen(gameObject);
 
-            var gtm = FindObjectOfType<GameTimeManager>();
+            // Sử dụng cached TimeManager từ Context thay vì FindObjectOfType
+            var gtm = Context.TimeManager;
             if (gtm != null)
             {
                 _schedule.AddSchedule(7, () => {
@@ -198,10 +216,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 _sensor.Disable();
                 
                 if (Context.Status != null)
+                {
                     Context.Status.OnCoinChanged -= OnCoinChangedHandler;
+                    // Clear targets để tránh stale data khi chuyển job
+                    Context.Status.currentTarget = null;
+                    Context.Status.coinTarget = null;
+                }
             }
 
-            var gtm = FindObjectOfType<GameTimeManager>();
+            // Sử dụng cached TimeManager từ Context thay vì FindObjectOfType
+            var gtm = Context.TimeManager;
             if (gtm != null)
             {
                 _schedule.Disable();
@@ -212,6 +236,51 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
             if (Context?.Status != null)
                 Context.Status.isMoving = false;
+        }
+        #endregion
+
+        #region Save/Load State Recovery
+        /// <summary>
+        /// Được gọi sau khi load từ save để khôi phục state machine.
+        /// OnEnable không chạy lại khi load nên cần hàm này để tạo lại state.
+        /// </summary>
+        public void ResetStateAfterLoad()
+        {
+            InitializeBrain();
+            if (Context?.Status == null) return;
+            
+            // Đảm bảo detector references tồn tại
+            if (Context.CircleDetect == null)
+                Context.CircleDetect = GetComponentInChildren<CircleDetectHelper>(true);
+            
+            // Bật lại detectors
+            if (Context.CircleDetect != null)
+            {
+                Context.CircleDetect.IsActive = true;
+                Context.CircleDetect.ScanCircle();
+            }
+            
+            // Khôi phục state từ enum đã lưu
+            var savedState = Context.Status.archerState;
+            DenizenState newState = savedState switch
+            {
+                Script.Data_Model.Status.DenizenStatus.ArcherState.Hunting => HuntingState,
+                Script.Data_Model.Status.DenizenStatus.ArcherState.Attack => AttackState,
+                Script.Data_Model.Status.DenizenStatus.ArcherState.HoldWall => HoldWallState,
+                Script.Data_Model.Status.DenizenStatus.ArcherState.Retreat => RetreatState,
+                Script.Data_Model.Status.DenizenStatus.ArcherState.ReturningToBase => ReturnToBaseState,
+                Script.Data_Model.Status.DenizenStatus.ArcherState.DropCoin => DropCoinState,
+                _ => IdleState
+            };
+            
+            // Chỉ đổi state nếu hiện tại khác hoặc null
+            if (CurrentState == null || CurrentState != newState)
+            {
+                ChangeState(newState);
+            }
+            
+            if (Context.Status.debugDenizen)
+                Debug.Log($"[ArcherJob] ResetStateAfterLoad: {newState.GetType().Name} (saved enum: {savedState})");
         }
         #endregion
 
@@ -280,6 +349,30 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             sb.AppendLine($"- Trạng thái hiện tại: {CurrentState?.GetType().Name}");
             sb.AppendLine($"- Tọa độ X: {transform.position.x:F2}");
             sb.AppendLine($"- Mục tiêu đang nhắm: {(Context.Status.currentTarget != null ? Context.Status.currentTarget.name : "NULL")}");
+            
+            // 0. Phân tích ArrowPool
+            sb.AppendLine("\n[Arrow Pool Status]:");
+            if (Context.ArcherShooting != null)
+            {
+                var pool = FindObjectOfType<Script.Game.Combat.ArrowPool>();
+                if (pool != null)
+                {
+                    sb.AppendLine($"- ArcherShooting: Đã thiết lập");
+                    sb.AppendLine($"- ArrowPool: Tìm thấy");
+                    if (pool.IsPoolNearExhausted())
+                        sb.AppendLine($"- <color=red>CẢNH BÁO: Pool gần hết arrows!</color> Active: {pool.GetActiveArrowCount()}");
+                    else
+                        sb.AppendLine($"- Pool còn arrows: {pool.GetActiveArrowCount()} đang sử dụng");
+                }
+                else
+                {
+                    sb.AppendLine("- <color=red>ArrowPool: KHÔNG TÌM THẤY!</color>");
+                }
+            }
+            else
+            {
+                sb.AppendLine("- <color=red>ArcherShooting: NULL! Kiểm tra Setup()</color>");
+            }
 
             // 1. Phân tích danh sách Detector
             if (Context.CircleDetect != null)

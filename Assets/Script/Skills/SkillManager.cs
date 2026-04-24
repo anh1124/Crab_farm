@@ -37,6 +37,7 @@ namespace Script.Game.PlayerCharacter.Skills
 
         protected Transform _skillContainer;
         protected Script.Audio.AudioEmitter _emitter;
+        private Script.Manager.WorldManager.GameTimeManager _timeManager;
 
         // ── Public API ────────────────────────────────────────────────────
 
@@ -165,18 +166,47 @@ namespace Script.Game.PlayerCharacter.Skills
 
         protected virtual void Update()
         {
+            // Tính delta time: scaled (theo game time) và unscaled (thời gian thực)
+            float gameTimeScale = GetGameTimeScale();
+            float scaledDeltaTime = Time.deltaTime * gameTimeScale;
+            float unscaledDeltaTime = Time.deltaTime; // Luôn là thời gian thực
+            
             for (int i = 0; i < skillSlots.Length; i++)
             {
                 var slot = skillSlots[i];
                 if (slot == null || slot.state != SkillState.Cooling) continue;
 
-                slot.cooldownTimer -= Time.deltaTime;
+                // Kiểm tra skill có ignore time scale không
+                bool useRealTime = slot.skill != null && slot.skill.ignoreTimeScale;
+                float delta = useRealTime ? unscaledDeltaTime : scaledDeltaTime;
+
+                slot.cooldownTimer -= delta;
                 if (slot.cooldownTimer <= 0f)
                 {
                     slot.cooldownTimer = 0f;
                     slot.state = SkillState.Ready;
                 }
             }
+        }
+
+        /// <summary>
+        /// Lấy time scale từ cached GameTimeManager hoặc fallback về Time.timeScale
+        /// Nếu cache null, thử tìm lại (phòng khi GameTimeManager tạo sau Awake)
+        /// </summary>
+        private float GetGameTimeScale()
+        {
+            if (_timeManager == null)
+            {
+                _timeManager = FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+            }
+            
+            if (_timeManager != null)
+            {
+                return _timeManager.GameTimeScale;
+            }
+            // Fallback nếu không có GameTimeManager
+            Debug.LogError("[SkillManager] GameTimeManager not found! Using Time.timeScale as fallback.");
+            return Time.timeScale;
         }
 
         // ── Virtual Hooks (override trong subclass) ───────────────────────
@@ -209,6 +239,8 @@ namespace Script.Game.PlayerCharacter.Skills
                 Debug.LogWarning($"[SkillManager] Không tìm thấy AudioEmitter trên '{this.gameObject.name}'. Vui lòng đính kèm component này.");
             }
 
+            // Cache GameTimeManager để tính cooldown theo time scale
+            GetGameTimeScale();
             if (skillSlots == null || skillSlots.Length == 0)
             {
                 skillSlots = new SkillSlot[0];

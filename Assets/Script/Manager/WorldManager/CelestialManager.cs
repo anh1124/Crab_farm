@@ -140,10 +140,10 @@ namespace Script.Manager.WorldManager
             
             float progressPerSecond = 1f / secondsPerDay;
             
-            // Lưu ý: Để hoàn hảo nhất khi dùng speed-up cheat, 
-            // chúng ta có thể Scale tốc độ này theo gameTimeScale,
-            // nhưng hiện tại chỉ cần stop khi đóng băng là đã hết Rung Lắc/Jitter.
-            _smoothDayProgress += progressPerSecond * Time.deltaTime;
+            // [FIX] Nhân thêm GameTimeScale để di chuyển mượt khi tốc độ thời gian thay đổi
+            // Ví dụ: time scale x2 → celestial di chuyển nhanh gấp đôi
+            float timeScale = _gameTimeProvider.GameTimeScale;
+            _smoothDayProgress += progressPerSecond * Time.deltaTime * timeScale;
             _smoothDayProgress %= 1f;
         }
 

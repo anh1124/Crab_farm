@@ -36,6 +36,10 @@ namespace Script.Manager.GamePlayManager
         }
 
         private int currentWavePower;
+        
+        [Header("Storm Invasion - Extra Power")]
+        [Tooltip("Power cộng thêm khi portal bị phá (cộng dồn mỗi khi có portal bị phá)")]
+        [SerializeField] private int extraPower = 0;
 
         private void Awake()
         {
@@ -89,15 +93,18 @@ namespace Script.Manager.GamePlayManager
 
             // Tính toán power cho wave dựa theo ngày cấu hình
             int daysElapsed = _timeProvider.GetElapsedDays();
+            int displayDay = daysElapsed + 1; // GameDay hiển thị (1-based)
             currentWavePower = CalculateWavePower(daysElapsed);
-            debugCurrentWavePower = currentWavePower;
-            Debug.Log($"[EnemyWaveManager] Đêm ngày {daysElapsed} với tổng Power: {currentWavePower}");
+            StartWaveTracking(currentWavePower); // [DEBUG] Khởi tạo track
+            Debug.Log($"[EnemyWaveManager] [DEBUG] Đêm GameDay={displayDay} (daysElapsed={daysElapsed}) với tổng Power: {currentWavePower} | ExtraPower: {extraPower} | Base: {(daysElapsed > 1 ? (daysElapsed - 1) * 5 : 0)}");
 
             // Tạo danh sách các enemy cho trận chiến
             var selectedMonsters = _enemyDataProvider.SelectMonstersByPower(currentWavePower);
+            Debug.Log($"[EnemyWaveManager] [DEBUG] SelectMonstersByPower({currentWavePower}) trả về {selectedMonsters.Count} loại enemy");
             
             // Map danh sách tuples vừa bốc thành list Serialize chuyên dụng
             List<EnemyWaveData> finalWaveEnemies = new List<EnemyWaveData>();
+            int totalEnemyCount = 0;
             foreach (var monster in selectedMonsters)
             {
                 finalWaveEnemies.Add(new EnemyWaveData
@@ -105,6 +112,13 @@ namespace Script.Manager.GamePlayManager
                     enemyData = monster.Data,
                     count = monster.Quantity
                 });
+                totalEnemyCount += monster.Quantity;
+                Debug.Log($"[EnemyWaveManager] [DEBUG] - {monster.Data.enemyName}: {monster.Quantity} con (power: {monster.Data.power})");
+            }
+            
+            if (totalEnemyCount == 0)
+            {
+                Debug.LogWarning($"[EnemyWaveManager] [DEBUG] Không có enemy nào được chọn! Power={currentWavePower}, EnemyList.Count={selectedMonsters.Count}");
             }
 
             // Với mỗi môn đệ cổng, giao danh sách con và mồi nút Spawn cho nó chạy riêng rẽ
@@ -126,14 +140,63 @@ namespace Script.Manager.GamePlayManager
             // Từ ngày 2: tăng 5 power mỗi ngày (tuyến tính)
             // Ngày 2: 5 power (1 enemy), Ngày 3: 10 power (2 enemy)
             // Ngày 4: 15 power (3 enemy), Ngày 5: 20 power (4 enemy)...
-            if (daysElapsed <= 1) return 0;
-            return (daysElapsed - 1) * 5;
+            // daysElapsed: 0 = day 1, 1 = day 2, 2 = day 3, ...
+            int basePower = (daysElapsed > 0) ? daysElapsed * 5 : 0;
+            
+            // Cộng thêm extraPower từ việc phá portal
+            int totalPower = basePower + extraPower;
+            Debug.Log($"[EnemyWaveManager] CalculateWavePower: daysElapsed={daysElapsed}, Base={basePower}, Extra={extraPower}, Total={totalPower}");
+            return totalPower;
         }
 
         public List<EnemyWaveData> currentWaveEnemies = new List<EnemyWaveData>();
 
-        [Header("Debug Info")]
+        #region Storm Invasion - Extra Power Management
+        /// <summary>
+        /// Được gọi khi một portal bị phá. Cộng thêm số ngày hiện tại vào extraPower.
+        /// </summary>
+        public void AddExtraPowerFromDestroyedPortal()
+        {
+            if (_timeProvider == null) return;
+            
+            int currentDay = _timeProvider.GetElapsedDays();
+            extraPower += currentDay;
+            
+            Debug.Log($"[EnemyWaveManager] Portal bị phá! Cộng thêm {currentDay} power. ExtraPower hiện tại: {extraPower}");
+        }
+        
+        /// <summary>
+        /// Lấy giá trị extraPower hiện tại (cho debug)
+        /// </summary>
+        public int GetExtraPower() => extraPower;
+        
+        /// <summary>
+        /// Set extraPower (dùng khi load từ save)
+        /// </summary>
+        public void SetExtraPower(int value) => extraPower = value;
+        #endregion
         [SerializeField] private int debugCurrentWavePower; // Hiển thị power thực tế của wave vừa tạo
+        [SerializeField] private int debugRemainingPower;   // [DEBUG] Sức mạnh còn lại khi đang spawn
+        [SerializeField] private int debugTotalSpawnedEnemies; // [DEBUG] Tổng số enemy đã spawn trong wave
+
+        /// <summary>
+        /// [DEBUG] Được gọi mỗi khi một enemy được spawn để cập nhật debug context.
+        /// </summary>
+        public void OnEnemySpawned(int enemyPower)
+        {
+            debugRemainingPower = Mathf.Max(0, debugRemainingPower - enemyPower);
+            debugTotalSpawnedEnemies++;
+        }
+
+        /// <summary>
+        /// [DEBUG] Bắt đầu track wave mới.
+        /// </summary>
+        public void StartWaveTracking(int totalPower)
+        {
+            debugCurrentWavePower = totalPower;
+            debugRemainingPower = totalPower;
+            debugTotalSpawnedEnemies = 0;
+        }
 
         [Header("Debug Settings")]
         [SerializeField] private int customWavePower = 10;
@@ -144,7 +207,7 @@ namespace Script.Manager.GamePlayManager
             Debug.Log($"[EnemyWaveManager - DEV TEST] Bắt đầu gọi Wave với power {customWavePower}...");
             
             // Debug: Set time to night, spawn random portal, and activate it
-            SetupDebugEnvironment();
+            SetupDebugEnvironment(1);
 
             if (_enemyPool != null && _enemyDataProvider != null && _enemyPool.GetPoolCount() == 0)
             {
@@ -187,25 +250,38 @@ namespace Script.Manager.GamePlayManager
             }
         }
 
-        [ContextMenu("Test Trigger Night Wave (SPAWN THẬT)")]
+        [ContextMenu("Test Trigger Night Wave (SPAWN THẬT) - Day 1")]
         public void TestTriggerNightWave()
         {
-            Debug.Log("[EnemyWaveManager - DEV TEST] Bắt đầu gọi TriggerNightWave bằng tay...");
+            Debug.Log("[EnemyWaveManager - DEV TEST] Bắt đầu gọi TriggerNightWave bằng tay (Day 1, Power=0)...");
             
             // Debug: Set time to night, spawn random portal, and activate it
-            SetupDebugEnvironment();
+            SetupDebugEnvironment(1);
             
             TriggerNightWave();
         }
 
-        private void SetupDebugEnvironment()
+        [ContextMenu("Test Trigger Night Wave (SPAWN THẬT) - Day 2 (Power=5)")]
+        public void TestTriggerNightWaveDay2()
         {
-            // 1. Set time to night
+            Debug.Log("[EnemyWaveManager - DEV TEST] Bắt đầu gọi TriggerNightWave bằng tay (GameDay 2, daysElapsed=1, Power=5)...");
+            
+            // Debug: Set time to day 2 night (daysElapsed=1 -> power=5), spawn random portal, and activate it
+            SetupDebugEnvironment(2);
+            
+            TriggerNightWave();
+        }
+
+        private void SetupDebugEnvironment(int targetDay)
+        {
+            // 1. Set time to target day and night
             var timeManager = FindObjectOfType<GameTimeManager>();
             if (timeManager != null)
             {
+                // Set day trước khi set night
+                timeManager.SetDay(targetDay);
                 timeManager.SetTimeToNight();
-                Debug.Log("[EnemyWaveManager - DEBUG] Đã chuyển thời gian về ban đêm (19:00).");
+                Debug.Log($"[EnemyWaveManager - DEBUG] Đã chuyển thời gian về Day {targetDay} ban đêm (19:00).");
             }
             else
             {

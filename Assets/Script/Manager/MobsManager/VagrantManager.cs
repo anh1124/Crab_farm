@@ -18,11 +18,6 @@ namespace Script.Game.Mobs.MobsManager
     {
         public float spawnDistanceFromWall = 3f;
         public int maxVagrants = 5;
-        public float dailySpawnChance = 0.5f;
-        public int minDailySpawnCount = 0;
-        public int maxDailySpawnCount = 11;
-        [Tooltip("Khoảng random vị trí x khi sinh vagrant quanh tường (theo đơn vị world)")]
-        public float randomXRange = 2f;
     }
 
     public class VagrantManager : MonoBehaviour
@@ -30,6 +25,12 @@ namespace Script.Game.Mobs.MobsManager
 
         [Header("Thiết lập sinh vagrant (đọc từ file JSON)")]
         public VagrantSpawnConfig config;
+        
+        [Header("Spawn Settings")]
+        [Tooltip("Tổng số denizen tối đa để spawn vagrant (nếu > 30 thì không spawn)")]
+        public int maxTotalDenizens = 30;
+        [Tooltip("Số ngày giữa mỗi lần spawn (3 = mỗi 3 ngày)")]
+        public int spawnIntervalDays = 3;
         
         private IGameTimeProvider _timeProvider;
         private BuildingPlacementManager _buildingManager;
@@ -82,29 +83,82 @@ namespace Script.Game.Mobs.MobsManager
             }
         }
 
+        // Theo dõi ngày spawn tiếp theo
+        private int _nextSpawnDay = 0;
+
         private void HandleDailyVagrantSpawn()
         {
+            // Kiểm tra tổng số denizen trong hệ thống
+            int totalDenizenCount = CountTotalDenizens();
+            if (totalDenizenCount > maxTotalDenizens)
+            {
+                Debug.Log($"[VagrantManager] Không spawn: Tổng denizen ({totalDenizenCount}) > {maxTotalDenizens}");
+                return;
+            }
+            
             var buildingManager = FindObjectOfType<Script.Manager.Building.BuildingManager>();
             if (buildingManager == null || buildingManager.currentTownCenter == null) return;
             
             int townCenterLevel = buildingManager.currentTownCenter.GetComponent<TownCenterStatus>().tier;
             if (townCenterLevel <= 0) return;
             
-            int currentVagrantCount = CountExistingVagrants();
-            if (currentVagrantCount >= config.maxVagrants) return;
+            // Lấy ngày hiện tại
+            int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
             
-            if (Random.value > config.dailySpawnChance)
+            // Khởi tạo ngày spawn đầu tiên nếu chưa có
+            if (_nextSpawnDay == 0)
+            {
+                _nextSpawnDay = currentDay + spawnIntervalDays;
+            }
+            
+            // Kiểm tra đến ngày spawn chưa
+            if (currentDay < _nextSpawnDay)
+            {
+                // Chưa đến ngày spawn
                 return;
+            }
+            
+            // Đã đến ngày spawn
+            int currentVagrantCount = CountExistingVagrants();
+            if (currentVagrantCount >= config.maxVagrants)
+            {
+                // Vẫn cập nhật ngày spawn tiếp theo dù không spawn được
+                _nextSpawnDay = currentDay + spawnIntervalDays;
+                return;
+            }
+            
+            // Spawn 1 vagrant mỗi 2 ngày (xóa logic random)
+            Debug.Log($"[VagrantManager] Spawn vagrant ngày {currentDay} (kỳ spawn tiếp theo: {_nextSpawnDay})");
+            
+            // Luân phiên spawn trái/phải dựa trên ngày
+            bool spawnOnRight = (currentDay / spawnIntervalDays) % 2 == 0;
+            SpawnVagrants(1, spawnOnRight);
+            
+            // Cập nhật ngày spawn tiếp theo
+            _nextSpawnDay = currentDay + spawnIntervalDays;
+        }
+        
+        /// <summary>
+        /// Đếm tổng số denizen trong hệ thống (vagrant + villager + archer + ...)
+        /// </summary>
+        private int CountTotalDenizens()
+        {
+            if (_saveManager == null || _saveManager.denizenContainer == null) return 0;
 
-            int spawnCount;
-            int maxAllowedPerDay = Mathf.Min(2, townCenterLevel); 
-            int remainingSlots = config.maxVagrants - currentVagrantCount;
-            spawnCount = Mathf.Min(maxAllowedPerDay, remainingSlots);
+            List<GameObject> objects = _saveManager.GetObjectsFromContainerList(_saveManager.denizenContainer);
             
-            if (spawnCount <= 0) return;
-            
-            bool spawnOnRight = Random.value > 0.5f;
-            SpawnVagrants(spawnCount, spawnOnRight);
+            int denizenCount = 0;
+            foreach (GameObject obj in objects)
+            {
+                if (obj != null && 
+                    (obj.CompareTag(Script.Utils.GameTags.Vagrant) ||
+                     obj.CompareTag(Script.Utils.GameTags.Villager) ||
+                     obj.CompareTag(Script.Utils.GameTags.Archer)))
+                {
+                    denizenCount++;
+                }
+            }
+            return denizenCount;
         }
 
         private int CountExistingVagrants()
@@ -122,6 +176,17 @@ namespace Script.Game.Mobs.MobsManager
                 }
             }
             return vagrantCount;
+        }
+
+        /// <summary>
+        /// Spawn vagrant ban đầu khi khởi tạo game mới tại vị trí x=10
+        /// </summary>
+        public void SpawnInitialVagrantForNewGame()
+        {
+            Debug.Log("[VagrantManager] Spawn vagrant ban đầu cho game mới tại x=10");
+            // Spawn 1 vagrant tại x=10, z=0 (vị trí cố định bên phải)
+            Vector3 initialPosition = new Vector3(10f, 0f, 0f);
+            SpawnVagrants(1, true, initialPosition);
         }
 
         public void SpawnVagrants(int count, bool? isRight = null, Vector3? customPosition = null)
@@ -162,17 +227,18 @@ namespace Script.Game.Mobs.MobsManager
         
         private Vector3 DetermineSpawnPosition(bool? isRight = null)
         {
-            bool spawnOnRight = isRight ?? (Random.value > 0.5f);
+            // Nếu không chỉ định bên, mặc định spawn bên phải
+            bool spawnOnRight = isRight ?? true;
             GameObject farthestWall = _saveManager.FindFarthestWall(spawnOnRight);
         
             if (farthestWall == null) return Vector3.zero;
         
             Vector3 wallPosition = farthestWall.transform.position;
             float directionMultiplier = spawnOnRight ? 1 : -1;
-            float randomOffset = Random.Range(-config.randomXRange, config.randomXRange);
         
+            // Vị trí cố định cách tường (không random)
             return new Vector3(
-                wallPosition.x + (directionMultiplier * config.spawnDistanceFromWall) + randomOffset,
+                wallPosition.x + (directionMultiplier * config.spawnDistanceFromWall),
                 0,
                 wallPosition.z
             );

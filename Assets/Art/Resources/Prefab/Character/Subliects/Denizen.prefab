@@ -195,7 +195,6 @@ GameObject:
   - component: {fileID: 2416144875155933858}
   - component: {fileID: 7645737833836823279}
   - component: {fileID: 1161022715940157123}
-  - component: {fileID: 1825676105022853547}
   m_Layer: 9
   m_Name: Denizen
   m_TagString: Denizen
@@ -410,6 +409,8 @@ MonoBehaviour:
   isSkillCasting: 0
   skillAllowsMovement: 1
   debugDenizen: 0
+  archerState: 0
+  villagerState: 0
   <CanMove>k__BackingField: 1
   isMoving: 0
   role: 0
@@ -434,7 +435,6 @@ MonoBehaviour:
   previousWall: {fileID: 0}
   currentTarget: {fileID: 0}
   coinTarget: {fileID: 0}
-  archerState: 0
 --- !u!114 &4413473331933051345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -554,20 +554,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _debugInRange: 0
---- !u!114 &1825676105022853547
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5039406809920019329}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1de9abf647682094c9a32023855e3d05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _hintDataList:
-  - {fileID: 11400000, guid: ab097ae6433050144ae15f8a7157cbae, type: 2}
 --- !u!1 &5452678090401275911
 GameObject:
   m_ObjectHideFlags: 0

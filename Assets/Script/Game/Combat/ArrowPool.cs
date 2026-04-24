@@ -148,7 +148,34 @@ namespace Script.Game.Combat
         {
             int available = pool.Count;
             int active = totalCreated - available;
-            Debug.Log($"[ArrowPool] Stats - Total: {totalCreated}, Active: {active}, Available: {available}");
+            float usagePercent = (totalCreated > 0) ? (active / (float)totalCreated) * 100f : 0f;
+            
+            if (active >= maxPoolSize * 0.8f)
+            {
+                Debug.LogWarning($"[ArrowPool] CẢNH BÁO: Pool gần hết! Active: {active}/{maxPoolSize} ({usagePercent:F1}%)");
+            }
+            else
+            {
+                Debug.Log($"[ArrowPool] Stats - Total: {totalCreated}, Active: {active}, Available: {available}, Usage: {usagePercent:F1}%");
+            }
+        }
+        
+        /// <summary>
+        /// Kiểm tra xem pool có đang bị cạn kiện không (active > 80% max)
+        /// </summary>
+        public bool IsPoolNearExhausted()
+        {
+            int available = pool.Count;
+            int active = totalCreated - available;
+            return active >= maxPoolSize * 0.8f;
+        }
+        
+        /// <summary>
+        /// Lấy số arrows đang active (không còn trong pool)
+        /// </summary>
+        public int GetActiveArrowCount()
+        {
+            return totalCreated - pool.Count;
         }
     }
 }

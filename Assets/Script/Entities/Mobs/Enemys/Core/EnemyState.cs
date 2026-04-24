@@ -94,6 +94,18 @@ namespace Script.Game.Enemy.Core
             _isMovingInternal = false;
         }
 
+        /// <summary>
+        /// Bật/tắt tất cả collider trên enemy và con của nó
+        /// </summary>
+        protected void SetCollidersEnabled(GameObject self, bool enabled)
+        {
+            Collider2D[] colliders = self.GetComponentsInChildren<Collider2D>(true);
+            foreach (Collider2D col in colliders)
+            {
+                col.enabled = enabled;
+            }
+        }
+
         public abstract void Exit(EnemyContext ctx);
 
         protected virtual void HandleMovement(EnemyContext ctx, Vector3 target)

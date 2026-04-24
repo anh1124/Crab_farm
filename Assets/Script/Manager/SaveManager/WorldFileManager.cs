@@ -7,6 +7,7 @@ using Script.Data_Model;
 using Newtonsoft.Json;
 using Script.Manager;
 using Script.Manager.WorldManager;
+using Script.Manager.GamePlayManager;
 
 namespace Script.Save_Controller
 {
@@ -181,6 +182,12 @@ namespace Script.Save_Controller
                 worldInfo.GameMonth = gtm.GameMonth;
                 worldInfo.GameYear = gtm.GameYear;
             }
+            
+            // Lưu extraPower từ EnemyWaveManager (Storm Invasion)
+            if (EnemyWaveManager.Instance != null)
+            {
+                worldInfo.ExtraPower = EnemyWaveManager.Instance.GetExtraPower();
+            }
 
             // Lấy đường dẫn tới file worldInfo.json
             string worldFolder = GetWorldFolderPath(worldInfo.Name);
@@ -273,6 +280,13 @@ namespace Script.Save_Controller
                     _techState.TechPenetrating = worldInfo.TechPenetrating;
                     _techState.TechForge = worldInfo.TechForge;
                     _techState.TechAdhesive = worldInfo.TechAdhesive;
+                }
+                
+                // Load extraPower vào EnemyWaveManager (Storm Invasion)
+                if (EnemyWaveManager.Instance != null)
+                {
+                    EnemyWaveManager.Instance.SetExtraPower(worldInfo.ExtraPower);
+                    Debug.Log($"[WorldFileManager] Loaded ExtraPower: {worldInfo.ExtraPower}");
                 }
                 
                 // Thông báo rằng worldInfo đã thay đổi

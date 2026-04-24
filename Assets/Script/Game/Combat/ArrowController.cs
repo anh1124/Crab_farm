@@ -94,9 +94,11 @@ namespace Script.Game.Combat
             audioEmitter = GetComponent<Audio.AudioEmitter>();
         }
         
-        public void Initialize(Vector2 velocity, float launchAngle, float gravityScaleValue, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false)
+        public void Initialize(Vector2 velocity, float launchAngle, float gravityScaleValue, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false, float damageValue = -1f)
         {
             this.instigator = instigator;
+            // [FIX] Nhận damage từ archer (từ SO qua DenizenStatus)
+            if (damageValue > 0) this.damage = Mathf.RoundToInt(damageValue);
             hasDealtDamage = false;
             isActive = true;
             isStuck = false;
@@ -137,9 +139,11 @@ namespace Script.Game.Combat
             SetInitialRotation(velocity);
         }
 
-        public void InitializeGuidedParabola(Vector2 origin, Vector2 target, float apexY, float travelSpeed, int sampleCount = 48, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false)
+        public void InitializeGuidedParabola(Vector2 origin, Vector2 target, float apexY, float travelSpeed, int sampleCount = 48, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false, float damageValue = -1f)
         {
             this.instigator = instigator;
+            // [FIX] Nhận damage từ archer (từ SO qua DenizenStatus)
+            if (damageValue > 0) this.damage = Mathf.RoundToInt(damageValue);
             hasDealtDamage = false;
             isActive = true;
             isStuck = false;
@@ -197,11 +201,13 @@ namespace Script.Game.Combat
                 Debug.Log($"[Arrow GuidedInit] origin={origin} target={target} apexY={apexY:F2} speed={travelSpeed:F2} dist={_guidedTotalDist:F2}");
         }
 
-        public void InitializeGuidedTwoPhase(Vector2 origin, Vector2 baseTarget, float baseApexY, Vector2 finalTarget, float travelSpeed, int sampleCount = 64, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false)
+        public void InitializeGuidedTwoPhase(Vector2 origin, Vector2 baseTarget, float baseApexY, Vector2 finalTarget, float travelSpeed, int sampleCount = 64, float stickOffsetOverride = -1f, GameObject instigator = null, bool debugHitLogs = false, float damageValue = -1f)
         {
             // Phase 1: origin -> baseTarget (yellow), with apex at midpoint-x and y=baseApexY.
             // Phase 2: apexPoint (from phase 1) -> finalTarget (red), vertex fixed at apexPoint.
             this.instigator = instigator;
+            // [FIX] Nhận damage từ archer (từ SO qua DenizenStatus)
+            if (damageValue > 0) this.damage = Mathf.RoundToInt(damageValue);
             hasDealtDamage = false;
             isActive = true;
             isStuck = false;
@@ -288,8 +294,16 @@ namespace Script.Game.Combat
             
             if (isStuck)
             {
-                if (stuckTarget == null || !stuckTarget.gameObject.activeInHierarchy)
+                if (stuckTarget == null)
                 {
+                    Debug.LogWarning($"[ArrowController] {name}: StuckTarget là null nhưng arrow vẫn stuck! Trả về pool.");
+                    ReturnToPool();
+                    return;
+                }
+                
+                if (!stuckTarget.gameObject.activeInHierarchy)
+                {
+                    Debug.Log($"[ArrowController] {name}: StuckTarget {stuckTarget.name} đã inactive, trả arrow về pool.");
                     ReturnToPool();
                     return;
                 }
@@ -697,6 +711,19 @@ namespace Script.Game.Combat
         
         private void ReturnToPool()
         {
+            if (pool == null)
+            {
+                Debug.LogWarning($"[ArrowController] {name}: pool là null, không thể trả về pool. Destroy arrow.");
+                Destroy(gameObject);
+                return;
+            }
+
+            // Log nếu arrow đã tồn tại quá lâu (bị kẹt)
+            if (timeSinceSpawn > maxAirTime * 0.8f)
+            {
+                Debug.LogWarning($"[ArrowController] {name}: Arrow bị kẹt trong không gian {timeSinceSpawn:F1}s trước khi trả về pool. Stuck={isStuck}, StuckTarget={(stuckTarget != null ? stuckTarget.name : "null")}");
+            }
+
             isStuck = false;
             stuckTarget = null;
             _hasLoggedPhysicalHit = false;
@@ -704,18 +731,11 @@ namespace Script.Game.Combat
             
             if (col != null) col.enabled = true; // Ensure collider is enabled before return (redundant safe)
 
-            if (pool != null)
-            {
-                isActive = false;
-                hasDealtDamage = false;
-                
-                gameObject.SetActive(false);
-                pool.ReturnArrow(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            isActive = false;
+            hasDealtDamage = false;
+            
+            gameObject.SetActive(false);
+            pool.ReturnArrow(gameObject);
         }
         
         public void SetPool(IArrowPool poolRef)

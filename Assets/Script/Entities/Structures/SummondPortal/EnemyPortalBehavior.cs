@@ -116,6 +116,10 @@ namespace Script.Entities.Structures.SummondPortal
 
             // Ghi lại ngày sinh ra cổng
             status.spawnDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
+            
+            // Tính toán thời gian di chuyển dựa trên khoảng cách từ TownCenter
+            CalculateMoveDurationBasedOnDistance();
+            
             Debug.Log($"[EnemyPortal] Cổng vừa xuất hiện tại {transform.position}! SpawnDay={status.spawnDay}. " +
                       $"Delay trong Status.activeDelay: {status.activeDelay} ngày (quản lý bởi Manager khi thành tuyến đầu).");
 
@@ -255,8 +259,57 @@ namespace Script.Entities.Structures.SummondPortal
         /// Portal tự quyết định có di chuyển hay không (nếu chưa active thì không di chuyển).
         /// Di chuyển mượt theo tốc độ cố định trong khoảng thời gian moveDuration.
         /// </summary>
+        // Thời gian di chuyển cơ bản và tính toán dựa trên khoảng cách
+        private float _baseMoveDuration = 5f;
+        private float _calculatedMoveDuration = 5f;
+        
+        /// <summary>
+        /// Tính toán thời gian di chuyển dựa trên khoảng cách từ TownCenter.
+        /// Càng xa thì di chuyển càng lâu (+2s với mỗi 100f)
+        /// </summary>
+        private void CalculateMoveDurationBasedOnDistance()
+        {
+            var townCenter = WorldUtility.GetTownCenter();
+            if (townCenter != null)
+            {
+                float distance = Mathf.Abs(transform.position.x - townCenter.transform.position.x);
+                // Công thức: base + 2s cho mỗi 100f khoảng cách
+                _calculatedMoveDuration = _baseMoveDuration + (distance / 100f) * 2f;
+                
+                Debug.Log($"[EnemyPortalBehavior] Tính toán thời gian di chuyển: Khoảng cách={distance:F1}f, Duration={_calculatedMoveDuration:F1}s");
+            }
+        }
+        
+        /// <summary>
+        /// Lấy thời gian di chuyển đã tính toán (dùng cho Manager)
+        /// </summary>
+        public float GetCalculatedMoveDuration() => _calculatedMoveDuration;
+
+        /// <summary>
+        /// [NEW] Tính toán và trả về thời gian di chuyển dựa trên tham số từ Manager.
+        /// Càng xa TownCenter thì di chuyển càng lâu.
+        /// </summary>
+        public float CalculateMoveDuration(float baseDuration, float increasePer100Distance)
+        {
+            var townCenter = WorldUtility.GetTownCenter();
+            if (townCenter != null)
+            {
+                float distance = Mathf.Abs(transform.position.x - townCenter.transform.position.x);
+                // Công thức: base + (distance/100) * increasePer100
+                float calculatedDuration = baseDuration + (distance / 100f) * increasePer100Distance;
+                
+                Debug.Log($"[EnemyPortalBehavior] Tính toán duration: Distance={distance:F1}f, Base={baseDuration}s, Calculated={calculatedDuration:F1}s");
+                return calculatedDuration;
+            }
+            return baseDuration;
+        }
+
         public void TryMoveTowards(float targetX, float moveSpeed, float moveDuration)
         {
+            // Sử dụng thời gian đã tính toán nếu không có giá trị tùy chỉnh
+            if (moveDuration <= 0)
+                moveDuration = _calculatedMoveDuration;
+                
             // Chỉ di chuyển nếu đã active
             if (!status.isReadyToSpawn)
             {
@@ -312,6 +365,10 @@ namespace Script.Entities.Structures.SummondPortal
             transform.position = _moveTargetPos;
             _isMoving = false;
             _moveCoroutine = null;
+            
+            // Tính toán lại thời gian di chuyển cho lần sau (vì vị trí đã thay đổi)
+            CalculateMoveDurationBasedOnDistance();
+            
             Debug.Log($"[EnemyPortalBehavior] Portal đã di chuyển xong đến x={_moveTargetPos.x:F1}");
         }
 
@@ -319,6 +376,25 @@ namespace Script.Entities.Structures.SummondPortal
         public void ReceiveDamage(float damage, GameObject instigator)
         {
             status.TakeDamage(damage);
+        }
+
+        // --- Wall Erosion (Bào mòn tường) ---
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            // Chỉ bào mòn khi đã active (đang spawn enemy)
+            if (!status.isReadyToSpawn) return;
+            
+            // Kiểm tra va chạm với Wall
+            if (collision.gameObject.CompareTag(Script.Utils.GameTags.Wall))
+            {
+                var wallBehavior = collision.gameObject.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
+                if (wallBehavior != null)
+                {
+                    Debug.Log($"[EnemyPortalBehavior] Portal tại {transform.position} bào mòn tường {collision.gameObject.name}!");
+                    // Gây sát thương lớn để phá hủy wall ngay lập tức
+                    wallBehavior.ReceiveDamage(9999f, gameObject);
+                }
+            }
         }
 
         private void OnDeathHandler()
@@ -408,7 +484,10 @@ namespace Script.Entities.Structures.SummondPortal
             {
                 status.spawnDay = saveData.spawnDay;
                 status.isReadyToSpawn = saveData.isReadyToSpawn;
-                status.MaxHp = saveData.maxHp > 0 ? saveData.maxHp : EnemyPortalStatus.BASE_MAX_HP;
+                // Fallback nếu save data bị lỗi (maxHp <= 0) - dùng BASE_MAX_HP từ Manager
+                status.MaxHp = saveData.maxHp > 0 
+                    ? saveData.maxHp 
+                    : (EnemyPortalManager.Instance?.basePortalMaxHp ?? EnemyPortalManager.BASE_MAX_HP);
                 status.CurrentHp = saveData.currentHp;
                 transform.position = new Vector3(saveData.x, saveData.y, saveData.z);
 
@@ -623,6 +702,12 @@ namespace Script.Entities.Structures.SummondPortal
                 else
                 {
                     Debug.LogWarning($"[EnemyPortalBehavior] {enemyData.enemyName} thiếu Component EnemyAIController!");
+                }
+                
+                // [DEBUG] Cập nhật debug context trên EnemyWaveManager
+                if (EnemyWaveManager.Instance != null)
+                {
+                    EnemyWaveManager.Instance.OnEnemySpawned(enemyData.power);
                 }
             }
             else

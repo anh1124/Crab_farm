@@ -10,12 +10,12 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         private Vector3 _walkTarget;
         private bool _hasTarget;
         private float _lastToolCheck;
-        private const float TOOL_CHECK_INTERVAL = 3f;
+        private const float TOOL_CHECK_INTERVAL = 1.5f;
 
         public override void Enter(DenizenContext ctx)
         {
             _nextRandomWalkTime = Time.time + Random.Range(2f, 5f);
-            _lastToolCheck = -999f;
+            _lastToolCheck = -999f; // Force check ngay lập tức ở lần UpdateBehavior đầu tiên
             _hasTarget = false;
             
             if (ctx.Animator != null) 
@@ -23,6 +23,33 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
 
             if (ctx.Movement != null)
                 ctx.Movement.Stop();
+                
+            // [FIX] Khi vừa chuyển từ Vagrant -> Villager, check tool ngay lập tức
+            // Không đợi interval để tránh trường hợp idle không làm gì
+            TryCheckToolsImmediate(ctx);
+        }
+        
+        /// <summary>
+        /// Thử check và assign tool ngay lập tức khi vào IdleState
+        /// </summary>
+        private void TryCheckToolsImmediate(DenizenContext ctx)
+        {
+            var toolManager = Script.Manager.MobsManager.ToolManager.Instance;
+            var villagerJob = ctx.VillagerJob;
+            
+            if (toolManager != null && villagerJob != null && toolManager.GetTotalUnservedTools() > 0)
+            {
+                toolManager.OnVillagerBecameIdle(villagerJob);
+                
+                // Nếu đã chuyển sang RunToolState, cập nhật lại _lastToolCheck
+                if (villagerJob.CurrentState is VillagerRunToolState)
+                {
+                    _lastToolCheck = Time.time; // Reset để tránh check lại ngay
+                    
+                    if (ctx.Status?.debugDenizen == true)
+                        Debug.Log($"[VillagerIdleState] {ctx.GameObject.name}: Ngay khi vào Idle đã được assign tool!");
+                }
+            }
         }
 
         public override void UpdateBehavior(DenizenContext ctx)
@@ -59,11 +86,35 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (Time.time - _lastToolCheck >= TOOL_CHECK_INTERVAL)
             {
                 _lastToolCheck = Time.time;
-                if (Script.Manager.MobsManager.ToolManager.Instance?.GetTotalUnservedTools() > 0)
+                
+                var toolManager = Script.Manager.MobsManager.ToolManager.Instance;
+                if (toolManager != null)
                 {
-                    Script.Manager.MobsManager.ToolManager.Instance.OnVillagerBecameIdle(villagerJob);
-                    // Nếu đã đổi state (sang RunToolState), thoát UpdateBehavior ngay
-                    if (villagerJob.CurrentState != this) return;
+                    int toolCount = toolManager.GetTotalUnservedTools();
+                    
+                    if (toolCount > 0)
+                    {
+                        // Có tool available, thử assign
+                        toolManager.OnVillagerBecameIdle(villagerJob);
+                        
+                        // Nếu đã đổi state (sang RunToolState), thoát UpdateBehavior ngay
+                        if (villagerJob.CurrentState != this) return;
+                        
+                        // RACE CONDITION: Nếu vẫn còn ở IdleState tức là tool bị villager khác lấy mất
+                        // Thử lại ngay lần nữa (không đợi interval)
+                        Debug.Log($"[VillagerIdleState] {ctx.GameObject.name}: Tool bị mất bởi villager khác, thử lại ngay...");
+                        
+                        // Kiểm tra lại có tool không
+                        if (toolManager.GetTotalUnservedTools() > 0)
+                        {
+                            toolManager.OnVillagerBecameIdle(villagerJob);
+                            if (villagerJob.CurrentState != this) return;
+                        }
+                    }
+                    else if (ctx.Status.debugDenizen)
+                    {
+                        Debug.Log($"[VillagerIdleState] {ctx.GameObject.name}: Không có tool nào available");
+                    }
                 }
             }
 

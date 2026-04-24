@@ -139,7 +139,15 @@ namespace Script.Game.Other
 
             if (vagrantManager == null) vagrantManager = FindObjectOfType<VagrantManager>(true);
             if (vagrantManager != null) 
+            {
                 vagrantManager.Setup(timeManager, buildingPlacementManager, entitySaveManager, denizenManager, guardManager);
+                
+                // Spawn vagrant ban đầu tại x=10 nếu là game mới
+                if (LoadFromSave.Instance != null && LoadFromSave.Instance.IsNewWorld)
+                {
+                    vagrantManager.SpawnInitialVagrantForNewGame();
+                }
+            }
 
             if (wallManager == null) wallManager = FindObjectOfType<WallAndStumpManager>(true);
             if (npcUpdateManager == null) npcUpdateManager = FindObjectOfType<NPCUpdateManager>(true);

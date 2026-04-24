@@ -648,7 +648,8 @@ namespace Script.Game.Structures.Wall_And_Stump
             }
             float nextMax = techAdhesive ? status.blessedMaxHp : status.normalMaxHp;
             status.MaxHp = nextMax;
-            status.CurrentHp = status.MaxHp;
+            // FIX: Không hồi máu đầy, chỉ đảm bảo CurrentHp không vượt quá MaxHp mới
+            status.CurrentHp = Mathf.Min(status.CurrentHp, status.MaxHp);
         }
         private void OnWorldInfoChanged(WorldInfo worldInfo)
         {
@@ -727,6 +728,19 @@ namespace Script.Game.Structures.Wall_And_Stump
 
         #region Critical HP Event Logic
         private bool hasFiredCriticalEvent = false;
+
+        /// <summary>
+        /// [BUILD INTERFACE] Reset HP về max khi wall được build mới.
+        /// Được gọi bởi BuildingPlacementManager sau khi spawn.
+        /// </summary>
+        public void ResetHealthToFull()
+        {
+            if (status != null)
+            {
+                status.currentHp = status.maxHp;
+                Debug.Log($"[WallBehavior] {gameObject.name} HP reset to full: {status.currentHp}/{status.maxHp}");
+            }
+        }
 
         public void CheckAndFireCriticalEvent(int criticalThreshold)
         {

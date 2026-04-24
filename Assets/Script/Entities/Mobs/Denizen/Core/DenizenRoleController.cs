@@ -10,11 +10,13 @@ using Script.Game.Mobs.Denizen.Jobs.Villager;
 using Script.Game.Mobs.Denizen.Jobs.Archer;
 using Script.Interfaces;
 using Script.Manager.WorldManager;
+using Script.Manager.SaveManager;
 using Script.Game.Structures.Wall_And_Stump;
 using Script.Save_Controller;
 using Newtonsoft.Json.Linq;
 using Script.Game.PlayerCharacter.Skills;
 using Script.Audio;
+using Script.Game.Other;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
@@ -147,6 +149,13 @@ namespace Script.Game.Mobs.Denizen.Core
                     _context.Status.coinTarget = null;
                     _context.Status.isMoving = false;
                 }
+                
+                // Đảm bảo detector references tồn tại trước khi chuyển job
+                // để tránh lỗi detector null khi job mới được enable
+                if (_context.CircleDetect == null)
+                    _context.CircleDetect = GetComponentInChildren<Script.Game.Other.CircleDetectHelper>(true);
+                if (_context.RayCaster == null)
+                    _context.RayCaster = GetComponentInChildren<RayCastHelper>(true);
             }
             
             // Chỉ vô hiệu hóa job cũ khi đã chắc chắn có job mới thay thế
@@ -193,7 +202,17 @@ namespace Script.Game.Mobs.Denizen.Core
                 case NPCRole.Archer:
                     gameObject.tag = Script.Utils.GameTags.Archer;
                     _currentJob = _context.ArcherJob;
-                    _guardProvider?.RegisterArcher(gameObject);
+                    
+                    // Chỉ đăng ký với GuardManager nếu không đang trong quá trình load từ save
+                    // Tránh tình trạng phân công sai do đăng ký lần lượt
+                    if (!Script.Manager.EntitySaveManager.IsLoadingFromSave)
+                    {
+                        _guardProvider?.RegisterArcher(gameObject);
+                    }
+                    else if (_status != null && _status.debugDenizen)
+                    {
+                        Debug.Log($"[DenizenRoleController] {gameObject.name}: Bỏ qua RegisterArcher vì đang loading từ save");
+                    }
                     break;
             }
 

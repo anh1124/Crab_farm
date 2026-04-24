@@ -18,7 +18,8 @@ MonoBehaviour:
   icon: {fileID: -1242149758, guid: c667a3208f3d40a49930630a8b3acaed, type: 3}
   skillName: SpawnVagrantSkill
   damage: 0
-  cooldown: 80
+  ignoreTimeScale: 0
+  cooldown: 200
   allowMovementDuringSkill: 0
   moveRequired: 0
   useAnimation: 0

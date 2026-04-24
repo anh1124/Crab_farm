@@ -18,6 +18,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   skillName: ShockAttack
   damage: 1
+  ignoreTimeScale: 1
   cooldown: 2
   allowMovementDuringSkill: 1
   moveRequired: 0

@@ -18,6 +18,7 @@ MonoBehaviour:
   icon: {fileID: -2007057588, guid: defd2f148e299c64fb36821d049b3682, type: 3}
   skillName: SpearManChopDown
   damage: 1
+  ignoreTimeScale: 1
   cooldown: 2
   allowMovementDuringSkill: 0
   moveRequired: 0

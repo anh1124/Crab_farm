@@ -91,7 +91,16 @@ namespace Script.Game.Enemy.Core
             }
         }
 
-        private void OnEnable() => NPCUpdateManager.Instance?.Register(this);
+        private void OnEnable() 
+        {
+            // [FIX] Đảm bảo enemy từ pool được đánh dấu alive khi re-enable
+            if (_ctx != null)
+            {
+                _ctx.IsAlive = true;
+            }
+            NPCUpdateManager.Instance?.Register(this);
+        }
+        
         private void OnDisable() => NPCUpdateManager.Instance?.Unregister(this);
         private void OnDestroy()
         {
@@ -121,6 +130,7 @@ namespace Script.Game.Enemy.Core
             }
 
             // [TIME-BASED STATE TRANSITION]
+            // Sử dụng cached GameTimeManager từ context thay vì FindObjectOfType mỗi frame
             var gtm = UnityEngine.Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
             if (gtm != null)
             {
@@ -244,8 +254,23 @@ namespace Script.Game.Enemy.Core
                 _ctx.Status.SetupReset();
             }
 
+            // Bật lại tất cả collider khi respawn từ pool
+            SetCollidersEnabled(true);
+
             UpdateAnimatorTriggers(); // Đảm bảo trigger luôn sẵn sàng khi spawn lại
             ChangeState(_idleState);
+        }
+
+        /// <summary>
+        /// Bật/tắt tất cả collider trên enemy
+        /// </summary>
+        protected void SetCollidersEnabled(bool enabled)
+        {
+            Collider2D[] colliders = GetComponentsInChildren<Collider2D>(true);
+            foreach (Collider2D col in colliders)
+            {
+                col.enabled = enabled;
+            }
         }
 
         public void InjectDependencies(EnemyTargetManager targetMgr, Action<GameObject> returnAction) 

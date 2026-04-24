@@ -106,10 +106,10 @@ namespace Script.Manager.WorldManager
                 bm.currentTownCenter = townCenter;
             }
 
-            // Sinh portal 2 bên cho thế giới mới
+            // Sinh portal 2 bên cho thế giới mới (delay 1 frame để đợi time load xong)
             if (Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
             {
-                Script.Manager.GamePlayManager.EnemyPortalManager.Instance.SpawnStartingPortals();
+                StartCoroutine(DelayedSpawnPortals());
             }
 
             // Create ground chunks to left and right
@@ -235,5 +235,19 @@ namespace Script.Manager.WorldManager
         }
 
         public void test() { }
+
+        /// <summary>
+        /// Coroutine để delay spawn portal 1 frame, đảm bảo time đã được load từ save.
+        /// </summary>
+        private System.Collections.IEnumerator DelayedSpawnPortals()
+        {
+            // Đợi 1 frame để StartGameScrene hoàn tất time loading
+            yield return null;
+            
+            if (Script.Manager.GamePlayManager.EnemyPortalManager.Instance != null)
+            {
+                Script.Manager.GamePlayManager.EnemyPortalManager.Instance.SpawnStartingPortals();
+            }
+        }
     }
 }

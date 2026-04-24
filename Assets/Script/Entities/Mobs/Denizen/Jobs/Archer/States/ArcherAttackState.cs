@@ -28,6 +28,15 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             // Mỗi lần vào AttackState = đúng 1 phát bắn.
             if (ctx.SkillManager == null || ctx.Status?.currentTarget == null)
             {
+                // [DEBUG] Log chi tiết để xác định lý do không tấn công
+                if (ctx.Status?.currentTarget == null)
+                {
+                    Debug.LogWarning($"[ArcherAttackState] {ctx.GameObject?.name}: Không tấn công vì currentTarget = NULL! (Có thể enemy chưa được nhận diện hoặc IsAlive = false)");
+                }
+                if (ctx.SkillManager == null)
+                {
+                    Debug.LogError($"[ArcherAttackState] {ctx.GameObject?.name}: SkillManager = NULL!");
+                }
                 ctx.ArcherJob?.ChangeState(ctx.ArcherJob.IdleState);
                 return;
             }
@@ -51,32 +60,40 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
 
             // Kiểm tra SkillManager đã sẵn sàng chưa (Slot 0 là bắn cung)
-            if (ctx.SkillManager.IsReady(0))
+            if (ctx.SkillManager == null)
             {
-                if (ctx.SkillManager.ExecuteSkill(0, ctx.GameObject))
-                {
-                    ctx.Status.isSkillCasting = true;
-                    ctx.Animator?.Play("archerDraw");
-
-                    // Phát âm thanh khi giương cung
-                    var emitter = ctx.GameObject.GetComponent<AudioEmitter>();
-                    if (emitter != null)
-                        emitter.PlaySound("Bow_Draw", PlaySoundConfig.Default);
-
-                    if (ctx.Status.debugDenizen)
-                        Debug.Log($"<color=green>[AttackState]</color> {ctx.GameObject.name} giương cung nhắm {ctx.Status.currentTarget.name}");
-                }
-                else
-                {
-                    // Thực thi thất bại (thiếu mana/tài nguyên nếu có) -> Về Idle
-                    archerJob.ChangeState(archerJob.IdleState);
-                }
+                Debug.LogError($"[ArcherAttackState] {ctx.GameObject.name}: SkillManager là NULL!");
+                archerJob.ChangeState(archerJob.IdleState);
+                return;
             }
-            else
+
+            if (!ctx.SkillManager.IsReady(0))
             {
                 // Skill còn hồi chiêu -> Về Idle
                 if (ctx.Status.debugDenizen)
-                    Debug.Log($"[AttackState] {ctx.GameObject.name} skill đang hồi chiêu -> Idle");
+                    Debug.Log($"[AttackState] {ctx.GameObject.name}: Slot 0 chưa sẵn sàng (cooldown) -> Idle");
+                archerJob.ChangeState(archerJob.IdleState);
+                return;
+            }
+
+            bool skillExecuted = ctx.SkillManager.ExecuteSkill(0, ctx.GameObject);
+            if (skillExecuted)
+            {
+                ctx.Status.isSkillCasting = true;
+                ctx.Animator?.Play("archerDraw");
+
+                // Phát âm thanh khi giương cung
+                var emitter = ctx.GameObject.GetComponent<AudioEmitter>();
+                if (emitter != null)
+                    emitter.PlaySound("Bow_Draw", PlaySoundConfig.Default);
+
+                if (ctx.Status.debugDenizen)
+                    Debug.Log($"<color=green>[AttackState]</color> {ctx.GameObject.name} giương cung nhắm {ctx.Status.currentTarget.name}");
+            }
+            else
+            {
+                // Thực thi thất bại (thiếu mana/tài nguyên hoặc lỗi khác)
+                Debug.LogWarning($"[ArcherAttackState] {ctx.GameObject.name}: ExecuteSkill(0) trả về FALSE! Có thể do thiếu tài nguyên hoặc lỗi hệ thống.");
                 archerJob.ChangeState(archerJob.IdleState);
             }
         }
@@ -124,8 +141,18 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (emitter != null)
                 emitter.PlaySound("Bow_Release", PlaySoundConfig.Default);
 
-            if (ctx.Status?.currentTarget != null && ctx.ArcherShooting != null)
+            // Kiểm tra ArcherShooting trước khi bắn
+            if (ctx.ArcherShooting == null)
+            {
+                Debug.LogError($"[ArcherAttackState] {ctx.GameObject.name}: ArcherShooting là NULL! Kiểm tra DenizenContext.Setup() có được gọi với arrowPool không.");
+                ctx.ArcherJob?.ChangeState(ctx.ArcherJob.IdleState);
+                return;
+            }
+
+            if (ctx.Status?.currentTarget != null)
                 ctx.ArcherShooting.ShootAt(ctx.Status.currentTarget.transform.position);
+            else
+                Debug.LogWarning($"[ArcherAttackState] {ctx.GameObject.name}: Không có target để bắn!");
 
             // Báo cho SkillManager biết animation đã kết thúc để bắt đầu cooldown
             ctx.SkillManager?.OnSkillAnimationEnd(0, ctx.GameObject);

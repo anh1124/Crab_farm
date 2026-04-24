@@ -42,7 +42,8 @@ namespace Script.Game.Mobs.MobsManager
             
             if (guardManager != null && guardManager.Squad != null)
             {
-                guardManager.Squad.NotifyArchersDefensivePositionChanged(currentLeftWall, currentRightWall);
+                // Cập nhật vị trí bình thường, không force return
+                guardManager.Squad.NotifyArchersDefensivePositionChanged(currentLeftWall, currentRightWall, forceReturn: false);
             }
         }
 
@@ -118,7 +119,23 @@ namespace Script.Game.Mobs.MobsManager
 
             if (guardManager != null && guardManager.Squad != null)
             {
+                // Retreat archers ở side bị phá
                 guardManager.Squad.RetreatArchersOnFlank(isLeftSide, safeWall);
+                
+                // [FIX] Thông báo cho TẤT CẢ archer (cả 2 bên) cập nhật vị trí phòng thủ với forceReturn=true
+                // Archer đang chạy từ side khác sang cũng cần biết wall mới để cập nhật target
+                GameObject otherSideWall = isLeftSide ? 
+                    guardManager.Wall?.currentRightWall : 
+                    guardManager.Wall?.currentLeftWall;
+                    
+                // [NEW] Force tất cả archer quay về base ngay lập tức để nhận wall mới
+                guardManager.Squad.NotifyArchersDefensivePositionChanged(
+                    isLeftSide ? safeWall : otherSideWall,
+                    isLeftSide ? otherSideWall : safeWall,
+                    forceReturn: true  // ← Force archer quay về base ngay
+                );
+                
+                Debug.Log($"[GuardWallSystem] Đã force tất cả archer quay về vị trí phòng thủ mới. Left: {(isLeftSide ? safeWall?.name : otherSideWall?.name)}, Right: {(isLeftSide ? otherSideWall?.name : safeWall?.name)}");
             }
         }
 
@@ -158,7 +175,8 @@ namespace Script.Game.Mobs.MobsManager
             UpdateSpecificWall(ref currentRightWall, null, false);
 
             if (guardManager != null && guardManager.Squad != null)
-                guardManager.Squad.NotifyArchersDefensivePositionChanged(currentLeftWall, currentRightWall);
+                // TownCenter bị tấn công - force archer về Plaza
+                guardManager.Squad.NotifyArchersDefensivePositionChanged(currentLeftWall, currentRightWall, forceReturn: true);
 
             if (guardManager != null)
                 guardManager.DebugLog("[GuardWallSystem] TownCenter under attack -> frontline forced to Plaza.");

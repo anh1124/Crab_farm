@@ -7,9 +7,16 @@ using Script.Game.Enemy;
 
 namespace Script.Manager.GamePlayManager
 {
+    /// <summary>
+    /// Factory quản lý việc spawn và cấu hình EnemyPortal.
+    /// Quyết định tất cả thông số ban đầu của portal (HP, thời gian di chuyển, etc.)
+    /// </summary>
     public class EnemyPortalManager : MonoBehaviour
     {
         public static EnemyPortalManager Instance { get; private set; }
+
+        // Constant cho base HP - dùng làm fallback và reference
+        public const float BASE_MAX_HP = 100f;
 
         private IEnemyPool _enemyPool;
         private IEnemyDataProvider _enemyDataProvider;
@@ -68,18 +75,26 @@ namespace Script.Manager.GamePlayManager
 
         // Settings for spawning
         [Header("Spawn Settings")]
-        public float minSpawnDistance = 40f;
-        public float maxSpawnDistance = 80f;
+        public float minSpawnDistance = 30f;
+        public float maxSpawnDistance = 50f;
 
         [Header("Storm Invasion - Movement")]
         [Tooltip("Tốc độ di chuyển của portal về phía TownCenter mỗi đêm")]
-        public float portalMoveSpeed = 5f;
-        [Tooltip("Thời gian di chuyển mỗi đêm (giây)")]
-        public float portalMoveDuration = 3f;
+        public float portalMoveSpeed = 3f;
+        [Tooltip("Thời gian di chuyển cơ bản (giây)")]
+        public float basePortalMoveDuration = 3f;
+        [Tooltip("Thời gian tăng thêm mỗi 100f khoảng cách (giây)")]
+        public float durationIncreasePer100Distance = 2f;
         [Tooltip("Khoảng cách spawn portal phía sau (so với portal gần nhất)")]
-        public float backPortalSpawnOffset = 100f;
+        public float backPortalSpawnOffset = 30f;
         [Tooltip("Số portal tối đa mỗi bên")]
         public int maxPortalsPerSide = 2;
+
+        [Header("Portal HP Settings")]
+        [Tooltip("Máu tối đa cơ bản của portal khi spawn")]
+        public float basePortalMaxHp = 100f;
+        [Tooltip("Lượng máu tăng thêm mỗi ngày")]
+        public float hpIncreasePerDay = 20f;
 
         private void Awake()
         {
@@ -316,15 +331,35 @@ namespace Script.Manager.GamePlayManager
                 behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
 
                 // Tính toán và set MaxHP cho portal mới (không phải load từ save)
-                // Formula: BASE_MAX_HP + (currentDay * 10) - mỗi ngày tăng 10 HP
+                // Formula: basePortalMaxHp + (currentDay * hpIncreasePerDay)
                 int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
-                float calculatedMaxHp = EnemyPortalStatus.BASE_MAX_HP + (currentDay * 10f);
+                // [GUARD] Đảm bảo currentDay không âm (ngày 1 = 0, ngày âm = lỗi time system)
+                if (currentDay < 0)
+                {
+                    Debug.LogWarning($"[EnemyPortalManager] [GUARD] currentDay={currentDay} bị âm! Set về 0");
+                    currentDay = 0;
+                }
+                float calculatedMaxHp = basePortalMaxHp + (currentDay * hpIncreasePerDay);
+                
+                // [DEBUG] Log chi tiết để kiểm tra giá trị
+                Debug.Log($"[EnemyPortalManager] [DEBUG] Spawn {(isRightSide ? "PHẢI" : "TRÁI")}: basePortalMaxHp={basePortalMaxHp}, hpIncreasePerDay={hpIncreasePerDay}, currentDay={currentDay}, calculatedMaxHp={calculatedMaxHp}");
+                
                 var status = behavior.GetStatus();
                 if (status != null)
                 {
+                    float oldMaxHp = status.MaxHp;
+                    float oldCurrentHp = status.CurrentHp;
+                    
                     status.MaxHp = calculatedMaxHp;
                     status.CurrentHp = calculatedMaxHp; // Full HP khi spawn
-                    Debug.Log($"[EnemyPortalManager] Portal mới {(isRightSide ? "PHẢI" : "TRÁI")}: MaxHP = {calculatedMaxHp} (Base {EnemyPortalStatus.BASE_MAX_HP} + Day {currentDay} * 10)");
+                    // [FIX] Đảm bảo HP được set đầy sau khi spawn
+                    status.ResetHealthToFull();
+                    
+                    Debug.Log($"[EnemyPortalManager] Portal mới {(isRightSide ? "PHẢI" : "TRÁI")}: MaxHP = {calculatedMaxHp} (Base {basePortalMaxHp} + Day {currentDay} * {hpIncreasePerDay}) | Status: oldMax={oldMaxHp}, oldCurrent={oldCurrentHp}, newMax={status.MaxHp}, newCurrent={status.CurrentHp}");
+                }
+                else
+                {
+                    Debug.LogError($"[EnemyPortalManager] [CRITICAL] Status là NULL cho portal {(isRightSide ? "PHẢI" : "TRÁI")}! HP sẽ không được set!");
                 }
                 
                 // FIX: Đăng ký ngay lập tức thay vì chờ Start() frame sau
@@ -344,6 +379,10 @@ namespace Script.Manager.GamePlayManager
         public void OnPortalDestroyed(EnemyPortalBehavior portal)
         {
             if (portal == null) return;
+            
+            // Xác định bên trước khi xóa
+            bool isRight = false;
+            if (rightPortals.Contains(portal)) isRight = true;
 
             // Xóa khỏi danh sách
             leftPortals.Remove(portal);
@@ -352,8 +391,32 @@ namespace Script.Manager.GamePlayManager
             // Sắp xếp lại và cập nhật tuyến đầu
             SortPortals();
             UpdateFrontlineStatus();
+            
+            // [Storm Invasion] Cộng thêm power cho wave tiếp theo
+            if (EnemyWaveManager.Instance != null)
+            {
+                EnemyWaveManager.Instance.AddExtraPowerFromDestroyedPortal();
+            }
+            
+            // [Storm Invasion] Kích hoạt ngay portal phía sau (nếu có)
+            ActivateNextPortal(isRight);
 
-            Debug.Log($"[EnemyPortalManager] Portal bị phá tại x={portal.transform.position.x:F1}. Đã cập nhật danh sách.");
+            Debug.Log($"[EnemyPortalManager] Portal bị phá tại x={portal.transform.position.x:F1}. Đã cập nhật danh sách, cộng power, và kích hoạt portal phía sau.");
+        }
+        
+        /// <summary>
+        /// Kích hoạt ngay portal tiếp theo trong danh sách (portal phía sau vừa lên tuyến đầu)
+        /// </summary>
+        private void ActivateNextPortal(bool isRightSide)
+        {
+            var portals = isRightSide ? rightPortals : leftPortals;
+            
+            if (portals.Count > 0 && portals[0] != null)
+            {
+                // Portal đầu tiên giờ là tuyến đầu mới - kích hoạt ngay
+                portals[0].ForceActivate();
+                Debug.Log($"[EnemyPortalManager] Đã kích hoạt ngay portal {(isRightSide ? "PHẢI" : "TRÁI")} phía sau tại x={portals[0].transform.position.x:F1}");
+            }
         }
 
         [ContextMenu("Set All Portals Active")]
@@ -533,12 +596,26 @@ namespace Script.Manager.GamePlayManager
         {
             List<EnemyPortalBehavior> frontline = new List<EnemyPortalBehavior>();
 
-            if (leftPortals.Count > 0 && leftPortals[0] != null && leftPortals[0].IsReadyToSpawn)
-                frontline.Add(leftPortals[0]);
+            // [DEBUG] Log chi tiết để kiểm tra tại sao portal không active
+            if (leftPortals.Count > 0 && leftPortals[0] != null)
+            {
+                var left = leftPortals[0];
+                if (left.IsReadyToSpawn)
+                    frontline.Add(left);
+                else
+                    Debug.Log($"[EnemyPortalManager] [DEBUG] Left[0] KHÔNG READY - isReadyToSpawn={left.IsReadyToSpawn}, activeDelay={left.GetStatus()?.activeDelay}");
+            }
 
-            if (rightPortals.Count > 0 && rightPortals[0] != null && rightPortals[0].IsReadyToSpawn)
-                frontline.Add(rightPortals[0]);
+            if (rightPortals.Count > 0 && rightPortals[0] != null)
+            {
+                var right = rightPortals[0];
+                if (right.IsReadyToSpawn)
+                    frontline.Add(right);
+                else
+                    Debug.Log($"[EnemyPortalManager] [DEBUG] Right[0] KHÔNG READY - isReadyToSpawn={right.IsReadyToSpawn}, activeDelay={right.GetStatus()?.activeDelay}");
+            }
 
+            Debug.Log($"[EnemyPortalManager] [DEBUG] GetFrontlineActivePortals trả về {frontline.Count} portal (Left ready={leftPortals.Count > 0 && leftPortals[0] != null && leftPortals[0].IsReadyToSpawn}, Right ready={rightPortals.Count > 0 && rightPortals[0] != null && rightPortals[0].IsReadyToSpawn})");
             return frontline;
         }
 
@@ -554,15 +631,20 @@ namespace Script.Manager.GamePlayManager
             float targetX = townCenter.transform.position.x;
 
             // Yêu cầu left portal index 0 di chuyển (portal tự quyết định)
+            // Sử dụng thời gian di chuyển đã tính toán dựa trên khoảng cách từ TownCenter
             if (leftPortals.Count > 0 && leftPortals[0] != null)
             {
-                leftPortals[0].TryMoveTowards(targetX, portalMoveSpeed, portalMoveDuration);
+                float calculatedDuration = leftPortals[0].CalculateMoveDuration(basePortalMoveDuration, durationIncreasePer100Distance);
+                leftPortals[0].TryMoveTowards(targetX, portalMoveSpeed, calculatedDuration);
+                Debug.Log($"[EnemyPortalManager] Left portal di chuyển với duration={calculatedDuration:F1}s (base={basePortalMoveDuration}s + {durationIncreasePer100Distance}s/100f)");
             }
 
             // Yêu cầu right portal index 0 di chuyển (portal tự quyết định)
             if (rightPortals.Count > 0 && rightPortals[0] != null)
             {
-                rightPortals[0].TryMoveTowards(targetX, portalMoveSpeed, portalMoveDuration);
+                float calculatedDuration = rightPortals[0].CalculateMoveDuration(basePortalMoveDuration, durationIncreasePer100Distance);
+                rightPortals[0].TryMoveTowards(targetX, portalMoveSpeed, calculatedDuration);
+                Debug.Log($"[EnemyPortalManager] Right portal di chuyển với duration={calculatedDuration:F1}s (base={basePortalMoveDuration}s + {durationIncreasePer100Distance}s/100f)");
             }
 
             // Sắp xếp lại sau khi di chuyển (phòng khi portal vượt qua nhau)
@@ -635,15 +717,24 @@ namespace Script.Manager.GamePlayManager
                 behavior.Setup(_enemyPool, _enemyDataProvider, _timeProvider);
 
                 // Tính toán và set MaxHP cho portal mới (không phải load từ save)
-                // Formula: BASE_MAX_HP + (currentDay * 10) - mỗi ngày tăng 10 HP
+                // Formula: basePortalMaxHp + (currentDay * hpIncreasePerDay)
                 int currentDay = _timeProvider != null ? _timeProvider.GetElapsedDays() : 0;
-                float calculatedMaxHp = EnemyPortalStatus.BASE_MAX_HP + (currentDay * 10f);
+                // [GUARD] Đảm bảo currentDay không âm
+                if (currentDay < 0)
+                {
+                    Debug.LogWarning($"[EnemyPortalManager] [GUARD] currentDay={currentDay} bị âm! Set về 0");
+                    currentDay = 0;
+                }
+                float calculatedMaxHp = basePortalMaxHp + (currentDay * hpIncreasePerDay);
+                
                 var status = behavior.GetStatus();
                 if (status != null)
                 {
                     status.MaxHp = calculatedMaxHp;
                     status.CurrentHp = calculatedMaxHp;
-                    Debug.Log($"[EnemyPortalManager] Portal phía sau {(isRightSide ? "PHẢI" : "TRÁI")}: MaxHP = {calculatedMaxHp} (Base {EnemyPortalStatus.BASE_MAX_HP} + Day {currentDay} * 10)");
+                    // [FIX] Đảm bảo HP được set đầy sau khi spawn
+                    status.ResetHealthToFull();
+                    Debug.Log($"[EnemyPortalManager] Portal phía sau {(isRightSide ? "PHẢI" : "TRÁI")}: MaxHP = {calculatedMaxHp} (Base {basePortalMaxHp} + Day {currentDay} * {hpIncreasePerDay})");
                 }
 
                 // Đăng ký ngay lập tức để có trong danh sách (không chờ Start)

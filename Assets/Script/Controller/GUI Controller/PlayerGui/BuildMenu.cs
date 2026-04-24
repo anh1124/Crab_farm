@@ -88,6 +88,14 @@ public class BuildMenu : MonoBehaviour
     }
     public void OpenBuildMenu()
     {
+        // Nếu đang hiển thị preview -> HỦY preview trước
+        if (isBuilding)
+        {
+            BPM.CancelPlacement();
+            ResetBuildState();
+            
+        }
+
         // Kiểm tra trạng thái THỰC TẾ của UI hiện tại thay vì dùng cờ bool dễ bị lệch sync
         bool isCurrentlyOpen = buildButtonContainer.gameObject.activeSelf;
 

@@ -42,6 +42,15 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
              "1   = Bình thường\n" +
              "5   = Nhanh x5")]
     [SerializeField] [Range(0f, 5f)] private float gameTimeScale = 1f;
+    
+    [Header("Day Speed Toggle (UI) - Tăng tốc 0h-19h")]
+    [Tooltip("Hệ số tốc độ khi bật toggle (mặc định x2)")]
+    [SerializeField] private float daySpeedMultiplier = 2f;
+    [Tooltip("UI Toggle để bật/tắt tăng tốc độ thời gian từ 0h-19h khi không bị tấn công")]
+    [SerializeField] private UnityEngine.UI.Toggle daySpeedToggle;
+    
+    private bool _isDaySpeedEnabled = false;
+    private float _normalGameTimeScale = 1f;
 
     private float _secondsPerMinute;
     private float _accumulatedTime; // Tích lũy giây thực để tính phút game
@@ -59,6 +68,79 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     private void Awake() 
     {
         // Singleton pattern removed - initialized via StartGameScrene
+    }
+
+    private void Start()
+    {
+        // Đăng ký listener cho Day Speed Toggle
+        if (daySpeedToggle != null)
+        {
+            daySpeedToggle.onValueChanged.AddListener(OnDaySpeedToggleChanged);
+            daySpeedToggle.isOn = false;
+            _isDaySpeedEnabled = false;
+        }
+        else
+        {
+            _isDaySpeedEnabled = false;
+        }
+        
+        Debug.Log("[GameTimeManager] Day Speed Toggle đã được tắt khi khởi động");
+    }
+
+    private void OnDestroy()
+    {
+        // Hủy đăng ký listener
+        if (daySpeedToggle != null)
+            daySpeedToggle.onValueChanged.RemoveListener(OnDaySpeedToggleChanged);
+    }
+
+    /// <summary>
+    /// Được gọi khi UI Toggle thay đổi trạng thái
+    /// </summary>
+    public void OnDaySpeedToggleChanged(bool isOn)
+    {
+        _isDaySpeedEnabled = isOn;
+        Debug.Log($"[GameTimeManager] Day Speed: {(isOn ? "BẬT" : "TẮT")}");
+    }
+
+    private void Update()
+    {
+        UpdateDaySpeedBoost();
+    }
+
+    /// <summary>
+    /// Cập nhật tốc độ thời gian:
+    /// - Toggle ON (0h-19h, không bị tấn công, ngày > 1): Tăng tốc x2
+    /// - Bị tấn công: Giảm tốc x0.5
+    /// - 19h-0h hoặc Ngày 1: Bình thường x1
+    /// </summary>
+    private void UpdateDaySpeedBoost()
+    {
+        // Kiểm tra xem enemy có đang tấn công không
+        var guardManager = FindObjectOfType<Script.Game.Mobs.MobsManager.GuardManager>();
+        bool isEnemyAttacking = guardManager != null && guardManager.isEnemyAttack;
+        
+        if (isEnemyAttacking)
+        {
+            // Khi enemy đang tấn công: Giảm tốc x0.5 (chậm gấp 2)
+            gameTimeScale = _normalGameTimeScale * 0.5f;
+            return;
+        }
+
+        // Khi không có enemy tấn công:
+        
+        // DaySpeed toggle: Ngày 1 cho phép x2 cả ngày, ngày > 1 chỉ 0h-19h
+        if (_isDaySpeedEnabled)
+        {
+            if (GameDay == 1 || GameHour < NIGHT_HOUR)
+            {
+                gameTimeScale = _normalGameTimeScale * daySpeedMultiplier;
+                return;
+            }
+        }
+        
+        // Mặc định: tốc độ bình thường
+        gameTimeScale = _normalGameTimeScale;
     }
 
     public void InitializeTimeSystem()
@@ -149,9 +231,6 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
         {
             yield return null; // Tick mỗi frame
             
-            // [ANTI-CHEAT] Nếu chưa có TownCenter hoặc Tier 0 -> đóng băng thời gian
-            if (Script.Utility.GetTownCenterTier() < 1) continue;
-
             // Cập nhật lại _secondsPerMinute mỗi frame để hệ số thay đổi có hiệu lực ngay
             RecalculateSecondsPerMinute();
 
@@ -266,7 +345,12 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     /// </summary>
     public float SecondsPerDay => realSecondsPerGameDay;
 
-    public bool IsTimeFlowing => gameTimeScale > 0f && Script.Utility.GetTownCenterTier() >= 1;
+    public bool IsTimeFlowing => gameTimeScale > 0f;
+    
+    /// <summary>
+    /// Hệ số tốc độ thời gian hiện tại (để SkillManager và các hệ thống khác đồng bộ cooldown)
+    /// </summary>
+    public float GameTimeScale => gameTimeScale;
     #endregion
 
 
@@ -316,6 +400,18 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
         
         SetGameTime(nightMinutes);
         Debug.Log("Time set to 7:50");
+    }
+
+    /// <summary>
+    /// Set game day (for testing purposes). Day 1 = first day.
+    /// </summary>
+    public void SetDay(int day)
+    {
+        // Convert day to total minutes (day 1 = 0 minutes, day 2 = 1440 minutes, etc.)
+        int targetDay = Mathf.Max(1, day);
+        int totalMinutes = (targetDay - 1) * 1440; // Start of the target day
+        SetGameTime(totalMinutes);
+        Debug.Log($"[GameTimeManager] SetDay({day}) -> GameDay={GameDay}, totalMinutes={totalMinutes}");
     }
 }
 }

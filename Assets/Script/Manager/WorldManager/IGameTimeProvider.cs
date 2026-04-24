@@ -23,6 +23,9 @@ namespace Script.Manager.WorldManager
         
         /// <summary> Số giây thực tế tương đương 1 ngày game. </summary>
         float SecondsPerDay { get; }
+        
+        /// <summary> Hệ số tốc độ thời gian hiện tại (1 = bình thường, 2 = x2, 0.5 = x0.5). </summary>
+        float GameTimeScale { get; }
     }
 }
 

@@ -263,8 +263,21 @@ namespace Script.Manager.NatureManager
             var bounds = WorldUtility.GetHuntingBounds(_guardManager, isLeft);
 
             // Điều chỉnh phạm vi để tránh spawn sát tường
-            float minSpawnX = isLeft ? bounds.end            : bounds.start + wallOffset;
-            float maxSpawnX = isLeft ? bounds.start - wallOffset : bounds.end;
+            // Với bên trái (âm): bounds.end < bounds.start, nên min=bounds.end, max=bounds.start
+            // Với bên phải (dương): bounds.start < bounds.end, nên min=bounds.start, max=bounds.end
+            float minSpawnX, maxSpawnX;
+            if (isLeft)
+            {
+                // Bên trái: bounds.end (xa) -> bounds.start (gần tường)
+                minSpawnX = bounds.end + wallOffset;   // Xa hơn tường
+                maxSpawnX = bounds.start - wallOffset; // Gần tường hơn
+            }
+            else
+            {
+                // Bên phải: bounds.start (gần tường) -> bounds.end (xa)
+                minSpawnX = bounds.start + wallOffset; // Gần tường hơn
+                maxSpawnX = bounds.end - wallOffset;   // Xa hơn tường
+            }
 
             if (minSpawnX >= maxSpawnX)
             {

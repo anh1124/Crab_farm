@@ -12,10 +12,11 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         {
             _target = new Vector3(0, ctx.Transform.position.y, 0f); // Tọa độ trung tâm (Plaza)
             if (ctx.Animator != null) 
-                ctx.Animator.Play("walk");
+                ctx.Animator.Play("run");
 
+            // Dùng runSpeed để chạy về safe zone nhanh hơn khi đêm
             if (ctx.Movement != null)
-                ctx.Movement.SetTarget(_target);
+                ctx.Movement.SetTarget(_target, ctx.Status != null ? ctx.Status.runSpeed : -1f);
         }
 
         public override void UpdateBehavior(DenizenContext ctx)
@@ -35,11 +36,11 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         {
             if (ctx.Animator == null) return;
             
-            // ToTownState nghĩa là đang di chuyển. Trừ khi bị cản thì đứng im chờ StateMachine
+            // ToTownState khi đêm: chạy về safe zone
             if (ctx.Status.isMoving)
             {
-                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("walk"))
-                    ctx.Animator.Play("walk");
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
+                    ctx.Animator.Play("run");
             }
             else
             {

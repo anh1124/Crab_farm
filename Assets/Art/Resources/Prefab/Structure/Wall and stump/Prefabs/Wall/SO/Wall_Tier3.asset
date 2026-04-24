@@ -17,8 +17,7 @@ MonoBehaviour:
   prefabStump: {fileID: 1913700099761040674, guid: ba587d698125f3a4a9309e0fa3c17dd6, type: 3}
   normalMaxHp: 200
   blessedMaxHp: 360
-  reBuildCost: 3
-  upgradeCost: 5
+  rebuildCost: 6
+  upgradeCost: 15
   upgradeProgressMax: 15
-  buildTier1Cost: 0
   description: 

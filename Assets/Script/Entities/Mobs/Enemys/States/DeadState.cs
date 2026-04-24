@@ -26,6 +26,9 @@ namespace Script.Game.Enemy.States
             _moveTarget = null;
             if (ctx.Status != null) ctx.Status.IsMoving = false;
 
+            // Tắt tất cả collider để enemy không thể bị tấn công hoặc va chạm
+            SetCollidersEnabled(ctx.Self, false);
+
             // Phát âm thanh khi enemy chết
             PlayDeathSound(ctx);
         }

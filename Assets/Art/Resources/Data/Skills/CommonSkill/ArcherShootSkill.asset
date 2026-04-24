@@ -17,7 +17,8 @@ MonoBehaviour:
   displayName: 
   icon: {fileID: 0}
   skillName: 
-  damage: 0
+  damage: 1
+  ignoreTimeScale: 1
   cooldown: 2.5
   allowMovementDuringSkill: 0
   moveRequired: 0

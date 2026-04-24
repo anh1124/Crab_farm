@@ -18,6 +18,11 @@ namespace Script.Data_Model.Status
         public bool debugDenizen = false;  // Bật để xem log chi tiết cho entity này
 
         public enum ArcherState { Idle, Hunting, Attack, HoldWall, Retreat, ReturningToBase, DropCoin }
+        public enum VillagerState { Idle, ToTown, RunTool, Fear, DropCoin }
+
+        [Header("Runtime State Enum")]
+        public ArcherState archerState = ArcherState.Idle;
+        public VillagerState villagerState = VillagerState.Idle;
 
         [field: SerializeField] public bool CanMove { get; set; } = true;
         public bool isMoving = false;
@@ -62,9 +67,6 @@ namespace Script.Data_Model.Status
         public GameObject previousWall;
         public GameObject currentTarget;
         public GameObject coinTarget; // Added for Vagrant/Coin logic
-
-        [Header("Legacy / Squad Tracking")]
-        public ArcherState archerState; // For GuardSquadSystem compatibility
 
         // Events
         public event Action<int> OnCoinChanged;
@@ -180,7 +182,9 @@ namespace Script.Data_Model.Status
                 isFearPending = isFearPending,
                 isInDanger = isInDanger,
                 fearTimer = fearTimer,
-                isLeftFlank = isLeftFlank
+                isLeftFlank = isLeftFlank,
+                archerState = (int)this.archerState,
+                villagerState = (int)this.villagerState
             };
         }
 
@@ -199,6 +203,10 @@ namespace Script.Data_Model.Status
             isInDanger = data.isInDanger;
             fearTimer = data.fearTimer;
             isLeftFlank = data.isLeftFlank;
+            
+            // Khôi phục state enum
+            archerState = (ArcherState)data.archerState;
+            villagerState = (VillagerState)data.villagerState;
         }
     }
 }

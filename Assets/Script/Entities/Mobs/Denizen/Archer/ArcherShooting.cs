@@ -110,7 +110,11 @@ namespace Script.Game.Mobs.Subjects
                 finalAngle += Random.Range(-5f, 5f) * (1f - accuracy);
 
             GameObject arrowObj = arrowPool.GetArrow();
-            if (arrowObj == null) return;
+            if (arrowObj == null)
+            {
+                Debug.LogError($"[ArcherShooting] {gameObject.name}: KHÔNG THỂ LẤY MŨI TÊN TỪ POOL! Có thể pool đã đạt giới hạn max (250) hoặc chưa được khởi tạo.");
+                return;
+            }
 
             arrowObj.transform.position = firePoint.position;
 
@@ -119,7 +123,14 @@ namespace Script.Game.Mobs.Subjects
 
             ArrowController arrow = arrowObj.GetComponent<ArrowController>();
             if (arrow != null)
-                arrow.Initialize(velocity, finalAngle, gravityScale, stickImpactOffset, gameObject);
+            {
+                // [FIX] Lấy damage từ DenizenStatus (từ SO) và truyền vào mũi tên
+                float damage = 1f;
+                var status = gameObject.GetComponent<Script.Data_Model.Status.DenizenStatus>();
+                if (status != null) damage = status.attackDame;
+                
+                arrow.Initialize(velocity, finalAngle, gravityScale, stickImpactOffset, gameObject, false, damage);
+            }
         }
         #endregion
 

@@ -19,13 +19,16 @@ namespace Script.Save_Controller
         public bool TechPenetrating;  // breaking armor
         public bool TechForge;        // new struction that give sword to upgrade Squire to Vanguard
         public bool TechAdhesive;     // make wall better
+        
+        // Storm Invasion: Extra power từ việc phá portal
+        public int ExtraPower;
 
         public WorldInfo(string name, string creationDate, int seed,
             int gameHour = 7, int gameMinute = 0, int gameDay = 1,
             int gameMonth = 1, int gameYear = 1,
             bool techFireArrow = false, bool techPenetrating = false, 
             bool techForge = false, bool techAdhesive = false,
-            string lastPlayedDate = null)
+            string lastPlayedDate = null, int extraPower = 0)
         {
             Name = name;
             CreationDate = creationDate;
@@ -39,6 +42,7 @@ namespace Script.Save_Controller
             TechPenetrating = techPenetrating;
             TechForge = techForge;
             TechAdhesive = techAdhesive;
+            ExtraPower = extraPower;
             LastPlayedDate = string.IsNullOrEmpty(lastPlayedDate) ? creationDate : lastPlayedDate;
         }
     }

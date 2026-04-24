@@ -576,6 +576,13 @@ namespace Script.Manager.Building
                         Debug.Log($"[BuildingPlacementManager] New structure {newStructure.name} placed at {newStructure.transform.position}. BuildingBehavior will handle flip in Start().");
                     }
 
+                    // [FIX] Reset HP cho wall mới build
+                    var wallBehavior = newStructure.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
+                    if (wallBehavior != null)
+                    {
+                        wallBehavior.ResetHealthToFull();
+                    }
+
                     CleanupPreview();
                     
                     // Notifying UI and logic - ideally these would also be injected

@@ -23,6 +23,9 @@ namespace Script.Game.Mobs.MobsManager
         private GuardManager guardManager;
         private BuildingManager _bm;
         private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
+        
+        // [NEW] Flag bảo vệ chống gọi chồng RebalanceSquads
+        private bool _isRebalancing = false;
 
         private void Start()
         {
@@ -78,45 +81,159 @@ namespace Script.Game.Mobs.MobsManager
             }
         }
 
+        /// <summary>
+        /// [NEW] Cân bằng đội hình archer dựa trên vị trí thực tế.
+        /// Luôn thực hiện cân bằng, sắp xếp lại toàn bộ đội hình theo tọa độ X.
+        /// Có bảo vệ chống gọi chồng (re-entry protection).
+        /// </summary>
         public void RebalanceSquads()
+        {
+            if (_isRebalancing) return;
+            _isRebalancing = true;
+            
+            try
+            {
+                RebalanceSquadsInternal();
+            }
+            finally
+            {
+                _isRebalancing = false;
+            }
+        }
+        
+        /// <summary>
+        /// [NEW] Logic cân bằng triệt để - gom tất cả archer, sắp xếp theo X, phân bổ lại flank.
+        /// </summary>
+        private void RebalanceSquadsInternal()
         {
             leftFlankArchers.RemoveAll(x => x == null);
             rightFlankArchers.RemoveAll(x => x == null);
 
             int diff = leftFlankArchers.Count - rightFlankArchers.Count;
-            if (Mathf.Abs(diff) <= 1) return;
+            if (Mathf.Abs(diff) <= 1) return; // Đã cân bằng, không cần làm gì
 
             if (guardManager) guardManager.DebugLog($"[GuardSquadSystem] Rebalancing squads... (Diff: {diff})");
 
-            if (diff > 1) 
-            {
-                int countToMove = diff / 2;
-                for (int i = 0; i < countToMove; i++) MoveArcher(leftFlankArchers, rightFlankArchers, false);
-            }
-            else
-            {
-                int countToMove = Mathf.Abs(diff) / 2;
-                for (int i = 0; i < countToMove; i++) MoveArcher(rightFlankArchers, leftFlankArchers, true);
-            }
-        }
+            // [STEP 1] Gom tất cả archer từ cả 2 flank
+            var allArchers = new List<GameObject>();
+            allArchers.AddRange(leftFlankArchers);
+            allArchers.AddRange(rightFlankArchers);
+            
+            // [STEP 2] Sắp xếp theo tọa độ X tăng dần (từ trái sang phải)
+            allArchers.Sort((a, b) => a.transform.position.x.CompareTo(b.transform.position.x));
+            
+            // [STEP 3] Tính toán phân bổ - ưu tiên trái khi số lượng lẻ
+            int total = allArchers.Count;
+            int targetLeft = (total + 1) / 2; // Ví dụ: 5 archer → 3 left, 2 right
+            
+            if (guardManager) guardManager.DebugLog($"[GuardSquadSystem] Total: {total}, Target Left: {targetLeft}, Right: {total - targetLeft}");
 
-        private void MoveArcher(List<GameObject> fromList, List<GameObject> toList, bool toLeft)
-        {
-            if (fromList.Count == 0) return;
-            GameObject archer = fromList[fromList.Count - 1];
-            fromList.RemoveAt(fromList.Count - 1);
-            toList.Add(archer);
-
-            var status = archer.GetComponent<DenizenStatus>();
-            if (status != null)
+            // [STEP 4] Xóa sạch list cũ
+            leftFlankArchers.Clear();
+            rightFlankArchers.Clear();
+            
+            // [STEP 5] Gán lại flank theo thứ tự từ trái sang phải
+            for (int i = 0; i < total; i++)
             {
+                var archer = allArchers[i];
+                if (archer == null) continue;
+                
+                bool toLeft = i < targetLeft;
+                var status = archer.GetComponent<DenizenStatus>();
+                if (status == null) continue;
+                
+                // Gán vào list
+                if (toLeft)
+                    leftFlankArchers.Add(archer);
+                else
+                    rightFlankArchers.Add(archer);
+                
+                // Cập nhật status
+                bool changed = (status.isLeftFlank != toLeft);
                 status.isLeftFlank = toLeft;
                 if (guardManager && guardManager.Wall)
                 {
-                    status.assignedWall = toLeft ? guardManager.Wall.currentLeftWall : guardManager.Wall.currentRightWall;
+                    status.assignedWall = toLeft ? 
+                        guardManager.Wall.currentLeftWall : 
+                        guardManager.Wall.currentRightWall;
                 }
-                if (guardManager) guardManager.DebugLog($"[GuardSquadSystem] Reassigned {archer.name} to {(toLeft ? "LEFT" : "RIGHT")} flank");
+                
+                // Force archer quay về base để nhận slot mới dựa trên index
+                ForceArcherReturnToBase(archer);
+                
+                if (guardManager && changed)
+                    guardManager.DebugLog($"[GuardSquadSystem] {archer.name} chuyển từ {(toLeft ? "RIGHT" : "LEFT")} sang {(toLeft ? "LEFT" : "RIGHT")}");
             }
+            
+            if (guardManager) guardManager.DebugLog($"[GuardSquadSystem] Hoàn tất cân bằng. Left: {leftFlankArchers.Count}, Right: {rightFlankArchers.Count}");
+        }
+        
+        /// <summary>
+        /// [NEW] Force archer quay về base ngay lập tức.
+        /// Hủy di chuyển cũ, set state ReturningToBase để archer tự tính slot mới.
+        /// </summary>
+        private void ForceArcherReturnToBase(GameObject archer)
+        {
+            if (archer == null) return;
+            
+            var status = archer.GetComponent<DenizenStatus>();
+            if (status == null) return;
+            
+            // Set state để archer chuyển sang ReturningToBaseState
+            status.archerState = DenizenStatus.ArcherState.ReturningToBase;
+            
+            // Hủy di chuyển hiện tại (nếu có) để nhận target mới
+            var movement = archer.GetComponent<DenizenMovement>();
+            movement?.Stop();
+            
+            // Force state machine chuyển state (nếu cần)
+            var roleCtrl = archer.GetComponent<DenizenRoleController>();
+            var archerJob = roleCtrl?.JobBrain as ArcherJob;
+            if (archerJob != null)
+            {
+                // Chỉ chuyển nếu đang ở state có thể di chuyển
+                if (status.currentStateName == "ArcherIdleState" ||
+                    status.currentStateName == "ArcherHoldWallState" ||
+                    status.currentStateName == "ArcherReturnToBaseState" ||
+                    status.currentStateName == "ArcherMoveState")
+                {
+                    archerJob.ChangeState(archerJob.ReturnToBaseState);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Tính center X dựa trên vị trí 2 wall hiện tại hoặc town center
+        /// </summary>
+        private float GetCenterX()
+        {
+            // Ưu tiên dùng vị trí giữa 2 wall
+            if (guardManager != null && guardManager.Wall != null)
+            {
+                GameObject leftWall = guardManager.Wall.currentLeftWall;
+                GameObject rightWall = guardManager.Wall.currentRightWall;
+                
+                if (leftWall != null && rightWall != null)
+                {
+                    return (leftWall.transform.position.x + rightWall.transform.position.x) / 2f;
+                }
+                else if (leftWall != null)
+                {
+                    return leftWall.transform.position.x;
+                }
+                else if (rightWall != null)
+                {
+                    return rightWall.transform.position.x;
+                }
+            }
+            
+            // Fallback: dùng town center hoặc 0
+            if (BM != null && BM.currentTownCenter != null)
+            {
+                return BM.currentTownCenter.transform.position.x;
+            }
+            
+            return 0f;
         }
 
         public void NotifyAllArchersValues(bool isAttack)
@@ -136,22 +253,43 @@ namespace Script.Game.Mobs.MobsManager
             }
         }
 
-        public void NotifyArchersDefensivePositionChanged(GameObject leftWall, GameObject rightWall)
+        /// <summary>
+        /// [NEW] Thông báo archer cập nhật vị trí phòng thủ.
+        /// </summary>
+        /// <param name="forceReturn">Nếu true, force tất cả archer quay về base ngay lập tức</param>
+        public void NotifyArchersDefensivePositionChanged(GameObject leftWall, GameObject rightWall, bool forceReturn = false)
         {
-            NotifyFlankArchers(leftFlankArchers, leftWall);
-            NotifyFlankArchers(rightFlankArchers, rightWall);
+            NotifyFlankArchers(leftFlankArchers, leftWall, forceReturn);
+            NotifyFlankArchers(rightFlankArchers, rightWall, forceReturn);
         }
 
-        private void NotifyFlankArchers(List<GameObject> archers, GameObject wall)
+        private void NotifyFlankArchers(List<GameObject> archers, GameObject wall, bool forceReturn)
         {
             if (wall == null) return;
             foreach (var archer in archers)
             {
                 if (archer == null) continue;
                 var status = archer.GetComponent<DenizenStatus>();
-                if (status != null && (status.currentStateName == "ArcherReturningToBaseState" || status.currentStateName == "ArcherHoldWallState"))
+                if (status == null) continue;
+                
+                // Cập nhật wall cho tất cả archer trong flank này
+                bool shouldUpdate = status.isLeftFlank == (archers == leftFlankArchers) ||
+                                    status.assignedWall == null;
+                
+                if (shouldUpdate)
                 {
                     status.assignedWall = wall;
+                    
+                    // Force quay về base nếu cần
+                    if (forceReturn)
+                    {
+                        ForceArcherReturnToBase(archer);
+                        if (guardManager) guardManager.DebugLog($"[GuardSquadSystem] {archer.name} force quay về {wall.name}");
+                    }
+                    else if (guardManager)
+                    {
+                        guardManager.DebugLog($"[GuardSquadSystem] {archer.name} cập nhật wall sang {wall.name}");
+                    }
                 }
             }
         }

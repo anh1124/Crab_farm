@@ -27,8 +27,11 @@ namespace Script.Manager
         /// <summary>
         /// True khi đang trong quá trình load dữ liệu từ save.
         /// Dùng để các script khác phân biệt Destroy do hệ thống save và Destroy thật trong gameplay.
-        /// </summary>
+        // Static flag để các component biết khi nào đang loading
         public static bool IsLoading { get; private set; } = false;
+        
+        // Flag để tránh đăng ký archer liên tục khi load game (gây phân công sai)
+        public static bool IsLoadingFromSave { get; set; } = false;
         
         public List<GameObject> allContainers; 
         

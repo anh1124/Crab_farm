@@ -63,6 +63,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             InitializeBrain();
             if (Context == null) return;
 
+            // [WATCHDOG] Tự động recovery nếu detector bị tắt bất thường
+            if (Context.RayCaster != null && !Context.RayCaster.IsActive)
+            {
+                if (Context.Status != null && Context.Status.debugDenizen)
+                    Debug.LogWarning($"[VillagerJob] Detector bị tắt, đang tự động bật lại...");
+                _sensor.Enable();
+            }
+
             // [DETECTOR] — Gọi scanner thủ công (giống Enemy pattern)
             if (Context.RayCaster != null && Context.RayCaster.IsActive)
                 Context.RayCaster.DrawRay();
@@ -104,8 +112,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         {
             if (Context != null)
             {
+                // Đảm bảo detector references tồn tại trước khi sử dụng
+                if (Context.RayCaster == null)
+                    Context.RayCaster = GetComponentInChildren<RayCastHelper>(true);
+                
                 Context.ResetDetectors(); // Swab previous job's detectors
                 _sensor.Enable();
+                
+                // Force scan ngay lập tức
+                if (Context.RayCaster != null && Context.RayCaster.IsActive)
+                    Context.RayCaster.DrawRay();
             }
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
@@ -122,10 +138,63 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (dm != null) dm.UnregisterDenizen(gameObject); // Bug fix: was Register
 
             if (Context != null)
+            {
                 _sensor.Disable();
+                
+                // Clear fear state và targets để tránh stale data
+                if (Context.Status != null)
+                {
+                    Context.Status.isFearPending = false;
+                    Context.Status.currentTarget = null;
+                    Context.Status.coinTarget = null;
+                }
+            }
 
             CurrentState?.Exit(Context);
             CurrentState = null;
+        }
+        #endregion
+
+        #region Save/Load State Recovery
+        /// <summary>
+        /// Được gọi sau khi load từ save để khôi phục state machine.
+        /// OnEnable không chạy lại khi load nên cần hàm này để tạo lại state.
+        /// </summary>
+        public void ResetStateAfterLoad()
+        {
+            InitializeBrain();
+            if (Context?.Status == null) return;
+            
+            // Đảm bảo detector references tồn tại
+            if (Context.RayCaster == null)
+                Context.RayCaster = GetComponentInChildren<RayCastHelper>(true);
+            
+            // Bật lại detectors
+            if (Context.RayCaster != null)
+            {
+                Context.RayCaster.IsActive = true;
+                Context.RayCaster.DrawRay();
+            }
+            
+            // Khôi phục state từ enum đã lưu
+            var savedState = Context.Status.villagerState;
+            DenizenState newState = savedState switch
+            {
+                Script.Data_Model.Status.DenizenStatus.VillagerState.ToTown => ToTownState,
+                Script.Data_Model.Status.DenizenStatus.VillagerState.RunTool => RunToolState,
+                Script.Data_Model.Status.DenizenStatus.VillagerState.Fear => FearState,
+                Script.Data_Model.Status.DenizenStatus.VillagerState.DropCoin => DropCoinState,
+                _ => IdleState
+            };
+            
+            // Chỉ đổi state nếu hiện tại khác hoặc null
+            if (CurrentState == null || CurrentState != newState)
+            {
+                ChangeState(newState);
+            }
+            
+            if (Context.Status.debugDenizen)
+                Debug.Log($"[VillagerJob] ResetStateAfterLoad: {newState.GetType().Name} (saved enum: {savedState})");
         }
         #endregion
 
