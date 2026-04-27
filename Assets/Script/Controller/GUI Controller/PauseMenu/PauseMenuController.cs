@@ -1,4 +1,5 @@
 using System;
+using Script;
 using Script.Save_Controller;
 using Script.Manager.WorldManager;
 using Script.Manager.GamePlayManager;
@@ -16,12 +17,16 @@ namespace Script.GUI_Controller.PauseMenu
 {
     public class PauseMenuController : MonoBehaviour
     {
-
-
         private GuiCanvasManager guiCanvasManager;
         
+        #region Tutorial Mode
+        [Header("Tutorial Settings - KHÔNG TỰ SET, sẽ auto lấy từ StartGameScrene")]
+        [Tooltip("Nếu true, nút Save&Exit sẽ chỉ Exit không Save. Giá trị này được tự động lấy từ StartGameScrene.isTutorialScene trong Awake/Start, không cần set thủ công.")]
+        public bool isTutorialScene = false;
+        #endregion
+        
         #region Pause menu component
-
+        [Header("Pause Menu ")]
         public Button resumeButton;
         public Button optionBtn;
         public Button saveExitBtn;
@@ -40,9 +45,40 @@ namespace Script.GUI_Controller.PauseMenu
         {
             guiCanvasManager = GuiCanvasManager.Instance;
            
+            // Auto-detect tutorial scene từ StartGameScrene nếu có
+            AutoDetectTutorialScene();
+            
             if (resumeButton != null) resumeButton.onClick.AddListener(Resume);
             if (optionBtn != null) optionBtn.onClick.AddListener(OpenOption);
             if (saveExitBtn != null) saveExitBtn.onClick.AddListener(SaveAndExit);
+            
+            // Đổi text button nếu là tutorial
+            UpdateButtonTextForTutorial();
+        }
+        
+        /// <summary>
+        /// Tự động phát hiện tutorial scene từ StartGameScrene
+        /// </summary>
+        private void AutoDetectTutorialScene()
+        {
+            isTutorialScene = Utility.IsTutorialScene();
+            Debug.Log($"[PauseMenuController] Auto-detected isTutorialScene = {isTutorialScene}");
+        }
+        
+        /// <summary>
+        /// Cập nhật text button cho phù hợp với chế độ tutorial
+        /// </summary>
+        private void UpdateButtonTextForTutorial()
+        {
+            if (isTutorialScene && saveExitBtn != null)
+            {
+                var btnText = saveExitBtn.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null)
+                {
+                    btnText.text = "Exit";
+                    Debug.Log("[PauseMenuController] Đổi button text thành 'Exit' cho tutorial");
+                }
+            }
         }
 
         private void OnEnable()
@@ -250,6 +286,16 @@ namespace Script.GUI_Controller.PauseMenu
             // Play UI click sound
             Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
 
+            // Tutorial: Chỉ Exit không Save
+            if (isTutorialScene)
+            {
+                Debug.Log("[PauseMenuController] TutorialScene: Exit without save");
+                Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);
+                SceneManager.LoadScene("MainMenuScene");
+                return;
+            }
+
+            // Normal game: Save then Exit
             WorldFileManager.Instance.SaveCurrentMap();
             Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);
             SceneManager.LoadScene("MainMenuScene");

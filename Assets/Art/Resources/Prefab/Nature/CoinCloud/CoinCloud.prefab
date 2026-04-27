@@ -127,10 +127,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff8de07558f423441a25dee96e787472, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultSpawnPosition: {x: 200, y: 200, z: 0}
-  spawnXRange: 78.4
-  spawnY: 31.2
-  targetY: 14
-  targetXRange: 20
-  initialDelay: 7.05
+  useCurrentPositionAsSpawn: 0
+  spawn: {x: 0, y: 40, z: 0}
+  randomSpawnRadiusY: 0
+  targetType: 0
+  targetObject: {fileID: 0}
+  targetVector: {x: 0, y: 0, z: 0}
+  targetOffset: {x: 0, y: 14.52, z: 0}
+  randomTargetRadiusX: 10
+  delay: 3
+  activeOnStart: 0
   destroyDelay: 1
+  currentState: 0

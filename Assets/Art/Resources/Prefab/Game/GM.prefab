@@ -214,7 +214,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04a205cf139ec384ea3ad5d15e12055f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _archerHuntingRange: 25
+  _archerHuntingRange: 50
   isDebugHuntingRange: 1
   showDebugLogs: 0
 --- !u!114 &3102458789741671300
@@ -354,6 +354,7 @@ MonoBehaviour:
   npcUpdateManager: {fileID: 0}
   arrowPool: {fileID: 0}
   wallManager: {fileID: 0}
+  backgroundMusic: {fileID: 8300000, guid: 653f3d3aeb724dc4b8e4bc12749d8f05, type: 3}
 --- !u!114 &5832753685871575959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -367,11 +368,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isInstanceChopTree: 1
-  addCurrentCoin: 50
-  damageAlly: 1
+  addCurrentCoin: 0
+  damageAlly: 0
   instanceKill: 0
-  infiniteMp: 1
-  infiniteHp: 1
+  infiniteMp: 0
+  infiniteHp: 0
   infiniteCoin: 0
 --- !u!1 &2692076870354972573
 GameObject:
@@ -420,9 +421,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9e9f6eab09debf43b7f3634400ce05c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  growthRate: 1
+  extraPower: 0
   currentWaveEnemies: []
   debugCurrentWavePower: 0
+  debugRemainingPower: 0
+  debugTotalSpawnedEnemies: 0
   customWavePower: 5
 --- !u!114 &8206099037918200606
 MonoBehaviour:
@@ -454,10 +457,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90900b77e85941a488c7517a0f2bc027, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalL: {fileID: 0}
-  portalR: {fileID: 0}
+  leftPortals: []
+  rightPortals: []
   minSpawnDistance: 40
   maxSpawnDistance: 80
+  portalMoveSpeed: 3
+  basePortalMoveDuration: 3
+  durationIncreasePer100Distance: 2
+  backPortalSpawnOffset: 30
+  maxPortalsPerSide: 3
+  basePortalMaxHp: 100
+  hpIncreasePerDay: 20
 --- !u!114 &6442943352986191126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -594,6 +604,7 @@ MonoBehaviour:
   arrow: {fileID: 8129226867493365096, guid: c1eb463edbdedcd4abd70a936c9e66c4, type: 3}
   debugArrow: 0
   coinPrefab: {fileID: 7335347916630574833, guid: 358e2913914ab634f831fe3105e91e15, type: 3}
+  coinCloudPrefab: {fileID: 2885877462678522322, guid: 04c97a4ab2de3ae4d8c129acb267676f, type: 3}
   coinMoveSpeed: 0.5
   fallSpeed: 15
   timeMaxFloatCoin: 3
@@ -890,10 +901,8 @@ MonoBehaviour:
   config:
     spawnDistanceFromWall: 3
     maxVagrants: 5
-    dailySpawnChance: 0.7
-    minDailySpawnCount: 0
-    maxDailySpawnCount: 11
-    randomXRange: 2
+  maxTotalDenizens: 30
+  spawnIntervalDays: 3
 --- !u!114 &8943260865246160208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -968,6 +977,7 @@ MonoBehaviour:
     TechPenetrating: 0
     TechForge: 0
     TechAdhesive: 0
+    ExtraPower: 0
 --- !u!114 &4030108452006457101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1063,6 +1073,7 @@ MonoBehaviour:
     TechPenetrating: 0
     TechForge: 0
     TechAdhesive: 0
+    ExtraPower: 0
 --- !u!114 &1617303465254960715
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1140,6 +1151,8 @@ MonoBehaviour:
   inspectorYear: 0
   realSecondsPerGameDay: 240
   gameTimeScale: 1
+  daySpeedMultiplier: 2
+  daySpeedToggle: {fileID: 0}
   hourlyEventDebug: []
 --- !u!114 &8825931610287078424
 MonoBehaviour:

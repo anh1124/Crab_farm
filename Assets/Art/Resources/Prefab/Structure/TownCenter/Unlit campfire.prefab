@@ -53,7 +53,6 @@ GameObject:
   - component: {fileID: 8405274900508887912}
   - component: {fileID: 6431258359585745220}
   - component: {fileID: 9127146172269349043}
-  - component: {fileID: 5222687544558000564}
   m_Layer: 12
   m_Name: Unlit campfire
   m_TagString: TownCenter
@@ -366,21 +365,6 @@ MonoBehaviour:
   flashRedDuration: 0.1
   usePropertyBlock: 1
   colorPropertyName: _Color
---- !u!114 &5222687544558000564
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8972918622944182515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1de9abf647682094c9a32023855e3d05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _hintDataList:
-  - {fileID: 11400000, guid: db27729b765ef944a8896729fbcf25ed, type: 2}
-  - {fileID: 11400000, guid: 7ee459337ff167446b51accf07b01502, type: 2}
 --- !u!1001 &6807876492406318198
 PrefabInstance:
   m_ObjectHideFlags: 0

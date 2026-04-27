@@ -20,6 +20,9 @@ namespace Script.Game.Item.Coin
         
         private ICoinPool _coinPool;
 
+        public event System.Action OnSlotsShown;
+        public event System.Action OnSlotsHidden;
+
         public void SetupPool(ICoinPool pool)
         {
             _coinPool = pool;
@@ -57,6 +60,7 @@ namespace Script.Game.Item.Coin
             if (coinSlotParent != null)
             {
                 coinSlotParent.SetActive(true);
+                OnSlotsShown?.Invoke();
                 
                 int currentSlotCount = coinSlotParent.transform.childCount;
                 //nếu coinslot đã được tạo đủ số lượng thì không tạo lại
@@ -87,6 +91,7 @@ namespace Script.Game.Item.Coin
             if (coinSlotParent != null)
             {
                 coinSlotParent.SetActive(false);
+                OnSlotsHidden?.Invoke();
             }
         }
 

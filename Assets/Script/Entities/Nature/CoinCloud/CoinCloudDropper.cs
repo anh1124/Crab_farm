@@ -20,12 +20,18 @@ namespace Script.Game.CoinCloud
         private int coinsRemaining = 0;
         private bool isDropping = false;
         private float dropTimer = 0f;
+        private bool _finishedFired = false;
         
         public int CoinsDropped => coinsDropped;
         public int CoinsRemaining => coinsRemaining;
         public bool IsDropping => isDropping;
         public int CoinAmount => coinAmount;
         public float DropInterval => dropInterval;
+        
+        /// <summary>
+        /// Event khi đã drop hết toàn bộ coin
+        /// </summary>
+        public event System.Action OnFinishedDropping;
         
         private void Update()
         {
@@ -43,22 +49,39 @@ namespace Script.Game.CoinCloud
                     if (coinsRemaining <= 0)
                     {
                         isDropping = false;
+                        if (!_finishedFired)
+                        {
+                            _finishedFired = true;
+                            OnFinishedDropping?.Invoke();
+                        }
                     }
                 }
             }
         }
         
         /// <summary>
-        /// Bắt đầu drop coin
+        /// Bắt đầu drop coin sau một khoảng delay (giây)
         /// </summary>
-        public void StartDropping()
+        /// <param name="initialDelay">Thời gian chờ trước khi bắt đầu drop (giây)</param>
+        public void StartDropping(float initialDelay = 0f)
         {
+            StartCoroutine(StartDroppingCoroutine(initialDelay));
+        }
+        
+        private System.Collections.IEnumerator StartDroppingCoroutine(float initialDelay)
+        {
+            if (initialDelay > 0)
+            {
+                yield return new WaitForSeconds(initialDelay);
+            }
+            
             if (coinsRemaining <= 0)
             {
                 coinsRemaining = coinAmount;
             }
             isDropping = true;
             dropTimer = 0f;
+            _finishedFired = false;
         }
         
         /// <summary>

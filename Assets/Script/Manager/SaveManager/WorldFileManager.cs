@@ -157,11 +157,6 @@ namespace Script.Save_Controller
                     _techState.TechAdhesive
                 );
             }
-
-            // Lưu trạng thái hint của world này
-            string activePath = GetActiveWorldPath();
-            if (!string.IsNullOrEmpty(activePath))
-                Script.Tutorial.HintSaveManager.Instance?.Save(activePath);
         }
         public void SaveGameTime()
         {

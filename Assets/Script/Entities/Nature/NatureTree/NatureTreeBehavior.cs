@@ -21,12 +21,26 @@ namespace Script.Game.Other.Nature
         
         private void Awake()
         {
+            Debug.Log($"[Tree] {gameObject.name} Awake. Active={gameObject.activeSelf}, Parent={transform.parent?.name}", this);
+            
             // Check and auto-add required components
             CheckAndAddRequiredComponents();
             
-            // Get components
+            // Get components (re-fetch after auto-add to ensure we have reference)
             coinUser = GetComponent<CoinUser>();
             status = GetComponent<NatureTreeStatus>();
+            
+            if (status == null)
+            {
+                Debug.LogError($"[Tree] {gameObject.name} status is NULL after CheckAndAddRequiredComponents! Adding as fallback.", this);
+                status = gameObject.AddComponent<NatureTreeStatus>();
+            }
+            
+            if (coinUser == null)
+            {
+                Debug.LogError($"[Tree] {gameObject.name} coinUser is NULL after CheckAndAddRequiredComponents! Adding as fallback.", this);
+                coinUser = gameObject.AddComponent<CoinUser>();
+            }
             
             // Initialize tree state immediately in Awake so that currentWorkProgress is set
             // BEFORE any SaveAllContainer() call (which may happen before Start() runs).
@@ -52,6 +66,8 @@ namespace Script.Game.Other.Nature
         
         private void Start()
         {
+            Debug.Log($"[Tree] {gameObject.name} Start. Active={gameObject.activeSelf}, Parent={transform.parent?.name}", this);
+            
             if (coinUser == null)
             {
                 Debug.LogError("[NatureTreeBehavior] CoinUser component not found on GameObject");
@@ -68,10 +84,24 @@ namespace Script.Game.Other.Nature
         
         private void InitializeTree()
         {
-            treeChopCost = PrefabData.Instance.treeChopCost;
+            if (status == null)
+            {
+                Debug.LogError($"[Tree] {gameObject.name} InitializeTree: status is NULL! Re-trying to get component.", this);
+                status = GetComponent<NatureTreeStatus>();
+                if (status == null)
+                {
+                    status = gameObject.AddComponent<NatureTreeStatus>();
+                    Debug.LogWarning($"[Tree] {gameObject.name} Added NatureTreeStatus component in InitializeTree as fallback.", this);
+                }
+            }
+
+            if (PrefabData.Instance != null)
+                treeChopCost = PrefabData.Instance.treeChopCost;
+            else
+                Debug.LogError($"[Tree] {gameObject.name} PrefabData.Instance is null!", this);
             
             // Set maxWorkProgress to 8 as requested by user
-            if (!status.isSetupCalled)
+            if (status != null && !status.isSetupCalled)
             {
                 status.maxWorkProgress = 8;
                 status.currentWorkProgress = status.maxWorkProgress;
@@ -131,8 +161,20 @@ namespace Script.Game.Other.Nature
                 Debug.Log($"[NatureTree-DEBUG] {gameObject.name} remaining progress: {status.currentWorkProgress}");
             }
         }
+        private void OnEnable()
+        {
+            Debug.Log($"[Tree] {gameObject.name} OnEnable. Active={gameObject.activeSelf}", this);
+        }
+
+        private void OnDisable()
+        {
+            Debug.Log($"[Tree] {gameObject.name} ONDISABLE. Active={gameObject.activeSelf}, Parent={transform.parent?.name}", this);
+        }
+
         public void OnDestroy()
         {
+            Debug.Log($"[Tree] {gameObject.name} OnDestroy. Active={gameObject.activeSelf}, Parent={transform.parent?.name}, _isDead={_isDead}", this);
+            
             // CHỈ drop coin nếu cây thực sự chết trong gameplay (_isDead = true)
             // KHÔNG drop coin khi bị destroy do: chuyển parent, scene unload, clear map, v.v.
             if (_isDead)

@@ -339,7 +339,6 @@ GameObject:
   - component: {fileID: 6382017815975927083}
   - component: {fileID: 3813117547470118404}
   - component: {fileID: 3808615906738545801}
-  - component: {fileID: 3065612547261931106}
   m_Layer: 5
   m_Name: lU_Panel_WithToggle
   m_TagString: Untagged
@@ -407,23 +406,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &3065612547261931106
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7166941518312108277}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4baca296707eb6499cf495d2daeae8a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _titleText: {fileID: 823157171955679151}
-  _descriptionText: {fileID: 2610013695559967489}
-  _contentScroll: {fileID: 0}
-  _ignoreToggle: {fileID: 7268065606011162169}
-  _closeButton: {fileID: 0}
 --- !u!1 &7791372316346307821
 GameObject:
   m_ObjectHideFlags: 0
@@ -684,14 +666,3 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2063963595636860724, guid: 7baeabdc3edd0c94d90f18ad2ba44faf, type: 3}
   m_PrefabInstance: {fileID: 4940120640827285731}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7268065606011162169 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2329362274328932058, guid: 7baeabdc3edd0c94d90f18ad2ba44faf, type: 3}
-  m_PrefabInstance: {fileID: 4940120640827285731}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9085046f02f69544eb97fd06b6048fe2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

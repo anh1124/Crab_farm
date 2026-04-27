@@ -9,6 +9,7 @@ using Script.Data_Model.Interfaces;
 using Script.Game.Enemy;
 using Script.Game.Enemy.Core;
 using Script.Game.Item.Coin;
+using Script.Utils;
 using UnityEngine;
 // using Script.Manager.BuildingManager; // Avoid importing this namespace here to prevent name conflict with class BuildingManager
 
@@ -88,18 +89,21 @@ namespace Script.Manager
         {
             try
             {
-                playerContainer = SetupContainerHelper("PlayerContainer", ref playerContainer);
-                structureContainer = SetupContainerHelper("StructureContainer", ref structureContainer);
-                coinContainer = SetupContainerHelper("CoinContainer", ref coinContainer);
+                // Sử dụng ContainerUtils để setup container
+                GameObject parent = ContainerUtils.SetupAllContainers(isDebug);
                 
-                natureContainer = SetupContainerHelper("NatureContainer", ref natureContainer);
-                chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
-                enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
-                
-                animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
-                denizenContainer = SetupContainerHelper("DenizenContainer", ref denizenContainer);
-                statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
-                otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
+                // Lấy reference từ các container đã tạo
+                Transform parentTransform = parent.transform;
+                playerContainer = GetContainerFromParent("PlayerContainer", parentTransform);
+                structureContainer = GetContainerFromParent("StructureContainer", parentTransform);
+                coinContainer = GetContainerFromParent("CoinContainer", parentTransform);
+                natureContainer = GetContainerFromParent("NatureContainer", parentTransform);
+                chunkContainer = GetContainerFromParent("ChunkContainer", parentTransform);
+                enemyContainer = GetContainerFromParent("EnemyContainer", parentTransform);
+                animalsContainer = GetContainerFromParent("AnimalsContainer", parentTransform);
+                denizenContainer = GetContainerFromParent("DenizenContainer", parentTransform);
+                statuesContainer = GetContainerFromParent("StatuesContainer", parentTransform);
+                otherContainer = GetContainerFromParent("OtherContainer", parentTransform);
                 
                 PopulateAllContainersList();
             }
@@ -107,6 +111,12 @@ namespace Script.Manager
             {
                 Debug.LogError($"Lỗi khi thiết lập các container: {e.Message}\n{e.StackTrace}");
             }
+        }
+        
+        private GameObject GetContainerFromParent(string containerName, Transform parent)
+        {
+            Transform child = parent.Find(containerName);
+            return child != null ? child.gameObject : null;
         }
         
         private void PopulateAllContainersList()
@@ -126,58 +136,6 @@ namespace Script.Manager
             
             // Loại bỏ các container null nếu có
             allContainers.RemoveAll(item => item == null);
-        }
-        
-        private GameObject SetupContainerHelper(string containerName, ref GameObject container)
-        {
-            try
-            {
-                // Tìm hoặc tạo GameObject cha tên "Container" 
-                GameObject containerParent = GameObject.Find("Container");
-                if (containerParent == null)
-                {
-                    containerParent = new GameObject("Container");
-                    if (isDebug) Debug.Log("Created parent Container GameObject");
-                }
-                
-                if (container == null)
-                {
-                    // Check if child exists in parent first
-                    Transform existingChild = containerParent.transform.Find(containerName);
-                    if (existingChild != null)
-                    {
-                        container = existingChild.gameObject;
-                    }
-                    else
-                    {
-                        // Fallback: Try finding by name globally (though finding in parent is preferred)
-                        container = GameObject.Find(containerName);
-                        
-                        if (container == null)
-                        {
-                            container = new GameObject(containerName);
-                            if (isDebug) Debug.Log($"Created new container: {containerName}");
-                        }
-                    }
-                    
-                    // Đảm bảo container là con của containerParent
-                    container.transform.SetParent(containerParent.transform);
-                    if (isDebug) Debug.Log($"Set {containerName} as child of Container");
-                }
-                else if (container.transform.parent != containerParent.transform)
-                {
-                    // Nếu container đã tồn tại nhưng không phải con của containerParent
-                    container.transform.SetParent(containerParent.transform);
-                    if (isDebug) Debug.Log($"Moved existing {containerName} under Container parent");
-                }
-                
-                return container;
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Lỗi khi thiết lập container {containerName}: {e.Message}");
-                return null;
-            }
         }
         
         public GameObject InstanceAndMoveObjectToContainer(GameObject prefab, Vector2 position)
@@ -448,7 +406,9 @@ namespace Script.Manager
             if (container == null)
             {
                 if (isDebug) Debug.LogWarning($"Container {containerName} is null, attempting to find or recreate it.");
-                return SetupContainerHelper(containerName, ref container);
+                GameObject parent = ContainerUtils.GetOrCreateContainerParent(isDebug);
+                container = ContainerUtils.CreateContainerIfNotExists(containerName, parent.transform, isDebug);
+                return container;
             }
             return container;
         }
@@ -1022,16 +982,9 @@ namespace Script.Manager
             
             try
             {
-                // Tìm hoặc tạo GameObject cha
-                GameObject containerParent = GameObject.Find("Container");
-                if (containerParent == null)
-                {
-                    containerParent = new GameObject("Container");
-                    if (isDebug) Debug.Log("Created parent Container GameObject");
-                }
-                
                 // Xóa các container hiện tại nếu chúng không nằm ở đúng vị trí
-                if (otherContainer != null && otherContainer.transform.parent != containerParent.transform)
+                GameObject containerParent = GameObject.Find("Container");
+                if (otherContainer != null && containerParent != null && otherContainer.transform.parent != containerParent.transform)
                 {
                     if (isDebug) Debug.Log($"OtherContainer in wrong position, deleting it");
                     GameObject tempContainer = otherContainer;
@@ -1039,20 +992,11 @@ namespace Script.Manager
                     Destroy(tempContainer);
                 }
                 
-                // Đảm bảo tất cả các container được tạo lại
-                playerContainer = SetupContainerHelper("PlayerContainer", ref playerContainer);
-                structureContainer = SetupContainerHelper("StructureContainer", ref structureContainer);
-                coinContainer = SetupContainerHelper("CoinContainer", ref coinContainer);
-                natureContainer = SetupContainerHelper("NatureContainer", ref natureContainer);
-                chunkContainer = SetupContainerHelper("ChunkContainer", ref chunkContainer);
-                enemyContainer = SetupContainerHelper("EnemyContainer", ref enemyContainer);
-                animalsContainer = SetupContainerHelper("AnimalsContainer", ref animalsContainer);
-                denizenContainer = SetupContainerHelper("DenizenContainer", ref denizenContainer);
-                statuesContainer = SetupContainerHelper("StatuesContainer", ref statuesContainer);
-                otherContainer = SetupContainerHelper("OtherContainer", ref otherContainer);
+                // Sử dụng ContainerUtils để resetup tất cả container
+                ContainerUtils.SetupAllContainers(isDebug);
                 
-                // Cập nhật lại danh sách container
-                PopulateAllContainersList();
+                // Cập nhật lại danh sách container references
+                SetUp();
                 
                 if (isDebug)
                 {

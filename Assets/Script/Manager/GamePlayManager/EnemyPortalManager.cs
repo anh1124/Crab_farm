@@ -23,12 +23,23 @@ namespace Script.Manager.GamePlayManager
         private IGameTimeProvider _timeProvider;
         private bool _isSubscribedToTime = false;
 
+        [Header("Time Manager Settings")]
+        [Tooltip("Tự động đăng ký với TimeManager. Đặt false cho tutorial scene.")]
+        public bool autoRegisterTimeManager = true;
+
         public void Setup(IEnemyPool pool, IEnemyDataProvider dataProvider, IGameTimeProvider timeProvider)
         {
             Debug.Log("[EnemyPortalManager] Setup() được gọi");
             _enemyPool = pool;
             _enemyDataProvider = dataProvider;
             _timeProvider = timeProvider;
+
+            // Kiểm tra autoRegisterTimeManager
+            if (!autoRegisterTimeManager)
+            {
+                Debug.Log("[EnemyPortalManager] autoRegisterTimeManager = false, bỏ qua đăng ký TimeManager");
+                return;
+            }
 
             // Đăng ký ngay khi Setup() được gọi để tránh race condition với Start()
             Debug.Log($"[EnemyPortalManager] Setup: timeProvider={(_timeProvider != null)}, _isSubscribedToTime={_isSubscribedToTime}");
@@ -110,6 +121,13 @@ namespace Script.Manager.GamePlayManager
 
         private void Start()
         {
+            // Kiểm tra autoRegisterTimeManager
+            if (!autoRegisterTimeManager)
+            {
+                Debug.Log("[EnemyPortalManager] autoRegisterTimeManager = false, không đăng ký TimeManager trong Start()");
+                return;
+            }
+
             // Nếu Setup() chưa được gọi (ví dụ: scene test đơn lẻ), fallback tự tìm
             if (!_isSubscribedToTime)
             {
@@ -175,7 +193,8 @@ namespace Script.Manager.GamePlayManager
         public void SpawnStartingPortals()
         {
             // FIX: Đảm bảo đã được setup trước khi spawn (tránh lỗi khi ChunkManager gọi trước InitializeEnemyBase)
-            if (!_isSubscribedToTime)
+            // Chỉ auto-setup TimeManager nếu autoRegisterTimeManager = true
+            if (!_isSubscribedToTime && autoRegisterTimeManager)
             {
                 Debug.LogWarning("[EnemyPortalManager] SpawnStartingPortals() gọi trước khi Setup()! Tự động fallback setup...");
                 var tp = FindObjectOfType<GameTimeManager>();

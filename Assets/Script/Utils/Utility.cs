@@ -1,5 +1,6 @@
 using UnityEngine;
 using Script.Utils;
+using Script.Game.Other;
 
 namespace Script
 {
@@ -100,6 +101,15 @@ namespace Script
         public static bool IsInKingdomSafeZone(float posX)
         {
             return WorldUtility.IsInKingdomSafeZone(posX);
+        }
+
+        /// <summary>
+        /// Kiểm tra có đang ở tutorial scene không.
+        /// Trả về true nếu StartGameScrene.Instance tồn tại và isTutorialScene = true.
+        /// </summary>
+        public static bool IsTutorialScene()
+        {
+            return StartGameScrene.IsTutorial;
         }
     }
 }

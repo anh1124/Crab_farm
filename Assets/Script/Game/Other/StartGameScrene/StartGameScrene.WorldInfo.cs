@@ -1,5 +1,6 @@
 using UnityEngine;
 using Script.Save_Controller;
+using Script.Manager;
 
 namespace Script.Game.Other
 {
@@ -25,6 +26,19 @@ namespace Script.Game.Other
 
         private void LoadSavedEntitiesPhased()
         {
+            // Kiểm tra có nên load save không (isTutorialScene ưu tiên cao hơn)
+            if (!ShouldLoadSave)
+            {
+                Debug.Log("[StartGameScrene] TutorialScene hoặc loadSaveFromPref = false, bỏ qua load save nhưng vẫn setup container");
+                // Fallback: đảm bảo container được setup cho tutorial scene
+                if (EntitySaveManager.Instance != null)
+                {
+                    EntitySaveManager.Instance.ResetupAllContainers();
+                    Debug.Log("[StartGameScrene] Container đã được resetup cho tutorial scene");
+                }
+                return;
+            }
+
             if (WorldFileManager.Instance != null && WorldFileManager.Instance.IsActiveWorldPathValid())
             {
                 LoadFromSave.Instance.LoadTechAndTimeFromSave();

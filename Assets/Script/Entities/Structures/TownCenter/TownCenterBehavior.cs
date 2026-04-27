@@ -45,6 +45,17 @@ namespace Script.Game.Structures.TownCenter
         private BuildingManager _bm;
         private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
         
+        #region Tutorial Events
+        /// <summary>Event khi TownCenter được nâng cấp (dùng cho Tutorial)</summary>
+        public event Action OnTutorialUpgraded;
+        
+        /// <summary>Event khi Player vào TownCenter (dùng cho Tutorial)</summary>
+        public event Action OnTutorialPlayerEntered;
+        
+        /// <summary>Event khi Player ra khỏi TownCenter (dùng cho Tutorial)</summary>
+        public event Action OnTutorialPlayerExited;
+        #endregion
+        
         private void Awake()
         {
             if (coinUser == null) coinUser = GetComponent<CoinUser>();
@@ -295,6 +306,9 @@ namespace Script.Game.Structures.TownCenter
             UpdateCoinUser(nextTierData);
             NotifyBuildingManager();
             SyncTentForCurrentTier();
+            
+            // Báo cho Tutorial
+            OnTutorialUpgraded?.Invoke();
             
             Debug.Log($"[TownCenterBehavior] Upgraded to tier {status.tier}");
         }
@@ -565,6 +579,9 @@ namespace Script.Game.Structures.TownCenter
         {
             Debug.Log($"[TownCenterBehavior] OnPlayerEnter CALLED. Player: {player?.name}, CoinUser: {coinUser != null}, CoinHandler: {coinHandler != null}");
 
+            // Trigger Tutorial Event
+            OnTutorialPlayerEntered?.Invoke();
+            
             // Delegate to CoinUser for upgrade UI
             if (coinUser != null)
             {
@@ -579,6 +596,9 @@ namespace Script.Game.Structures.TownCenter
 
         public void OnPlayerExit(PlayerBehavior player)
         {
+            // Trigger Tutorial Event
+            OnTutorialPlayerExited?.Invoke();
+            
             // Delegate to CoinUser for upgrade UI
             if (coinUser != null)
             {

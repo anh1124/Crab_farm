@@ -11,7 +11,6 @@ namespace Script.GUI_Controller
         Normal,         // Game đang chạy bình thường, chỉ có PlayerHUD
         PauseMenu,      // Pause menu đang mở
         SoundSetting,   // Sound setting đang mở
-        HintPanel,      // Hint panel đang mở
     }
 
     public class GuiCanvasManager : MonoBehaviour
@@ -39,9 +38,6 @@ namespace Script.GUI_Controller
 
         public CoinUI coinUI;
 
-        [Header("Hint UI")]
-        public GameObject hintUIPanel;
-
         [Header("Time Display")]
         public TextMeshProUGUI timeDisplay;
 
@@ -61,10 +57,6 @@ namespace Script.GUI_Controller
             {
                 closeSoundSettingButton.onClick.AddListener(HideSoundSetting);
             }
-
-            // Set hint panel inactive at start
-            if (hintUIPanel != null)
-                hintUIPanel.SetActive(false);
 
             ResumeGame();
         }
@@ -146,13 +138,7 @@ namespace Script.GUI_Controller
         /// </summary>
         private void CloseAnyOpenPanel()
         {
-            // Đóng hint panel nếu đang mở
-            if (hintUIPanel != null && hintUIPanel.activeSelf)
-            {
-                hintUIPanel.SetActive(false);
-                // Gọi HintManager để clear current data nếu cần
-                Script.Tutorial.HintManager.Instance?.ClosePanel();
-            }
+            // Không có panel nào cần đóng
         }
 
         /// <summary>
@@ -160,7 +146,6 @@ namespace Script.GUI_Controller
         /// - Normal: Mở PauseMenu
         /// - PauseMenu: Resume game
         /// - SoundSetting: Quay về PauseMenu
-        /// - HintPanel: Đóng hint panel và resume
         /// </summary>
         public void HandleEscapeKey()
         {
@@ -179,12 +164,6 @@ namespace Script.GUI_Controller
                     HideSoundSetting();
                     break;
 
-                case UIState.HintPanel:
-                    // Đóng hint panel và resume
-                    HideHintPanel();
-                    ResumeGame();
-                    break;
-
                 default:
                     ResumeGame();
                     break;
@@ -198,45 +177,6 @@ namespace Script.GUI_Controller
         public void TogglePauseMenu()
         {
             HandleEscapeKey();
-        }
-
-        /// <summary>
-        /// Hiển thị Hint UI Panel.
-        /// </summary>
-        public void ShowHintPanel()
-        {
-            if (hintUIPanel != null)
-            {
-                hintUIPanel.SetActive(true);
-                _currentState = UIState.HintPanel;
-                // Pause game khi xem hint
-                Time.timeScale = 0;
-                Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);
-            }
-            else
-                Debug.LogWarning("[GuiCanvasManager] hintUIPanel chưa được gán trong Inspector!");
-        }
-
-        /// <summary>
-        /// Ẩn Hint UI Panel.
-        /// </summary>
-        public void HideHintPanel()
-        {
-            if (hintUIPanel != null)
-                hintUIPanel.SetActive(false);
-        }
-
-        /// <summary>
-        /// Đóng hint panel và resume game về trạng thái Normal.
-        /// Dùng cho nút close trong HintPanelUI.
-        /// </summary>
-        public void CloseHintAndResume()
-        {
-            if (_currentState == UIState.HintPanel)
-            {
-                HideHintPanel();
-                ResumeGame();
-            }
         }
     }
 }

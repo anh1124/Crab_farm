@@ -14,6 +14,7 @@ using Script.Manager.SaveManager;
 
 namespace Script.GUI_Controller.StartMenu
 {
+    [RequireComponent(typeof(TutorialPromptController))]
     public class StartMenuController : MonoBehaviour
     {
         public WorldInfo worldInfo;
@@ -73,9 +74,9 @@ namespace Script.GUI_Controller.StartMenu
         public Button createNewWorldBtn;
         public Button backChooseSavePanel;
 
-
+        [Header("confirmationPanel")]        
         public GameObject confirmationPanel;
-      
+        
         public static StartMenuController Instance { get; set; }
         
         
@@ -103,9 +104,18 @@ namespace Script.GUI_Controller.StartMenu
             // Gọi hàm auto điền khi mở CreateNewWorldPanel
             newGame.onClick.AddListener(() =>
             {
-                OpenCreateNewGamePanel();
-                AutoFillWorldName(); // Tự động điền tên
-                hasClickedInputWorldName = false; // Đặt lại trạng thái
+                // Hiện prompt hỏi có chơi tutorial không
+                var tutorialPrompt = GetComponent<TutorialPromptController>();
+                tutorialPrompt?.ShowTutorialPrompt(
+                    onConfirm: () => { /* Load Tutorial Scene - đã xử lý trong TutorialPromptController */ },
+                    onCancel: () =>
+                    {
+                        // Không - Mở panel tạo world bình thường
+                        OpenCreateNewGamePanel();
+                        AutoFillWorldName();
+                        hasClickedInputWorldName = false;
+                    }
+                );
             });
             // Đăng ký sự kiện click vào inputWorldName
             inputWorldName.onSelect.AddListener(delegate { OnInputWorldNameClick(); });

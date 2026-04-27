@@ -111,6 +111,14 @@ namespace Script.Controller.GUI_Controller.PlayerGui
                 yield return null;
             }
         }
+        /// <summary>
+        /// Ghi đè thông số nhấp nháy (dùng cho tutorial).
+        /// </summary>
+        public void OverridePulseSettings(Color color, float maxAlphaVal)
+        {
+            goldColor = color;
+            maxAlpha = maxAlphaVal;
+        }
     }
 }
 

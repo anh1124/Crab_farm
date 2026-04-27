@@ -59,6 +59,12 @@ namespace Script.Game.Other
                     throw new System.Exception("[Bootstrap] PrefabData missing. Put a PrefabData in the scene before loading.");
                 }
             }
+            
+            // Setup NewWorldInitializer
+            if (GetComponent<NewWorldInitializer>() == null)
+            {
+                gameObject.AddComponent<NewWorldInitializer>();
+            }
             PrefabData.Instance.Init();
 
             if (FindObjectOfType<GuardManager>(true) == null)
@@ -143,10 +149,7 @@ namespace Script.Game.Other
                 vagrantManager.Setup(timeManager, buildingPlacementManager, entitySaveManager, denizenManager, guardManager);
                 
                 // Spawn vagrant ban đầu tại x=10 nếu là game mới
-                if (LoadFromSave.Instance != null && LoadFromSave.Instance.IsNewWorld)
-                {
-                    vagrantManager.SpawnInitialVagrantForNewGame();
-                }
+                // vagrantManager initialization handled by NewWorldInitializer if new world
             }
 
             if (wallManager == null) wallManager = FindObjectOfType<WallAndStumpManager>(true);
@@ -184,7 +187,17 @@ namespace Script.Game.Other
             techManager.Setup(worldFileManager);
             chunkManager.Setup(entitySaveManager);
             if (celestialManager != null) celestialManager.Setup(timeManager);
-            if (autoSaveManager != null) autoSaveManager.Setup(timeManager);
+            
+            // Chỉ setup AutoSaveManager nếu không phải tutorial scene
+            if (autoSaveManager != null && !isTutorialScene)
+            {
+                autoSaveManager.Setup(timeManager);
+                Debug.Log("[StartGameScrene] AutoSaveManager đã được setup");
+            }
+            else if (isTutorialScene)
+            {
+                Debug.Log("[StartGameScrene] TutorialScene: Bỏ qua AutoSaveManager.Setup()");
+            }
 
             timeManager.InitializeTimeSystem();
             worldFileManager.SyncTechToPrefabData();
