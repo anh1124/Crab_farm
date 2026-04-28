@@ -13,7 +13,7 @@ namespace Script.GUI_Controller.StartMenu
         [SerializeField] private Button tutorialButton; // Nút mở tutorial trực tiếp (optional)
         
         private GameObject _confirmationPanel;
-        private GameObject ConfirmationPanel => _confirmationPanel ??= GetComponent<StartMenuController>()?.confirmationPanel;
+        private GameObject ConfirmationPanel => _confirmationPanel ??= StartMenuNavigator.Instance?.confirmationPanel;
         
         [Header("Target Scene")]
         [SerializeField] private string tutorialSceneName = "TutorialScene";
@@ -41,7 +41,7 @@ namespace Script.GUI_Controller.StartMenu
             
             if (ConfirmationPanel == null)
             {
-                Debug.LogError("[TutorialPromptController] confirmationPanel is null! Hãy assign trong StartMenuController.");
+                Debug.LogError("[TutorialPromptController] confirmationPanel is null! Hãy assign trong StartMenuNavigator.");
                 // Fallback: gọi cancel luôn
                 _onCancelTutorial?.Invoke();
                 return;
@@ -62,8 +62,23 @@ namespace Script.GUI_Controller.StartMenu
             }
             else
             {
-                Debug.LogError("[TutorialPromptController] ConfirmationMenu component not found!");
-                _onCancelTutorial?.Invoke();
+                // Thử với ConfirmationPanelController mới
+                var confirmCtrl = ConfirmationPanel.GetComponent<ConfirmationPanelController>();
+                if (confirmCtrl != null)
+                {
+                    ConfirmationPanel.SetActive(true);
+                    confirmCtrl.Show(
+                        "Play Tutorial?",
+                        "Would you like to play the tutorial before starting a new world?\n\nThe tutorial will teach you the basic gameplay.",
+                        confirmAction: OnConfirm,
+                        cancelAction: OnCancel
+                    );
+                }
+                else
+                {
+                    Debug.LogError("[TutorialPromptController] Confirmation component not found!");
+                    _onCancelTutorial?.Invoke();
+                }
             }
         }
         

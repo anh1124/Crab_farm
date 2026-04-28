@@ -200,5 +200,11 @@ namespace Script.Manager.SaveManager
             PlayerPrefs.SetString("ActiveWorldPath", path);
             PlayerPrefs.Save();
         }
+
+        public WorldInfo[] GetAllWorldInfos()
+        {
+            LoadWorldInfosToChooseSavePanel();
+            return WorldInfos.ToArray();
+        }
     }
 }
