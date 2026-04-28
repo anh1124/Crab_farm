@@ -52,8 +52,8 @@ namespace Script.GUI_Controller.StartMenu
             {
                 ConfirmationPanel.SetActive(true);
                 confirmationMenu.Show(
-                    "Chơi Tutorial?",
-                    "Bạn có muốn chơi chế độ hướng dẫn trước khi bắt đầu thế giới mới không?\n\nTutorial sẽ dạy bạn cách chơi cơ bản.",
+                    "Play Tutorial?",
+                    "Would you like to play the tutorial before starting a new world?\n\nThe tutorial will teach you the basic gameplay.",
                     onConfirm: OnConfirm,
                     onCancel: OnCancel,
                     priority: ConfirmationMenu.MenuPriority.Normal,

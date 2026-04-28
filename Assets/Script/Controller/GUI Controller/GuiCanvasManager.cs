@@ -41,6 +41,9 @@ namespace Script.GUI_Controller
         [Header("Time Display")]
         public TextMeshProUGUI timeDisplay;
 
+        [Header("Tutorial")]
+        public GameObject TutorialDialogPanel;
+
         private void Awake()
         {
             if (Instance == null)
@@ -94,6 +97,7 @@ namespace Script.GUI_Controller
             buildMenu.gameObject.SetActive(false);
             pauseButton.gameObject.SetActive(false);
             if (timeDisplay != null) timeDisplay.gameObject.SetActive(false);
+            if (TutorialDialogPanel != null) TutorialDialogPanel.SetActive(false);
         }
 
         public void ShowSoundSetting()
@@ -131,6 +135,18 @@ namespace Script.GUI_Controller
             buildMenu.gameObject.SetActive(true);
             pauseButton.gameObject.SetActive(true);
             if (timeDisplay != null) timeDisplay.gameObject.SetActive(true);
+            
+            if (Script.Utility.IsTutorialScene())
+            {
+                if (TutorialDialogPanel != null)
+                {
+                    TutorialDialogPanel.SetActive(true);
+                }
+                else
+                {
+                    Debug.LogError("[GuiCanvasManager] TutorialDialogPanel is null!");
+                }
+            }
         }
 
         /// <summary>

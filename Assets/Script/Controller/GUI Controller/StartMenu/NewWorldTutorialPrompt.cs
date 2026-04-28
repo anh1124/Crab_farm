@@ -39,8 +39,8 @@ namespace Script.Tutorial
             if (confirmationMenu != null)
             {
                 confirmationMenu.Show(
-                    header: "Chơi Tutorial?",
-                    content: "Bạn có muốn chơi chế độ hướng dẫn trước khi bắt đầu thế giới mới không?\n\nTutorial sẽ dạy bạn cách chơi cơ bản.",
+                    header: "Play Tutorial?",
+                    content: "Would you like to play the tutorial before starting a new world?\n\nThe tutorial will teach you the basic gameplay.",
                     onConfirm: () =>
                     {
                         IncrementPromptCount();
