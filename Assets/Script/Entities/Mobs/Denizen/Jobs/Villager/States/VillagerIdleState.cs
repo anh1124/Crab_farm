@@ -21,6 +21,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (ctx.Animator != null) 
                 ctx.Animator.Play("idle");
 
+            if (ctx.Status != null)
+                ctx.Status.CanMove = true;
+
             if (ctx.Movement != null)
                 ctx.Movement.Stop();
                 

@@ -718,11 +718,6 @@ namespace Script.Game.Combat
                 return;
             }
 
-            // Log nếu arrow đã tồn tại quá lâu (bị kẹt)
-            if (timeSinceSpawn > maxAirTime * 0.8f)
-            {
-                Debug.LogWarning($"[ArrowController] {name}: Arrow bị kẹt trong không gian {timeSinceSpawn:F1}s trước khi trả về pool. Stuck={isStuck}, StuckTarget={(stuckTarget != null ? stuckTarget.name : "null")}");
-            }
 
             isStuck = false;
             stuckTarget = null;

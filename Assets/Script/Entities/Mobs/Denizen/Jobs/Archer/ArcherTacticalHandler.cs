@@ -74,19 +74,28 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
 
         public void ExecuteDefensiveOrder()
         {
+            // Kiểm tra an toàn dựa trên vị trí hiện tại
             bool isSafe = WorldUtility.IsInKingdomSafeZone(Context.transform.position.x) || WorldUtility.IsInPlazaZone(Context.transform.position.x);
             
+            // Nếu không an toàn -> Bắt buộc phải tìm đường về base
             if (!isSafe)
             {
                 if (_job.CurrentState != _job.ReturnToBaseState && _job.CurrentState != _job.RetreatState)
+                {
                     _job.ChangeState(_job.ReturnToBaseState);
+                }
                 return;
             }
 
+            // Nếu đã an toàn, kiểm tra xem có nên chuyển sang HoldWall không
+            // Ưu tiên 1: Đang Attack thì cứ để nó bắn tiếp
             if (_job.CurrentState == _job.AttackState) return;
 
-            if (_job.CurrentState != _job.RetreatState && _job.CurrentState != _job.HoldWallState)
+            // Ưu tiên 2: Nếu đã ở điểm Slot (ReturnToBase xong) hoặc đang Retreat dở thì chuyển sang HoldWall
+            if (_job.CurrentState == _job.ReturnToBaseState || (_job.CurrentState != _job.RetreatState && _job.CurrentState != _job.HoldWallState))
+            {
                 _job.ChangeState(_job.HoldWallState);
+            }
         }
     }
 }

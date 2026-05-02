@@ -21,6 +21,12 @@ namespace Script.Utils
         public const string Bow = "Bow";
         public const string Structure = "Structure";
         public const string Statues = "Statues";
+        public const string Tower = "Tower";
+        public const string Building = "Building";
+        public const string Rock = "Rock";
+        public const string Bush = "Bush";
+        public const string Worker = "Worker";
+        public const string Farmer = "Farmer";
     }
 
     public static class GameLayers

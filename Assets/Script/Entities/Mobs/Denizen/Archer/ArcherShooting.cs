@@ -85,8 +85,14 @@ namespace Script.Game.Mobs.Subjects
 
             if (arrowPool == null)
             {
-                Debug.LogError($"[ArcherShooting] ArrowPool is null on {gameObject.name}!");
-                return;
+                // Fallback: Thử tìm pool trong scene nếu chưa được gán (phòng trường hợp khởi tạo sai thứ tự)
+                arrowPool = Object.FindObjectOfType<ArrowPool>(true);
+                
+                if (arrowPool == null)
+                {
+                    Debug.LogError($"[ArcherShooting] ArrowPool is null on {gameObject.name}! Hãy đảm bảo có ArrowPool trong scene.");
+                    return;
+                }
             }
 
             if (wallLayer.value == 0)

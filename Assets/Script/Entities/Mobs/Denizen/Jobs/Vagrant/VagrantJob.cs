@@ -98,6 +98,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         #region Lifecycle
         private void OnEnable()
         {
+            InitializeBrain();
             if (Context != null)
             {
                 Context.ResetDetectors(); // Swab previous job's detectors
@@ -113,6 +114,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
 
+            var vm = FindObjectOfType<VagrantManager>();
+            if (vm != null) vm.RegisterVagrant(gameObject);
+
             var gtm = FindObjectOfType<GameTimeManager>();
             if (gtm != null)
             {
@@ -127,6 +131,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
         private void OnDisable()
         {
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Unregister(this);
+
+            var vm = FindObjectOfType<VagrantManager>();
+            if (vm != null) vm.UnregisterVagrant(gameObject);
 
             if (Context != null)
             {

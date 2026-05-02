@@ -20,6 +20,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Animator != null && ctx.Animator.runtimeAnimatorController != null)
                 ctx.Animator.Play("archerIdle");
                 
+            if (ctx.Status != null)
+                ctx.Status.CanMove = true;
+
             ctx.Movement?.Stop();
         }
 

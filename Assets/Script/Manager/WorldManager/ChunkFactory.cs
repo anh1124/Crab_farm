@@ -34,9 +34,9 @@ namespace Script.Manager.WorldManager
                     Chunk emergencyChunkData = new Chunk(id, 0, position.x, "ground");
                     chunkList.Add(emergencyChunkData);
                     
-                    if (EntitySaveManager.Instance != null)
+                    if (ContainerEntityManager.Instance != null)
                     {
-                        EntitySaveManager.Instance.MoveChildrenToContainers(emergencyChunk);
+                        ContainerEntityManager.Instance.MoveChildrenToContainers(emergencyChunk);
                     }
                     return emergencyChunkData;
                 }
@@ -58,9 +58,9 @@ namespace Script.Manager.WorldManager
             Chunk chunk = new Chunk(id, prefabIndex, position.x, "ground");
             chunkList.Add(chunk);
 
-            if (EntitySaveManager.Instance != null)
+            if (newChunkObject != null && ContainerEntityManager.Instance != null)
             {
-                EntitySaveManager.Instance.MoveChildrenToContainers(newChunkObject);
+                ContainerEntityManager.Instance.MoveChildrenToContainers(newChunkObject);
             }
             return chunk;
         }
@@ -107,9 +107,9 @@ namespace Script.Manager.WorldManager
             Chunk rock = new Chunk(id, prefabIndex, position.x, chunkType);
             chunkList.Add(rock);
             
-            if (EntitySaveManager.Instance != null)
+            if (rockObject != null && ContainerEntityManager.Instance != null)
             {
-                EntitySaveManager.Instance.MoveChildrenToContainers(rockObject);
+                ContainerEntityManager.Instance.MoveChildrenToContainers(rockObject);
             }
         }
 
@@ -121,7 +121,12 @@ namespace Script.Manager.WorldManager
                 if (tcPrefab != null)
                 {
                     Debug.Log("Spawning initial TownCenter Tier 0 at (0,0,0)");
-                    return EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(tcPrefab, Vector3.zero);
+                    GameObject tc = UnityEngine.Object.Instantiate(tcPrefab, Vector3.zero, Quaternion.identity);
+                    if (ContainerEntityManager.Instance != null)
+                    {
+                        ContainerEntityManager.Instance.MoveToContainer(tc);
+                    }
+                    return tc;
                 }
                 else
                 {

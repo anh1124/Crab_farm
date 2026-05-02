@@ -466,10 +466,10 @@ public class LoadFromSave : MonoBehaviour
         // Đăng ký tất cả archers với GuardManager (bây giờ IsLoadingFromSave đã = false)
         foreach (var archer in archers)
         {
-            if (archer != null && archer.gameObject != null)
+            if (archer != null && archer.Context != null && archer.Context.GameObject != null)
             {
-                // Chỉ đăng ký nếu chưa được đăng ký
-                guardManager.RegisterArcher(archer.gameObject);
+                // Truyền root GameObject (Context.GameObject) thay vì child component gameObject
+                guardManager.RegisterArcher(archer.Context.GameObject);
             }
         }
 

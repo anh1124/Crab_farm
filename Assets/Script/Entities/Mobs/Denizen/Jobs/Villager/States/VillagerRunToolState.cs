@@ -8,6 +8,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
     {
         public override void Enter(DenizenContext ctx)
         {
+            if (ctx.Status != null)
+                ctx.Status.CanMove = true;
+
             if (ctx.Animator != null) 
                 ctx.Animator.Play("run");
 

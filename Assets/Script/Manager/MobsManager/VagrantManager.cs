@@ -32,11 +32,29 @@ namespace Script.Game.Mobs.MobsManager
         [Tooltip("Số ngày giữa mỗi lần spawn (3 = mỗi 3 ngày)")]
         public int spawnIntervalDays = 3;
         
+        [Header("Runtime State")]
+        public bool disableNaturalSpawn = false;
+        
         private IGameTimeProvider _timeProvider;
         private BuildingPlacementManager _buildingManager;
         private EntitySaveManager _saveManager;
         private DenizenManager _denizenManager;
         private IGuardProvider _guardProvider;
+
+        [Header("Active Vagrants")]
+        public List<GameObject> activeVagrants = new List<GameObject>();
+
+        public void RegisterVagrant(GameObject vagrant)
+        {
+            if (vagrant == null || activeVagrants.Contains(vagrant)) return;
+            activeVagrants.Add(vagrant);
+        }
+
+        public void UnregisterVagrant(GameObject vagrant)
+        {
+            if (vagrant == null) return;
+            activeVagrants.Remove(vagrant);
+        }
 
         public void Setup(IGameTimeProvider timeProvider, BuildingPlacementManager buildingManager, EntitySaveManager saveManager, DenizenManager denizenManager, IGuardProvider guardProvider)
         {
@@ -48,7 +66,17 @@ namespace Script.Game.Mobs.MobsManager
 
             if (_timeProvider != null)
             {
-                _timeProvider.SubscribeToHourlyEvent(6, HandleDailyVagrantSpawn);
+                // Nếu là cảnh tutorial, tắt tự động spawn vagrant
+                if (Script.Utility.IsTutorialScene())
+                {
+                    disableNaturalSpawn = true;
+                    Debug.Log("[VagrantManager] Tutorial scene detected. Natural vagrant spawn disabled.");
+                }
+
+                if (!disableNaturalSpawn)
+                {
+                    _timeProvider.SubscribeToHourlyEvent(6, HandleDailyVagrantSpawn);
+                }
             }
         }
 
@@ -88,6 +116,8 @@ namespace Script.Game.Mobs.MobsManager
 
         private void HandleDailyVagrantSpawn()
         {
+            if (disableNaturalSpawn) return;
+
             // Kiểm tra tổng số denizen trong hệ thống
             int totalDenizenCount = CountTotalDenizens();
             if (totalDenizenCount > maxTotalDenizens)
@@ -143,39 +173,13 @@ namespace Script.Game.Mobs.MobsManager
         /// </summary>
         private int CountTotalDenizens()
         {
-            if (_saveManager == null || _saveManager.denizenContainer == null) return 0;
-
-            List<GameObject> objects = _saveManager.GetObjectsFromContainerList(_saveManager.denizenContainer);
-            
-            int denizenCount = 0;
-            foreach (GameObject obj in objects)
-            {
-                if (obj != null && 
-                    (obj.CompareTag(Script.Utils.GameTags.Vagrant) ||
-                     obj.CompareTag(Script.Utils.GameTags.Villager) ||
-                     obj.CompareTag(Script.Utils.GameTags.Archer)))
-                {
-                    denizenCount++;
-                }
-            }
-            return denizenCount;
+            if (_denizenManager == null) _denizenManager = FindObjectOfType<DenizenManager>();
+            return _denizenManager != null ? _denizenManager.GetTotalDenizens() : 0;
         }
 
         private int CountExistingVagrants()
         {
-            if (_saveManager == null || _saveManager.denizenContainer == null) return 0;
-
-            List<GameObject> objects = _saveManager.GetObjectsFromContainerList(_saveManager.denizenContainer);
-            
-            int vagrantCount = 0;
-            foreach (GameObject obj in objects)
-            {
-                if (obj != null && obj.CompareTag(Script.Utils.GameTags.Vagrant))
-                {
-                    vagrantCount++;
-                }
-            }
-            return vagrantCount;
+            return activeVagrants.Count;
         }
 
         /// <summary>
@@ -206,21 +210,21 @@ namespace Script.Game.Mobs.MobsManager
                 }
 
                 spawnPosition.y = 0;
-                GameObject vagrantObj = _saveManager.InstanceAndMoveObjectToContainer(PrefabData.Instance.denizen, spawnPosition);
+                
+                // Sử dụng Spawner trung tâm
+                GameObject vagrantObj = Spawner.Instance.SpawnMob(spawnPosition, PrefabData.Instance.denizen);
+
                 if (vagrantObj != null)
                 {
-                    // Đảm bảo vagrant mới được khởi tạo context và Managers
-                    if (_denizenManager != null)
-                    {
-                        _denizenManager.InitializeNewDenizen(vagrantObj, _guardProvider);
-                    }
-                    
-                    vagrantObj.tag = "Vagrant";
+                    // Thiết lập vai trò Vagrant
                     var roleCtrl = vagrantObj.GetComponent<DenizenRoleController>();
                     if (roleCtrl != null)
                     {
                         roleCtrl.ChangeRole(NPCRole.Vagrant);
                     }
+                    
+                    // Ghi chú: DenizenRoleController sẽ tự động đăng ký với DenizenManager 
+                    // và chui vào container thông qua ContainerEntityManager.
                 }
             }
         }

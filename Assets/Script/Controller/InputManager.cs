@@ -92,16 +92,20 @@ namespace Script.Controller
             if (Input.GetKeyUp(keyMap.moveRight) || Input.GetKeyUp(keyMap.moveRightAlt))
                 _kbMoveRight = false;
 
-            // Gamepad / joystick axis (tùy chọn)
+            // Gamepad / joystick axis
             float h = Input.GetAxisRaw("Horizontal");
-            if (h < -0.1f) _kbMoveLeft  = true;
-            if (h > 0.1f)  _kbMoveRight = true;
+            bool axisLeft = h < -0.1f;
+            bool axisRight = h > 0.1f;
 
             // Tổng hợp movement cho FixedUpdate
-            MoveLeft  = _mobileMoveLeft  || _kbMoveLeft;
-            MoveRight = _mobileMoveRight || _kbMoveRight;
+            MoveLeft  = _mobileMoveLeft  || _kbMoveLeft || axisLeft;
+            MoveRight = _mobileMoveRight || _kbMoveRight || axisRight;
 
-            if (_kbMoveLeft || _kbMoveRight) SetAnyKeyUsed();
+            if (_kbMoveLeft || _kbMoveRight)
+            {
+                SetAnyKeyUsed();
+                // Debug.Log($"[InputManager] Movement Updated: KBLeft={_kbMoveLeft}, KBRight={_kbMoveRight}, MobileLeft={_mobileMoveLeft}, MobileRight={_mobileMoveRight}");
+            }
 
             // ── Actions: Phím nhấn một lần (one-shot) ─────────────────────────
 
@@ -109,8 +113,8 @@ namespace Script.Controller
 
             if (pc != null)
             {
-                if (Input.GetKeyDown(keyMap.useCoin)) { pc.UseCoinDownAction(); SetAnyKeyUsed(); }
-                if (Input.GetKeyUp(keyMap.useCoin))   { pc.UseCoinUpAction();   SetAnyKeyUsed(); }
+                if (Input.GetKeyDown(keyMap.useCoin)) { Debug.Log("[InputManager] UseCoin Down"); pc.UseCoinDownAction(); SetAnyKeyUsed(); }
+                if (Input.GetKeyUp(keyMap.useCoin))   { Debug.Log("[InputManager] UseCoin Up"); pc.UseCoinUpAction();   SetAnyKeyUsed(); }
             }
 
             // ── Skills ────────────────────────────────────────────────────────
@@ -121,9 +125,9 @@ namespace Script.Controller
                 var instigator = pc.playerBehavior.gameObject;
                 if (sm != null)
                 {
-                    if (Input.GetKeyDown(keyMap.skill1)) { sm.ExecuteSkill(0, instigator); SetAnyKeyUsed(); }
-                    if (Input.GetKeyDown(keyMap.skill2)) { sm.ExecuteSkill(1, instigator); SetAnyKeyUsed(); }
-                    if (Input.GetKeyDown(keyMap.skill3)) { sm.ExecuteSkill(2, instigator); SetAnyKeyUsed(); }
+                    if (Input.GetKeyDown(keyMap.skill1)) { Debug.Log("[InputManager] Skill 1 KeyDown"); sm.ExecuteSkill(0, instigator); SetAnyKeyUsed(); }
+                    if (Input.GetKeyDown(keyMap.skill2)) { Debug.Log("[InputManager] Skill 2 KeyDown"); sm.ExecuteSkill(1, instigator); SetAnyKeyUsed(); }
+                    if (Input.GetKeyDown(keyMap.skill3)) { Debug.Log("[InputManager] Skill 3 KeyDown"); sm.ExecuteSkill(2, instigator); SetAnyKeyUsed(); }
                 }
             }
 
@@ -157,6 +161,7 @@ namespace Script.Controller
         /// <summary>Gọi khi mobile Left button PointerDown/Up.</summary>
         public void SetMoveLeft(bool value)
         {
+            Debug.Log($"[InputManager] Mobile MoveLeft: {value}");
             _mobileMoveLeft = value;
             MoveLeft = _mobileMoveLeft || _kbMoveLeft;
         }
@@ -164,6 +169,7 @@ namespace Script.Controller
         /// <summary>Gọi khi mobile Right button PointerDown/Up.</summary>
         public void SetMoveRight(bool value)
         {
+            Debug.Log($"[InputManager] Mobile MoveRight: {value}");
             _mobileMoveRight = value;
             MoveRight = _mobileMoveRight || _kbMoveRight;
         }

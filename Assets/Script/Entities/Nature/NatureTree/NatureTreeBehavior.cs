@@ -21,8 +21,6 @@ namespace Script.Game.Other.Nature
         
         private void Awake()
         {
-            Debug.Log($"[Tree] {gameObject.name} Awake. Active={gameObject.activeSelf}, Parent={transform.parent?.name}", this);
-            
             // Check and auto-add required components
             CheckAndAddRequiredComponents();
             
@@ -66,8 +64,6 @@ namespace Script.Game.Other.Nature
         
         private void Start()
         {
-            Debug.Log($"[Tree] {gameObject.name} Start. Active={gameObject.activeSelf}, Parent={transform.parent?.name}", this);
-            
             if (coinUser == null)
             {
                 Debug.LogError("[NatureTreeBehavior] CoinUser component not found on GameObject");
@@ -127,7 +123,6 @@ namespace Script.Game.Other.Nature
         
         public void SetChopFlag()
         {
-            Debug.Log($"[NatureTree-DEBUG] SetChopFlag CALLED on {gameObject.name}. isReadyToChop was {status.isReadyToChop}");
             status.isReadyToChop = true;
 
             // [TEMP] Chờ Denizen Builder: hỏi CheatManager có chặt cây ngay không
@@ -143,7 +138,6 @@ namespace Script.Game.Other.Nature
         /// </summary>
         public void AddWorkProcess(int amount)
         {
-            Debug.Log($"[NatureTree-DEBUG] AddWorkProcess CALLED on {gameObject.name}: amount={amount}, currentProgress={status.currentWorkProgress}, _isDead={_isDead}");
             if (_isDead || amount <= 0) return;
             
             if (amount >= status.currentWorkProgress)
@@ -163,18 +157,14 @@ namespace Script.Game.Other.Nature
         }
         private void OnEnable()
         {
-            Debug.Log($"[Tree] {gameObject.name} OnEnable. Active={gameObject.activeSelf}", this);
         }
 
         private void OnDisable()
         {
-            Debug.Log($"[Tree] {gameObject.name} ONDISABLE. Active={gameObject.activeSelf}, Parent={transform.parent?.name}", this);
         }
 
         public void OnDestroy()
         {
-            Debug.Log($"[Tree] {gameObject.name} OnDestroy. Active={gameObject.activeSelf}, Parent={transform.parent?.name}, _isDead={_isDead}", this);
-            
             // CHỈ drop coin nếu cây thực sự chết trong gameplay (_isDead = true)
             // KHÔNG drop coin khi bị destroy do: chuyển parent, scene unload, clear map, v.v.
             if (_isDead)

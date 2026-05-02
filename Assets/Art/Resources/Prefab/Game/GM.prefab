@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 2850362348973260976}
   - component: {fileID: 7343576337000096863}
   - component: {fileID: 318757827523513274}
-  - component: {fileID: 8147627819203476398}
+  - component: {fileID: 1362430151118053269}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -150,7 +150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 0}
---- !u!114 &8147627819203476398
+--- !u!114 &1362430151118053269
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -159,13 +159,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 489224416659448179}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c0db554ba2e0054590812134adae8e3, type: 3}
+  m_Script: {fileID: 11500000, guid: 39268c72cb9cef440af14dbf2a534a93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _isDebug: 1
-  _panelView: {fileID: 0}
-  _hintButtonContainer: {fileID: 0}
-  _hintButtonPrefab: {fileID: 6564240115045294400, guid: 3c85ef025ddb07c4a8b8e263184adcc4, type: 3}
+  playerContainer: {fileID: 0}
+  structureContainer: {fileID: 0}
+  coinContainer: {fileID: 0}
+  natureContainer: {fileID: 0}
+  animalsContainer: {fileID: 0}
+  enemyContainer: {fileID: 0}
+  denizenContainer: {fileID: 0}
+  otherContainer: {fileID: 0}
 --- !u!1 &781692592766937310
 GameObject:
   m_ObjectHideFlags: 0
@@ -332,6 +336,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba1b93a3aec310d449a9d21fd1234486, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  loadSaveFromPref: 1
+  isTutorialScene: 0
   timeManager: {fileID: 0}
   techManager: {fileID: 0}
   chunkManager: {fileID: 0}
@@ -457,6 +463,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90900b77e85941a488c7517a0f2bc027, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoRegisterTimeManager: 1
   leftPortals: []
   rightPortals: []
   minSpawnDistance: 40
@@ -677,6 +684,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8317557543024542006}
   - component: {fileID: 7822719046511672596}
+  - component: {fileID: 7212744585911968257}
   m_Layer: 0
   m_Name: GuideManager
   m_TagString: Untagged
@@ -715,17 +723,30 @@ MonoBehaviour:
   arrowSprite: {fileID: 21300000, guid: 1e02156ba5d6ff440a2349b24a08bfcc, type: 3}
   coinSprite: {fileID: 21300000, guid: f4f6dd70f2a00cb49a3b8e7463463f7c, type: 3}
   xSprite: {fileID: 21300000, guid: b0d4d94702bb7284aa460cc59b7a355e, type: 3}
-  spawnOffset: {x: 0, y: 8, z: 0}
-  guideScale: {x: 1.3, y: 1.3, z: 1}
   lifetime: 6
-  moveSpeed: 10
-  rotationSpeed: 10
-  reachThreshold: 0.5
   shakeIntensity: 0.3
   shakeSpeed: 10
   pulseSpeed: 3
   pulseMaxScale: 1.2
-  defaultSpriteDirection: 1
+  guideScale: {x: 1.3, y: 1.3, z: 1}
+  moveSpeed: 15.02
+  rotationSpeed: 10
+  reachThreshold: 0.5
+  spawnOffsetFromPlayer: {x: 0, y: 8, z: 0}
+  defaultDirection: 1
+  customRotationOffset: 0
+--- !u!114 &7212744585911968257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3783545790959781085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47bb1714641e07448ac3c2b0ab51c1f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &5220092303427870795
 GameObject:
   m_ObjectHideFlags: 0
@@ -903,6 +924,8 @@ MonoBehaviour:
     maxVagrants: 5
   maxTotalDenizens: 30
   spawnIntervalDays: 3
+  disableNaturalSpawn: 0
+  activeVagrants: []
 --- !u!114 &8943260865246160208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -927,7 +950,6 @@ GameObject:
   - component: {fileID: 471920209248215435}
   - component: {fileID: 8585655939222083379}
   - component: {fileID: 4030108452006457101}
-  - component: {fileID: 2606231645701046514}
   m_Layer: 0
   m_Name: SaveLoad
   m_TagString: Untagged
@@ -999,20 +1021,7 @@ MonoBehaviour:
   animalsContainer: {fileID: 0}
   enemyContainer: {fileID: 0}
   denizenContainer: {fileID: 0}
-  statuesContainer: {fileID: 0}
   otherContainer: {fileID: 0}
---- !u!114 &2606231645701046514
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6261044732328584789}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4251abe7e18868a48a8bbd8a2c53e1ce, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &6576374127305174780
 GameObject:
   m_ObjectHideFlags: 0

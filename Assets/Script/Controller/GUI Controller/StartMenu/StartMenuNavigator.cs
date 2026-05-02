@@ -88,6 +88,9 @@ namespace Script.GUI_Controller.StartMenu
             // Yêu cầu panel Load Game làm mới danh sách sau khi xoá
             var chooseCtrl = chooseSavePanel.GetComponent<ChooseSavePanelController>();
             chooseCtrl?.RefreshList();
+
+            // Quay lại panel ChooseSave
+            ShowPanel(MenuPanel.ChooseSave);
         }
 
         public void CreateNewWorld(string worldName, string seed)

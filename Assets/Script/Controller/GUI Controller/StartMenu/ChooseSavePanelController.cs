@@ -28,6 +28,9 @@ namespace Script.GUI_Controller.StartMenu
 
         [Header("Tutorial")]
         public TutorialPromptController tutorialPrompt; // Kéo từ cùng GameObject hoặc child
+        public string tutorialTitle = "Play Tutorial?";
+        [TextArea(3, 10)]
+        public string tutorialMessage = "Would you like to play the tutorial before starting a new world?\n\nThe tutorial will teach you the basic gameplay.";
 
         private int currentWorldIndex = 0;
         private WorldInfo[] worldInfos;
@@ -60,6 +63,8 @@ namespace Script.GUI_Controller.StartMenu
             });
             newGameButton.onClick.AddListener(() => {
                 tutorialPrompt.ShowTutorialPrompt(
+                    tutorialTitle,
+                    tutorialMessage,
                     onConfirm: () => { /* Load tutorial scene (đã xử lý trong TutorialPromptController) */ },
                     onCancel: () => StartMenuNavigator.Instance.ShowPanel(MenuPanel.CreateNewWorld)
                 );

@@ -199,8 +199,11 @@ namespace Script.Manager.Building
 
             foreach (var comp in allComponents)
             {
-                // KHÔNG TƯỚC các thẻ cơ bản dùng để render và set tọa độ:
-                if (comp is Transform || comp is SpriteRenderer || comp is Collider2D)
+                // KHÔNG TƯỚC các thẻ cơ bản dùng để render và set tọa độ, cũng như UI cơ bản:
+                if (comp is Transform || comp is SpriteRenderer || comp is Collider2D || 
+                    comp is Canvas || comp is CanvasGroup || 
+                    comp is UnityEngine.UI.CanvasScaler || comp is UnityEngine.UI.GraphicRaycaster ||
+                    comp is TMPro.TMP_Text)
                 {
                     continue;
                 }
@@ -208,6 +211,9 @@ namespace Script.Manager.Building
                 // Tiêu diệt sạch Behaviour (các script C#, Animator, Rigidbody2D, ParticleSystem...)
                 if (comp is Behaviour behaviour)
                 {
+                    // Tránh tước nhầm các component quan trọng của Unity UI
+                    if (behaviour is UnityEngine.UI.Graphic) continue;
+
                     // Lỗi: Can't remove script while placing... Để an toàn ta Disable nó + Destroy
                     behaviour.enabled = false;
                     Destroy(behaviour);
@@ -483,11 +489,11 @@ namespace Script.Manager.Building
                 }
             }
 
-            if (minimumDistance is > 0 && _saveManager != null)
+            if (minimumDistance is > 0 && ContainerEntityManager.Instance != null && ContainerEntityManager.Instance.structureContainer != null)
             {
-                var structures = _saveManager.GetObjectsFromContainerList(_saveManager.structureContainer);
-                foreach (var structure in structures)
+                foreach (Transform child in ContainerEntityManager.Instance.structureContainer.transform)
                 {
+                    GameObject structure = child.gameObject;
                     if (structure.CompareTag(previewInstance.tag))
                     {
                         float dist = Vector2.Distance(previewPos, structure.transform.position);
@@ -546,9 +552,13 @@ namespace Script.Manager.Building
             }
             bool overallValid = overlapValid && leftValid && rightValid;
 
-            if (overallValid && _saveManager != null)
+            if (overallValid)
             {
-                GameObject newStructure = _saveManager.InstanceAndMoveObjectToContainer(structureToPlace, previewPos);
+                GameObject newStructure = Instantiate(structureToPlace, previewPos, Quaternion.identity);
+                if (ContainerEntityManager.Instance != null)
+                {
+                    ContainerEntityManager.Instance.MoveToContainer(newStructure);
+                }
                 if (newStructure != null)
                 {
                     // Phát âm thanh khi đặt công trình thành công

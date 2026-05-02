@@ -119,9 +119,9 @@ namespace Script.Controller.PlayerController
             // Luôn reset direction về 0 khi không có input từ bất kỳ nguồn nào.
             if (InputManager.Instance != null)
             {
-                if (InputManager.Instance.MoveLeft)       direction = -1;
-                else if (InputManager.Instance.MoveRight) direction =  1;
-                else                                       direction =  0;
+                direction = 0;
+                if (InputManager.Instance.MoveLeft) direction -= 1;
+                if (InputManager.Instance.MoveRight) direction += 1;
             }
 
             Movement(direction);
@@ -134,14 +134,11 @@ namespace Script.Controller.PlayerController
         {
             if (isGrounded && canMove)
             {
-                if (direction == -1)
-                {
-                    rb.velocity = Vector2.left * moveSpeed;
-                }
-                if (direction == 1)
-                {
-                    rb.velocity = Vector2.right * moveSpeed;
-                }
+                rb.velocity = new Vector2(direction * moveSpeed, rb.velocity.y);
+            }
+            else if (direction != 0)
+            {
+                Debug.LogWarning($"[PlayerController] Cannot move: isGrounded={isGrounded}, canMove={canMove}");
             }
         }
 
@@ -154,12 +151,14 @@ namespace Script.Controller.PlayerController
         // Hooks for UI coin button
         public void UseCoinDownAction()
         {
+            Debug.Log("[PlayerController] UseCoinDownAction");
             coinButtonHeld = true;
             coinPressStartTime = Time.time;
             coinLogTimer = 0f;
         }
         public void UseCoinUpAction()
         {
+            Debug.Log("[PlayerController] UseCoinUpAction");
             coinButtonHeld = false;
 
             float pressDuration = Time.time - coinPressStartTime;

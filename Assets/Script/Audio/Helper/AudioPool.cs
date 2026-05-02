@@ -65,7 +65,8 @@ namespace Script.Audio
         _inUse.Add(source);
         UpdateDebugCount();
 
-        Debug.Log($"[AudioPool] Get: source={source.name}, active={source.gameObject.activeSelf}, parent={source.transform.parent.name}");
+        if (AudioManager.Instance != null && AudioManager.Instance.IsDebug)
+            Debug.Log($"[AudioPool] Get: source={source.name}, active={source.gameObject.activeSelf}, parent={source.transform.parent.name}");
 
         return source;
     }

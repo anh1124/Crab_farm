@@ -17,6 +17,7 @@ using Newtonsoft.Json.Linq;
 using Script.Game.PlayerCharacter.Skills;
 using Script.Audio;
 using Script.Game.Other;
+using Script.Manager;
 
 namespace Script.Game.Mobs.Denizen.Core
 {
@@ -111,22 +112,43 @@ namespace Script.Game.Mobs.Denizen.Core
 
             DisableAllJobs();
             _previousRole = CurrentRole;
+
+            // Tự động chui vào container nếu có ContainerEntityManager
+            if (ContainerEntityManager.Instance != null)
+            {
+                ContainerEntityManager.Instance.MoveToContainer(gameObject);
+            }
         }
 
         private void Start()
         {
-            // Initial role application moved to Setup
+            // Nếu chưa được Setup bởi Manager, thử tự tìm và đăng ký một cách đầy đủ
+            if (_denizenProvider == null)
+            {
+                var manager = FindObjectOfType<DenizenManager>();
+                if (manager != null)
+                {
+                    // Thử lấy GuardProvider (fallback cho standalone spawning như Skill/Debug)
+                    var guard = FindObjectOfType<GuardManager>();
+                    
+                    // Sử dụng InitializeNewDenizen để nó gọi Setup() bên trong
+                    manager.InitializeNewDenizen(gameObject, guard);
+                    
+                    if (_status != null && _status.debugDenizen) Debug.Log($"[DenizenRoleController] Standalone spawn: Self-initialized via DenizenManager.");
+                }
+            }
         }
 
         private void OnDestroy()
         {
             _denizenProvider?.UnregisterDenizen(gameObject);
-            if (CurrentRole == NPCRole.Archer) _guardProvider?.UnregisterArcher(gameObject);
         }
 
         public void ChangeRole(NPCRole newRole)
         {
-            if (newRole == CurrentRole) return;
+            // Chỉ bỏ qua nếu role trùng VÀ đã có Job đang chạy. 
+            // Nếu _currentJob == null (lúc mới spawn), vẫn phải chạy ApplyRole để kích hoạt Job.
+            if (newRole == CurrentRole && _currentJob != null) return;
 
             // Kiểm tra xem Role mới có Job script tương ứng không trước khi thực hiện bất kỳ thay đổi nào
             if (!IsRoleSupported(newRole))
@@ -135,7 +157,6 @@ namespace Script.Game.Mobs.Denizen.Core
                 return; // Giữ nguyên role cũ, tránh làm hỏng AI
             }
 
-            if (CurrentRole == NPCRole.Archer) _guardProvider?.UnregisterArcher(gameObject);
             if (_status != null) _status.isSkillCasting = false; // Tránh kẹt skill khi đổi role
 
             // Clear movement/target tức thì khi đổi role để tránh role mới thừa hưởng
@@ -184,6 +205,14 @@ namespace Script.Game.Mobs.Denizen.Core
 
         private void ApplyRole(NPCRole role)
         {
+            if (_context == null) _context = GetComponent<DenizenContext>();
+            
+            // Đảm bảo context đã tìm thấy các Job script (phòng trường hợp Awake chạy sai thứ tự)
+            if (_context != null && (_context.VagrantJob == null || _context.VillagerJob == null || _context.ArcherJob == null))
+            {
+                _context.AutoFindReferences();
+            }
+
             if (_status != null && _status.debugDenizen)
                 Debug.Log($"[DenizenRoleController] Applying Role: {role} to {gameObject.name}");
             if (_context.Animator != null) _context.Animator.Rebind();
@@ -202,17 +231,6 @@ namespace Script.Game.Mobs.Denizen.Core
                 case NPCRole.Archer:
                     gameObject.tag = Script.Utils.GameTags.Archer;
                     _currentJob = _context.ArcherJob;
-                    
-                    // Chỉ đăng ký với GuardManager nếu không đang trong quá trình load từ save
-                    // Tránh tình trạng phân công sai do đăng ký lần lượt
-                    if (!Script.Manager.EntitySaveManager.IsLoadingFromSave)
-                    {
-                        _guardProvider?.RegisterArcher(gameObject);
-                    }
-                    else if (_status != null && _status.debugDenizen)
-                    {
-                        Debug.Log($"[DenizenRoleController] {gameObject.name}: Bỏ qua RegisterArcher vì đang loading từ save");
-                    }
                     break;
             }
 
@@ -270,7 +288,10 @@ namespace Script.Game.Mobs.Denizen.Core
             CurrentRole = role;
             if (_status != null) _status.Role = role;
 
-            _saveManager?.MoveObjectToContainer(gameObject);
+            if (ContainerEntityManager.Instance != null)
+            {
+                ContainerEntityManager.Instance.MoveToContainer(gameObject);
+            }
         }
 
         private void DisableAllJobs()

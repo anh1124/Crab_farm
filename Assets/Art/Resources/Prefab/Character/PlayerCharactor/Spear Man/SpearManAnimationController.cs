@@ -136,7 +136,8 @@ namespace Art.Resources.Character.PlayerCharactor.Spear_Man
             
             if (string.IsNullOrEmpty(animationTrigger))
             {
-                Debug.LogWarning($"[SpearManAnimationController] TriggerSkillAnimation called with empty trigger for slot {slotIndex}! Calling OnSkillAnimationEnd immediately.");
+                // Thay vì Warning, dùng Log bình thường vì đây có thể là chủ ý (hoặc quên uncheck useAnimation)
+                Debug.Log($"[SpearManAnimationController] TriggerSkillAnimation: Empty trigger for slot {slotIndex}. (Tip: Uncheck 'Use Animation' in Skill Asset if not needed). Calling OnSkillAnimationEnd.");
                 if (skillManager != null && slotIndex >= 0)
                 {
                     skillManager.OnSkillAnimationEnd(slotIndex);

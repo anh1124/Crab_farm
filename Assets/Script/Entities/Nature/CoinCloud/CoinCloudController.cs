@@ -268,8 +268,8 @@ namespace Script.Game.CoinCloud
 
         private void MoveToOtherContainer()
         {
-            if (EntitySaveManager.Instance == null) return;
-            try { EntitySaveManager.Instance.MoveObjectToContainer(gameObject); }
+            if (ContainerEntityManager.Instance == null) return;
+            try { ContainerEntityManager.Instance.MoveToContainer(gameObject); }
             catch { }
         }
 

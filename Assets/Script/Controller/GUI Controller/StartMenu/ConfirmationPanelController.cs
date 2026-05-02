@@ -19,8 +19,8 @@ namespace Script.GUI_Controller.StartMenu
         {
             confirmButton.onClick.AddListener(() => {
                 onConfirm?.Invoke();
-                // Mặc định quay lại panel ChooseSave nếu không có logic đặc biệt
-                if (onConfirm == null) StartMenuNavigator.Instance.ShowPanel(MenuPanel.ChooseSave);
+                // Luôn quay lại panel ChooseSave sau khi xác nhận xong
+                StartMenuNavigator.Instance.ShowPanel(MenuPanel.ChooseSave);
             });
 
             cancelButton.onClick.AddListener(() => {

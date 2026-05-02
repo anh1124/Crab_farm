@@ -72,7 +72,6 @@ namespace Script.Utils
             if (healthReactive != null)
             {
                 healthReactive.OnTakeDamageEvent += OnTakeDamage;
-                Debug.Log($"[DamageFlashEffect] Hooked into IHealthReactive on {gameObject.name}", this);
             }
             else
             {
@@ -92,7 +91,6 @@ namespace Script.Utils
         private void OnTakeDamage(float damage)
         {
             if (damage <= 0f) return;
-            Debug.Log($"[DamageFlashEffect] OnTakeDamage called with damage: {damage} on {gameObject.name}", this);
 
             // Phát âm thanh hit nếu có key được cấu hình
             if (!string.IsNullOrEmpty(hitSoundKey) && AudioManager.Instance != null)
@@ -114,7 +112,6 @@ namespace Script.Utils
             isFlashingWhite = true;
             flashTimer = flashWhiteDuration;
 
-            Debug.Log($"[DamageFlashEffect] Flash white on {gameObject.name}", this);
             ApplyFlashColor(flashWhiteColor);
         }
 
@@ -130,7 +127,6 @@ namespace Script.Utils
                 isFlashingWhite = false;
                 flashTimer = flashRedDuration;
 
-                Debug.Log($"[DamageFlashEffect] Flash red on {gameObject.name}", this);
                 ApplyFlashColor(flashRedColor);
             }
             else if (!isFlashingWhite && flashTimer <= 0f)

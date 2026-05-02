@@ -14,7 +14,8 @@ namespace Script.Game.Mobs.MobsManager
         [Header("Debug")]
         public List<GameObject> detectedEnemies = new List<GameObject>();
         
-        private const float ALARM_COOLDOWN_DURATION = 30f;
+        [Header("Settings")]
+        [SerializeField] public float alarmCooldownDuration = 10f;
         
         [Header("Alarm Status")]
         public float alarmTimer = 0f;
@@ -48,7 +49,7 @@ namespace Script.Game.Mobs.MobsManager
                 enemyController.OnDespawn += HandleEnemyDespawn;
             }
 
-            alarmTimer = ALARM_COOLDOWN_DURATION;
+            alarmTimer = alarmCooldownDuration;
 
             if (!isEnemyAttack)
             {
@@ -99,7 +100,7 @@ namespace Script.Game.Mobs.MobsManager
             else
             {
                 // Luôn reset timer về mức tối đa nếu vẫn còn địch trong tầm quét
-                alarmTimer = ALARM_COOLDOWN_DURATION;
+                alarmTimer = alarmCooldownDuration;
             }
         }
 

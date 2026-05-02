@@ -24,8 +24,8 @@ namespace Script.GUI_Controller.StartMenu
             createButton.onClick.AddListener(() => {
                 AudioManager.Instance?.PlayUISound("UI_Click");
                 string name = worldNameInput.text;
-                string seed = seedInput.text;
-                StartMenuNavigator.Instance.CreateNewWorld(name, seed);
+                // Truyền chuỗi rỗng để StartMenuNavigator tự tạo seed random
+                StartMenuNavigator.Instance.CreateNewWorld(name, "");
             });
 
             worldNameInput.onSelect.AddListener(_ => OnInputWorldNameClick());
@@ -40,6 +40,16 @@ namespace Script.GUI_Controller.StartMenu
             AutoFillWorldName();
             hasClickedWorldName = false;
             seedInput.text = "";
+
+            // Gán seed random vào placeholder khi panel active
+            if (seedInput != null && seedInput.placeholder != null)
+            {
+                TMP_Text placeholderText = seedInput.placeholder.GetComponent<TMP_Text>();
+                if (placeholderText != null)
+                {
+                    placeholderText.text = UnityEngine.Random.Range(0, 99999999).ToString("D8");
+                }
+            }
         }
 
         private void AutoFillWorldName()

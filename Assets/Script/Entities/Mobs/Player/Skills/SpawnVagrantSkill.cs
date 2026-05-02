@@ -1,6 +1,10 @@
 using UnityEngine;
 using Script.Game.Mobs.MobsManager;
 using Script.Controller.PlayerController;
+using Script.Data_Model;
+using Script.Game.Mobs.Denizen.Core;
+using Script.Manager;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Game.PlayerCharacter.Skills
 {
@@ -21,12 +25,33 @@ namespace Script.Game.PlayerCharacter.Skills
                 return;
             }
 
-            // Tính vị trí spawn trước mặt Player
+            // Tính vị trí spawn trước mặt Player (y = 0 để chạm đất)
             float dir = owner.transform.localScale.x;
-            Vector3 spawnPos = owner.transform.position + new Vector3(dir * 2f, 2f, 0f);
+            Vector3 spawnPos = owner.transform.position + new Vector3(dir * 2f, 0f, 0f);
+            
 
-            vm.SpawnVagrants(1, null, spawnPos);
-            Debug.Log($"[SpawnVagrantSkill] Spawned 1 Vagrant at {spawnPos}");
+            try
+            {
+                // Sử dụng Spawner trung tâm để sinh Denizen
+                GameObject vagrantObj = Spawner.Instance.SpawnMob(spawnPos, PrefabData.Instance.denizen);
+                
+                if (vagrantObj != null)
+                {
+                    // Thiết lập vai trò Vagrant ngay lập tức
+                    var roleCtrl = vagrantObj.GetComponent<DenizenRoleController>();
+                    if (roleCtrl != null)
+                    {
+                        // Tag sẽ được tự động cập nhật trong ApplyRole
+                        roleCtrl.ChangeRole(NPCRole.Vagrant);
+                    }
+                    
+                    Debug.Log($"[SpawnVagrantSkill] Successfully spawned and initialized Vagrant at {spawnPos}");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[SpawnVagrantSkill] Error during spawning: {e.Message}");
+            }
         }
 
         public override void OnHit(GameObject owner, SkillManager manager)

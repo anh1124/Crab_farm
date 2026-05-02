@@ -32,9 +32,11 @@ namespace Script.GUI_Controller.StartMenu
         /// <summary>
         /// Hiện ConfirmationPanel hỏi có chơi tutorial không
         /// </summary>
+        /// <param name="title">Tiêu đề của prompt</param>
+        /// <param name="message">Nội dung của prompt</param>
         /// <param name="onConfirm">Callback khi player chọn Có (load tutorial)</param>
         /// <param name="onCancel">Callback khi player chọn Không (tiếp tục new game)</param>
-        public void ShowTutorialPrompt(System.Action onConfirm, System.Action onCancel)
+        public void ShowTutorialPrompt(string title, string message, System.Action onConfirm, System.Action onCancel)
         {
             _onConfirmTutorial = onConfirm;
             _onCancelTutorial = onCancel;
@@ -52,8 +54,8 @@ namespace Script.GUI_Controller.StartMenu
             {
                 ConfirmationPanel.SetActive(true);
                 confirmationMenu.Show(
-                    "Play Tutorial?",
-                    "Would you like to play the tutorial before starting a new world?\n\nThe tutorial will teach you the basic gameplay.",
+                    title,
+                    message,
                     onConfirm: OnConfirm,
                     onCancel: OnCancel,
                     priority: ConfirmationMenu.MenuPriority.Normal,
@@ -68,8 +70,8 @@ namespace Script.GUI_Controller.StartMenu
                 {
                     ConfirmationPanel.SetActive(true);
                     confirmCtrl.Show(
-                        "Play Tutorial?",
-                        "Would you like to play the tutorial before starting a new world?\n\nThe tutorial will teach you the basic gameplay.",
+                        title,
+                        message,
                         confirmAction: OnConfirm,
                         cancelAction: OnCancel
                     );

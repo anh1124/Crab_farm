@@ -109,7 +109,18 @@ namespace Script.Game.PlayerCharacter.Skills
             // --- Execute ---
             OnBeforeExecute(index, instigator);
             slot.state = SkillState.Executing;
-            slot.skill.OnStart(instigator, this);
+            
+            try
+            {
+                slot.skill.OnStart(instigator, this);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[SkillManager] Error during OnStart for skill '{slot.skill.skillName}': {e}");
+                // Force end to trigger cleanup and unlock movement
+                OnSkillAnimationEnd(index, instigator);
+                return false;
+            }
 
             LogDebug($"[SkillManager] Executed skill '{slot.skill.skillName}' at slot {index}");
 

@@ -23,12 +23,5 @@ namespace Script.GUI_Controller.StartMenu
         foreach (var slider in sliders)
                 slider.Refresh();
         }
-
-        [ContextMenu("Auto Assign UI")]
-        public void AutoAssignUI()
-        {
-            if (backButton == null) backButton = transform.Find("BackButton")?.GetComponent<Button>();
-            Debug.Log("[OptionsPanelController] Đã tự động gán UI.");
-        }
     }
 }

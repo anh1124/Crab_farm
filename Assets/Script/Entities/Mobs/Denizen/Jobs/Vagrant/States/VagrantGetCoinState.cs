@@ -14,6 +14,9 @@ namespace Script.Game.Mobs.Denizen.Jobs.Vagrant
                 return;
             }
 
+            if (ctx.Status != null)
+                ctx.Status.CanMove = true;
+
             if (ctx.Animator != null) 
                 ctx.Animator.Play("run");
 

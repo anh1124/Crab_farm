@@ -19,14 +19,22 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
             else
             {
-                // Ưu tiên 2: Plaza trung tâm
-                GameObject townCenter = WorldUtility.GetTownCenter();
-                float tx = townCenter != null ? townCenter.transform.position.x : 0f;
-                _basePos = new Vector3(tx, ctx.Transform.position.y, 0f);
+                _basePos = GetFallbackPlazaPos(ctx);
             }
-            
+
             if (ctx.Animator != null) ctx.Animator.Play("archerMove");
+            if (ctx.Status != null)
+                ctx.Status.CanMove = true;
+
             if (ctx.Movement != null) ctx.Movement.SetTarget(_basePos, ctx.Status.runSpeed);
+        }
+
+        /// <summary>Lấy vị trí fallback về TownCenter Plaza.</summary>
+        private Vector3 GetFallbackPlazaPos(DenizenContext ctx)
+        {
+            GameObject townCenter = WorldUtility.GetTownCenter();
+            float tx = townCenter != null ? townCenter.transform.position.x : 0f;
+            return new Vector3(tx, ctx.Transform.position.y, 0f);
         }
 
         public override void UpdateBehavior(DenizenContext ctx)

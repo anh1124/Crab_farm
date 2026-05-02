@@ -92,8 +92,11 @@ namespace Script.Game.Other
                     Debug.Log("[StartGameScrene] TutorialScene: Using default spawn position (0,0)");
                 }
 
-                player = EntitySaveManager.Instance.InstanceAndMoveObjectToContainer(PrefabData.Instance.player, spawnPosition);
-                if (player == null) return;
+                player = Instantiate(PrefabData.Instance.player, spawnPosition, Quaternion.identity);
+                if (ContainerEntityManager.Instance != null)
+                {
+                    ContainerEntityManager.Instance.MoveToContainer(player);
+                }
 
                 player.transform.position = new Vector3(spawnPosition.x, spawnPosition.y, 0);
                 PlayerController.Instance.player = player;

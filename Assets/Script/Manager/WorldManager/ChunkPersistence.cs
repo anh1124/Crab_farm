@@ -102,8 +102,8 @@ namespace Script.Manager.WorldManager
                         if (newChunkObject != null)
                         {
                             // Move pre-planted trees and other objects from the chunk to their proper containers
-                            if (EntitySaveManager.Instance != null)
-                                EntitySaveManager.Instance.MoveChildrenToContainers(newChunkObject);
+                            if (ContainerEntityManager.Instance != null)
+                                ContainerEntityManager.Instance.MoveChildrenToContainers(newChunkObject);
                         }
                     }
                 }

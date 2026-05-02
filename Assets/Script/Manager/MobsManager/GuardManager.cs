@@ -97,7 +97,7 @@ namespace Script.Game.Mobs.MobsManager
             if (Alarm != null && !Alarm.isEnemyAttack)
             {
                 Alarm.isEnemyAttack = true;
-                Alarm.alarmTimer = 30f;
+                Alarm.alarmTimer = Alarm.alarmCooldownDuration;
                 Squad?.NotifyAllArchersValues(true);
                 DebugLog("[GuardManager] ⚔️ TownCenter under attack - emergency defense mode enabled.");
             }

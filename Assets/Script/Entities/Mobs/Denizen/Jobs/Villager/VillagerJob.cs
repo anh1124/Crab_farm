@@ -110,6 +110,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         #region Lifecycle
         private void OnEnable()
         {
+            InitializeBrain();
             if (Context != null)
             {
                 // Đảm bảo detector references tồn tại trước khi sử dụng
@@ -122,11 +123,17 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
                 // Force scan ngay lập tức
                 if (Context.RayCaster != null && Context.RayCaster.IsActive)
                     Context.RayCaster.DrawRay();
+
+                if (Context.Status != null)
+                {
+                    Context.Status.CanMove = true;
+                    Context.Status.isMoving = false;
+                }
             }
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
-            var dm = FindObjectOfType<DenizenManager>();
-            if (dm != null) dm.RegisterDenizen(gameObject);
+            // DenizenRoleController handles registration with DenizenManager.
+            // VillagerJob doesn't have a specialized manager yet.
 
             ChangeState(Context.Status != null && Context.Status.isFearPending ? (DenizenState)FearState : IdleState);
         }
@@ -134,8 +141,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
         private void OnDisable()
         {
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Unregister(this);
-            var dm = FindObjectOfType<DenizenManager>();
-            if (dm != null) dm.UnregisterDenizen(gameObject); // Bug fix: was Register
+            // DenizenRoleController handles unregistration with DenizenManager.
 
             if (Context != null)
             {

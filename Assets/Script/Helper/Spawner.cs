@@ -126,7 +126,7 @@ public class Spawner : MonoBehaviour
         {
             Vector2 newPosition = new Vector2(position.x, position.y + startYOffset + (i * spreadY));
             
-            Transform parentTransform = EntitySaveManager.Instance != null && EntitySaveManager.Instance.coinContainer != null ? EntitySaveManager.Instance.coinContainer.transform : null;
+            Transform parentTransform = ContainerEntityManager.Instance != null && ContainerEntityManager.Instance.coinContainer != null ? ContainerEntityManager.Instance.coinContainer.transform : null;
             GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, parentTransform);
             if (coin != null) coin.transform.position = newPosition;
 
@@ -149,7 +149,7 @@ public class Spawner : MonoBehaviour
     /// </summary>
     public GameObject DropByTownCenter(Vector2 position, Vector2 direction)
     {
-        Transform parentTransform = EntitySaveManager.Instance != null && EntitySaveManager.Instance.coinContainer != null ? EntitySaveManager.Instance.coinContainer.transform : null;
+        Transform parentTransform = ContainerEntityManager.Instance != null && ContainerEntityManager.Instance.coinContainer != null ? ContainerEntityManager.Instance.coinContainer.transform : null;
         GameObject coin = _coinPool != null ? _coinPool.GetCoin() : Instantiate(coinPrefab, parentTransform);
         if (coin != null) coin.transform.position = position;
 
@@ -186,13 +186,13 @@ public class Spawner : MonoBehaviour
             return null;
         }
 
-        if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.animalsContainer == null)
+        if (ContainerEntityManager.Instance == null || ContainerEntityManager.Instance.animalsContainer == null)
         {
-            Debug.LogError("[Spawner.SpawnRabbit] EntitySaveManager.Instance or animalsContainer is null!");
+            Debug.LogError("[Spawner.SpawnRabbit] ContainerEntityManager.Instance or animalsContainer is null!");
             return null;
         }
 
-        GameObject rabbitObj = Instantiate(rabbitPrefab, position, Quaternion.identity, EntitySaveManager.Instance.animalsContainer.transform);
+        GameObject rabbitObj = Instantiate(rabbitPrefab, position, Quaternion.identity, ContainerEntityManager.Instance.animalsContainer.transform);
         return rabbitObj;
     }
 
@@ -208,13 +208,13 @@ public class Spawner : MonoBehaviour
             return null;
         }
 
-        if (EntitySaveManager.Instance == null || EntitySaveManager.Instance.natureContainer == null)
+        if (ContainerEntityManager.Instance == null || ContainerEntityManager.Instance.natureContainer == null)
         {
-            Debug.LogError("[Spawner.SpawnRabbitBush] EntitySaveManager.Instance or natureContainer is null!");
+            Debug.LogError("[Spawner.SpawnRabbitBush] ContainerEntityManager.Instance or natureContainer is null!");
             return null;
         }
 
-        GameObject bushObj = Instantiate(bushPrefab, position, Quaternion.identity, EntitySaveManager.Instance.natureContainer.transform);
+        GameObject bushObj = Instantiate(bushPrefab, position, Quaternion.identity, ContainerEntityManager.Instance.natureContainer.transform);
         return bushObj;
     }
 
@@ -252,8 +252,8 @@ public class Spawner : MonoBehaviour
             spawnPos = new Vector2(position.x, position.y + itemDropYOffset);
         }
 
-        Transform container = EntitySaveManager.Instance.otherContainer != null
-            ? EntitySaveManager.Instance.otherContainer.transform
+        Transform container = ContainerEntityManager.Instance != null && ContainerEntityManager.Instance.otherContainer != null
+            ? ContainerEntityManager.Instance.otherContainer.transform
             : null;
 
         GameObject item = Instantiate(prefab, spawnPos, Quaternion.identity, container);
@@ -305,13 +305,13 @@ public class Spawner : MonoBehaviour
 
         // Spawn mob and move it to the correct container
         GameObject spawnedMob = Instantiate(prefab, position, Quaternion.identity);
-        if (spawnedMob != null && EntitySaveManager.Instance != null)
+        if (spawnedMob != null && ContainerEntityManager.Instance != null)
         {
-            EntitySaveManager.Instance.MoveObjectToContainer(spawnedMob);
+            ContainerEntityManager.Instance.MoveToContainer(spawnedMob);
         }
         else
         {
-            Debug.LogWarning("[Spawner] EntitySaveManager not found, mob will not be saved!");
+            Debug.LogWarning("[Spawner] ContainerEntityManager not found, mob will not be parented correctly!");
         }
 
         return spawnedMob;

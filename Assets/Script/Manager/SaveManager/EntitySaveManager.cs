@@ -48,8 +48,6 @@ namespace Script.Manager
         public GameObject enemyContainer;//chứa portal và enemy
         
         public GameObject denizenContainer; // All denizens (Vagrant, Villager, Archer, etc.)
-        public GameObject statuesContainer;
-       
         public GameObject otherContainer;
         
         private void Awake()
@@ -102,7 +100,6 @@ namespace Script.Manager
                 enemyContainer = GetContainerFromParent("EnemyContainer", parentTransform);
                 animalsContainer = GetContainerFromParent("AnimalsContainer", parentTransform);
                 denizenContainer = GetContainerFromParent("DenizenContainer", parentTransform);
-                statuesContainer = GetContainerFromParent("StatuesContainer", parentTransform);
                 otherContainer = GetContainerFromParent("OtherContainer", parentTransform);
                 
                 PopulateAllContainersList();
@@ -130,238 +127,11 @@ namespace Script.Manager
                 enemyContainer,
                 animalsContainer,
                 denizenContainer,
-                statuesContainer,
                 otherContainer
             };
             
             // Loại bỏ các container null nếu có
             allContainers.RemoveAll(item => item == null);
-        }
-        
-        public GameObject InstanceAndMoveObjectToContainer(GameObject prefab, Vector2 position)
-        {
-            try
-            {
-                // Kiểm tra prefabWall không null
-                if (prefab == null)
-                {
-                    Debug.LogError("Prefab được truyền vào là null.");
-                    return null;
-                }
-    
-                if (isDebug) Debug.Log($"Instantiating prefabWall: {prefab.name} with tag: {prefab.tag} at position: {position}");
-    
-                // Tạo instance mới từ prefabWall với rotation = identity để đảm bảo không có xoay
-                GameObject instance = Instantiate(prefab, position, Quaternion.identity);
-    
-                // Kiểm tra xem instance có khác prefabWall không
-                if (instance == prefab)
-                {
-                    Debug.LogError("Đối tượng được sinh ra là chính prefabWall gốc, điều này không nên xảy ra.");
-                }
-                
-                // Đảm bảo rotation luôn là identity (không xoay)
-                instance.transform.rotation = Quaternion.identity;
-                if (isDebug) Debug.Log($"Instance created with rotation: {instance.transform.rotation.eulerAngles}");
-                
-                // Log thông tin của instance trước khi chuyển vào container
-                if (isDebug) Debug.Log($"Instance before moving to container - Name: {instance.name}, Tag: {instance.tag}");
-    
-                // Chuyển instance vào container
-                MoveObjectToContainer(instance);
-    
-                // Trả về instance để có thể sử dụng sau này nếu cần
-                return instance;
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error in InstanceAndMoveObjectToContainer: {e.Message}\nStackTrace: {e.StackTrace}");
-                return null;
-            }
-        }
-        
-        public List<GameObject> GetObjectsFromContainerList(GameObject container)
-        {
-            List<GameObject> objectsList = new List<GameObject>();
-
-            if (container != null)
-            {
-                foreach (Transform child in container.transform)
-                {
-                    if (child != null && child.gameObject != null)
-                    {
-                        objectsList.Add(child.gameObject);
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogWarning("Container không tồn tại hoặc không hợp lệ!");
-            }
-
-            return objectsList;
-        }
-        
-        //chuyển 1 gameobject vào container theo tag của nó
-        public void MoveObjectToContainer(GameObject obj)
-        {
-            if (obj == null)
-            {
-                Debug.LogError("Không thể chuyển null object vào container");
-                return;
-            }
-            
-            if (isDebug)
-            {
-                Debug.Log($"Moving object '{obj.name}' with tag '{obj.tag}' to container");
-            }
-            
-            try
-            {
-                string tag = obj.tag;
-                if (tag == Script.Utils.GameTags.Player)
-                {
-                    if (playerContainer != null)
-                        obj.transform.SetParent(playerContainer.transform, true);
-                    else
-                        Debug.LogError("playerContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to PlayerContainer");
-                }
-                else if (tag == Script.Utils.GameTags.Wall || 
-                         tag == Script.Utils.GameTags.Structure || 
-                         tag == Script.Utils.GameTags.TownCenter ||
-                         tag == "BowVendor" || 
-                         tag == "HammerVendor" || 
-                         tag == "ScytheVendor" || 
-                         tag == "SwordVendor" || 
-                         tag == "SpikeVendor")
-                {
-                    if (structureContainer != null)
-                        obj.transform.SetParent(structureContainer.transform, true);
-                    else
-                        Debug.LogError("structureContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to StructureContainer");
-                }
-                else if (tag == Script.Utils.GameTags.Coin)
-                {
-                    if (coinContainer != null)
-                        obj.transform.SetParent(coinContainer.transform, true);
-                    else
-                        Debug.LogError("coinContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to CoinContainer");
-                }
-                else if (tag == Script.Utils.GameTags.Tree || tag == "RabbitBushStatus")
-                {
-                    if (natureContainer != null)
-                        obj.transform.SetParent(natureContainer.transform, true);
-                    else
-                        Debug.LogError("natureContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to NatureContainer");
-                }
-                else if (tag == Script.Utils.GameTags.Animal || tag == "RabbitStatus")
-                {
-                    if (animalsContainer != null)
-                        obj.transform.SetParent(animalsContainer.transform, true);
-                    else
-                        Debug.LogError("animalsContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to AnimalsContainer");
-                }
-                else if (tag == Script.Utils.GameTags.Enemy)
-                {
-                    if (enemyContainer != null)
-                        obj.transform.SetParent(enemyContainer.transform, true);
-                    else
-                        Debug.LogError("enemyContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to EnemyContainer");
-                }
-                else if (tag == "Wanderer" || 
-                         tag == Script.Utils.GameTags.Vagrant || 
-                         tag == Script.Utils.GameTags.Villager || 
-                         tag == Script.Utils.GameTags.Archer || 
-                         tag == "Worker" || 
-                         tag == "Farmer")
-                {
-                    if (denizenContainer != null)
-                        obj.transform.SetParent(denizenContainer.transform, true);
-                    else
-                        Debug.LogError("denizenContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to DenizenContainer");
-                }
-                else if (tag == Script.Utils.GameTags.Statues)
-                {
-                    if (statuesContainer != null)
-                        obj.transform.SetParent(statuesContainer.transform, true);
-                    else
-                        Debug.LogError("statuesContainer is null");
-                    if (isDebug) Debug.Log($"Set parent of {obj.name} to StatuesContainer");
-                }
-                else
-                {
-                    if (otherContainer != null)
-                        obj.transform.SetParent(otherContainer.transform, true);
-                    else
-                        Debug.LogError("otherContainer is null");
-                    if (isDebug) Debug.Log($"Đã chuyển {obj.name} vào OtherContainer (Unknown tag: {tag})");
-                }
-                
-                // Log sau khi đã chuyển
-                if (isDebug && obj != null && obj.transform != null && obj.transform.parent != null)
-                {
-                    Debug.Log($"After move: {obj.name} has parent {obj.transform.parent.name}");
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Lỗi khi chuyển đối tượng {obj.name} vào container: {e.Message}");
-            }
-        }
-        
-        //chuyển toàn bộ gameobject con của nó vào container theo tag
-        public void MoveChildrenToContainers(GameObject parent)
-        {
-            if (parent == null)
-            {
-                Debug.LogError("Parent object is null");
-                return;
-            }
-            
-            try
-            {
-                // First, check for specifically designated sub-containers like 'statuesContainer'
-                Transform statuesContainerChild = parent.transform.Find("statuesContainer");
-                if (statuesContainerChild != null)
-                {
-                    List<Transform> children = new List<Transform>();
-                    foreach (Transform child in statuesContainerChild) children.Add(child);
-                    foreach (Transform child in children) MoveObjectToContainer(child.gameObject);
-                }
-
-                // Also move ANY child of the parent that has a known tag (Tree, Wall, etc.)
-                // This handles chunk prefabs that have trees or structures placed directly as children
-                List<Transform> allChildren = new List<Transform>();
-                foreach (Transform child in parent.transform) allChildren.Add(child);
-                
-                foreach (Transform child in allChildren)
-                {
-                    if (child == null || child.gameObject == null) continue;
-                    
-                    // If the child has a tag handled by MoveObjectToContainer, move it
-                    string tag = child.tag;
-                    if (tag == Script.Utils.GameTags.Tree || 
-                        tag == Script.Utils.GameTags.Wall || 
-                        tag == Script.Utils.GameTags.Structure || 
-                        tag == Script.Utils.GameTags.TownCenter ||
-                        tag == Script.Utils.GameTags.Coin ||
-                        tag == Script.Utils.GameTags.Statues)
-                    {
-                        MoveObjectToContainer(child.gameObject);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Lỗi khi di chuyển các đối tượng con: {e.Message}");
-            }
         }
         
         // Phương thức để làm mới danh sách container, loại bỏ những container đã bị hủy
@@ -387,7 +157,6 @@ namespace Script.Manager
                 
                 animalsContainer = EnsureContainerExists("AnimalsContainer", ref animalsContainer);
                 denizenContainer = EnsureContainerExists("DenizenContainer", ref denizenContainer);
-                statuesContainer = EnsureContainerExists("StatuesContainer", ref statuesContainer);
                 otherContainer = EnsureContainerExists("OtherContainer", ref otherContainer);
                 
                 // Cập nhật lại danh sách
@@ -591,7 +360,8 @@ namespace Script.Manager
                     return;
                 }
                 
-                GameObject player = InstanceAndMoveObjectToContainer(PrefabData.Instance.player, Vector2.zero);
+                // Spawner already handles MoveToContainer internally
+                GameObject player = global::Spawner.Instance.SpawnMob(Vector2.zero, PrefabData.Instance.player);
                 if (player == null)
                 {
                     Debug.LogError("Không thể tạo instance của player!");
@@ -959,7 +729,7 @@ namespace Script.Manager
                         tag == Script.Utils.GameTags.Coin ||
                         tag == "RabbitBushStatus")
                     {
-                        MoveObjectToContainer(obj.gameObject);
+                        if (ContainerEntityManager.Instance != null) ContainerEntityManager.Instance.MoveToContainer(obj.gameObject);
                     }
                 }
             }
@@ -1029,13 +799,13 @@ namespace Script.Manager
                 }
                 
                 Vector3 townCenterPos = bm.currentTownCenter.transform.position;
-                List<GameObject> walls = GetObjectsFromContainerList(structureContainer);
                 
                 GameObject farthestWall = null;
                 float maxDistance = 0f;
                 
-                foreach (GameObject obj in walls)
+                foreach (Transform child in structureContainer.transform)
                 {
+                    GameObject obj = child.gameObject;
                     if (obj != null && obj.CompareTag(Script.Utils.GameTags.Wall))
                     {
                         Vector3 wallPos = obj.transform.position;

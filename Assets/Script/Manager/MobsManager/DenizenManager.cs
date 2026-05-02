@@ -58,6 +58,8 @@ namespace Script.Game.Mobs.MobsManager
         private WallAndStumpManager _wallManager;
         private NPCUpdateManager _npcUpdateManager;
         private ArrowPool _arrowPool;
+        private VagrantManager _vagrantManager;
+        private GuardManager _guardManager;
 
         public void Setup(IGameTimeProvider timeProvider, BuildingPlacementManager placementManager, BuildingManager buildingManager, EntitySaveManager saveManager)
         {
@@ -84,6 +86,12 @@ namespace Script.Game.Mobs.MobsManager
             var controllers = FindObjectsOfType<DenizenRoleController>(true);
             foreach (var ctrl in controllers)
             {
+                // Fallback providers if not wired yet
+                if (_timeProvider == null) _timeProvider = FindObjectOfType<GameTimeManager>(true);
+                if (_wallManager == null) _wallManager = FindObjectOfType<WallAndStumpManager>(true);
+                if (_npcUpdateManager == null) _npcUpdateManager = FindObjectOfType<NPCUpdateManager>(true);
+                if (_arrowPool == null) _arrowPool = FindObjectOfType<ArrowPool>(true);
+
                 ctrl.Setup(this, guardProvider, _timeProvider, _wallManager, _npcUpdateManager, _arrowPool, _saveManager);
                 RegisterDenizen(ctrl.gameObject);
             }
@@ -96,6 +104,12 @@ namespace Script.Game.Mobs.MobsManager
             var ctrl = denizen.GetComponent<DenizenRoleController>();
             if (ctrl != null)
             {
+                // Fallback providers if not wired yet
+                if (_timeProvider == null) _timeProvider = FindObjectOfType<GameTimeManager>(true);
+                if (_wallManager == null) _wallManager = FindObjectOfType<WallAndStumpManager>(true);
+                if (_npcUpdateManager == null) _npcUpdateManager = FindObjectOfType<NPCUpdateManager>(true);
+                if (_arrowPool == null) _arrowPool = FindObjectOfType<ArrowPool>(true);
+
                 ctrl.Setup(this, guardProvider, _timeProvider, _wallManager, _npcUpdateManager, _arrowPool, _saveManager);
                 RegisterDenizen(denizen);
             }

@@ -77,6 +77,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             _sensor           = new ArcherSensorHandler(Context, this, _targetSelector);
             _tacticalHandler  = new ArcherTacticalHandler(Context, this);
             _combatValidator  = new ArcherCombatValidator(Context);
+
+            // Đảm bảo đăng ký ngay khi có context.
+            // PHẢI dùng Context.GameObject (root Denizen) vì ArcherJob là child component.
+            if (Context.GuardManager != null)
+            {
+                Context.GuardManager.RegisterArcher(Context.GameObject);
+            }
         }
 
         #region Brain & Transitions
@@ -104,11 +111,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             {
                 bool isSafe = WorldUtility.IsInKingdomSafeZone(transform.position.x) 
                            || WorldUtility.IsInPlazaZone(transform.position.x);
+                
                 if (!isSafe)
                 {
-                    _tacticalHandler.ExecuteDefensiveOrder();
-                    // Cho phép state di chuyển phòng thủ tiếp tục tự cập nhật.
-                    // Nếu return sớm ở đây, ReturnToBase/Retreat sẽ không bao giờ được check reached.
+                    // Nếu đang ở ReturnToBase hoặc Retreat thì cứ để nó tiếp tục chạy về
+                    if (CurrentState != ReturnToBaseState && CurrentState != RetreatState)
+                    {
+                        _tacticalHandler.ExecuteDefensiveOrder();
+                    }
+                    
+                    // Cho phép state hiện tại cập nhật tiếp (để check reached)
                     bool allowDefenseStateUpdate = CurrentState == ReturnToBaseState || CurrentState == RetreatState;
                     if (!allowDefenseStateUpdate)
                         return;
@@ -164,6 +176,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         #region Lifecycle
         private void OnEnable()
         {
+            InitializeBrain();
             if (Context != null)
             {
                 // Đảm bảo detector references tồn tại trước khi sử dụng
@@ -183,11 +196,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                     Context.Status.CanMove = true;
                     Context.Status.isMoving = false;
                 }
+
+                // [REGISTRATION] Job tự đăng ký với Manager chuyên trách.
+                // PHẢI dùng Context.GameObject (root Denizen) vì ArcherJob là child component.
+                if (Context.GuardManager != null)
+                {
+                    Context.GuardManager.RegisterArcher(Context.GameObject);
+                }
             }
 
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Register(this);
-            var dm = FindObjectOfType<DenizenManager>();
-            if (dm != null) dm.RegisterDenizen(gameObject);
 
             // Sử dụng cached TimeManager từ Context thay vì FindObjectOfType
             var gtm = Context.TimeManager;
@@ -208,8 +226,12 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         private void OnDisable()
         {
             if (NPCUpdateManager.Instance != null) NPCUpdateManager.Instance.Unregister(this);
-            var dm = FindObjectOfType<DenizenManager>();
-            if (dm != null) dm.UnregisterDenizen(gameObject);
+            
+            // Job tự gỡ đăng ký khi bị vô hiệu hóa
+            if (Context != null && Context.GuardManager != null)
+            {
+                Context.GuardManager.UnregisterArcher(gameObject);
+            }
 
             if (Context != null)
             {
@@ -248,6 +270,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         {
             InitializeBrain();
             if (Context?.Status == null) return;
+            
+            // Đảm bảo archer được đăng ký vào squad sau khi load.
+            // PHẢI dùng Context.GameObject (root Denizen) vì ArcherJob là child component.
+            if (Context.GuardManager != null)
+            {
+                Context.GuardManager.RegisterArcher(Context.GameObject);
+            }
             
             // Đảm bảo detector references tồn tại
             if (Context.CircleDetect == null)

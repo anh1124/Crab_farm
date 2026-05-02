@@ -70,16 +70,16 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             // Add event triggers for move buttons
             // Redirect mobile UI buttons → InputManager (unified input state)
             AddEventTriggers(moveLeft,
-                () => InputManager.Instance.SetMoveLeft(true),
-                () => InputManager.Instance.SetMoveLeft(false));
+                () => { Debug.Log("[PlayerGui] MoveLeft PointerDown"); InputManager.Instance.SetMoveLeft(true); },
+                () => { Debug.Log("[PlayerGui] MoveLeft PointerUp"); InputManager.Instance.SetMoveLeft(false); });
 
             AddEventTriggers(moveRight,
-                () => InputManager.Instance.SetMoveRight(true),
-                () => InputManager.Instance.SetMoveRight(false));
+                () => { Debug.Log("[PlayerGui] MoveRight PointerDown"); InputManager.Instance.SetMoveRight(true); },
+                () => { Debug.Log("[PlayerGui] MoveRight PointerUp"); InputManager.Instance.SetMoveRight(false); });
 
             AddEventTriggers(useCoin,
-                () => PlayerController.PlayerController.Instance.UseCoinDownAction(),
-                () => PlayerController.PlayerController.Instance.UseCoinUpAction());
+                () => { Debug.Log("[PlayerGui] UseCoin PointerDown"); PlayerController.PlayerController.Instance.UseCoinDownAction(); },
+                () => { Debug.Log("[PlayerGui] UseCoin PointerUp"); PlayerController.PlayerController.Instance.UseCoinUpAction(); });
             
             // Add listeners for skill buttons
             if(skill1 != null) skill1.onClick.AddListener(OnSkill1Pressed);

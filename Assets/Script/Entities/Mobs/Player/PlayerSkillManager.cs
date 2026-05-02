@@ -122,8 +122,8 @@ namespace Script.Game.PlayerCharacter
             // Trừ tài nguyên (Tự động theo ResourceType)
             playerBehavior?.ConsumeResource(skill.resourceType, skill.resourceCost);
 
-            // Trigger animation
-            if (playerBehavior?.playerAnim != null)
+            // Trigger animation nếu skill yêu cầu
+            if (playerBehavior?.playerAnim != null && skill.useAnimation)
             {
                 playerBehavior.playerAnim.TriggerSkillAnimation(skill.animationTrigger, index);
             }
