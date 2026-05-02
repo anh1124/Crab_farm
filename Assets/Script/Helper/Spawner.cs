@@ -159,7 +159,7 @@ public class Spawner : MonoBehaviour
             coinScriptInstance.playerPickupAble = true;
             coinScriptInstance.denizensPickupAble = false;
             coinScriptInstance.enemyPickupAble = true; // Cho phép enemy nhặt coin
-            coinScriptInstance.floating = false;
+            coinScriptInstance.SetFalling();
             coinScriptInstance.CallFunctionCoolDown("Denizens");
             ThrowCoin(coin, direction);
         }
@@ -271,7 +271,7 @@ public class Spawner : MonoBehaviour
         // CallFunctionCoolDown("Denizens") sẽ bật denizensPickupAble lại sau một khoảng delay.
         itemScript.denizensPickupAble = false;
         itemScript.enemyPickupAble = true; // Cho phép enemy nhặt tool
-        itemScript.floating = false;
+        itemScript.SetFalling();
         
         // Chỉ throw nếu không ignore offset (vendor items nằm im trên kệ)
         if (!ignoreOffset)

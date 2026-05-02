@@ -223,6 +223,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6657345881127260627, guid: 2d6764e103e16d7428df91114c9af33d, type: 3}
   m_PrefabInstance: {fileID: 131853775}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &166020453 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1634847062051381541, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+  m_PrefabInstance: {fileID: 5788159800298087748}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d4009be6b66d884a9034bf64bd1abc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &181034414 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4877084570835650023, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
@@ -951,6 +962,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2965557347155808425, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: confirmationMenu
+      value: 
+      objectReference: {fileID: 166020453}
+    - target: {fileID: 2965557347155808425, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: soundSettingCanvas
       value: 
       objectReference: {fileID: 1752699499}
@@ -1153,6 +1168,10 @@ PrefabInstance:
     - target: {fileID: 6129846521539347346, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6351621911364682856, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6627063470896653433, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.x

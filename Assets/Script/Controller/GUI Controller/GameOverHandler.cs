@@ -13,22 +13,6 @@ namespace Script.GUI_Controller
         /// <summary>Cờ đánh dấu đang trong trạng thái Game Over để khóa InputManager</summary>
         public static bool IsActive { get; private set; }
 
-        [Header("UI Components")]
-        [SerializeField, Tooltip("Bảng UI thông báo thua cuộc")] 
-        private GameObject panel;
-
-        [SerializeField, Tooltip("Tiêu đề (Nút giữa trên cùng)")] 
-        private TextMeshProUGUI headerText;
-
-        [SerializeField, Tooltip("Nội dung thông báo (Ngày sống sót)")] 
-        private TextMeshProUGUI contentText;
-
-        [SerializeField, Tooltip("Nút bên PHẢI (Thường là Confirm/Menu chính)")] 
-        private Button confirmButton;
-
-        [SerializeField, Tooltip("Nút bên TRÁI (Thường là Cancel/Load Save)")] 
-        private Button cancelButton;
-
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -38,79 +22,100 @@ namespace Script.GUI_Controller
                 return;
             }
 
-            IsActive = false; // Đảm bảo cờ reset khi scene (chứa GameOverHandler) mới load lên
-            EnsureReferences();
+            IsActive = false; // Đảm bảo cờ reset khi scene mới load lên
         }
 
-        private void EnsureReferences()
-        {
-            // Tự động lấy tham chiếu từ GuiCanvasManager.Instance.confirmationMenu
-            if (GuiCanvasManager.Instance != null && GuiCanvasManager.Instance.confirmationMenu != null)
-            {
-                var menu = GuiCanvasManager.Instance.confirmationMenu;
-                if (panel == null) panel = menu.panel;
-                if (headerText == null) headerText = menu.headerText;
-                if (contentText == null) contentText = menu.contentText;
-                if (confirmButton == null) confirmButton = menu.confirmButton;
-                if (cancelButton == null) cancelButton = menu.cancelButton;
-            }
-
-            // Cảnh báo nếu vẫn thiếu
-            if (panel == null) Debug.LogWarning("[GameOverHandler] Thiếu 'Panel'! Hãy kéo GameObject bảng thông báo vào đây.");
-            if (confirmButton == null) Debug.LogWarning("[GameOverHandler] Thiếu 'Nút bên PHẢI'! Hãy kéo Button vào đây.");
-            if (cancelButton == null) Debug.LogWarning("[GameOverHandler] Thiếu 'Nút bên TRÁI'! Hãy kéo Button vào đây.");
-        }
-
+        /// <summary>
+        /// Entry point chính khi Player hoặc TownCenter bị tiêu diệt.
+        /// </summary>
         public void TriggerGameOver()
         {
+            if (IsActive) return; // Tránh gọi nhiều lần
             IsActive = true;
-            EnsureReferences();
 
-            // Phát âm thanh game over
+            PlayGameOverSound();
+            PauseGame();
+            ShowGameOverPanel();
+        }
+
+        private void PlayGameOverSound()
+        {
             if (Script.Audio.AudioManager.Instance != null)
                 Script.Audio.AudioManager.Instance.PlayUISound("Player_Lose");
+        }
 
-            var gtm = FindObjectOfType<GameTimeManager>();
-            int survivedDays = gtm != null ? gtm.GetElapsedDays() : 0;
-            Time.timeScale = 0f; // Pause game
+        private void PauseGame()
+        {
+            Time.timeScale = 0f;
+        }
 
-            if (GuiCanvasManager.Instance != null && GuiCanvasManager.Instance.confirmationMenu != null)
+        private void ShowGameOverPanel()
+        {
+            var menu = GuiCanvasManager.Instance != null ? GuiCanvasManager.Instance.confirmationMenu : null;
+            if (menu == null)
             {
-                GuiCanvasManager.Instance.confirmationMenu.Show(
-                    "Game Over",
-                    $"You survived {survivedDays} days.\n",
-                    onConfirm: () =>
-                    {
-                        Time.timeScale = 1f; // Bỏ pause trước khi load lại menu
-                        // Gọi CloseMenu với isCriticalDestroy = true để dọn dẹp hàng đợi
-                        GuiCanvasManager.Instance.confirmationMenu.CloseMenu(true);
-                        SceneManager.LoadScene("MainMenuScene");
-                    },
-                    onCancel: () =>
-                    {
-                        Time.timeScale = 1f;
-                        // Gọi CloseMenu với isCriticalDestroy = true để dọn dẹp hàng đợi
-                        GuiCanvasManager.Instance.confirmationMenu.CloseMenu(true);
-                        // Tải lại Scene hiện tại sẽ kích hoạt LoadFromSave lần nữa với path đã lưu trong Prefs
-                        SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
-                    },
-                    priority: ConfirmationMenu.MenuPriority.Critical,
-                    debugOwner: "GameOverHandler"
-                );
+                Debug.LogError("[GameOverHandler] Không tìm thấy ConfirmationMenu từ GuiCanvasManager! Game Over panel không thể hiển thị.");
+                return;
+            }
 
-                // Ghi đè chữ trên nút Cancel thành Load Save
-                if (cancelButton != null)
-                {
-                    var btnText = cancelButton.GetComponentInChildren<TextMeshProUGUI>();
-                    if (btnText != null) btnText.text = "Load last save  ";
-                }
+            // Kích hoạt GameObject chứa menu
+            menu.gameObject.SetActive(true);
 
-                // Ghi đè chữ trên nút Confirm thành Về Menu chính
-                if (confirmButton != null)
-                {
-                    var btnText = confirmButton.GetComponentInChildren<TextMeshProUGUI>();
-                    if (btnText != null) btnText.text = "Main menu";
-                }
+            int survivedDays = GetSurvivedDays();
+            
+            menu.Show(
+                header: "Game Over",
+                content: $"You survived {survivedDays} days.\n",
+                onConfirm: HandleReturnToMainMenu,
+                onCancel: HandleLoadLastSave,
+                priority: ConfirmationMenu.MenuPriority.Critical,
+                debugOwner: "GameOverHandler"
+            );
+
+            UpdateMenuButtonTexts(menu);
+        }
+
+        private int GetSurvivedDays()
+        {
+            var gtm = FindObjectOfType<GameTimeManager>();
+            return gtm != null ? gtm.GetElapsedDays() : 0;
+        }
+
+        private void UpdateMenuButtonTexts(ConfirmationMenu menu)
+        {
+            if (menu.cancelButton != null)
+            {
+                var btnText = menu.cancelButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null) btnText.text = "Load last save  ";
+            }
+
+            if (menu.confirmButton != null)
+            {
+                var btnText = menu.confirmButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null) btnText.text = "Main menu";
+            }
+        }
+
+        private void HandleReturnToMainMenu()
+        {
+            Time.timeScale = 1f;
+            CleanupMenu();
+            SceneManager.LoadScene("MainMenuScene");
+        }
+
+        private void HandleLoadLastSave()
+        {
+            Time.timeScale = 1f;
+            CleanupMenu();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
+        }
+
+        private void CleanupMenu()
+        {
+            var menu = GuiCanvasManager.Instance != null ? GuiCanvasManager.Instance.confirmationMenu : null;
+            if (menu != null)
+            {
+                menu.CloseMenu(isCriticalDestroy: true);
             }
         }
         

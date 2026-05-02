@@ -141,6 +141,10 @@ namespace Script.Game.Item.Coin
             _fallBehavior.InitializeThrow(direction, throwForce, throwDistance);
         }
 
+        public void SetFalling() => _fallBehavior.SetFalling(false);
+        public void SetStationary() => _fallBehavior.SetStationary();
+        public void SetControlled() => _fallBehavior.SetControlled();
+
         public void StopRotate()
         {
             _fallBehavior.StopRotate();
@@ -190,7 +194,10 @@ namespace Script.Game.Item.Coin
         {
             PhysicalItemData itemData = (PhysicalItemData)data;
             transform.position = new Vector3(itemData.positionX, itemData.positionY, 0);
-            floating = false;
+            // Khôi phục đúng trạng thái: floating=true → Kinematic (đứng yên trên đất)
+            // floating=false → Dynamic → coin sẽ rơi và tự land bình thường
+            if (itemData.floating) SetStationary();
+            else SetFalling();
 
             if (System.Enum.TryParse(itemData.itemCategory, out ItemType parsedType))
             {

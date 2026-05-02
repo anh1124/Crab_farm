@@ -48,6 +48,13 @@ namespace Script.Audio
     /// </summary>
     public AudioSource Get(Vector3 worldPosition)
     {
+        // Purge destroyed entries from _inUse (defensive cleanup)
+        _inUse.RemoveWhere(s => s == null);
+
+        // Drain destroyed sources from the available queue
+        while (_available.Count > 0 && _available.Peek() == null)
+            _available.Dequeue();
+
         // Check nếu đã vượt quá maxPoolSize
         if (_available.Count == 0 && _inUse.Count >= maxPoolSize)
         {
@@ -58,6 +65,14 @@ namespace Script.Audio
         AudioSource source = (_available.Count > 0)
             ? _available.Dequeue()
             : CreateSource();
+
+        // Guard: source vẫn có thể null/destroyed nếu queue bị corrupted
+        if (source == null)
+        {
+            Debug.LogWarning("[AudioPool] Dequeued a destroyed AudioSource, creating new one.");
+            source = CreateSource();
+            if (source == null) return null;
+        }
 
         source.gameObject.SetActive(true);
         source.transform.position = worldPosition;

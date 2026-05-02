@@ -182,7 +182,7 @@ namespace Script.Game.Structures.SellingShop
                 PhysicalItem physItem = newItem.GetComponent<PhysicalItem>();
                 if (physItem != null)
                 {
-                    physItem.floating = true;
+                    physItem.SetStationary();
                     physItem.onSellerStock = true; // Đánh dấu đang trong stock để tránh save 2 lần
                     // Spawner đã set enemyPickupAble = true rồi
                 }
@@ -311,7 +311,7 @@ namespace Script.Game.Structures.SellingShop
                     PhysicalItem physItem = newItem.GetComponent<PhysicalItem>();
                     if (physItem != null)
                     {
-                        physItem.floating = true;
+                        physItem.SetStationary();
                         physItem.enemyPickupAble = true; // Cho phép enemy nhặt tool
                         physItem.onSellerStock = true; // Đánh dấu đang trong stock để tránh save 2 lần
                     }

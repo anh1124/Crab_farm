@@ -221,7 +221,7 @@ namespace Script.Audio
         {
             if (!_isInRange)
             {
-                Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}' - outside culling range, SKIP");
+                if (AudioManager.Instance != null && AudioManager.Instance.IsDebug) Debug.Log($"[AudioEmitter] PlayOneShot: key='{soundKey}' - outside culling range, SKIP");
                 return;
             }
 

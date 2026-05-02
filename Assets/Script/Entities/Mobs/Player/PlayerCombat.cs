@@ -134,6 +134,13 @@ namespace Script.Game.Player
             Debug.Log($"{gameObject.name} đã chết bởi {whoDoDame?.name ?? "unknown"}");
             DropOnDeath();
             
+            // Move AudioListener to Camera to keep hearing sounds after player is deactivated
+            var mainCam = Camera.main;
+            if (mainCam != null && mainCam.GetComponent<AudioListener>() == null)
+            {
+                mainCam.gameObject.AddComponent<AudioListener>();
+            }
+
             if (Script.GUI_Controller.GameOverHandler.Instance != null)
             {
                 Script.GUI_Controller.GameOverHandler.Instance.TriggerGameOver();
