@@ -22,6 +22,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.IsSkillCasting) return;
             var archer = ctx.ArcherJob;
             if (archer == null) return;
+            
+            // [EXIT GATE] — Nếu trời sáng và không có báo động, thoát về Idle để tái đánh giá (có thể đi săn)
+            bool isDay = ctx.TimeManager == null || ctx.TimeManager.IsDaytime;
+            bool hasAlarm = ctx.GuardManager != null && ctx.GuardManager.isEnemyAttack;
+            
+            if (isDay && !hasAlarm && ctx.Status.currentTarget == null)
+            {
+                archer.ChangeState(archer.IdleState);
+                return;
+            }
 
             // Slot phòng thủ có thể thay đổi runtime (rebalance/squad update),
             // nên luôn đồng bộ theo GuardManager thay vì giữ giá trị stale từ Enter().
@@ -63,8 +73,12 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             {
                 if (ctx.SkillManager != null && ctx.SkillManager.IsReady(0))
                 {
-                    archer.ChangeState(archer.AttackState);
-                    return;
+                    // CHỈ bắn khi vị trí an toàn (không lọt trong tường)
+                    if (archer.CanAttackFromHere())
+                    {
+                        archer.ChangeState(archer.AttackState);
+                        return;
+                    }
                 }
             }
 

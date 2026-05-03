@@ -11,6 +11,7 @@ namespace Script.Game.Mobs.Denizen.Core
     public abstract class DenizenJob : MonoBehaviour, IItemHandle
     {
         public DenizenState CurrentState { get; protected set; }
+        public DenizenState PreviousState { get; protected set; }
         
         [Tooltip("Optional: Animator riêng của từng Job. Nếu để trống sẽ tự lấy mặc định từ DenizenManager.")]
         public RuntimeAnimatorController JobController; 
@@ -39,6 +40,7 @@ namespace Script.Game.Mobs.Denizen.Core
             if (newState == null || CurrentState == newState) return;
 
             CurrentState?.Exit(Context);
+            PreviousState = CurrentState;
             ResetAllAnimatorParams();
 
             CurrentState = newState;

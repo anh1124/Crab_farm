@@ -158,6 +158,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             return _combatValidator.CanAttackFromHere(this, squadPadding);
         }
 
+        public bool IsInsideWall(bool logDebug) => _combatValidator.IsInsideWall(logDebug);
+
         /// <summary>Quyết định state ban đầu theo ưu tiên: Alarm > Night > Day.</summary>
         private void DecideInitialState()
         {
@@ -429,6 +431,10 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 bool inHunt = WorldUtility.IsInHuntingZone(transform.position.x, Context.GuardManager, Context.Status.isLeftFlank);
                 sb.AppendLine($"- Trong bãi săn (Hunting Zone): {inHunt} (Vùng: {bounds.start:F1} -> {bounds.end:F1})");
             }
+
+            // 3. Phân tích va chạm tường
+            bool isInsideWall = _combatValidator.IsInsideWall(false);
+            sb.AppendLine($"- Đang đứng trong tường (WallZone): <color={(isInsideWall ? "red" : "white")}>{isInsideWall}</color>");
 
             int defendableCount = 0;
             var wallManager = Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance;

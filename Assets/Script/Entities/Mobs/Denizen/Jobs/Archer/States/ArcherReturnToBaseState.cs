@@ -29,12 +29,11 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             if (ctx.Movement != null) ctx.Movement.SetTarget(_basePos, ctx.Status.runSpeed);
         }
 
-        /// <summary>Lấy vị trí fallback về TownCenter Plaza.</summary>
+        /// <summary>Lấy vị trí fallback về TownCenter Plaza (Safety Fallback khi khởi tạo).</summary>
         private Vector3 GetFallbackPlazaPos(DenizenContext ctx)
         {
-            GameObject townCenter = WorldUtility.GetTownCenter();
-            float tx = townCenter != null ? townCenter.transform.position.x : 0f;
-            return new Vector3(tx, ctx.Transform.position.y, 0f);
+            float randomX = WorldUtility.GetRandomPlazaPos();
+            return new Vector3(randomX, ctx.Transform.position.y, 0f);
         }
 
         public override void UpdateBehavior(DenizenContext ctx)

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using Script.Game.Mobs.Denizen.Core;
 using Script.Manager.WorldManager;
 using Script.Utils;
@@ -18,6 +19,16 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         /// </summary>
         public bool CanAttackFromHere(ArcherJob job, float squadPadding = -1f)
         {
+            // --- KIỂM TRA TƯỜNG (WALLZONE) ---
+            // Nếu đang đứng lọt trong tường -> Tuyệt đối không bắn (tránh lỗi mũi tên)
+            if (IsInsideWall(Context.Status.debugDenizen))
+                return false;
+
+            // --- ƯU TIÊN SỐ 1: ĐANG GIỮ VỊ TRÍ PHÒNG THỦ ---
+            // Nếu Archer đã được lệnh gác thành (HoldWallState), luôn cho phép bắn.
+            if (job.CurrentState is ArcherHoldWallState)
+                return true;
+
             // ZONE 0: KIỂM TRA BÃI SĂN (HUNTING ZONE)
             // Nếu là mục tiêu săn bắn (Animal/Portal) hoặc đang trong Hunting State
             if (Context.Status.currentTarget != null)
@@ -92,6 +103,61 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
 
             return false;
+        }
+
+        public bool IsInsideWall(bool logDebug = false)
+        {
+            Collider2D myCol = Context.GetComponent<Collider2D>();
+            if (myCol == null)
+            {
+                if (logDebug) Debug.LogWarning($"[ArcherWallCheck] {Context.gameObject.name} does not have a Collider2D!");
+                return false; 
+            }
+
+            int currentLayer = Context.gameObject.layer;
+            string currentLayerName = LayerMask.LayerToName(currentLayer);
+
+            // Sử dụng trực tiếp Collider của Archer để kiểm tra va chạm/overlap
+            List<Collider2D> results = new List<Collider2D>();
+            ContactFilter2D filter = new ContactFilter2D().NoFilter();
+            myCol.OverlapCollider(filter, results);
+
+            bool insideWall = false;
+
+            System.Text.StringBuilder sb = null;
+            if (logDebug)
+            {
+                sb = new System.Text.StringBuilder();
+                sb.AppendLine($"<color=white>[ArcherWallCheck]</color> Checking {Context.gameObject.name} using its own collider | Layer: {currentLayerName}");
+                sb.AppendLine($"Colliders overlapping: {results.Count}");
+            }
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                var col = results[i];
+                if (col == null || col.gameObject == Context.gameObject) continue;
+
+                bool isWall = col.CompareTag(GameTags.Wall);
+                if (isWall) insideWall = true;
+
+                if (logDebug)
+                {
+                    int colLayer = col.gameObject.layer;
+                    bool interacts = !Physics2D.GetIgnoreLayerCollision(currentLayer, colLayer);
+                    sb.AppendLine($" - Hit[{i}]: {col.gameObject.name} | Tag: {col.tag} | Layer: {LayerMask.LayerToName(colLayer)} | Trigger: {col.isTrigger} | Interacts: {interacts}");
+                    if (isWall) sb.AppendLine("   <color=red>=> FOUND WALL TAG!</color>");
+                }
+                
+                if (!logDebug && insideWall) return true;
+            }
+
+            if (logDebug)
+            {
+                sb.AppendLine($"=> Result: <color={(insideWall ? "red" : "green")}>InsideWall = {insideWall}</color>");
+                Debug.Log(sb.ToString());
+            }
+
+            return insideWall;
         }
     }
 }

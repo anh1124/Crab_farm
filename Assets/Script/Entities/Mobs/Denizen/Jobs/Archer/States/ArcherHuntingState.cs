@@ -58,6 +58,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         {
             if (ctx.Status.currentTarget != null)
             {
+
                 if (ctx.SkillManager != null && ctx.SkillManager.IsReady(0))
                 {
                     bool isHuntingTarget = ctx.Status.currentTarget.CompareTag(GameTags.Animal) || 
@@ -65,20 +66,34 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                     
                     if (isHuntingTarget)
                     {
-                        archerJob.ChangeState(archerJob.AttackState);
+                        // CHỈ chuyển sang AttackState nếu vị trí hiện tại cho phép bắn (không vướng tường)
+                        // Nếu vướng tường, bỏ qua việc bắn ở frame này để tiếp tục di chuyển (Random Hunting / Loot)
+                        if (archerJob.CanAttackFromHere())
+                        {
+                            archerJob.ChangeState(archerJob.AttackState);
+                            return true;
+                        }
                     }
                     else
                     {
+                        // Với các mục tiêu phòng thủ (Enemy chính quy)
                         if (archerJob.CanAttackFromHere())
+                        {
                             archerJob.ChangeState(archerJob.AttackState);
+                            return true;
+                        }
                         else
+                        {
+                            // Nếu đang đi săn mà gặp lính địch ở vùng cấm -> Rút lui về căn cứ
                             archerJob.ChangeState(archerJob.ReturnToBaseState);
+                            return true;
+                        }
                     }
-                    return true;
                 }
             }
             return false;
         }
+
 
         private bool HandleLootCollection(DenizenContext ctx, ArcherJob archerJob)
         {

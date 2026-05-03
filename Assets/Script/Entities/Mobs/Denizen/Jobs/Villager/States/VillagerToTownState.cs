@@ -10,7 +10,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
 
         public override void Enter(DenizenContext ctx)
         {
-            _target = new Vector3(0, ctx.Transform.position.y, 0f); // Tọa độ trung tâm (Plaza)
+            float randomX = WorldUtility.GetRandomPlazaPos();
+            _target = new Vector3(randomX, ctx.Transform.position.y, 0f);
             if (ctx.Status != null)
                 ctx.Status.CanMove = true;
 

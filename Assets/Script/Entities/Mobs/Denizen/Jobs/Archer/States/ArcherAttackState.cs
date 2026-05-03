@@ -55,7 +55,17 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             {
                 if (ctx.Status.debugDenizen) 
                     Debug.Log($"<color=red>[AttackState]</color> {ctx.GameObject.name} HỦY PHÁT BẮN vì vị trí không an toàn!");
-                archerJob.ChangeState(archerJob.ReturnToBaseState);
+                
+                // [FIX] Nếu không an toàn do lọt vào tường -> Quay lại trạng thái trước đó để tiếp tục di chuyển/hành động.
+                // Tránh việc đang đi săn mà lọt vào trigger tường cái là dừng khựng lại (Idle) hoặc chạy về nhà (ReturnToBase).
+                if (archerJob.IsInsideWall(false))
+                {
+                    archerJob.ChangeState(archerJob.PreviousState ?? archerJob.IdleState);
+                }
+                else
+                {
+                    archerJob.ChangeState(archerJob.ReturnToBaseState);
+                }
                 return;
             }
 
