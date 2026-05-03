@@ -21,6 +21,11 @@ namespace Script.Game.Structures.TownCenter
         private Collider2D triggerCollider;
         private Rigidbody2D rb;
 
+        /// <summary>
+        /// Global toggle to enable/disable Town Center coin collection.
+        /// </summary>
+        public static bool CanCollectCoins = true;
+
         [Header("Player Trigger Settings")]
         private const float PLAYER_TRIGGER_THRESHOLD = 5f;
         private float playerTriggerTimer = 0f;
@@ -114,7 +119,7 @@ namespace Script.Game.Structures.TownCenter
         private void OnTriggerEnter2D(Collider2D other)
         {
             var physicalItem = other.GetComponent<PhysicalItem>();
-            if (physicalItem == null) return;
+            if (physicalItem == null || !CanCollectCoins) return;
 
             // If coin is on ground (floating = true) and not in cooldown
             if (physicalItem.floating && physicalItem.CanTownCenterPickup())
@@ -154,7 +159,7 @@ namespace Script.Game.Structures.TownCenter
 
         private void OnCoinReadyForPickup(PhysicalItem coin)
         {
-            if (coin == null) return;
+            if (coin == null || !CanCollectCoins) return;
 
             // Check cooldown before picking up
             if (coin.CanTownCenterPickup())
@@ -225,6 +230,8 @@ namespace Script.Game.Structures.TownCenter
         /// </summary>
         private void ProcessSuckBack()
         {
+            if (!CanCollectCoins) return;
+
             // Iterate backwards to safely remove items
             for (int i = droppedCoins.Count - 1; i >= 0; i--)
             {

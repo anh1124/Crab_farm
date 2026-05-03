@@ -20,9 +20,7 @@ namespace Script.GUI_Controller.PauseMenu
         private GuiCanvasManager guiCanvasManager;
         
         #region Tutorial Mode
-        [Header("Tutorial Settings - KHÔNG TỰ SET, sẽ auto lấy từ StartGameScrene")]
-        [Tooltip("Nếu true, nút Save&Exit sẽ chỉ Exit không Save. Giá trị này được tự động lấy từ StartGameScrene.isTutorialScene trong Awake/Start, không cần set thủ công.")]
-        public bool isTutorialScene = false;
+        // Đã xóa isTutorialScene field - sử dụng Utility.IsTutorialScene() trực tiếp để đảm bảo nguồn sự thật duy nhất từ StartGameScrene.
         #endregion
         
         #region Pause menu component
@@ -61,8 +59,8 @@ namespace Script.GUI_Controller.PauseMenu
         /// </summary>
         private void AutoDetectTutorialScene()
         {
-            isTutorialScene = Utility.IsTutorialScene();
-            Debug.Log($"[PauseMenuController] Auto-detected isTutorialScene = {isTutorialScene}");
+            // isTutorialScene field đã được xóa, logic hiện tại đọc trực tiếp từ Utility.IsTutorialScene()
+            Debug.Log($"[PauseMenuController] Tutorial Mode Check: {Utility.IsTutorialScene()}");
         }
         
         /// <summary>
@@ -70,7 +68,7 @@ namespace Script.GUI_Controller.PauseMenu
         /// </summary>
         private void UpdateButtonTextForTutorial()
         {
-            if (isTutorialScene && saveExitBtn != null)
+            if (Utility.IsTutorialScene() && saveExitBtn != null)
             {
                 var btnText = saveExitBtn.GetComponentInChildren<TextMeshProUGUI>();
                 if (btnText != null)
@@ -287,7 +285,7 @@ namespace Script.GUI_Controller.PauseMenu
             Script.Audio.AudioManager.Instance?.PlayUISound("UI_Click");
 
             // Tutorial: Chỉ Exit không Save
-            if (isTutorialScene)
+            if (Utility.IsTutorialScene())
             {
                 Debug.Log("[PauseMenuController] TutorialScene: Exit without save");
                 Script.Audio.AudioManager.Instance?.PauseNonUISounds(true);

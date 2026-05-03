@@ -29,6 +29,14 @@ namespace Script.Manager.GamePlayManager
             _enemyPool = pool;
             _timeProvider = time;
 
+            if (Utility.IsTutorialScene())
+            {
+                Debug.Log("[EnemyWaveManager] Tutorial scene detected. Wave triggering disabled.");
+                return;
+            }
+
+            _timeProvider = time;
+
             if (_timeProvider != null)
             {
                 _timeProvider.SubscribeToHourlyEvent(GameTimeManager.NIGHT_HOUR, TriggerNightWave);
@@ -60,6 +68,7 @@ namespace Script.Manager.GamePlayManager
 
         private void TriggerNightWave()
         {
+            if (Utility.IsTutorialScene()) return;
             if (_enemyPool == null || _enemyDataProvider == null || _timeProvider == null)
             {
                 Debug.LogError("[EnemyWaveManager] Dependencies not set! Call Setup first.");

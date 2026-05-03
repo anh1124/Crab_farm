@@ -37,7 +37,6 @@ namespace Script.Game.PlayerCharacter.Skills
 
         protected Transform _skillContainer;
         protected Script.Audio.AudioEmitter _emitter;
-        private Script.Manager.WorldManager.GameTimeManager _timeManager;
 
         // ── Public API ────────────────────────────────────────────────────
 
@@ -206,17 +205,12 @@ namespace Script.Game.PlayerCharacter.Skills
         /// </summary>
         private float GetGameTimeScale()
         {
-            if (_timeManager == null)
+            // Ưu tiên sử dụng Singleton Instance để đạt hiệu năng cao nhất (O(1))
+            if (Script.Manager.WorldManager.GameTimeManager.Instance != null)
             {
-                _timeManager = FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>();
+                return Script.Manager.WorldManager.GameTimeManager.Instance.GameTimeScale;
             }
             
-            if (_timeManager != null)
-            {
-                return _timeManager.GameTimeScale;
-            }
-            // Fallback nếu không có GameTimeManager
-            Debug.LogError("[SkillManager] GameTimeManager not found! Using Time.timeScale as fallback.");
             return Time.timeScale;
         }
 

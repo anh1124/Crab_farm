@@ -21,6 +21,9 @@ namespace Script.Utils
 
         private static Script.Game.Structures.Wall_And_Stump.WallAndStumpManager _wm;
         private static Script.Game.Structures.Wall_And_Stump.WallAndStumpManager WM => _wm != null ? _wm : (_wm = Object.FindObjectOfType<Script.Game.Structures.Wall_And_Stump.WallAndStumpManager>());
+
+        private static Script.Manager.WorldManager.GameTimeManager _gtm;
+        public static Script.Manager.WorldManager.GameTimeManager GTM => _gtm != null ? _gtm : (_gtm = Object.FindObjectOfType<Script.Manager.WorldManager.GameTimeManager>(true));
         /// <summary>
         /// Flip object và tất cả children để hướng mặt về phía TownCenter.
         /// Khi root bị flip (scale.x = -1), children cũng bị flip giống root (scale.x = -1).
@@ -79,6 +82,12 @@ namespace Script.Utils
             {
                 Debug.Log($"[WorldUtility] FlipObjectToFaceTownCenter: {obj.name} at x={objX:F2}, townCenter at x={townCenterX:F2}, shouldFlip={shouldFlip}, rootScale.x={scale.x:F2}");
             }
+        }
+
+        public static void SetTownCenterCoinCollection(bool enabled)
+        {
+            Script.Game.Structures.TownCenter.TownCenterCoinHandler.CanCollectCoins = enabled;
+            Debug.Log($"[WorldUtility] TownCenter coin collection set to: {enabled}");
         }
 
         public static void RotateObjectTowardsTownCenter(GameObject obj, Vector3 referencePos, Vector3 townCenterPos)

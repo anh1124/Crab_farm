@@ -38,6 +38,9 @@ namespace Script.Manager.WorldManager
         [Tooltip("Waypoints cho quỹ đạo Sun/Moon. Index 0 = chân trời trái, index cuối = chân trời phải.")]
         public List<Transform> waypoints = new List<Transform>();
 
+        [Tooltip("Đảo ngược hướng di chuyển của quỹ đạo (nếu waypoint bị ngược).")]
+        public bool reversePath = false;
+
         [Header("Config")]
         [Tooltip("Nếu không kéo vào, script sẽ tự tìm trong Resources/Data.")]
         public CelestialConfig config;
@@ -221,14 +224,31 @@ namespace Script.Manager.WorldManager
         private Vector3 GetPathPosition(float t)
         {
             t = Mathf.Clamp01(t);
+            
+            // Đảo ngược tiến trình nếu cần
+            if (reversePath) t = 1f - t;
+
             int count = waypoints.Count;
 
             if (count == 0) return transform.position;
+            
+            // Kiểm tra an toàn cho phần tử đầu tiên
+            if (waypoints[0] == null)
+            {
+                return transform.position;
+            }
+            
             if (count == 1) return waypoints[0].position;
 
             float scaledT = t * (count - 1);
             int index = Mathf.Clamp(Mathf.FloorToInt(scaledT), 0, count - 2);
             float localT = scaledT - index;
+
+            // Kiểm tra an toàn cho các cặp waypoint đang Lerp
+            if (waypoints[index] == null || waypoints[index + 1] == null)
+            {
+                return transform.position;
+            }
 
             return Vector3.Lerp(waypoints[index].position, waypoints[index + 1].position, localT);
         }

@@ -11,6 +11,12 @@ namespace Script.Manager.SaveManager
 
         public void Setup(IGameTimeProvider timeProvider)
         {
+            if (Utility.IsTutorialScene())
+            {
+                Debug.Log("[AutoSaveManager] Tutorial scene detected. AutoSave disabled.");
+                return;
+            }
+            
             _timeProvider = timeProvider;
             if (_timeProvider != null)
             {
@@ -34,6 +40,7 @@ namespace Script.Manager.SaveManager
         [ContextMenu("Trigger AutoSave")]
         private void TriggerAutoSave()
         {
+            if (Utility.IsTutorialScene()) return;
             if (WorldFileManager.Instance == null) return;
             StartCoroutine(DelayedSave());
         }

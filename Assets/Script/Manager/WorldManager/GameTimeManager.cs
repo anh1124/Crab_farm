@@ -65,9 +65,18 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     #endif
 
     #region Initialization
+    public static GameTimeManager Instance { get; private set; }
+
     private void Awake() 
     {
-        // Singleton pattern removed - initialized via StartGameScrene
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
@@ -322,7 +331,7 @@ public class GameTimeManager : MonoBehaviour, IGameTimeProvider
     #region Time Display
     private void UpdateTimeDisplay()
     {
-        if (timeDisplay == null) return;
+        if (timeDisplay == null || !timeDisplay.gameObject.activeInHierarchy) return;
         
         timeDisplay.text = $"Day {GameDay}";
     }

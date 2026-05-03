@@ -34,10 +34,10 @@ namespace Script.Manager.GamePlayManager
             _enemyDataProvider = dataProvider;
             _timeProvider = timeProvider;
 
-            // Kiểm tra autoRegisterTimeManager
-            if (!autoRegisterTimeManager)
+            // Kiểm tra autoRegisterTimeManager hoặc Tutorial
+            if (!autoRegisterTimeManager || Utility.IsTutorialScene())
             {
-                Debug.Log("[EnemyPortalManager] autoRegisterTimeManager = false, bỏ qua đăng ký TimeManager");
+                Debug.Log("[EnemyPortalManager] Tutorial scene or autoRegisterTimeManager=false detected. Skipping TimeManager registration.");
                 return;
             }
 
@@ -192,6 +192,11 @@ namespace Script.Manager.GamePlayManager
         [ContextMenu("Spawn Starting Portals")]
         public void SpawnStartingPortals()
         {
+            if (Utility.IsTutorialScene())
+            {
+                Debug.Log("[EnemyPortalManager] Tutorial scene detected. Skipping SpawnStartingPortals().");
+                return;
+            }
             // FIX: Đảm bảo đã được setup trước khi spawn (tránh lỗi khi ChunkManager gọi trước InitializeEnemyBase)
             // Chỉ auto-setup TimeManager nếu autoRegisterTimeManager = true
             if (!_isSubscribedToTime && autoRegisterTimeManager)

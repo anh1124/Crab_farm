@@ -111,5 +111,10 @@ namespace Script
         {
             return StartGameScrene.IsTutorial;
         }
+
+        public static void SetTownCenterCoinCollection(bool enabled)
+        {
+            WorldUtility.SetTownCenterCoinCollection(enabled);
+        }
     }
 }

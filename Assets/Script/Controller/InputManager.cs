@@ -79,18 +79,13 @@ namespace Script.Controller
             if (keyMap == null) return;
 
             // ── Movement: Phím giữ (sustained state) ──────────────────────────
+            // Sử dụng Input.GetKey để đảm bảo phản hồi liên tục, tránh lỗi mất focus hoặc IME.
 
             // Keyboard move left
-            if (Input.GetKeyDown(keyMap.moveLeft) || Input.GetKeyDown(keyMap.moveLeftAlt))
-                _kbMoveLeft = true;
-            if (Input.GetKeyUp(keyMap.moveLeft) || Input.GetKeyUp(keyMap.moveLeftAlt))
-                _kbMoveLeft = false;
+            _kbMoveLeft = Input.GetKey(keyMap.moveLeft) || Input.GetKey(keyMap.moveLeftAlt);
 
             // Keyboard move right
-            if (Input.GetKeyDown(keyMap.moveRight) || Input.GetKeyDown(keyMap.moveRightAlt))
-                _kbMoveRight = true;
-            if (Input.GetKeyUp(keyMap.moveRight) || Input.GetKeyUp(keyMap.moveRightAlt))
-                _kbMoveRight = false;
+            _kbMoveRight = Input.GetKey(keyMap.moveRight) || Input.GetKey(keyMap.moveRightAlt);
 
             // Gamepad / joystick axis
             float h = Input.GetAxisRaw("Horizontal");

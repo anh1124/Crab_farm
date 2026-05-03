@@ -51,14 +51,13 @@ namespace Script.Controller.PlayerController
             {
                 Instance = this;
             }
-            else
+            else if (Instance != this)
             {
-                //lỗi singleton
-                Debug.LogError("PlayerController already exists");
-                //Destroy(gameObject);
+                // Lỗi singleton: có nhiều hơn 1 PlayerController trong scene
+                Debug.LogError("[PlayerController] Multiple instances detected! Destroying duplicate.");
+                Destroy(gameObject);
+                return;
             }
-
-
         }
 
         public void SetUpControllerPlayer()
@@ -100,30 +99,43 @@ namespace Script.Controller.PlayerController
         {
             if (isActiveUpdate)
             {
+                // ✅ Reset direction mặc định
+                direction = 0;
+
                 // ✅ Đọc Input trong Update để đảm bảo phản hồi tức thì và mượt mà
                 if (InputManager.Instance != null)
                 {
-                    direction = 0;
                     if (InputManager.Instance.MoveLeft) direction -= 1;
                     if (InputManager.Instance.MoveRight) direction += 1;
+                    
+                    // Debug log khi có input nhưng player không di chuyển (chỉ hiện khi có phím nhấn)
+                    if (InputManager.Instance.MoveLeft || InputManager.Instance.MoveRight)
+                    {
+                        // Debug.Log($"[PlayerController] Input Detected: Dir={direction}, isGrounded={isGrounded}, canMove={canMove}, speed={moveSpeed}");
+                    }
                 }
 
-                // Lấy tốc độ di chuyển trực tiếp từ player.status
-                moveSpeed = playerBehavior.status.moveSpeed;
-                // TODO: cập nhật grounded theo GroundCheck/physics nếu cần
-                isGrounded = playerBehavior != null && playerBehavior.HasHp;
-                
-                // Lấy currentStructureShowCoinSlot từ currentInteractable của PlayerBehavior
-                if (playerBehavior != null && playerBehavior.currentInteractable != null)
+                if (playerBehavior != null)
                 {
-                    // Cast về MonoBehaviour để lấy gameObject
-                    if (playerBehavior.currentInteractable is MonoBehaviour mb)
+                    // Lấy tốc độ di chuyển trực tiếp từ player.status
+                    moveSpeed = playerBehavior.status.moveSpeed;
+                    isGrounded = playerBehavior.HasHp;
+                    
+                    if (playerBehavior.currentInteractable != null)
                     {
-                        currentStructureShowCoinSlot = mb.gameObject;
+                        if (playerBehavior.currentInteractable is MonoBehaviour mb)
+                        {
+                            currentStructureShowCoinSlot = mb.gameObject;
+                        }
+                    }
+                    else
+                    {
+                        currentStructureShowCoinSlot = null;
                     }
                 }
                 else
                 {
+                    isGrounded = false;
                     currentStructureShowCoinSlot = null;
                 }
             }
@@ -131,22 +143,27 @@ namespace Script.Controller.PlayerController
 
         private void FixedUpdate()
         {
-            // Di chuyển dựa trên direction đã được Update ghi nhận
             Movement(direction);
             UseCoinAction();
         }
-
-
 
         public void Movement(int direction)
         {
             if (isGrounded && canMove)
             {
-                rb.velocity = new Vector2(direction * moveSpeed, rb.velocity.y);
+                if (rb != null)
+                {
+                    rb.velocity = new Vector2(direction * moveSpeed, rb.velocity.y);
+                }
+                else
+                {
+                    Debug.LogError("[PlayerController] Rigidbody2D is MISSING on player!");
+                }
             }
             else if (direction != 0)
             {
-                Debug.LogWarning($"[PlayerController] Cannot move: isGrounded={isGrounded}, canMove={canMove}");
+                // Log cảnh báo lý do tại sao không di chuyển được dù có input
+                Debug.LogWarning($"[PlayerController] Movement Blocked: direction={direction}, isGrounded={isGrounded}, canMove={canMove}, HasRB={(rb != null)}");
             }
         }
 
