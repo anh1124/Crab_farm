@@ -13,6 +13,7 @@ public class CameraFollowPlayer : MonoBehaviour {
     private float previousTargetX; // Stores the previous X position of the target
     private float currentTargetX;  // Stores the current X position of the target
     private Vector3 velocity = Vector3.zero; // Velocity reference used by SmoothDamp
+    private int _lastLookDirection = 1;      // Lưu hướng nhìn cuối cùng (1: phải, -1: trái)
 
     
     private void Awake() {
@@ -46,20 +47,28 @@ public class CameraFollowPlayer : MonoBehaviour {
 
     }
     // Update is called once per frame
-    void FixedUpdate() {
+    void LateUpdate() {
         if (target != null) {
             // Update the current X position of the target
             currentTargetX = target.transform.position.x;
 
-            // Determine the target position for the camera
+            // Determine the target positionర్ for the camera
             Vector3 targetPosition = transform.position;
 
-            if (currentTargetX > previousTargetX) {
+            // ✅ Thêm ngưỡng sai số (Deadzone) để tránh rung lắc khi đứng im
+            float moveThreshold = 0.001f; 
+            
+            if (currentTargetX > previousTargetX + moveThreshold) {
                 // Target is moving to the right
                 targetPosition.x = target.transform.position.x + targetDistance;
-            } else if (currentTargetX < previousTargetX) {
+                _lastLookDirection = 1;
+            } else if (currentTargetX < previousTargetX - moveThreshold) {
                 // Target is moving to the left
                 targetPosition.x = target.transform.position.x - targetDistance;
+                _lastLookDirection = -1;
+            } else {
+                // Khi đứng im, giữ nguyên hướng nhìn cuối cùng thay vì nhảy về giữa
+                targetPosition.x = target.transform.position.x + (_lastLookDirection * targetDistance);
             }
 
             // Maintain the Y position of the camera with the offset

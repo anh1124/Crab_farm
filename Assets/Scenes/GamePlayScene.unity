@@ -545,6 +545,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!4 &1877014353 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4126982598947054278, guid: e38631770acc7854bacbb4a0d218de3e, type: 3}
+  m_PrefabInstance: {fileID: 7414202057708825644}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1948108908
 GameObject:
   m_ObjectHideFlags: 0
@@ -991,7 +996,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4354331207730205410, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 33.699997
+      value: 33.700012
       objectReference: {fileID: 0}
     - target: {fileID: 4664259179163240571, guid: ed0bcec18bb67184aaac3768fc6f9c2d, type: 3}
       propertyPath: m_AnchorMax.y
@@ -1816,6 +1821,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8662764022837747294, guid: e38631770acc7854bacbb4a0d218de3e, type: 3}
+      propertyPath: m_Depth
+      value: 0.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 8662764022837747294, guid: e38631770acc7854bacbb4a0d218de3e, type: 3}
       propertyPath: orthographic
       value: 1
       objectReference: {fileID: 0}
@@ -1825,7 +1834,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8662764022837747294, guid: e38631770acc7854bacbb4a0d218de3e, type: 3}
       propertyPath: far clip plane
-      value: 20
+      value: 36.07
       objectReference: {fileID: 0}
     - target: {fileID: 8662764022837747294, guid: e38631770acc7854bacbb4a0d218de3e, type: 3}
       propertyPath: near clip plane
@@ -1925,6 +1934,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 817571357775527561, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 9.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 888172571733739445, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: followTarget
+      value: 
+      objectReference: {fileID: 1877014353}
+    - target: {fileID: 1408969595456045907, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: targetType
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2407122204308237216, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1968,6 +1989,22 @@ PrefabInstance:
     - target: {fileID: 3885873746959304222, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
       propertyPath: m_Name
       value: Sky
+      objectReference: {fileID: 0}
+    - target: {fileID: 5194747052884254733, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: targetType
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8090653513312179423, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: targetType
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8283423693242316387, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 20.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8465153650182844075, guid: 8a9e0227e121b62479c5ad5fa0a0cd0a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 15.4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

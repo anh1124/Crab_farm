@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -37,8 +38,13 @@ namespace Script.Manager.WorldManager
         [Tooltip("Độ lệch Y so với đáy màn hình (nếu lockToCameraBottom được bật).")]
         public float yOffset = 0f;
 
+        public enum ParallaxTarget { Camera, Player }
+
         [Header("Target")]
-        [Tooltip("Nếu được gán, Parallax sẽ đi theo transform này thay vì Camera")]
+        [Tooltip("Chọn mục tiêu để Parallax đi theo")]
+        public ParallaxTarget targetType = ParallaxTarget.Camera;
+        
+        [Tooltip("Nếu được gán, Parallax sẽ đi theo transform này (Ghi đè Target Type)")]
         public Transform followTarget;
 
         private Camera _camera;
@@ -51,13 +57,15 @@ namespace Script.Manager.WorldManager
         {
             _camera = Camera.main;
 
+            // Bắt đầu tìm kiếm Target liên tục cho đến khi thấy
+            StartCoroutine(FindTargetCoroutine());
+
             if (_camera == null || sprites == null || sprites.Count == 0 || sprites[0] == null)
             {
                 enabled = false;
                 return;
             }
 
-            _originCamX = _camera.transform.position.x;
             _tileWidth = sprites[0].bounds.size.x;
 
             if (_tileWidth <= 0f)
@@ -84,6 +92,32 @@ namespace Script.Manager.WorldManager
             SpawnInitialTiles();
             TurnOffCurrentSpriteRenderer();
         }
+
+        private IEnumerator FindTargetCoroutine()
+        {
+            while (followTarget == null)
+            {
+                if (targetType == ParallaxTarget.Camera)
+                {
+                    if (Camera.main != null) followTarget = Camera.main.transform;
+                }
+                else if (targetType == ParallaxTarget.Player)
+                {
+                    GameObject player = GameObject.FindGameObjectWithTag("Player");
+                    if (player != null) followTarget = player.transform;
+                }
+
+                if (followTarget != null)
+                {
+                    // Khi đã tìm thấy target, thiết lập lại điểm gốc để tính toán Parallax
+                    _originCamX = followTarget.position.x;
+                    Debug.Log($"[ParallaxLayer] {name} đã tìm thấy và gán Target: {followTarget.name}");
+                    yield break; // Thoát Coroutine
+                }
+
+                yield return new WaitForSeconds(1.0f);
+            }
+        }
         
         private void TurnOffCurrentSpriteRenderer()
         {
@@ -94,11 +128,11 @@ namespace Script.Manager.WorldManager
             }
         }
         
-        private void FixedUpdate()
+        private void LateUpdate()
         {
-            if (_camera == null || _tiles.Count == 0) return;
+            if (_camera == null || _tiles.Count == 0 || followTarget == null) return;
 
-            Transform targetTransform = followTarget != null ? followTarget : _camera.transform;
+            Transform targetTransform = followTarget;
 
             // 1. Tính toán vị trí X (Parallax)
             float camDelta = targetTransform.position.x - _originCamX;
@@ -109,7 +143,6 @@ namespace Script.Manager.WorldManager
             float targetY = transform.position.y;
             if (lockToCameraBottom)
             {
-                // ✅ Luôn dùng camera bottom, không phụ thuộc followTarget để tránh núi bị nhảy theo Y của Player khi nhảy
                 targetY = _camera.transform.position.y - _camera.orthographicSize + yOffset;
             }
             
@@ -156,7 +189,7 @@ namespace Script.Manager.WorldManager
 
         private void RecycleTiles(Transform targetTransform)
         {
-            float targetX = targetTransform != null ? targetTransform.position.x : _camera.transform.position.x;
+            float targetX = targetTransform.position.x;
             float camLocalX = targetX - transform.position.x;
             float halfTotalWidth = _totalWidth / 2f;
 
@@ -182,7 +215,6 @@ namespace Script.Manager.WorldManager
             if (sprites.Count <= 1) return;
             var sr = tile.GetComponent<SpriteRenderer>();
 
-            // ✅ Dùng index cố định để tránh sprite bị nhảy ngẫu nhiên khi recycle
             int tileIndex = _tiles.IndexOf(tile);
             if (sr != null && tileIndex != -1)
             {

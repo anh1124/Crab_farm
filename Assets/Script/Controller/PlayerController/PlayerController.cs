@@ -64,6 +64,14 @@ namespace Script.Controller.PlayerController
         public void SetUpControllerPlayer()
         {
             rb = player.GetComponent<Rigidbody2D>();
+            
+            // ✅ QUAN TRỌNG: Bật nội suy để Player di chuyển mượt mà giữa các khung hình vật lý.
+            // Điều này loại bỏ hiện tượng "nhảy cóc" vị trí, giúp Camera và Parallax hết giật.
+            if (rb != null)
+            {
+                rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            }
+
             playerBehavior = player.GetComponent<PlayerBehavior>();
             SkillManager = player.GetComponent<PlayerSkillManager>();
             isActiveUpdate = true;
@@ -92,6 +100,14 @@ namespace Script.Controller.PlayerController
         {
             if (isActiveUpdate)
             {
+                // ✅ Đọc Input trong Update để đảm bảo phản hồi tức thì và mượt mà
+                if (InputManager.Instance != null)
+                {
+                    direction = 0;
+                    if (InputManager.Instance.MoveLeft) direction -= 1;
+                    if (InputManager.Instance.MoveRight) direction += 1;
+                }
+
                 // Lấy tốc độ di chuyển trực tiếp từ player.status
                 moveSpeed = playerBehavior.status.moveSpeed;
                 // TODO: cập nhật grounded theo GroundCheck/physics nếu cần
@@ -115,15 +131,7 @@ namespace Script.Controller.PlayerController
 
         private void FixedUpdate()
         {
-            // Đọc movement từ InputManager (tổng hợp keyboard + mobile).
-            // Luôn reset direction về 0 khi không có input từ bất kỳ nguồn nào.
-            if (InputManager.Instance != null)
-            {
-                direction = 0;
-                if (InputManager.Instance.MoveLeft) direction -= 1;
-                if (InputManager.Instance.MoveRight) direction += 1;
-            }
-
+            // Di chuyển dựa trên direction đã được Update ghi nhận
             Movement(direction);
             UseCoinAction();
         }

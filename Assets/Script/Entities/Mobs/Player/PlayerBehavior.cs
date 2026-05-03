@@ -103,12 +103,6 @@ namespace Script.Game.Player
 
         private void Start()
         {
-            // Tìm kiếm tất cả ParallaxLayer và assign target follow là transform của player
-            Script.Manager.WorldManager.ParallaxLayer[] parallaxLayers = FindObjectsOfType<Script.Manager.WorldManager.ParallaxLayer>();
-            foreach (var layer in parallaxLayers)
-            {
-                layer.followTarget = this.transform;
-            }
 
             LogPlayerSkillsAtStart();
         }
