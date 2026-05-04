@@ -136,12 +136,29 @@ namespace Script.GUI_Controller.StartMenu
                 emptySaveText.SetActive(true);
                 worldInfoContainer.SetActive(false);
                 currentWorldIndex = 0;
+
+                // Ẩn các button hành động nếu không có save
+                playButton.gameObject.SetActive(false);
+                deleteButton.gameObject.SetActive(false);
+                nextButton.gameObject.SetActive(false);
+                prevButton.gameObject.SetActive(false);
+                if (openWorldInfoButton != null) openWorldInfoButton.gameObject.SetActive(false);
+                if (totalWorldText != null) totalWorldText.gameObject.SetActive(false);
             }
             else
             {
                 emptySaveText.SetActive(false);
                 worldInfoContainer.SetActive(true);
                 currentWorldIndex = Mathf.Clamp(currentWorldIndex, 0, totalWorld - 1);
+
+                // Hiện các button hành động
+                playButton.gameObject.SetActive(true);
+                deleteButton.gameObject.SetActive(true);
+                nextButton.gameObject.SetActive(true);
+                prevButton.gameObject.SetActive(true);
+                if (openWorldInfoButton != null) openWorldInfoButton.gameObject.SetActive(true);
+                if (totalWorldText != null) totalWorldText.gameObject.SetActive(true);
+
                 DisplayCurrentWorld();
             }
             UpdateTotalWorldText();

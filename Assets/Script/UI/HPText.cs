@@ -31,7 +31,6 @@ namespace Script.UI
         private IHealth health;
         private IHealthReactive healthReactive;
         private CanvasGroup canvasGroup;
-        private Collider2D triggerCollider;
 
         private float _showTimeRemaining;
         private bool _fading;
@@ -52,11 +51,6 @@ namespace Script.UI
             }
 
             healthReactive = health as IHealthReactive;
-
-            triggerCollider = GetComponent<Collider2D>();
-            if (triggerCollider == null)
-                triggerCollider = gameObject.AddComponent<BoxCollider2D>();
-            triggerCollider.isTrigger = true;
 
             canvasGroup.alpha = 0f;
             UpdateHPText(health.CurrentHp, health.MaxHp);
@@ -132,9 +126,9 @@ namespace Script.UI
             ShowHealth(triggerDisplayDuration);
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
+        private void OnCollisionEnter2D(Collision2D collision)
         {
-            if (other.CompareTag(GameTags.Player))
+            if (collision.gameObject.CompareTag(GameTags.Player))
                 ShowHealth(triggerDisplayDuration);
         }
 

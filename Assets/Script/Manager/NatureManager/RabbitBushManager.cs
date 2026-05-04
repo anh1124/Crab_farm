@@ -249,15 +249,33 @@ namespace Script.Manager.NatureManager
         }
 
         /// <summary>
+        /// Spawn các cây bụi ban đầu khi khởi tạo map mới.
+        /// </summary>
+        public void SpawnInitialBushes()
+        {
+            Debug.Log("[RabbitBushManager] Spawn 1 cây bụi ngẫu nhiên cho thế giới mới.");
+            // Spawn 1 bush ở bên ngẫu nhiên
+            bool isLeft = UnityEngine.Random.value < 0.5f;
+            RabbitBushBehavior bush = SpawnBushForSide(isLeft);
+            
+            if (bush != null)
+            {
+                // Sinh 2 thỏ ngay lập tức cho bụi cỏ khởi đầu
+                bush.SpawnRabbit();
+                bush.SpawnRabbit();
+                Debug.Log("[RabbitBushManager] Đã sinh 2 thỏ cho bụi cỏ khởi đầu.");
+            }
+        }
+
+        /// <summary>
         /// Spawn một cây bụi ở phía được chọn (Left = true, Right = false).
         /// Dùng WorldUtility.GetHuntingBounds để lấy phạm vi, tránh tự tính toán.
         /// </summary>
-        private void SpawnBushForSide(bool isLeft)
+        private RabbitBushBehavior SpawnBushForSide(bool isLeft)
         {
             if (_guardManager == null)
             {
-                Debug.LogError("[RabbitBushManager] GuardManager not found! Cannot spawn bush.");
-                return;
+                return null;
             }
 
             var bounds = WorldUtility.GetHuntingBounds(_guardManager, isLeft);
@@ -282,7 +300,7 @@ namespace Script.Manager.NatureManager
             if (minSpawnX >= maxSpawnX)
             {
                 Debug.LogError($"[RabbitBushManager] Invalid spawn range: min={minSpawnX}, max={maxSpawnX}. Check hunting bounds or wallOffset.");
-                return;
+                return null;
             }
 
             float posX = UnityEngine.Random.Range(minSpawnX, maxSpawnX);
@@ -293,7 +311,7 @@ namespace Script.Manager.NatureManager
             if (!isInHuntArena)
             {
                 Debug.LogError($"[RabbitBushManager] Position {spawnPosition} is NOT in hunt arena. Aborting spawn.");
-                return;
+                return null;
             }
 
             var townCenter = WorldUtility.GetTownCenter();
@@ -303,21 +321,21 @@ namespace Script.Manager.NatureManager
                 if (actualIsLeft != isLeft)
                 {
                     Debug.LogError($"[RabbitBushManager] Side mismatch: target={isLeft}, actual={actualIsLeft}. Aborting.");
-                    return;
+                    return null;
                 }
             }
 
             if (Spawner.Instance == null)
             {
                 Debug.LogError("[RabbitBushManager] Spawner.Instance is null!");
-                return;
+                return null;
             }
 
             GameObject bushObj = Spawner.Instance.SpawnRabbitBush(spawnPosition);
             if (bushObj == null)
             {
                 Debug.LogError("[RabbitBushManager] Failed to spawn bush via Spawner!");
-                return;
+                return null;
             }
 
             RabbitBushBehavior bush = bushObj.GetComponent<RabbitBushBehavior>();
@@ -325,7 +343,7 @@ namespace Script.Manager.NatureManager
             {
                 Debug.LogError("[RabbitBushManager] Spawned object has no RabbitBushBehavior!");
                 Destroy(bushObj);
-                return;
+                return null;
             }
 
             bush.SetSide(isLeft);
@@ -333,6 +351,7 @@ namespace Script.Manager.NatureManager
 #if UNITY_EDITOR
             if (isDebug) Debug.Log($"[RabbitBushManager] Spawned {(isLeft ? "LEFT" : "RIGHT")} bush at {spawnPosition}, ID: {bush.GetBushID()}");
 #endif
+            return bush;
         }
 
         #endregion

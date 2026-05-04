@@ -5,6 +5,7 @@ using Script.Manager.WorldManager;
 using Script.Game.Mobs.MobsManager;
 using Script.Save_Controller;
 using Script.Manager.SaveManager;
+using Script.Manager.GamePlayManager;
 
 namespace Script.Game.Other
 {
@@ -42,7 +43,10 @@ namespace Script.Game.Other
             // 4. Di chuyển entities từ chunks vào container (dọn dẹp cây, đá...)
             MoveEntitiesToContainers();
 
-            // 5. Lưu lại sau 1 giây
+            // 5. Sinh thêm tài nguyên thiên nhiên (Rabbit Bush)
+            SpawnInitialNature();
+            
+            // 6. Lưu lại sau 1 giây
             StartCoroutine(DelayedInitialSave());
         }
 
@@ -93,6 +97,23 @@ namespace Script.Game.Other
                 chunkManager.AddChunk(true);
                 chunkManager.AddChunk(false);
                 Debug.Log("[NewWorldInitializer] World expanded with extra chunks.");
+
+                // Sinh cổng khởi đầu và kích hoạt ngay lập tức
+                if (EnemyPortalManager.Instance != null)
+                {
+                    EnemyPortalManager.Instance.SpawnStartingPortals();
+                    // Kích hoạt ngay 2 cổng gần nhất
+                    EnemyPortalManager.Instance.ForceActivateFrontlinePortals();
+                }
+            }
+        }
+
+        private void SpawnInitialNature()
+        {
+            if (Script.Manager.NatureManager.RabbitBushManager.Instance != null)
+            {
+                Script.Manager.NatureManager.RabbitBushManager.Instance.SpawnInitialBushes();
+                Debug.Log("[NewWorldInitializer] Initial Rabbit Bushes spawned.");
             }
         }
 

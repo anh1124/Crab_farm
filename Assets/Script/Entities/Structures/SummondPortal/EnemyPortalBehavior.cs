@@ -203,8 +203,14 @@ namespace Script.Entities.Structures.SummondPortal
             // Shake camera mạnh khi portal chính thức kích hoạt
             CameraShake.Instance?.RequestShake(transform.position, activationShakeCount, activationInterval, activationTiltAngle);
 
-            // Hủy đăng ký vì ngày nào sau đó cũng là Active rồi
-            // Note: Storm Invasion - Manager xử lý tập trung, không cần unsubscribe ở đây
+            // Giải cứu player nếu đang đứng ở vị trí bị kẹt
+            if (EnemyPortalManager.Instance != null)
+            {
+                GameObject townCenter = Utility.GetTownCenter();
+                float centerX = townCenter != null ? townCenter.transform.position.x : 0f;
+                bool isRightSide = transform.position.x > centerX;
+                EnemyPortalManager.Instance.RescuePlayerIfStuck(transform.position, isRightSide);
+            }
         }
 
         /// <summary>

@@ -23,12 +23,16 @@ namespace Script.Save_Controller
         // Storm Invasion: Extra power từ việc phá portal
         public int ExtraPower;
 
+        // Flag to track if the guide arrow has been shown
+        public bool HasShowGuideArrow;
+
         public WorldInfo(string name, string creationDate, int seed,
             int gameHour = 7, int gameMinute = 0, int gameDay = 1,
             int gameMonth = 1, int gameYear = 1,
             bool techFireArrow = false, bool techPenetrating = false, 
             bool techForge = false, bool techAdhesive = false,
-            string lastPlayedDate = null, int extraPower = 0)
+            string lastPlayedDate = null, int extraPower = 0,
+            bool hasShowGuideArrow = false)
         {
             Name = name;
             CreationDate = creationDate;
@@ -43,6 +47,7 @@ namespace Script.Save_Controller
             TechForge = techForge;
             TechAdhesive = techAdhesive;
             ExtraPower = extraPower;
+            HasShowGuideArrow = hasShowGuideArrow;
             LastPlayedDate = string.IsNullOrEmpty(lastPlayedDate) ? creationDate : lastPlayedDate;
         }
     }

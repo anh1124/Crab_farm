@@ -18,7 +18,31 @@ public class CoinUI : MonoBehaviour
     [Tooltip("Kéo thả PlayerStatus vào đây, hoặc PlayerUISetup sẽ tự gọi Setup()")]
     public PlayerStatus playerStatus;
 
+    [Header("Visual Settings")]
+    [SerializeField] private Color normalColor = Color.white;
+    [SerializeField] private Color fullColor = Color.red;
+    [SerializeField] private Color addColor = Color.yellow;
+    [SerializeField] private Color subColor = Color.red;
+    [SerializeField] private float colorFlashDuration = 0.5f;
+    [SerializeField] private float shakeIntensity = 5f;
+    [SerializeField] private float shakeDuration = 0.2f;
+
+    private int _lastCoinValue = -1;
+    private Coroutine _flashCoroutine;
+    private Coroutine _shakeCoroutine;
+    private Vector3 _originalTextPosition;
+    private RectTransform _textRectTransform;
+
     // ─── Setup ───────────────────────────────────────────────────────────────
+
+    private void Awake()
+    {
+        if (coinText != null)
+        {
+            _textRectTransform = coinText.GetComponent<RectTransform>();
+            _originalTextPosition = _textRectTransform.anchoredPosition;
+        }
+    }
 
     private void Start()
     {
@@ -56,8 +80,9 @@ public class CoinUI : MonoBehaviour
 
         gameObject.SetActive(true);
 
-        // Cập nhật UI ngay với giá trị hiện tại
-        OnCoinChanged(playerStatus.coin);
+        // Khởi tạo giá trị ban đầu
+        _lastCoinValue = playerStatus.coin;
+        UpdateCoinDisplay(_lastCoinValue, false);
     }
 
     private void OnDestroy()
@@ -70,15 +95,86 @@ public class CoinUI : MonoBehaviour
 
     private void OnCoinChanged(int currentCoin)
     {
-        UpdateCoinText(currentCoin);
+        bool isAdd = currentCoin > _lastCoinValue;
+        bool isSub = currentCoin < _lastCoinValue;
+
+        UpdateCoinDisplay(currentCoin, true, isAdd, isSub);
+        _lastCoinValue = currentCoin;
     }
 
     // ─── Display Logic ────────────────────────────────────────────────────────
 
-    private void UpdateCoinText(int currentCoin)
+    private void UpdateCoinDisplay(int currentCoin, bool playFeedback, bool isAdd = false, bool isSub = false)
     {
         if (coinText == null) return;
+
         coinText.text = currentCoin.ToString();
+
+        // Kiểm tra trạng thái full
+        bool isFull = playerStatus != null && currentCoin >= playerStatus.maxCoins;
+
+        if (playFeedback)
+        {
+            if (isAdd)
+            {
+                TriggerFlash(addColor);
+            }
+            else if (isSub)
+            {
+                TriggerFlash(subColor);
+                TriggerShake();
+            }
+        }
+        else
+        {
+            // Nếu không có feedback (lúc init), đặt màu dựa trên trạng thái full
+            coinText.color = isFull ? fullColor : normalColor;
+        }
+    }
+
+    private void TriggerFlash(Color flashColor)
+    {
+        if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
+        _flashCoroutine = StartCoroutine(FlashRoutine(flashColor));
+    }
+
+    private IEnumerator FlashRoutine(Color targetColor)
+    {
+        coinText.color = targetColor;
+        
+        float elapsed = 0f;
+        while (elapsed < colorFlashDuration)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Sau khi flash xong, quay về màu cơ bản (Red nếu full, White nếu không)
+        bool isFull = playerStatus != null && playerStatus.coin >= playerStatus.maxCoins;
+        coinText.color = isFull ? fullColor : normalColor;
+        _flashCoroutine = null;
+    }
+
+    private void TriggerShake()
+    {
+        if (_shakeCoroutine != null) StopCoroutine(_shakeCoroutine);
+        _shakeCoroutine = StartCoroutine(ShakeRoutine());
+    }
+
+    private IEnumerator ShakeRoutine()
+    {
+        if (_textRectTransform == null) yield break;
+
+        float elapsed = 0f;
+        while (elapsed < shakeDuration)
+        {
+            elapsed += Time.deltaTime;
+            Vector2 randomOffset = Random.insideUnitCircle * shakeIntensity;
+            _textRectTransform.anchoredPosition = _originalTextPosition + (Vector3)randomOffset;
+            yield return null;
+        }
+
+        _textRectTransform.anchoredPosition = _originalTextPosition;
+        _shakeCoroutine = null;
     }
 }
-

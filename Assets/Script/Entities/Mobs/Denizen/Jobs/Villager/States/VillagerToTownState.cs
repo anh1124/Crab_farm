@@ -15,12 +15,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             if (ctx.Status != null)
                 ctx.Status.CanMove = true;
 
-            if (ctx.Animator != null) 
-                ctx.Animator.Play("run");
-
-            // Dùng runSpeed để chạy về safe zone nhanh hơn khi đêm
-            if (ctx.Movement != null)
-                ctx.Movement.SetTarget(_target, ctx.Status != null ? ctx.Status.runSpeed : -1f);
+            // Tốc độ ban đầu sẽ được quyết định trong UpdateBehavior để tránh lặp logic
+            UpdateSpeed(ctx);
         }
 
         public override void UpdateBehavior(DenizenContext ctx)
@@ -33,18 +29,37 @@ namespace Script.Game.Mobs.Denizen.Jobs.Villager
             {
                 if (ctx.Movement != null) ctx.Movement.Stop();
                 villagerJob.ChangeState(villagerJob.IdleState);
+                return;
             }
+
+            UpdateSpeed(ctx);
+        }
+
+        private void UpdateSpeed(DenizenContext ctx)
+        {
+            if (ctx.Movement == null || ctx.Status == null) return;
+
+            // Logic thay đổi tốc độ dựa trên vị trí (Plaza vs Outside)
+            bool isInPlaza = WorldUtility.IsInPlazaZone(ctx.Transform.position.x);
+            bool safe = !ctx.Status.isInDanger && ctx.Status.fearTimer <= 0;
+
+            // Nếu ở trong plaza và an toàn -> Walk
+            // Nếu ở ngoài plaza HOẶC đang gặp nguy hiểm -> Run
+            float targetSpeed = (isInPlaza && safe) ? ctx.Status.walkSpeed : ctx.Status.runSpeed;
+            
+            ctx.Movement.SetTarget(_target, targetSpeed);
         }
 
         public override void Update(DenizenContext ctx)
         {
-            if (ctx.Animator == null) return;
+            if (ctx.Animator == null || ctx.Status == null) return;
             
-            // ToTownState khi đêm: chạy về safe zone
             if (ctx.Status.isMoving)
             {
-                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName("run"))
-                    ctx.Animator.Play("run");
+                // Chọn animation dựa trên speed thực tế
+                string animName = ctx.Status.currentSpeed > ctx.Status.walkSpeed + 0.1f ? "run" : "walk";
+                if (!ctx.Animator.GetCurrentAnimatorStateInfo(0).IsName(animName))
+                    ctx.Animator.Play(animName);
             }
             else
             {

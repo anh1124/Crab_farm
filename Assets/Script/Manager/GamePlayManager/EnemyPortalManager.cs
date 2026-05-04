@@ -107,6 +107,10 @@ namespace Script.Manager.GamePlayManager
         [Tooltip("Lượng máu tăng thêm mỗi ngày")]
         public float hpIncreasePerDay = 20f;
 
+        [Header("Rescue Settings")]
+        [Tooltip("Khoảng cách đẩy player vào trong vương quốc khi bị kẹt ngoài cổng")]
+        public float rescuePlayerOffset = 5f;
+
         private void Awake()
         {
             if (Instance == null)
@@ -148,13 +152,14 @@ namespace Script.Manager.GamePlayManager
             }
         }
 
-        private void RescuePlayerIfStuck(Vector3 portalPos, bool isRightSide, Vector3 portalScale)
+        public void RescuePlayerIfStuck(Vector3 portalPos, bool isRightSide)
         {
             if (Script.Controller.PlayerController.PlayerController.Instance == null || 
                 Script.Controller.PlayerController.PlayerController.Instance.player == null) return;
             
             GameObject playerObj = Script.Controller.PlayerController.PlayerController.Instance.player;
             float playerX = playerObj.transform.position.x;
+            float rescueOffset = rescuePlayerOffset; // Dùng biến thay cho magic number 5f
 
             if (isRightSide)
             {
@@ -162,9 +167,9 @@ namespace Script.Manager.GamePlayManager
                 if (playerX > portalPos.x)
                 {
                     Vector3 newPos = playerObj.transform.position;
-                    newPos.x = portalPos.x - (portalScale.x * 2.5f); // Đẩy vào trong vương quốc
+                    newPos.x = portalPos.x - rescueOffset; // Đẩy vào trong vương quốc (về phía 0)
                     playerObj.transform.position = newPos;
-                    Debug.LogWarning("[EnemyPortalManager] Giải cứu Player bị kẹt bên ngoài cổng PHẢI vừa sinh!");
+                    Debug.LogWarning($"[EnemyPortalManager] Giải cứu Player bị kẹt bên ngoài cổng PHẢI (x={portalPos.x})! Dịch chuyển về x={newPos.x}");
                 }
             }
             else
@@ -173,9 +178,9 @@ namespace Script.Manager.GamePlayManager
                 if (playerX < portalPos.x)
                 {
                     Vector3 newPos = playerObj.transform.position;
-                    newPos.x = portalPos.x + (portalScale.x * 2.5f); // Đẩy vào trong vương quốc
+                    newPos.x = portalPos.x + rescueOffset; // Đẩy vào trong vương quốc (về phía 0)
                     playerObj.transform.position = newPos;
-                    Debug.LogWarning("[EnemyPortalManager] Giải cứu Player bị kẹt bên ngoài cổng TRÁI vừa sinh!");
+                    Debug.LogWarning($"[EnemyPortalManager] Giải cứu Player bị kẹt bên ngoài cổng TRÁI (x={portalPos.x})! Dịch chuyển về x={newPos.x}");
                 }
             }
         }
@@ -392,7 +397,7 @@ namespace Script.Manager.GamePlayManager
             }
 
             // Giải cứu player nếu lỡ đứng ở vị trí bị kẹt khi portal vừa xuất hiện
-            RescuePlayerIfStuck(spawnPos, isRightSide, newPortal.transform.localScale);
+            RescuePlayerIfStuck(spawnPos, isRightSide);
 
             Debug.Log($"[EnemyPortalManager] Đã tạo thành công cổng {(isRightSide ? "PHẢI" : "TRÁI")} tại: {spawnPos}");
         }
@@ -464,6 +469,22 @@ namespace Script.Manager.GamePlayManager
                 }
             }
             Debug.Log($"[EnemyPortalManager] Đã bật và Kích Hoạt tất cả {leftPortals.Count + rightPortals.Count} cổng.");
+        }
+
+        /// <summary>
+        /// Kích hoạt ngay lập tức các portal tuyến đầu (thường gọi khi tạo world mới)
+        /// </summary>
+        public void ForceActivateFrontlinePortals()
+        {
+            if (leftPortals.Count > 0 && leftPortals[0] != null)
+            {
+                leftPortals[0].ForceActivate();
+            }
+            if (rightPortals.Count > 0 && rightPortals[0] != null)
+            {
+                rightPortals[0].ForceActivate();
+            }
+            Debug.Log("[EnemyPortalManager] Đã kích hoạt cưỡng bức 2 portal tuyến đầu.");
         }
 
         #region Storm Invasion System

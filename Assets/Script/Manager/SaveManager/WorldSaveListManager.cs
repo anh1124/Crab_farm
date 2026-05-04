@@ -83,7 +83,8 @@ namespace Script.Manager.SaveManager
                 techFireArrow: false,
                 techPenetrating: false,
                 techAdhesive: false,
-                lastPlayedDate: System.DateTime.Now.ToString("O")
+                lastPlayedDate: System.DateTime.Now.ToString("O"),
+                hasShowGuideArrow: false
             );
 
             string worldInfoPath = Path.Combine(worldPath, "worldInfo.json");

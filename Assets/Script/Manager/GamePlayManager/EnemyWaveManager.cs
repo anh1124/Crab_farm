@@ -145,12 +145,12 @@ namespace Script.Manager.GamePlayManager
 
         private int CalculateWavePower(int daysElapsed)
         {
-            // Ngày 1: 0 power (không spawn enemy)
+            // Ngày 1 (daysElapsed=0): 5 power
             // Từ ngày 2: tăng 5 power mỗi ngày (tuyến tính)
-            // Ngày 2: 5 power (1 enemy), Ngày 3: 10 power (2 enemy)
-            // Ngày 4: 15 power (3 enemy), Ngày 5: 20 power (4 enemy)...
+            // Ngày 1: 5 power (1 enemy), Ngày 2: 10 power (2 enemy)
+            // Ngày 3: 15 power (3 enemy), Ngày 4: 20 power (4 enemy)...
             // daysElapsed: 0 = day 1, 1 = day 2, 2 = day 3, ...
-            int basePower = (daysElapsed > 0) ? daysElapsed * 5 : 0;
+            int basePower = (daysElapsed + 1) * 5;
             
             // Cộng thêm extraPower từ việc phá portal
             int totalPower = basePower + extraPower;

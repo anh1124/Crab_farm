@@ -79,13 +79,31 @@ namespace Script.Manager
         private void Start()
         {
             if (Utility.IsTutorialScene()) return;
-            if (Utility.GetTownCenterTier() == 0)
-                StartCoroutine(ShowArrowWithDelay(10f));
+
+            // Kiểm tra xem đã hiển thị arrow cho world này chưa
+            var worldInfo = Script.Save_Controller.WorldFileManager.Instance?.worldInfo;
+            if (worldInfo != null && !worldInfo.HasShowGuideArrow)
+            {
+                if (Utility.GetTownCenterTier() == 0)
+                {
+                    StartCoroutine(ShowArrowWithDelay(10f));
+                }
+            }
         }
 
         private IEnumerator ShowArrowWithDelay(float delay)
         {
             yield return new WaitForSeconds(delay);
+            
+            // Re-check flag sau khi delay: worldInfo có thể đã được load xong và flag được set
+            // (Start() có thể chạy khi worldInfo chưa sẵn sàng)
+            var wi = Script.Save_Controller.WorldFileManager.Instance?.worldInfo;
+            if (wi != null && wi.HasShowGuideArrow)
+            {
+                Debug.Log("[ArrowGuideManager] Auto-show bị hủy: HasShowGuideArrow đã = true sau delay.");
+                yield break;
+            }
+            
             ShowArrow();
         }
 
@@ -159,6 +177,15 @@ namespace Script.Manager
             }
 
             StopCustomMoveCoroutine();
+
+            // Đánh dấu đã hiển thị arrow và lưu lại vào worldInfo
+            var worldInfo = Script.Save_Controller.WorldFileManager.Instance?.worldInfo;
+            if (worldInfo != null && !worldInfo.HasShowGuideArrow)
+            {
+                worldInfo.HasShowGuideArrow = true;
+                Script.Save_Controller.WorldFileManager.Instance.SaveCurrentWorldInfo();
+                Debug.Log("[ArrowGuideManager] First time arrow shown. Flag saved to worldInfo.");
+            }
         }
 
         public void ShowArrowToTarget(Vector3 targetWorldPos)
