@@ -120,11 +120,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26234fc44f280834596b93f070265124, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panel: {fileID: 0}
-  headerText: {fileID: 0}
-  contentText: {fileID: 0}
-  confirmButton: {fileID: 0}
-  cancelButton: {fileID: 0}
 --- !u!114 &7343576337000096863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219,7 +214,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _archerHuntingRange: 50
-  isDebugHuntingRange: 1
+  isDebugHuntingRange: 0
   showDebugLogs: 0
 --- !u!114 &3102458789741671300
 MonoBehaviour:
@@ -253,6 +248,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isEnemyAttack: 0
   detectedEnemies: []
+  alarmCooldownDuration: 10
   alarmTimer: 0
 --- !u!114 &7776104296125332313
 MonoBehaviour:
@@ -1189,6 +1185,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  reversePath: 0
   config: {fileID: 11400000, guid: ee14cde9a8c429e44b1003ad18de0f9f, type: 2}
 --- !u!114 &4044038164879194610
 MonoBehaviour:

@@ -36,6 +36,25 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             }
         }
 
+        /// <summary>
+        /// Watchdog: Tự động khôi phục detector nếu bị tắt bất thường.
+        /// Gọi mỗi nhịp UpdateBehavior trước khi quét.
+        /// </summary>
+        public void CheckAndRecover()
+        {
+            if (Context.CircleDetect == null) return;
+
+            if (!Context.CircleDetect.IsActive)
+            {
+                if (Context.Status != null && Context.Status.debugDenizen)
+                    Debug.LogWarning($"[ArcherSensorHandler] {Context.GameObject?.name}: Detector bị tắt bất thường, đang tự khôi phục...");
+                Enable();
+            }
+
+            if (Context.CircleDetect.IsActive)
+                Context.CircleDetect.ScanCircle();
+        }
+
         public void OnObjectsDetected(List<GameObject> objects)
         {
             if (!_job.enabled || _job.CurrentState == null || _job.CurrentState == _job.DropCoinState) return;

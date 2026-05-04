@@ -137,6 +137,13 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
                 ctx.Status.isSkillCasting = false;
                 ctx.Status.CanMove = true;
             }
+
+            // [SAFETY] Nếu bị ép đổi state khi đang bắn (VD: GuardManager bắt rút lui), 
+            // phải báo cho SkillManager kết thúc để giải phóng slot và bắt đầu cooldown.
+            if (ctx.SkillManager != null && ctx.SkillManager.GetState(0) == Script.Game.PlayerCharacter.Skills.SkillManager.SkillState.Executing)
+            {
+                ctx.SkillManager.OnSkillAnimationEnd(0, ctx.GameObject);
+            }
         }
 
         public void OnDrawComplete(DenizenContext ctx) 

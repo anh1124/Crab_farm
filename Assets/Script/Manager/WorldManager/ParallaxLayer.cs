@@ -25,9 +25,11 @@ namespace Script.Manager.WorldManager
         public string sortingLayerName = "Sky";
         public int orderInLayer = 0;
 
-        [Header("Parallax")]
         [Range(0f, 1f)]
         public float parallaxFactor = 0.3f;
+
+        [Tooltip("Nếu bật, layer sẽ chỉ đơn giản là đi theo Camera mà không thực hiện tiling/parallax (Dùng cho lớp nền trời cố định).")]
+        public bool onlyFollowCamera = false;
 
         [Header("Buffer")]
         [Min(1)] public int bufferTiles = 1;
@@ -51,6 +53,7 @@ namespace Script.Manager.WorldManager
         private float _originCamX;
         private float _tileWidth;
         private List<Transform> _tiles = new List<Transform>();
+        private List<SpriteRenderer> _childRenderers = new List<SpriteRenderer>();
         private float _totalWidth;
 
         private void Start()
@@ -60,8 +63,16 @@ namespace Script.Manager.WorldManager
             // Bắt đầu tìm kiếm Target liên tục cho đến khi thấy
             StartCoroutine(FindTargetCoroutine());
 
-            if (_camera == null || sprites == null || sprites.Count == 0 || sprites[0] == null)
+            if (_camera == null)
             {
+                enabled = false;
+                return;
+            }
+
+            // Nếu không phải chế độ follow camera thuần túy, yêu cầu phải có sprite để tiling
+            if (!onlyFollowCamera && (sprites == null || sprites.Count == 0 || sprites[0] == null))
+            {
+                Debug.LogWarning($"[ParallaxLayer] {name}: Thiếu sprites để thực hiện Parallax Tiling.");
                 enabled = false;
                 return;
             }
@@ -89,7 +100,10 @@ namespace Script.Manager.WorldManager
                 orderInLayer = selfSr.sortingOrder;
             }
 
-            SpawnInitialTiles();
+            if (!onlyFollowCamera)
+            {
+                SpawnInitialTiles();
+            }
             TurnOffCurrentSpriteRenderer();
         }
 
@@ -130,9 +144,23 @@ namespace Script.Manager.WorldManager
         
         private void LateUpdate()
         {
-            if (_camera == null || _tiles.Count == 0 || followTarget == null) return;
+            if (_camera == null || followTarget == null) return;
+            if (!onlyFollowCamera && _tiles.Count == 0) return;
 
             Transform targetTransform = followTarget;
+
+            if (onlyFollowCamera)
+            {
+                // Chỉ đi theo camera, không tính toán parallax phức tạp
+                float x = targetTransform.position.x;
+                float y = transform.position.y;
+                if (lockToCameraBottom)
+                {
+                    y = _camera.transform.position.y - _camera.orthographicSize + yOffset;
+                }
+                transform.position = new Vector3(x, y, transform.position.z);
+                return;
+            }
 
             // 1. Tính toán vị trí X (Parallax)
             float camDelta = targetTransform.position.x - _originCamX;
@@ -185,6 +213,24 @@ namespace Script.Manager.WorldManager
             sr.sortingOrder = orderInLayer;
 
             _tiles.Add(go.transform);
+            _childRenderers.Add(sr);
+        }
+
+        /// <summary>
+        /// Thay đổi màu sắc cho toàn bộ các mảnh sprite của layer này.
+        /// </summary>
+        public void SetLayerColor(Color color)
+        {
+            // Nếu danh sách cache trống (do onlyFollowCamera hoặc có obj con thủ công), tự động tìm kiếm
+            if (_childRenderers.Count == 0)
+            {
+                GetComponentsInChildren<SpriteRenderer>(includeInactive: true, _childRenderers);
+            }
+
+            foreach (var sr in _childRenderers)
+            {
+                if (sr != null) sr.color = color;
+            }
         }
 
         private void RecycleTiles(Transform targetTransform)

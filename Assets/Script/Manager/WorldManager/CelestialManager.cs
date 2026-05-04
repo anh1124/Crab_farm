@@ -58,6 +58,7 @@ namespace Script.Manager.WorldManager
 
         private Camera _mainCamera;
         private float _smoothDayProgress;
+        private ParallaxLayer _skyParallax;
 
         // ──────────────────────────────────────────────────────────────────────────
         // Lifecycle
@@ -74,6 +75,12 @@ namespace Script.Manager.WorldManager
                 config = Resources.Load<CelestialConfig>("Data/CelestialConfig");
                 if (config == null)
                     Debug.LogWarning("[CelestialManager] Không tìm thấy CelestialConfig trong Resources/Data/. Hãy kéo vào Inspector.");
+            }
+
+            // Cache ParallaxLayer nếu có gắn trên backgroundRenderer
+            if (backgroundRenderer != null)
+            {
+                _skyParallax = backgroundRenderer.GetComponent<ParallaxLayer>();
             }
         }
 
@@ -104,8 +111,11 @@ namespace Script.Manager.WorldManager
         private void LateUpdate()
         {
             // Di chuyển toàn bộ Sky theo camera — mọi thứ bên trong Sky tự chạy theo
+            // NẾU skyRoot không có ParallaxLayer thì mới di chuyển thủ công tại đây
             if (skyRoot != null && _mainCamera != null)
             {
+                if (_skyParallax != null && _skyParallax.transform == skyRoot) return;
+
                 float x = _mainCamera.transform.position.x;
                 float y = _mainCamera.transform.position.y - _mainCamera.orthographicSize + (config != null ? config.yOffset : 0f);
                 skyRoot.position = new Vector3(x, y, skyRoot.position.z);
@@ -259,8 +269,17 @@ namespace Script.Manager.WorldManager
 
         private void UpdateSkyColor(float hour)
         {
-            if (backgroundRenderer == null || config == null) return;
-            backgroundRenderer.color = SampleSkyColor(hour);
+            if (config == null) return;
+            Color skyColor = SampleSkyColor(hour);
+
+            if (_skyParallax != null)
+            {
+                _skyParallax.SetLayerColor(skyColor);
+            }
+            else if (backgroundRenderer != null)
+            {
+                backgroundRenderer.color = skyColor;
+            }
         }
 
         private Color SampleSkyColor(float hour)

@@ -14,6 +14,7 @@ using Script.Game.Other;
 
 namespace Script.Game.Mobs.Denizen.Jobs.Archer
 {
+   
     public class ArcherJob : DenizenJob, INPCBehavior
     {
         // States
@@ -30,12 +31,14 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         private ArcherTacticalHandler _tacticalHandler;
         private ArcherCombatValidator _combatValidator;
         private ArcherTargetSelector _targetSelector;
+        private ArcherDebugger _debugger;
 
         [Header("Tactical Settings")]
         [SerializeField] private bool ignoreGuardManagerCommand = false;
         public bool IgnoreGuardManagerCommand => ignoreGuardManagerCommand;
         
         private bool _isInitialized;
+        private bool _handlersInitialized;
 
         protected void Awake()
         {
@@ -55,35 +58,35 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             ReturnToBaseState = new ArcherReturnToBaseState();
             DropCoinState     = new ArcherDropCoinState();
 
-            // Initialize minimal handlers for safety during early activation (e.g. Loading)
-            if (Context != null)
-            {
-                _itemHandler      = new ArcherItemHandler(Context);
-                _schedule         = new DenizenSchedule(Context);
-                _targetSelector   = new ArcherTargetSelector(Context);
-                _sensor           = new ArcherSensorHandler(Context, this, _targetSelector);
-                _tacticalHandler  = new ArcherTacticalHandler(Context, this);
-                _combatValidator  = new ArcherCombatValidator(Context);
-            }
             _isInitialized = true;
+
+            if (Context != null) InitializeHandlers();
+        }
+
+        private void InitializeHandlers()
+        {
+            if (_handlersInitialized) return;
+
+            _targetSelector  = new ArcherTargetSelector(Context);
+            _itemHandler     = new ArcherItemHandler(Context);
+            _schedule        = new DenizenSchedule(Context);
+            _sensor          = new ArcherSensorHandler(Context, this, _targetSelector);
+            _tacticalHandler = new ArcherTacticalHandler(Context, this);
+            _combatValidator = new ArcherCombatValidator(Context);
+            _debugger        = new ArcherDebugger(Context, this, _combatValidator);
+
+            _handlersInitialized = true;
         }
 
         protected override void OnContextInjected()
         {
             InitializeBrain();
-            _itemHandler      = new ArcherItemHandler(Context);
-            _schedule         = new DenizenSchedule(Context);
-            _targetSelector   = new ArcherTargetSelector(Context);
-            _sensor           = new ArcherSensorHandler(Context, this, _targetSelector);
-            _tacticalHandler  = new ArcherTacticalHandler(Context, this);
-            _combatValidator  = new ArcherCombatValidator(Context);
+            _handlersInitialized = false; // Force re-init with fresh Context
+            InitializeHandlers();
 
-            // Đảm bảo đăng ký ngay khi có context.
             // PHẢI dùng Context.GameObject (root Denizen) vì ArcherJob là child component.
             if (Context.GuardManager != null)
-            {
                 Context.GuardManager.RegisterArcher(Context.GameObject);
-            }
         }
 
         #region Brain & Transitions
@@ -92,17 +95,8 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             InitializeBrain();
             if (Context == null) return;
 
-            // [WATCHDOG] Tự động recovery nếu detector bị tắt bất thường
-            if (Context.CircleDetect != null && !Context.CircleDetect.IsActive)
-            {
-                if (Context.Status != null && Context.Status.debugDenizen)
-                    Debug.LogWarning($"[ArcherJob] Detector bị tắt, đang tự động bật lại...");
-                _sensor.Enable();
-            }
-
-            // [DETECTOR] — Gọi scanner thủ công, giống Enemy
-            if (Context.CircleDetect != null && Context.CircleDetect.IsActive)
-                Context.CircleDetect.ScanCircle();
+            // [WATCHDOG + SCAN] — Khôi phục detector nếu tắt bất thường, sau đó quét thủ công
+            _sensor.CheckAndRecover();
 
             if (Context.IsSkillCasting) return;
 
@@ -373,105 +367,7 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
         #endregion
         #region Tactical Debugger
         [ContextMenu("DebugArcherCombat")]
-        public void DebugArcherCombat()
-        {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"===== ARCHER COMBAT DEBUG: {gameObject.name} =====");
-            sb.AppendLine($"- Trạng thái hiện tại: {CurrentState?.GetType().Name}");
-            sb.AppendLine($"- Tọa độ X: {transform.position.x:F2}");
-            sb.AppendLine($"- Mục tiêu đang nhắm: {(Context.Status.currentTarget != null ? Context.Status.currentTarget.name : "NULL")}");
-            
-            // 0. Phân tích ArrowPool
-            sb.AppendLine("\n[Arrow Pool Status]:");
-            if (Context.ArcherShooting != null)
-            {
-                var pool = FindObjectOfType<Script.Game.Combat.ArrowPool>();
-                if (pool != null)
-                {
-                    sb.AppendLine($"- ArcherShooting: Đã thiết lập");
-                    sb.AppendLine($"- ArrowPool: Tìm thấy");
-                    if (pool.IsPoolNearExhausted())
-                        sb.AppendLine($"- <color=red>CẢNH BÁO: Pool gần hết arrows!</color> Active: {pool.GetActiveArrowCount()}");
-                    else
-                        sb.AppendLine($"- Pool còn arrows: {pool.GetActiveArrowCount()} đang sử dụng");
-                }
-                else
-                {
-                    sb.AppendLine("- <color=red>ArrowPool: KHÔNG TÌM THẤY!</color>");
-                }
-            }
-            else
-            {
-                sb.AppendLine("- <color=red>ArcherShooting: NULL! Kiểm tra Setup()</color>");
-            }
-
-            // 1. Phân tích danh sách Detector
-            if (Context.CircleDetect != null)
-            {
-                var detected = Context.CircleDetect.GetDetectedObjects();
-                sb.AppendLine($"\n[Danh sách vật thể quét được] ({detected.Count} đối tượng):");
-                for (int i = 0; i < detected.Count; i++)
-                {
-                    if (detected[i] == null) continue;
-                    float d = Vector2.Distance(transform.position, detected[i].transform.position);
-                    sb.AppendLine($" [{i}] {detected[i].name} (Tag: {detected[i].tag}) - Cách: {d:F2}m");
-                }
-            }
-
-            // 2. Phân tích vùng chiến tuyến/bãi săn
-            sb.AppendLine("\n[Kiểm tra vị trí và vùng hoạt động]:");
-            bool inPlaza = WorldUtility.IsInPlazaZone(transform.position.x);
-            bool inKingdom = WorldUtility.IsInKingdomSafeZone(transform.position.x, 0f);
-            sb.AppendLine($"- Trong nội thành (Kingdom): {inKingdom}");
-            sb.AppendLine($"- Trong trung tâm (Plaza): {inPlaza}");
-
-            if (Context.GuardManager != null)
-            {
-                var bounds = WorldUtility.GetHuntingBounds(Context.GuardManager, Context.Status.isLeftFlank);
-                bool inHunt = WorldUtility.IsInHuntingZone(transform.position.x, Context.GuardManager, Context.Status.isLeftFlank);
-                sb.AppendLine($"- Trong bãi săn (Hunting Zone): {inHunt} (Vùng: {bounds.start:F1} -> {bounds.end:F1})");
-            }
-
-            // 3. Phân tích va chạm tường
-            bool isInsideWall = _combatValidator.IsInsideWall(false);
-            sb.AppendLine($"- Đang đứng trong tường (WallZone): <color={(isInsideWall ? "red" : "white")}>{isInsideWall}</color>");
-
-            int defendableCount = 0;
-            var wallManager = Script.Game.Structures.Wall_And_Stump.WallAndStumpManager.Instance;
-            if (wallManager != null)
-            {
-                var flankWalls = Context.Status.isLeftFlank ? wallManager.leftWalls : wallManager.rightWalls;
-                foreach (var wall in flankWalls)
-                    if (wallManager.IsWallDefendable(wall)) defendableCount++;
-            }
-            sb.AppendLine($"- Số tường phòng thủ được (Cánh này): {defendableCount}");
-
-            float padding = 7.0f;
-            if (Context.GuardManager != null && Context.GuardManager.Squad != null)
-                padding = Context.GuardManager.defaultSlotOffset;
-            
-            bool isSafePos = WorldUtility.IsInKingdomSafeZone(transform.position.x, padding);
-            bool canAttack = CanAttackFromHere();
-
-            sb.AppendLine($"\n=> KẾT QUẢ: {(canAttack ? "<color=green>ĐỦ ĐIỀU KIỆN BẮN</color>" : "<color=red>KHÔNG ĐƯỢC PHÉP BẮN</color>")}");
-
-            if (!canAttack)
-            {
-                sb.AppendLine("LÝ DO:");
-                if (CurrentState is ArcherHuntingState) 
-                    sb.AppendLine($"+ Đang ở trạng thái Săn Bắt nhưng lại đứng trong Vương Quốc (SafeZone). Yêu cầu ra ngoài tường.");
-                else if (!inKingdom && !inPlaza) 
-                    sb.AppendLine("+ Archer đang đứng QUÁ XA bảo vệ của tường (ngoài vương quốc) khi đang cần phòng thủ.");
-                else if (inKingdom && !isSafePos && !inPlaza)
-                    sb.AppendLine($"+ Archer chưa lùi đủ sâu đằng sau tường (Padding={padding}).");
-                else if (inPlaza && defendableCount == 1 && !isSafePos)
-                    sb.AppendLine("+ Đang ở Plaza nhưng chỉ còn 1 tường cuối, yêu cầu đứng lùi sâu hơn để bảo toàn mạng sống.");
-                else
-                    sb.AppendLine("+ Không xác định được vị trí an toàn hợp lệ.");
-            }
-
-            Debug.Log(sb.ToString());
-        }
+        public void DebugArcherCombat() => _debugger?.RunCombatDebug();
         #endregion
     }
 }
