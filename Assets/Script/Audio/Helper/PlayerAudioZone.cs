@@ -1,46 +1,33 @@
-using System.Collections;
 using UnityEngine;
 
 namespace Script.Audio
 {
     /// <summary>
     /// Gắn lên Player GameObject.
-    /// Poll AudioEmitterRegistry mỗi checkInterval giây.
-    /// Tính khoảng cách 2D (X và Y) phù hợp game 2D.
-    /// Không dùng Physics/Collider.
-    /// Chia làm 10 bucket để phân phối load qua các frame.
+    /// Vai trò: (1) đăng ký PlayerTransform vào AudioManager, (2) hiển thị gizmo vùng nghe 2D,
+    /// (3) in debug log trạng thái emitters mỗi 0.5s khi IsDebug bật.
     ///
-    /// SETUP:
-    ///   1. Gắn component này lên Player
-    ///   2. cullingDistance được auto-set từ AudioManager
-    ///   3. Không cần setup gì thêm
+    /// Logic polling range (0.3s/lần, SetInRange) đã chuyển sang AudioManager.Update().
     /// </summary>
     public class PlayerAudioZone : MonoBehaviour
     {
         #region Inspector Fields
 
-        [Header("Performance")]
-        [Tooltip("Giây giữa mỗi lần poll toàn bộ emitters.")]
-        [SerializeField] private float checkInterval = 0.3f;
+        [Header("Gizmo")]
+        [SerializeField] private bool showGizmo = true;
+        [SerializeField] private Color gizmoColor = new Color(0f, 1f, 0.5f, 0.6f);
 
         [Header("Debug")]
-        [SerializeField] private bool  showGizmo     = true;
-        [SerializeField] private Color gizmoFillColor = new Color(0f, 1f, 0.5f, 0.15f);
-        [SerializeField] private Color gizmoWireColor = new Color(0f, 1f, 0.5f, 0.8f);
-        [SerializeField] private int   _emitterCountInRange;
-        [SerializeField] private bool  isDebug           = false;
-
+        [SerializeField] private bool isDebug = false;
+        [SerializeField] private int _emitterCountInRange; // read-only in inspector
 
         #endregion
 
         #region Private Fields
 
-        private Vector2      _playerPos2D;   // Cache, update mỗi BatchCheck
-        private AudioManager _audioManager;  // Cache, tránh gọi Instance nhiều lần
-
-        private float _timer = 0f;
-        private int _bucketIndex = 0;
-        private const int BUCKET_COUNT = 10; // Chia làm 10 nhóm để phân phối load
+        private AudioManager _audioManager;
+        private float _debugTimer = 0f;
+        private const float DEBUG_INTERVAL = 0.5f;
 
         #endregion
 
@@ -49,146 +36,127 @@ namespace Script.Audio
         private void Start()
         {
             _audioManager = AudioManager.Instance;
-
             if (_audioManager != null)
                 _audioManager.PlayerTransform = transform;
         }
 
         private void Update()
         {
-            var emitters = AudioEmitterRegistry.All;
-            if (emitters.Count == 0) return;
+            if (!IsDebug) return;
 
-            _timer += Time.deltaTime;
-
-            // Mỗi bucket được xử lý mỗi checkInterval (0.3s)
-            // Full cycle (10 buckets) mất 10 * 0.3s = 3s
-            if (_timer >= checkInterval)
+            _debugTimer += Time.deltaTime;
+            if (_debugTimer >= DEBUG_INTERVAL)
             {
-                _timer = 0f;
-                ProcessCurrentBucket();
-                _bucketIndex = (_bucketIndex + 1) % BUCKET_COUNT;
+                _debugTimer = 0f;
+                LogDebugStatus();
             }
         }
 
         #endregion
 
-        #region Poll
+        #region Debug
 
-        private void ProcessCurrentBucket()
+        private bool IsDebug => isDebug
+            || (_audioManager != null ? _audioManager.IsDebug
+                : (AudioManager.Instance != null && AudioManager.Instance.IsDebug));
+
+        private void LogDebugStatus()
         {
-            // Cache playerPos và cullingDist 1 lần cho cả bucket
-            _playerPos2D = transform.position;
-            float cullingDist = GetCullingDistance();
-
             var emitters = AudioEmitterRegistry.All;
-            int count = emitters.Count;
-            if (count == 0) return;
+            Vector2 playerPos = transform.position;
+            float cullingDist = _audioManager != null
+                ? _audioManager.CullingDistance
+                : AudioConstants.DEFAULT_CULLING_DISTANCE;
 
-            // Tính bucket size và range
-            int bucketSize = Mathf.CeilToInt((float)count / BUCKET_COUNT);
-            int startIndex = _bucketIndex * bucketSize;
-            int endIndex = Mathf.Min(startIndex + bucketSize, count);
-
-            if (startIndex >= count) return;
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(
+                $"<color=white>[PlayerAudioZone] {emitters.Count} emitters | Culling:{cullingDist:F0}m | " +
+                $"Player:({playerPos.x:F1},{playerPos.y:F1})</color>");
 
             int inRangeCount = 0;
-
-            for (int i = startIndex; i < endIndex; i++)
+            for (int i = 0; i < emitters.Count; i++)
             {
                 var emitter = emitters[i];
                 if (emitter == null) continue;
 
-                bool inRange = IsEmitterInRange(emitter, cullingDist);
-
-                // Debug log cho portal chỉ khi trong range
-                if (isDebug && inRange && emitter.gameObject.name.Contains("Portal"))
-                {
-                    float distance = Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position);
-                    Debug.Log($"[PlayerAudioZone] Portal: {emitter.gameObject.name}, Distance: {distance:F2}m, Culling: {cullingDist:F2}m, InRange: {inRange}");
-                }
-
-
-                emitter.SetInRange(inRange);
+                Vector2 pos  = emitter.transform.position;
+                float   dist = Vector2.Distance(playerPos, pos);
+                string  name = emitter.gameObject.name;
+                bool inRange = emitter.IsInRange;
 
                 if (inRange) inRangeCount++;
+
+                var sounds = emitter.GetDebugStatus();
+
+                if (!inRange)
+                {
+                    // Chỉ hiện log vắn tắt cho các emitter ngoài tầm nếu không có gì đặc biệt
+                    // hoặc hiện hết để debug theo yêu cầu.
+                    sb.AppendLine($"- {name} @ ({pos.x:F1},{pos.y:F1}) dist:{dist:F1}m <color=red>[OUT OF RANGE]</color>");
+                }
+                else if (sounds.Count == 0)
+                {
+                    sb.AppendLine(
+                        $"- {name} @ ({pos.x:F1},{pos.y:F1}) dist:{dist:F1}m " +
+                        $"<color=gray>[no active sounds]</color>");
+                }
+                else
+                {
+                    sb.AppendLine(
+                        $"- {name} @ ({pos.x:F1},{pos.y:F1}) dist:{dist:F1}m");
+
+                    foreach (var s in sounds)
+                    {
+                        // xanh lam = loop | xanh lá = oneshot
+                        string col  = s.isLoop ? "#00ffff" : "#00ff00";
+                        string type = s.isLoop ? "LOOP" : "SHOT";
+                        string stop = s.isPlaying ? "" : " <color=red>[STOPPED]</color>";
+                        sb.AppendLine(
+                            $"    <color={col}>[{type}] {s.key} | vol:{s.volume:F2}{stop} (Range:{s.minDist:F1}-{s.maxDist:F1}m)</color>");
+                    }
+                }
             }
 
             _emitterCountInRange = inRangeCount;
+            sb.Append($"<color=yellow>In-range: {inRangeCount}/{emitters.Count}</color>");
+            Debug.Log(sb.ToString());
         }
-
-        private void BatchCheck()
-        {
-            // Đã thay thế bằng ProcessCurrentBucket bucket-based
-            // Giữ lại cho backward compatibility nếu cần
-        }
-
-        #endregion
-
-        #region Public API
-
-        /// <summary>
-        /// Check ngay lập tức cho một emitter cụ thể (cho AudioTest / debug).
-        /// </summary>
-        public void CheckEmitterImmediate(AudioEmitter emitter)
-        {
-            if (emitter == null) return;
-
-            _playerPos2D = transform.position;
-            float cullingDist = GetCullingDistance();
-            bool  inRange     = IsEmitterInRange(emitter, cullingDist);
-
-            if (isDebug)
-            {
-                Debug.Log($"[PlayerAudioZone] CheckEmitterImmediate: " +
-                          $"distance={Vector2.Distance(_playerPos2D, (Vector2)emitter.transform.position):F2}m, " +
-                          $"cullingDistance={cullingDist:F2}m, inRange={inRange}");
-            }
-
-
-            emitter.SetInRange(inRange);
-        }
-
-        #endregion
-
-        #region Helpers
-
-        /// <summary>
-        /// Tính khoảng cách 2D giữa player và emitter, so sánh với cullingDist.
-        /// </summary>
-        private bool IsEmitterInRange(AudioEmitter emitter, float cullingDist)
-        {
-            Vector2 emitterPos = emitter.transform.position;
-            return Vector2.Distance(_playerPos2D, emitterPos) <= cullingDist;
-        }
-
-        /// <summary>
-        /// Lấy cullingDistance từ AudioManager đã cache.
-        /// Fallback về AudioConstants nếu manager chưa sẵn sàng.
-        /// </summary>
-        private float GetCullingDistance()
-            => _audioManager != null
-                ? _audioManager.CullingDistance
-                : AudioConstants.DEFAULT_CULLING_DISTANCE;
 
         #endregion
 
         #region Gizmo
 
+        private void OnDrawGizmos()
+        {
+            // Không vẽ khi không select để tránh rác scene view
+        }
+
         private void OnDrawGizmosSelected()
         {
             if (!showGizmo) return;
 
-            // Dùng Instance trực tiếp vì Gizmo chạy trong Editor (không có Start)
             float cullingDist = Application.isPlaying && _audioManager != null
                 ? _audioManager.CullingDistance
                 : AudioConstants.DEFAULT_CULLING_DISTANCE;
 
-            Gizmos.color = gizmoFillColor;
-            Gizmos.DrawSphere(transform.position, cullingDist);
+            Gizmos.color = gizmoColor;
 
-            Gizmos.color = gizmoWireColor;
-            Gizmos.DrawWireSphere(transform.position, cullingDist);
+            // Vẽ vòng tròn 2D thay vì sphere 3D
+            DrawCircle2D(transform.position, cullingDist, 64);
+        }
+
+        private static void DrawCircle2D(Vector3 center, float radius, int segments)
+        {
+            float step = 360f / segments;
+            Vector3 prev = center + new Vector3(radius, 0f, 0f);
+            for (int i = 1; i <= segments; i++)
+            {
+                float angle = i * step * Mathf.Deg2Rad;
+                Vector3 next = center + new Vector3(Mathf.Cos(angle) * radius,
+                                                    Mathf.Sin(angle) * radius, 0f);
+                Gizmos.DrawLine(prev, next);
+                prev = next;
+            }
         }
 
         #endregion

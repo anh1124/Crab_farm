@@ -13,7 +13,6 @@ namespace Script.Game.Player
     public class PlayerInteraction : MonoBehaviour
     {
         private PlayerBehavior playerBehavior;
-        [SerializeField] private bool isDebug = false;
 
         // === INTERACTION LOGIC ===
         private List<IPlayerInteractable> interactablesInRange = new List<IPlayerInteractable>();

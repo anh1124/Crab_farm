@@ -89,6 +89,10 @@ namespace Script.Audio
     private MusicController _music;
     private VolumeSettings _volume;
 
+    // Emitter range polling (thay thế bucket system trong PlayerAudioZone)
+    private float _emitterPollTimer = 0f;
+    private const float EMITTER_POLL_INTERVAL = 0.3f;
+
     // ─────────────────────────────────────────────
     //  Public Properties
     // ─────────────────────────────────────────────
@@ -168,6 +172,38 @@ namespace Script.Audio
         yield return new WaitForSeconds(AudioConstants.PLAYER_CHECK_DELAY);
         if (playerTransform == null)
             if (isDebug) Debug.LogWarning("[AudioManager] Player Transform chưa được gán! Âm thanh sẽ không suy giảm theo khoảng cách.");
+    }
+
+    private void Update()
+    {
+        if (playerTransform == null) return;
+
+        _emitterPollTimer += Time.deltaTime;
+        if (_emitterPollTimer >= EMITTER_POLL_INTERVAL)
+        {
+            _emitterPollTimer = 0f;
+            PollEmittersRange();
+        }
+    }
+
+    /// <summary>
+    /// Vòng lặp tính toán range chính (0.3s/lần).
+    /// Duyệt toàn bộ AudioEmitterRegistry, tính khoảng cách 2D đến player,
+    /// và gọi SetInRange() để bật/tắt loop sounds tự động.
+    /// </summary>
+    private void PollEmittersRange()
+    {
+        Vector2 playerPos = playerTransform.position;
+        var emitters = AudioEmitterRegistry.All;
+
+        for (int i = 0; i < emitters.Count; i++)
+        {
+            var emitter = emitters[i];
+            if (emitter == null) continue;
+
+            float dist = Vector2.Distance(playerPos, (Vector2)emitter.transform.position);
+            emitter.SetInRange(dist <= cullingDistance);
+        }
     }
 
     private void Initialize()

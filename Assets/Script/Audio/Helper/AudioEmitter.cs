@@ -111,7 +111,8 @@ namespace Script.Audio
         private void OnDisable()
         {
             AudioEmitterRegistry.Unregister(this);
-            StopAll(); // Trả hết pool khi obj disable
+            // Chỉ dừng âm thanh đang phát, giữ lại demand queue để có thể phục hồi khi enable lại
+            StopAllActiveSounds(); 
         }
 
         private void OnDestroy()
@@ -143,6 +144,28 @@ namespace Script.Audio
             else
             {
                 // Vào vùng → kích hoạt tất cả demanded loop sounds
+                
+                // Nếu IsDebug bật, in log chi tiết về việc kích hoạt loop sounds
+                if (AudioManager.Instance != null && AudioManager.Instance.IsDebug)
+                {
+                    Vector2 playerPos = AudioManager.Instance.PlayerTransform != null 
+                        ? (Vector2)AudioManager.Instance.PlayerTransform.position 
+                        : Vector2.zero;
+                    Vector2 myPos = transform.position;
+                    float dist = Vector2.Distance(playerPos, myPos);
+                    
+                    foreach (var kvp in _demandedSounds)
+                    {
+                        var entry = Provider?.GetEntry(kvp.Key);
+                        float minDist = kvp.Value.MinDistance > 0 ? kvp.Value.MinDistance : (entry?.minDistance ?? 2f);
+                        float maxDist = kvp.Value.MaxDistance > 0 ? kvp.Value.MaxDistance : (entry?.maxDistance ?? 15f);
+                        float volScale = kvp.Value.VolumeScale > 0 ? kvp.Value.VolumeScale : 1f;
+                        float currentVol = volScale * (Provider?.CalculateDistanceVolume(myPos, minDist, maxDist) ?? 1f);
+
+                        Debug.Log($"<color=yellow>[play loop] {gameObject.name} -> {kvp.Key} | Pos:{myPos:F1} | Dist:{dist:F1}m | Vol:{currentVol:F2}</color>");
+                    }
+                }
+
                 foreach (var soundKey in _demandedSounds.Keys)
                 {
                     TriggerDemandedPlay(soundKey);
@@ -310,20 +333,22 @@ namespace Script.Audio
             source.clip = entry.clip;
             source.loop = true;
 
+            float volumeScale = config.VolumeScale > 0f ? config.VolumeScale : 1f;
+
             if (isMono)
             {
                 // MONO FIX: spatialBlend=0f + manual volume.
                 // MonoVolumeUpdater coroutine sẽ cập nhật volume mỗi frame khi Player di chuyển.
                 source.spatialBlend = 0f;
                 source.panStereo    = 0f;
-                source.volume       = config.VolumeScale
+                source.volume       = volumeScale
                     * Provider.CalculateDistanceVolume(transform.position, actualMin, actualMax);
             }
             else
             {
                 // STEREO: spatialBlend=1f, Unity tự xử lý rolloff.
                 source.spatialBlend = 1f;
-                source.volume       = config.VolumeScale;
+                source.volume       = volumeScale;
                 source.minDistance  = actualMin;
                 source.maxDistance  = actualMax;
 
@@ -335,14 +360,15 @@ namespace Script.Audio
             source.transform.SetParent(transform);
             source.transform.localPosition = Vector3.zero;
 
+            // Gọi Play() TRƯỚC KHI start coroutine để isPlaying = true
+            source.Play();
+
             // Mono loop cần coroutine để cập nhật volume liên tục khi Player di chuyển
             Coroutine monoUpdater = isMono
-                ? StartCoroutine(MonoVolumeUpdater(source, config.VolumeScale, actualMin, actualMax))
+                ? StartCoroutine(MonoVolumeUpdater(source, volumeScale, actualMin, actualMax))
                 : null;
 
             _activeSounds[soundKey] = new ActiveSoundHandle(source, true, monoUpdater);
-
-            source.Play();
         }
 
         /// <summary>Dừng âm thanh cụ thể và trả pool.</summary>
@@ -401,6 +427,37 @@ namespace Script.Audio
         /// <summary>Số âm thanh đang phát.</summary>
         public int ActiveSoundCount => _activeSounds.Count;
 
+        /// <summary>
+        /// [DEBUG] Trả về danh sách sound key đang active kèm trạng thái để phục vụ logging.
+        /// </summary>
+        public List<(string key, bool isLoop, float volume, bool isPlaying, float minDist, float maxDist)> GetDebugStatus()
+        {
+            var status = new List<(string key, bool isLoop, float volume, bool isPlaying, float minDist, float maxDist)>();
+            foreach (var kvp in _activeSounds)
+            {
+                var entry = Provider?.GetEntry(kvp.Key);
+                float minDist = 0;
+                float maxDist = 0;
+
+                // Cố gắng tìm lại config từ demand nếu là loop
+                if (kvp.Value.IsLoop && _demandedSounds.TryGetValue(kvp.Key, out var config))
+                {
+                    minDist = config.MinDistance > 0 ? config.MinDistance : (entry?.minDistance ?? 2f);
+                    maxDist = config.MaxDistance > 0 ? config.MaxDistance : (entry?.maxDistance ?? 15f);
+                }
+                else if (entry != null)
+                {
+                    minDist = entry.minDistance;
+                    maxDist = entry.maxDistance;
+                }
+
+                float vol  = kvp.Value.Source != null ? kvp.Value.Source.volume : 0f;
+                bool  play = kvp.Value.Source != null && kvp.Value.Source.isPlaying;
+                status.Add((kvp.Key, kvp.Value.IsLoop, vol, play, minDist, maxDist));
+            }
+            return status;
+        }
+
         // ─────────────────────────────────────────────
         //  Mono Setting API
         // ─────────────────────────────────────────────
@@ -447,6 +504,8 @@ namespace Script.Audio
         /// </summary>
         private IEnumerator MonoVolumeUpdater(AudioSource source, float baseVolume, float minDist, float maxDist)
         {
+            yield return null; // Đợi 1 frame để đảm bảo source.isPlaying được cập nhật
+
             while (source != null && source.isPlaying)
             {
                 float vol = baseVolume * Provider.CalculateDistanceVolume(transform.position, minDist, maxDist);

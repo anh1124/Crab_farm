@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,11 +21,20 @@ namespace Script.Audio
     {
         private static readonly List<AudioEmitter> _all = new List<AudioEmitter>();
 
+        /// <summary>
+        /// Fired ngay sau khi một AudioEmitter mới được đăng ký.
+        /// PlayerAudioZone subscribe để check ngay lập tức thay vì chờ bucket cycle.
+        /// </summary>
+        public static event Action<AudioEmitter> OnEmitterRegistered;
+
         /// <summary>Đăng ký emitter khi được enable. Gọi từ AudioEmitter.OnEnable().</summary>
         public static void Register(AudioEmitter emitter)
         {
             if (emitter != null && !_all.Contains(emitter))
+            {
                 _all.Add(emitter);
+                OnEmitterRegistered?.Invoke(emitter);
+            }
         }
 
         /// <summary>Hủy đăng ký khi disable hoặc destroy. Gọi từ AudioEmitter.OnDisable/OnDestroy().</summary>

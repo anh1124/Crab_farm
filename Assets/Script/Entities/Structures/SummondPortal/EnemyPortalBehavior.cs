@@ -189,10 +189,13 @@ namespace Script.Entities.Structures.SummondPortal
             status.isReadyToSpawn = true;
             Debug.Log($"[EnemyPortalBehavior] Cổng tại {transform.position} đã kích hoạt và sẵn sàng sinh quái!");
 
-            // Stop dormant sound and register demand for activate sound
+            // Stop all previous sounds and register demand for activate sound
             // Demand system sẽ handle range - chỉ play khi player trong range
-            _audioEmitter?.StopSound("Portal_Normal");
-            _audioEmitter?.PlaySound("Portal_Activate", new Script.Audio.PlaySoundConfig(loop: true));
+            if (_audioEmitter != null)
+            {
+                _audioEmitter.StopAll();
+                _audioEmitter.PlaySound("Portal_Activate", new Script.Audio.PlaySoundConfig(loop: true));
+            }
 
             // Kích hoạt Visual Animator tăng frame rate lên bùng cháy
             if (visualAnimator)
@@ -507,12 +510,20 @@ namespace Script.Entities.Structures.SummondPortal
                     visualAnimator.SetActive();
 
                     // Đăng ký demand cho Portal_Activate sound (demand system sẽ handle range)
-                    _audioEmitter?.PlaySound("Portal_Activate", new Script.Audio.PlaySoundConfig(loop: true));
+                    if (_audioEmitter != null)
+                    {
+                        _audioEmitter.StopAll();
+                        _audioEmitter.PlaySound("Portal_Activate", new Script.Audio.PlaySoundConfig(loop: true));
+                    }
                 }
                 else if (!status.isReadyToSpawn && visualAnimator != null)
                 {
                     // Nếu portal chưa active, đăng ký demand cho Portal_Normal sound
-                    _audioEmitter?.PlaySound("Portal_Normal", new Script.Audio.PlaySoundConfig(loop: true));
+                    if (_audioEmitter != null)
+                    {
+                        _audioEmitter.StopAll();
+                        _audioEmitter.PlaySound("Portal_Normal", new Script.Audio.PlaySoundConfig(loop: true));
+                    }
                 }
 
                 // --- LOGIC PHỤC HỒI PENDING WAVES ---
