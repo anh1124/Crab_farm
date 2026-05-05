@@ -122,12 +122,14 @@ namespace Script.Game.Enemy
         {
             Coin -= amount;
             if (Coin < 0) Coin = 0;
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, -amount, Script.FloatingText.FloatingTextType.Coin);
         }
 
         public void AddCoin(int amount)
         {
             Coin += amount;
             if (Coin > MaxCoins) Coin = MaxCoins;
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Coin);
         }
 
 
@@ -139,6 +141,10 @@ namespace Script.Game.Enemy
             CurrentHp -= amount;
             OnTakeDamageEvent?.Invoke(amount);
             OnHealthChanged?.Invoke(CurrentHp, MaxHp);
+
+            // Hiện số sát thương
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Damage);
+
             if (CurrentHp <= 0 && !IsDead)
             {
                 Die();
@@ -228,10 +234,17 @@ namespace Script.Game.Enemy
         {
             if (IsDead) return;
             
+            float prevHp = CurrentHp;
             CurrentHp += amount;
             if (CurrentHp > MaxHp)
             {
                 CurrentHp = MaxHp;
+            }
+
+            float actualHeal = CurrentHp - prevHp;
+            if (actualHeal > 0)
+            {
+                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, actualHeal, Script.FloatingText.FloatingTextType.Heal);
             }
 
             OnHealthChanged?.Invoke(CurrentHp, MaxHp);

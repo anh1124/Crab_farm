@@ -95,8 +95,8 @@ namespace Script.Game.Item
             
             if (_rb != null)
             {
-                _rb.velocity = Vector2.zero;
                 _rb.bodyType = RigidbodyType2D.Kinematic;
+                _rb.velocity = Vector2.zero;
                 _rb.simulated = true; // Vẫn simulated để Trigger pickup hoạt động
             }
             CheckPivotOnLanding();
@@ -113,8 +113,8 @@ namespace Script.Game.Item
 
             if (_rb != null)
             {
-                _rb.velocity = Vector2.zero;
                 _rb.bodyType = RigidbodyType2D.Kinematic;
+                _rb.velocity = Vector2.zero;
                 // Có thể tắt va chạm ở đây nếu cần, nhưng thường script điều khiển sẽ tắt Collider
             }
         }

@@ -383,9 +383,17 @@ namespace Script.Game.Structures.TownCenter
             status.tier = data.tier;
             status.upgradeCost = data.upgradeCost;
             curentPrefab = data.curentPrefab;
-            status.maxHp = data.maxHp;
-            status.currentHp = status.maxHp; // Heal to full HP on upgrade
-            Debug.Log($"[TownCenterBehavior] Upgraded to tier {status.tier}, MaxHp: {status.maxHp}, HP healed to full");
+            
+            // Tính toán lượng máu cần hồi để đầy cây máu mới
+            float hpToHeal = data.maxHp - status.currentHp;
+            status.maxHp = data.maxHp; // Cập nhật MaxHP trước
+            
+            if (hpToHeal > 0)
+            {
+                ((IHealth)status).Heal(hpToHeal);
+            }
+            
+            Debug.Log($"[TownCenterBehavior] Upgraded to tier {status.tier}, MaxHp: {status.maxHp}, HP healed via Heal()");
         }
 
         private void UpdateCoinUser(TownCenterDataList.TownCenterData data)

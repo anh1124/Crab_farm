@@ -112,6 +112,10 @@ namespace Script.Game.Player
             if (HasHp)
             {
                 status.HP.Reduce(damage);
+                
+                // Hiện số sát thương đỏ khi người chơi mất máu
+                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, damage, Script.FloatingText.FloatingTextType.Damage);
+                
                 OnTakeDamageEvent?.Invoke(damage);
                 if (status.HP.Current <= 0)
                 {

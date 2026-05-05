@@ -63,12 +63,20 @@ namespace Script.Data_Model.Status
         {
             if (amount <= 0f || _currentHp <= 0f) return;
             currentHp -= amount;
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Damage);
         }
 
         void IHealth.Heal(float amount)
         {
             if (amount <= 0f) return;
+            float prevHp = _currentHp;
             currentHp += amount;
+            
+            float actualHeal = _currentHp - prevHp;
+            if (actualHeal > 0)
+            {
+                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, actualHeal, Script.FloatingText.FloatingTextType.Heal);
+            }
         }
 
         void IHealth.Die()

@@ -68,6 +68,18 @@ PrefabInstance:
       propertyPath: type
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+      propertyPath: isReadyToChop
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+      propertyPath: maxWorkProgress
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+      propertyPath: currentWorkProgress
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 8696114519552286638, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_Size.x
       value: 1.3226273

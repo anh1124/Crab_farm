@@ -65,6 +65,10 @@ namespace Script.Entities.Structures.SummondPortal
         {
             if (currentHp <= 0) return;
             currentHp -= amount;
+
+            // Hiện số sát thương
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Damage);
+
             OnDamaged?.Invoke(amount);
             OnTakeDamageEvent?.Invoke(amount);
             OnHealthChanged?.Invoke(currentHp, maxHp);
@@ -77,7 +81,15 @@ namespace Script.Entities.Structures.SummondPortal
 
         public void Heal(float amount)
         {
+            float prevHp = currentHp;
             currentHp = Mathf.Min(currentHp + amount, maxHp);
+            
+            float actualHeal = currentHp - prevHp;
+            if (actualHeal > 0)
+            {
+                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, actualHeal, Script.FloatingText.FloatingTextType.Heal);
+            }
+
             OnHealed?.Invoke(amount);
             OnHealthChanged?.Invoke(currentHp, maxHp);
         }

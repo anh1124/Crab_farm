@@ -500,7 +500,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.25, y: 0.93779093}
   m_AnchorMax: {x: 0.8625, y: 0.93779093}
-  m_AnchoredPosition: {x: -8.600006, y: -24}
+  m_AnchoredPosition: {x: -8.600037, y: -24}
   m_SizeDelta: {x: 0.85100174, y: 150}
   m_Pivot: {x: 1, y: 1}
 --- !u!1001 &560488027
@@ -558,6 +558,14 @@ PrefabInstance:
     - target: {fileID: 3584997243393632200, guid: 5b8adaff6d5a76c46a7edd8ac05a86de, type: 3}
       propertyPath: m_Offset.x
       value: -1.0204582
+      objectReference: {fileID: 0}
+    - target: {fileID: 4475037000034020799, guid: 5b8adaff6d5a76c46a7edd8ac05a86de, type: 3}
+      propertyPath: maxWorkProgress
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4475037000034020799, guid: 5b8adaff6d5a76c46a7edd8ac05a86de, type: 3}
+      propertyPath: currentWorkProgress
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 9095888047805289594, guid: 5b8adaff6d5a76c46a7edd8ac05a86de, type: 3}
       propertyPath: m_Name
@@ -890,6 +898,14 @@ PrefabInstance:
     - target: {fileID: 844508581233486467, guid: c5ed5e1fcf7218e43b7e1df17f8e351d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4475037000034020799, guid: c5ed5e1fcf7218e43b7e1df17f8e351d, type: 3}
+      propertyPath: maxWorkProgress
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4475037000034020799, guid: c5ed5e1fcf7218e43b7e1df17f8e351d, type: 3}
+      propertyPath: currentWorkProgress
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 9095888047805289594, guid: c5ed5e1fcf7218e43b7e1df17f8e351d, type: 3}
       propertyPath: m_Name
@@ -1235,6 +1251,14 @@ PrefabInstance:
     - target: {fileID: 4816307330424263397, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+      propertyPath: maxWorkProgress
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8607574719995925977, guid: 915bf3a2b7cf59745874c849abd45f27, type: 3}
+      propertyPath: currentWorkProgress
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

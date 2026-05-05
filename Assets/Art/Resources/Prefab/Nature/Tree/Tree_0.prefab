@@ -136,11 +136,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  currentWorkProgress: 0
-  maxWorkProgress: 0
+  currentWorkProgress: 8
+  maxWorkProgress: 8
   isReadyToChop: 0
-  treeType: Default
-  treeLevel: 1
   isSetupCalled: 0
 --- !u!114 &4563411836016793751
 MonoBehaviour:

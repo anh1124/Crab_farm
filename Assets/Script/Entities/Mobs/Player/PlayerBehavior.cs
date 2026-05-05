@@ -210,12 +210,14 @@ namespace Script.Game.Player
         {
             if (amount <= 0) return;
             status.coin = Mathf.Max(0, status.coin - amount);
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, -amount, Script.FloatingText.FloatingTextType.Coin);
         }
 
         public void AddCoin(int amount)
         {
             if (amount <= 0) return;
             status.coin += amount;
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Coin);
         }
 
 

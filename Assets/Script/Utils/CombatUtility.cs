@@ -198,5 +198,55 @@ namespace Script.Utils
                 arrow.SetParent(null);
             }
         }
+
+        /// <summary>
+        /// Hiển thị floating damage text tại world position.
+        /// customOffset mặc định dùng defaultOffset trong StyleSO.
+        /// </summary>
+        public static void ShowFloatDamage(
+            Vector3          worldPos,
+            float            value,
+            Script.FloatingText.FloatingTextType type        = Script.FloatingText.FloatingTextType.Damage,
+            Vector3?         customOffset = null)
+        {
+            var mgr = Script.FloatingText.FloatingTextManager.Instance;
+            if (mgr == null) 
+            {
+                Debug.LogWarning("[CombatUtility] FloatingTextManager.Instance is null!");
+                return;
+            }
+
+            var style = mgr.GetStyle(type);
+            if (style == null) 
+            {
+                Debug.LogWarning($"[CombatUtility] Style for {type} is null!");
+                return;
+            }
+
+            // Tạm thời log để check vị trí
+            // Debug.Log($"[CombatUtility] ShowFloatDamage: Type={type}, Val={value}, Pos={worldPos}");
+
+            if (type != Script.FloatingText.FloatingTextType.Coin && !IsPointInCameraView(worldPos)) 
+            {
+                return; 
+            }
+
+            // Gộp offset mặc định từ style + offset tuỳ chỉnh từ caller
+            Vector3 totalOffset = style.defaultOffset + (customOffset ?? Vector3.zero);
+            Vector3 spawnPos = worldPos + totalOffset;
+
+            var payload = new Script.FloatingText.FloatingTextPayload(spawnPos, value, type);
+            mgr.Show(payload);
+        }
+
+        /// <summary>Check frustum cho Camera orthographic 2D.</summary>
+        private static bool IsPointInCameraView(Vector3 worldPos)
+        {
+            if (Camera.main == null) return false;
+            var vp = Camera.main.WorldToViewportPoint(worldPos);
+            return vp.x is >= 0f and <= 1f
+                && vp.y is >= 0f and <= 1f
+                && vp.z > 0f;
+        }
     }
 }

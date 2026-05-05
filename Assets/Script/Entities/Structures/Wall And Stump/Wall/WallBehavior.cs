@@ -475,9 +475,15 @@ namespace Script.Game.Structures.Wall_And_Stump
         
         public void RepairStump()
         {
+            float healAmount = status.maxHp - status.currentHp;
+
             // Reset HP về đầy (dùng property để bắn OnHealthChanged cho HPText và listener khác)
             status.CurrentHp = status.MaxHp;
             status.state = WallState.Wall;
+
+            // Hiển thị số hồi máu khi sửa xong
+            if (healAmount > 0)
+                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, healAmount, Script.FloatingText.FloatingTextType.Heal);
 
             // [TAG] Khôi phục tag thành 'Wall' để hệ thống khác nhận biết wall đã chạy lại
             gameObject.tag = Script.Utils.GameTags.Wall;
@@ -659,6 +665,9 @@ namespace Script.Game.Structures.Wall_And_Stump
         }
         private void OnDamagedHandler(float amount)
         {
+            // Hiển thị số nhảy Damage
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Damage);
+
             // Notify manager and guard system
             if (WallAndStumpManager.Instance != null)
             {
@@ -668,6 +677,9 @@ namespace Script.Game.Structures.Wall_And_Stump
 
         private void OnHealedHandler(float amount)
         {
+            // Hiển thị số nhảy Heal
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Heal);
+
             if (status.state == WallState.Stump)
             {
                 // Nếu là stump và heal đủ HP -> rebuild thành wall
@@ -845,6 +857,9 @@ namespace Script.Game.Structures.Wall_And_Stump
 
                 // Sử dụng helper để khởi tạo từ tier mới và state Wall
                 InitializeFromTier(nextTierData, WallState.Wall);
+
+                // Hiển thị số hồi máu khi nâng cấp xong (thường nâng cấp sẽ reset máu đầy)
+                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, status.maxHp, Script.FloatingText.FloatingTextType.Heal);
 
                 // QUAN TRỌNG: Reset CoinUser state để có thể nhận coin tiếp
                 if (coinUser != null)

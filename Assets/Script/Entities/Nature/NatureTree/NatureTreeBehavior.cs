@@ -186,8 +186,6 @@ namespace Script.Game.Other.Nature
         public int CurrentWorkProgress => status.currentWorkProgress;
         public int MaxWorkProgress => status.maxWorkProgress;
         public bool IsReadyToChop => status.isReadyToChop;
-        public string TreeType => status.treeType;
-        public int TreeLevel => status.treeLevel;
       
     }
 }

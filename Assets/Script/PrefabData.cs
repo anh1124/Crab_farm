@@ -109,6 +109,11 @@ namespace Script.Data_Model
         public Vector3 defaultHpTextOffset = new Vector3(0f, 8f, 0f);
         #endregion
 
+        [Space(15)] [Header("UI — FloatingText")] [Space(5)]
+        #region UI_FloatingText
+        public GameObject floatingTextPrefab;
+        #endregion
+
         [Space(15)] [Header("Farm ")] [Space(5)]  
         #region Farm
 
@@ -307,6 +312,7 @@ namespace Script.Data_Model
             prefabDict.Add("EnemyPortalPrefab_ID", summoningPortal);
             prefabDict.Add("rabbit", rabbit);
             prefabDict.Add("rabbit_bush", rabbitBush);
+            prefabDict.Add("floating_text", floatingTextPrefab);
             
 
         }

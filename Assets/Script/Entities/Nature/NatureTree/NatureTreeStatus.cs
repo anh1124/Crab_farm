@@ -40,8 +40,6 @@ namespace Script.Game.Other.Nature
         public int currentWorkProgress;
         public int maxWorkProgress;
         public bool isReadyToChop;
-        public string treeType = "Default";
-        public int treeLevel = 1;
         public bool isSetupCalled = false;
 
         public string GetPrefabID()

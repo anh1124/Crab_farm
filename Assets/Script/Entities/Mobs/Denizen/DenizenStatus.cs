@@ -145,11 +145,14 @@ namespace Script.Data_Model.Status
         public void AddCoin(int amount)
         {
             CurrentCoins += amount;
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, amount, Script.FloatingText.FloatingTextType.Coin);
         }
 
         public void SubtractCoin(int amount)
         {
             CurrentCoins -= amount;
+            // Gửi giá trị âm để hệ thống tự hiện dấu "-"
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, -amount, Script.FloatingText.FloatingTextType.Coin);
         }
 
         /// <summary>

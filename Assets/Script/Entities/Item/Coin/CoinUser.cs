@@ -3,6 +3,7 @@ using UnityEngine;
 using Script.Game.Player;
 using Script.Interfaces;
 using Script.Audio;
+using Script.Controller.GUI_Controller.PlayerGui;
 
 
 namespace Script.Game.Item.Coin
@@ -113,12 +114,14 @@ namespace Script.Game.Item.Coin
         {
             playerTrigger = true;
             RefreshSlotVisibility();
+            UpdateGoldPulse();
         }
 
         private void OnPlayerExited()
         {
             playerTrigger = false;
             visual.HideSlots();
+            PlayerGui.Instance?.StopGoldPulse();
         }
 
         public void RefreshSlotVisibility()
@@ -138,6 +141,20 @@ namespace Script.Game.Item.Coin
                     visual.HideSlots();
                 }
             }
+
+            UpdateGoldPulse();
+        }
+
+        /// <summary>
+        /// Cập nhật trạng thái Gold Pulse dựa theo IsInteractionActive.
+        /// Gọi bất cứ khi nào trạng thái tương tác có thể thay đổi.
+        /// </summary>
+        private void UpdateGoldPulse()
+        {
+            if (IsInteractionActive)
+                PlayerGui.Instance?.StartGoldPulse();
+            else
+                PlayerGui.Instance?.StopGoldPulse();
         }
 
         // Called by PlayerController
@@ -276,6 +293,23 @@ namespace Script.Game.Item.Coin
             }
             
             return result;
+        }
+
+        [ContextMenu("Debug/Show CoinUser Status")]
+        public void DebugContext_ShowCoinUserState()
+        {
+            bool shouldShow;
+            string info = GetTriggerDebugInfo(out shouldShow);
+            
+            string ownerInfo = owner != null ? owner.GetType().Name : "NULL";
+            string visualInfo = visual != null ? (visual.HasAvailableSlot(cachedRequiredCoins) ? "HasSlots" : "NoAvailableSlots") : "VisualNULL";
+
+            Debug.Log($">>> [COIN USER DEBUG] <<<\n" +
+                      $"{info}\n" +
+                      $"Owner Component: {ownerInfo}\n" +
+                      $"Visual Status: {visualInfo}\n" +
+                      $"Cached Required: {cachedRequiredCoins}\n" +
+                      $"---------------------------");
         }
     }
 }

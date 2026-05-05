@@ -42,6 +42,7 @@ namespace Script.Game.Other
         [SerializeField] private Spawner spawner;
         [SerializeField] private NPCUpdateManager npcUpdateManager;
         [SerializeField] private ArrowPool arrowPool;
+        [SerializeField] private Script.FloatingText.FloatingTextManager floatingTextManager;
         [SerializeField] private WallAndStumpManager wallManager;
 
         [Header("Audio")]
@@ -101,6 +102,7 @@ namespace Script.Game.Other
             }
 
             InitializeArrowPool();
+            InitializeFloatingText();
             InitializeWorldBase();
             InitializeBuildingBase();
             InitializeMobsBase();
@@ -320,6 +322,20 @@ namespace Script.Game.Other
                 arrowPool = poolObj.AddComponent<ArrowPool>();
             }
             arrowPool.Initialize(PrefabData.Instance.arrow);
+        }
+
+        private void InitializeFloatingText()
+        {
+            if (floatingTextManager == null) floatingTextManager = FindObjectOfType<Script.FloatingText.FloatingTextManager>(true);
+            
+            if (floatingTextManager == null)
+            {
+                GameObject managerObj = new GameObject("FloatingTextManager_AutoCreated");
+                floatingTextManager = managerObj.AddComponent<Script.FloatingText.FloatingTextManager>();
+            }
+
+            floatingTextManager.Setup(PrefabData.Instance);
+            floatingTextManager.Init();
         }
 
         private void PlayBackgroundMusic()

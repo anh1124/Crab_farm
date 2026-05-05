@@ -191,7 +191,7 @@ namespace Script.Controller.PlayerController
             {
                 if (playerBehavior != null && playerBehavior.Coin > 0)
                 {
-                    playerBehavior.Coin -= 1;
+                    playerBehavior.SubtractCoin(1);
                     Vector2 directionVec = new Vector2(player.transform.localScale.x, 0);
                     Spawner.Instance.DropByPlayer(player.transform.position, 1, directionVec);
                 }

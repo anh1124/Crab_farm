@@ -133,6 +133,10 @@ namespace Script.Game.Other.Nature
 
             ChangeState(new RabbitIdleState());
 
+            // Đảm bảo Collider được bật khi spawn/reset
+            var col = GetComponent<Collider2D>();
+            if (col != null) col.enabled = true;
+
             if (NPCUpdateManager.Instance != null)
             {
                 NPCUpdateManager.Instance.Register(this);
@@ -213,6 +217,10 @@ namespace Script.Game.Other.Nature
             _isDead = true;
             _isDying = true;
 
+            // Tắt va chạm ngay lập tức khi chết
+            var col = GetComponent<Collider2D>();
+            if (col != null) col.enabled = false;
+
             ChangeState(new RabbitDeadState());
 
             // Thông báo cho Bush trước khi rơi tiền/destroy
@@ -270,6 +278,10 @@ namespace Script.Game.Other.Nature
 #endif
 
             hp -= Mathf.CeilToInt(damage);
+
+            // Hiện số sát thương
+            Script.Utils.CombatUtility.ShowFloatDamage(transform.position, damage, Script.FloatingText.FloatingTextType.Damage);
+
             OnTakeDamageEvent?.Invoke(damage);
             OnHealthChanged?.Invoke(hp, hp); // Rabbit doesn't have maxHp, use current for both
             if (hp <= 0)
