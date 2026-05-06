@@ -25,6 +25,7 @@ namespace Script.Tutorial
         [SerializeField] private TutorialCoinCloudManager coinCloudManager;
         [SerializeField] private TutorialActionExecutor actionExecutor;
         [SerializeField] private TutorialCoinButtonPulse buttonPulse;
+        [SerializeField] private Core.Managers.TutorialUIStateManager uiStateManager;
         
         [Header("Completion Dialog Text")]
         [SerializeField] private string completionTitle = "";
@@ -91,7 +92,7 @@ namespace Script.Tutorial
         {
             if (actionExecutor != null)
             {
-                actionExecutor.Initialize(arrowController, coinCloudManager, TutorialConditionChecker.Instance, buttonPulse);
+                actionExecutor.Initialize(arrowController, coinCloudManager, TutorialConditionChecker.Instance, buttonPulse, uiStateManager);
                 // Subscribe để advance dialog khi coin cloud hoàn thành
                 actionExecutor.OnCoinCloudComplete += AdvanceDialog;
             }
@@ -162,6 +163,10 @@ namespace Script.Tutorial
             _currentTutorialIndex = 0;
             _currentDialogIndex = 0;
             _isRunning = true;
+            
+            // Tắt các UI không cần thiết
+            uiStateManager?.DisableForTutorial();
+            
             TutorialConditionChecker.Instance?.ResetConditions();
             ShowCurrentDialog();
         }
@@ -286,6 +291,9 @@ namespace Script.Tutorial
             // Đã hết tất cả tutorial - hiển thị dialog hoàn thành
             _showingCompletionDialog = true;
             dialogPanel.Show(completionTitle, completionMessage, TutorialDialogType.Skipable);
+            
+            // Bật lại các UI
+            uiStateManager?.EnableAfterTutorial();
             
             Debug.Log("[TutorialController] All tutorials completed!");
         }

@@ -17,6 +17,9 @@ MonoBehaviour:
   avatar: {fileID: 0}
   dialogType: 0
   conditionName: 
-  onStartAction: 0
-  onStartParam: 0
-  onStartPosition: {x: 0, y: 0, z: 0}
+  onStartActions:
+  - methodName: 
+    param: 0
+    stringParam: 
+    boolParam: 0
+    position: {x: 0, y: 0, z: 0}
