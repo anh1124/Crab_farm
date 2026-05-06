@@ -98,13 +98,7 @@ namespace Script.Game.Other
                 chunkManager.AddChunk(false);
                 Debug.Log("[NewWorldInitializer] World expanded with extra chunks.");
 
-                // Sinh cổng khởi đầu và kích hoạt ngay lập tức
-                if (EnemyPortalManager.Instance != null)
-                {
-                    EnemyPortalManager.Instance.SpawnStartingPortals();
-                    // Kích hoạt ngay 2 cổng gần nhất
-                    EnemyPortalManager.Instance.ForceActivateFrontlinePortals();
-                }
+
             }
         }
 
