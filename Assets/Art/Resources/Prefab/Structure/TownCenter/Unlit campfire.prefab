@@ -329,6 +329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eabc3bebfcecc474b92a4c5d61061df6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isCollectionActive: 0
   debugIsPlayerInRange: 0
   debugPlayerTriggerTimer: 0
   debugTimeUntilDrop: 0

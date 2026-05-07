@@ -10,13 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 91f9e0862126440428e1c8853c712881, type: 3}
-  m_Name: Dialog_03_Welcome
+  m_Name: Dialog_04_Welcome
   m_EditorClassIdentifier: 
   speakerName: HolyCrab
-  content: We need coins to pay and build. I'll give you some starting funds.
+  content: Alright, you're very rich now. Try heading to the building in front.
   avatar: {fileID: 0}
   dialogType: 1
-  conditionName: CoinCloudFinished
-  onStartAction: 1
-  onStartParam: 6
-  onStartPosition: {x: 0, y: 19.1, z: 0}
+  conditionName: TownCenterEntered
+  onStartActions:
+  - methodName: ShowArrowToTownCenter
+    param: 0
+    stringParam: 
+    boolParam: 0
+    position: {x: 0, y: 0, z: 0}

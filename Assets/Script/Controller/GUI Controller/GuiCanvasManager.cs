@@ -146,6 +146,17 @@ namespace Script.GUI_Controller
                 {
                     Debug.LogError("[GuiCanvasManager] TutorialDialogPanel is null!");
                 }
+
+                // Re-apply tutorial overrides to fix what we just enabled above
+                if (Script.Tutorial.Core.Managers.TutorialUIOverrideManager.Instance != null)
+                {
+                    // Tìm TutorialUIStateManager để lấy map đối tượng
+                    var stateManager = FindObjectOfType<Script.Tutorial.Core.Managers.TutorialUIStateManager>();
+                    if (stateManager != null)
+                    {
+                        stateManager.ReapplyTutorialStates();
+                    }
+                }
             }
         }
 

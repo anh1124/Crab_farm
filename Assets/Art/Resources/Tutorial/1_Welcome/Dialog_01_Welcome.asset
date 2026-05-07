@@ -17,5 +17,14 @@ MonoBehaviour:
   avatar: {fileID: 0}
   dialogType: 0
   conditionName: 
-  waitDuration: 0
-  autoAdvanceDelay: 2
+  onStartActions:
+  - methodName: HideAllUI
+    param: 0
+    stringParam: 
+    boolParam: 0
+    position: {x: 0, y: 0, z: 0}
+  - methodName: ClearSkills
+    param: 0
+    stringParam: 
+    boolParam: 0
+    position: {x: 0, y: 0, z: 0}

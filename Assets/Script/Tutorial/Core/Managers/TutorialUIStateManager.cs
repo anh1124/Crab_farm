@@ -4,12 +4,13 @@ using System.Collections.Generic;
 namespace Script.Tutorial.Core.Managers
 {
     /// <summary>
-    /// Quản lý việc bật/tắt các UI element và chức năng không cần thiết trong quá trình Tutorial
+    /// Quản lý việc bật/tắt các UI element trong Tutorial.
+    /// Mọi thay đổi trạng thái đều được ghi vào TutorialUIOverrideManager để không bị
+    /// GuiCanvasManager ghi đè khi ResumeGame() được gọi.
     /// </summary>
     public class TutorialUIStateManager : MonoBehaviour
     {
         [Header("UI Elements (GameObjects)")]
-        [SerializeField] private GameObject skillButton;
         [SerializeField] private GameObject useCoinButton;
         [SerializeField] private GameObject healBar;
         [SerializeField] private GameObject manaBar;
@@ -17,19 +18,22 @@ namespace Script.Tutorial.Core.Managers
         [SerializeField] private GameObject coinStockBar;
         
         [Header("Player Scripts")]
-        [Tooltip("Script quản lý skill của player cần bị vô hiệu hóa")]
-        [SerializeField] private MonoBehaviour playerSkillManager; 
+        [Tooltip("Script quản lý skill của player. Sẽ tự động lấy từ PlayerController.Instance lúc runtime.")]
+        // Bỏ [SerializeField] để lấy động
+        private MonoBehaviour playerSkillManager; 
 
-        // Maps lưu trữ các đối tượng
+        // Maps lưu trữ các đối tượng - exposed để OverrideManager có thể ReapplyOverrides
         private Dictionary<string, GameObject> _uiElements;
         private Dictionary<string, MonoBehaviour> _scriptElements;
 
+        // Expose để TutorialUIOverrideManager.ReapplyOverrides() dùng
+        public Dictionary<string, GameObject> UIElements => _uiElements;
+        public Dictionary<string, MonoBehaviour> ScriptElements => _scriptElements;
+
         private void Awake()
         {
-            // Khởi tạo map chứa các tham chiếu
             _uiElements = new Dictionary<string, GameObject>()
             {
-                { "skillButton", skillButton },
                 { "useCoinButton", useCoinButton },
                 { "healBar", healBar },
                 { "manaBar", manaBar },
@@ -41,72 +45,119 @@ namespace Script.Tutorial.Core.Managers
             {
                 { "playerSkillManager", playerSkillManager }
             };
+
+            ValidateInspectorAssignments();
+        }
+
+        private void ValidateInspectorAssignments()
+        {
+            foreach (var kvp in _uiElements)
+            {
+                if (kvp.Value == null)
+                    Debug.LogError($"[TutorialUIStateManager] LỖI: Trường UI '{kvp.Key}' chưa được gán trong Inspector của {gameObject.name}");
+            }
+
+            foreach (var kvp in _scriptElements)
+            {
+                if (kvp.Value == null)
+                    Debug.LogError($"[TutorialUIStateManager] LỖI: Trường Script '{kvp.Key}' chưa được gán trong Inspector của {gameObject.name}");
+            }
         }
 
         /// <summary>
-        /// Bật/tắt một element cụ thể thông qua tên chuỗi (string)
+        /// Bật/tắt một element cụ thể thông qua tên chuỗi (string).
+        /// Trạng thái được ghi vào TutorialUIOverrideManager để chống bị ghi đè bởi GuiCanvasManager.
         /// </summary>
-        /// <param name="elementName">Tên của biến (vd: "skillButton", "playerSkillManager")</param>
-        /// <param name="isActive">true để hiển thị/bật, false để ẩn/tắt</param>
         public void SetActiveElement(string elementName, bool isActive)
         {
+            bool found = false;
+
             if (_uiElements != null && _uiElements.TryGetValue(elementName, out GameObject go))
             {
-                if (go != null) go.SetActive(isActive);
+                found = true;
+                if (go != null)
+                {
+                    go.SetActive(isActive);
+                    TutorialUIOverrideManager.Instance?.SetDesiredState(elementName, isActive);
+                }
+                else Debug.LogError($"[TutorialUIStateManager] LỖI: Element UI '{elementName}' được gọi nhưng đối tượng trong Map lại bị Null!");
             }
-            else if (_scriptElements != null && _scriptElements.TryGetValue(elementName, out MonoBehaviour script))
+            else if (_scriptElements != null && _scriptElements.ContainsKey(elementName))
             {
-                if (script != null) script.enabled = isActive;
+                found = true;
+                if (_scriptElements[elementName] == null && elementName == "playerSkillManager")
+                {
+                    if (Script.Controller.PlayerController.PlayerController.Instance != null)
+                    {
+                        _scriptElements["playerSkillManager"] = Script.Controller.PlayerController.PlayerController.Instance.SkillManager;
+                    }
+                }
+                
+                MonoBehaviour script = _scriptElements[elementName];
+                if (script != null)
+                {
+                    script.enabled = isActive;
+                    TutorialUIOverrideManager.Instance?.SetDesiredState(elementName, isActive);
+                }
+                else Debug.LogError($"[TutorialUIStateManager] LỖI: Element Script '{elementName}' được gọi nhưng đối tượng trong Map lại bị Null!");
             }
-            else
-            {
-                Debug.LogWarning($"[TutorialUIStateManager] Element not found in map: {elementName}");
-            }
+
+            if (!found)
+                Debug.LogError($"[TutorialUIStateManager] LỖI: Truyền sai tên '{elementName}'. Không tìm thấy tên này trong danh sách quản lý!");
         }
 
         /// <summary>
-        /// Bật/tắt tất cả các phần tử liên quan cùng lúc
+        /// Bật/tắt tất cả các phần tử. Ghi toàn bộ trạng thái vào OverrideManager.
         /// </summary>
-        /// <param name="isActive">true để hiển thị và bật chức năng, false để ẩn và tắt</param>
         public void SetActiveAll(bool isActive)
         {
-            // Tắt/bật GameObjects
+            Debug.Log($"[TutorialUIStateManager] Bắt đầu gọi SetActiveAll({isActive})...");
+
             if (_uiElements != null)
             {
-                foreach (var go in _uiElements.Values)
+                foreach (var kvp in _uiElements)
                 {
-                    if (go != null) go.SetActive(isActive);
+                    if (kvp.Value != null)
+                    {
+                        bool beforeState = kvp.Value.activeSelf;
+                        kvp.Value.SetActive(isActive);
+                        Debug.Log($"[TutorialUIStateManager] Lệnh gọi UI '{kvp.Key}' (Trạng thái cũ: {beforeState} -> Mới: {isActive})");
+                        TutorialUIOverrideManager.Instance?.SetDesiredState(kvp.Key, isActive);
+                    }
+                    else Debug.LogError($"[TutorialUIStateManager] SetActiveAll: Element UI '{kvp.Key}' bị Null!");
                 }
             }
 
-            // Tắt/bật Scripts
             if (_scriptElements != null)
             {
-                foreach (var script in _scriptElements.Values)
+                foreach (var kvp in _scriptElements)
                 {
-                    if (script != null) script.enabled = isActive;
+                    if (kvp.Value != null)
+                    {
+                        bool beforeState = kvp.Value.enabled;
+                        kvp.Value.enabled = isActive;
+                        Debug.Log($"[TutorialUIStateManager] Lệnh gọi Script '{kvp.Key}' (Trạng thái cũ: {beforeState} -> Mới: {isActive})");
+                        TutorialUIOverrideManager.Instance?.SetDesiredState(kvp.Key, isActive);
+                    }
+                    else Debug.LogWarning($"[TutorialUIStateManager] SetActiveAll: Element Script '{kvp.Key}' bị Null! Có thể Player chưa spawn.");
                 }
             }
         }
 
-        // --- Các hàm tiện ích ---
-
         /// <summary>
-        /// Gọi hàm này khi bắt đầu Tutorial để ẩn mọi thứ
+        /// Áp dụng lại trạng thái đã lưu từ OverrideManager. 
+        /// Gọi sau khi GuiCanvasManager.ResumeGame() restore UI để sửa lại những gì bị ghi đè.
         /// </summary>
-        public void DisableForTutorial()
+        public void ReapplyTutorialStates()
         {
-            SetActiveAll(false);
-            Debug.Log("[TutorialUIStateManager] Disabled unnecessary UI and scripts for tutorial.");
+            TutorialUIOverrideManager.Instance?.ReapplyOverrides(_uiElements, _scriptElements);
         }
 
-        /// <summary>
-        /// Gọi hàm này khi kết thúc Tutorial để trả lại trạng thái bình thường
-        /// </summary>
+        public void DisableForTutorial() => SetActiveAll(false);
         public void EnableAfterTutorial()
         {
             SetActiveAll(true);
-            Debug.Log("[TutorialUIStateManager] Enabled UI and scripts after tutorial.");
+            TutorialUIOverrideManager.Instance?.ClearAllOverrides();
         }
     }
 }

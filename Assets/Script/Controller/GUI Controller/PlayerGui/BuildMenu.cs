@@ -39,6 +39,8 @@ public class BuildMenu : MonoBehaviour
 
     public static BuildMenu instance;
 
+    public static event System.Action OnBuildMenuOpened;
+
     private BuildingManager _bm;
     private BuildingManager BM => _bm != null ? _bm : (_bm = FindObjectOfType<BuildingManager>());
 
@@ -128,6 +130,7 @@ public class BuildMenu : MonoBehaviour
             PopulateBuildButtons();
             buildButtonContainer.gameObject.SetActive(true);
             showBuildMenu = true;
+            OnBuildMenuOpened?.Invoke();
         }
     }
     
@@ -172,8 +175,25 @@ public class BuildMenu : MonoBehaviour
             return;
         }
         
-        // First force BuildingManager to update its available buildings
-        BM.UpdateAvailableBuildings();
+        // Kiểm tra xem có đang ở trong Scene Tutorial không
+        if (Script.Tutorial.TutorialController.Instance != null)
+        {
+            var tutorialBM = FindObjectOfType<Script.Tutorial.Core.Managers.TutorialBuildingManager>();
+            if (tutorialBM != null)
+            {
+                BM.UpdateAvailableBuildings(tutorialBM.customAllowedStructures);
+            }
+            else
+            {
+                // Phòng trường hợp thiếu script, vẫn update như thường
+                BM.UpdateAvailableBuildings();
+            }
+        }
+        else
+        {
+            // Chạy game bình thường
+            BM.UpdateAvailableBuildings();
+        }
         if (townCenterLevel < 0 || 
             BM.TownCenterConfigs == null || 
             townCenterLevel >= BM.TownCenterConfigs.Count)
@@ -182,22 +202,15 @@ public class BuildMenu : MonoBehaviour
             return;
         }
         
-        // Get available structures for the current tier
-        var config = BM.TownCenterConfigs[townCenterLevel];
-        if (config == null)
-        {
-            Debug.LogWarning($"Config for town center tier {townCenterLevel} is null");
-            return;
-        }
-        
-        List<StructureInfo> availableStructures = config.buildAvailableStructuresList;
+        // Lấy danh sách availableStructures TRỰC TIẾP TỪ BuildingManager thay vì đọc từ json
+        List<StructureInfo> availableStructures = BM.availableStructures;
         if (availableStructures == null || availableStructures.Count == 0)
         {
-            Debug.LogWarning($"No available structures for town center tier {townCenterLevel} (count: {availableStructures?.Count ?? 0})");
+            Debug.LogWarning($"No available structures to build (count: {availableStructures?.Count ?? 0})");
             return;
         }
         
-        Debug.Log($"[BuildMenu] Found {availableStructures.Count} structure types available for tier {townCenterLevel}");
+        Debug.Log($"[BuildMenu] Found {availableStructures.Count} structure types available");
         
         foreach (var structureInfo in availableStructures)
         {

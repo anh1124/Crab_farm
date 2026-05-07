@@ -26,6 +26,8 @@ namespace Script.Tutorial
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
+            Script.Manager.Building.BuildingPlacementManager.OnBuildingPlaced += OnBuildingConstructed;
+            BuildMenu.OnBuildMenuOpened += OnBuildMenuOpened;
         }
         
         /// <summary>
@@ -59,6 +61,8 @@ namespace Script.Tutorial
                 _currentTownCenter.OnTutorialPlayerEntered -= OnTownCenterPlayerEntered;
                 _currentTownCenter.OnTutorialUpgraded -= OnTownCenterUpgraded;
             }
+            Script.Manager.Building.BuildingPlacementManager.OnBuildingPlaced -= OnBuildingConstructed;
+            BuildMenu.OnBuildMenuOpened -= OnBuildMenuOpened;
             if (_currentCoinSlotVisual != null)
             {
                 _currentCoinSlotVisual.OnSlotsShown -= OnCoinSlotsShown;
@@ -105,6 +109,16 @@ namespace Script.Tutorial
         private void OnTownCenterUpgraded()
         {
             TriggerCondition("TownCenterUpgraded");
+        }
+        
+        private void OnBuildingConstructed(Script.Manager.Building.BuildingType type)
+        {
+            TriggerCondition("BuildingPlacementSuccess");
+        }
+
+        private void OnBuildMenuOpened()
+        {
+            TriggerCondition("BuildMenuOpened");
         }
         
         /// <summary>

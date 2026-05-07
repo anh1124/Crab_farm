@@ -10,16 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 91f9e0862126440428e1c8853c712881, type: 3}
-  m_Name: Dialog_02_Welcome
+  m_Name: Dialog_02_Building
   m_EditorClassIdentifier: 
   speakerName: HolyCrab
-  content: Let's learn about the coin system.
+  content: The building feature will unlock when your campfire is upgraded.
   avatar: {fileID: 0}
   dialogType: 0
   conditionName: 
-  onStartActions:
-  - methodName: 
-    param: 0
-    stringParam: 
-    boolParam: 0
-    position: {x: 0, y: 0, z: 0}
+  onStartActions: []

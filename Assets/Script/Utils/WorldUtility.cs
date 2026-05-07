@@ -86,7 +86,15 @@ namespace Script.Utils
 
         public static void SetTownCenterCoinCollection(bool enabled)
         {
-            Script.Game.Structures.TownCenter.TownCenterCoinHandler.CanCollectCoins = enabled;
+            var tc = GetTownCenter();
+            if (tc != null)
+            {
+                var handler = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterCoinHandler>();
+                if (handler != null)
+                {
+                    handler.isCollectionActive = enabled;
+                }
+            }
             Debug.Log($"[WorldUtility] TownCenter coin collection set to: {enabled}");
         }
 

@@ -4,12 +4,22 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 // using Script.Controller.GUI_Controller.PlayerGui;
 
+using Script.Tutorial.Core.Managers;
+
 namespace Script.Tutorial
 {
     /// <summary>
     /// Controller chính chạy tutorial - xử lý flow và dialog advancement.
-    /// Arrow và CoinCloud được quản lý bởi các manager riêng.
+    /// Cần attach đầy đủ các script quản lý (Managers, Executors, Checkers) trên cùng 1 GameObject.
     /// </summary>
+    [RequireComponent(typeof(TutorialConditionChecker))]
+    [RequireComponent(typeof(TutorialActionExecutor))]
+    [RequireComponent(typeof(TutorialGuideArrowController))]
+    [RequireComponent(typeof(TutorialCoinCloudManager))]
+    [RequireComponent(typeof(TutorialUIStateManager))]
+    [RequireComponent(typeof(TutorialSkillController))]
+    [RequireComponent(typeof(TutorialUIOverrideManager))]
+    [RequireComponent(typeof(TutorialBuildingManager))]
     public class TutorialController : MonoBehaviour
     {
         public static TutorialController Instance { get; private set; }
@@ -24,8 +34,8 @@ namespace Script.Tutorial
         [SerializeField] private TutorialGuideArrowController arrowController;
         [SerializeField] private TutorialCoinCloudManager coinCloudManager;
         [SerializeField] private TutorialActionExecutor actionExecutor;
-        [SerializeField] private TutorialCoinButtonPulse buttonPulse;
         [SerializeField] private Core.Managers.TutorialUIStateManager uiStateManager;
+        [SerializeField] private Core.Managers.TutorialSkillController skillController;
         
         [Header("Completion Dialog Text")]
         [SerializeField] private string completionTitle = "";
@@ -48,6 +58,13 @@ namespace Script.Tutorial
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
+
+            // Auto-fetch components if not assigned in Inspector
+            if (arrowController == null) arrowController = GetComponent<TutorialGuideArrowController>();
+            if (coinCloudManager == null) coinCloudManager = GetComponent<TutorialCoinCloudManager>();
+            if (actionExecutor == null) actionExecutor = GetComponent<TutorialActionExecutor>();
+            if (uiStateManager == null) uiStateManager = GetComponent<Core.Managers.TutorialUIStateManager>();
+            if (skillController == null) skillController = GetComponent<Core.Managers.TutorialSkillController>();
         }
         
         private void Start()
@@ -92,7 +109,7 @@ namespace Script.Tutorial
         {
             if (actionExecutor != null)
             {
-                actionExecutor.Initialize(arrowController, coinCloudManager, TutorialConditionChecker.Instance, buttonPulse, uiStateManager);
+                actionExecutor.Initialize(arrowController, coinCloudManager, TutorialConditionChecker.Instance, uiStateManager, skillController);
                 // Subscribe để advance dialog khi coin cloud hoàn thành
                 actionExecutor.OnCoinCloudComplete += AdvanceDialog;
             }
@@ -243,12 +260,8 @@ namespace Script.Tutorial
             
             if (conditionName == _currentCondition)
             {
-                // Condition đúng cái đang đợi - dừng arrow/pulse tương ứng
+                // Condition đúng cái đang đợi - dừng arrow tương ứng
                 arrowController?.StopArrowByCondition(conditionName);
-                if (conditionName == "ToUseCoinButton")
-                {
-                    buttonPulse?.StopPulse();
-                }
                 _waitingForCondition = false;
                 _currentCondition = "";
                 AdvanceDialog();

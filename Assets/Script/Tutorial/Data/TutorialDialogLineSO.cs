@@ -11,9 +11,11 @@ namespace Script.Tutorial
     [System.Serializable]
     public class TutorialActionData
     {
+        [Header("Method Name")]
         [Tooltip("Tên hàm cần gọi (vd: SpawnCoinCloud, ShowArrow, PulseCoinButton, SetUI:healBar:false)")]
         public string methodName;
-
+        
+        [Header("Parameters")]
         [Tooltip("Tham số số nguyên (vd: số coin cho SpawnCoinCloud)")]
         public int param;
 

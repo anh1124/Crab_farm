@@ -14,8 +14,8 @@ namespace Script.Tutorial
         private TutorialGuideArrowController _arrowController;
         private TutorialCoinCloudManager _coinCloudManager;
         private TutorialConditionChecker _conditionChecker;
-        private TutorialCoinButtonPulse _buttonPulse;
         private TutorialUIStateManager _uiStateManager;
+        private TutorialSkillController _skillController;
 
         /// <summary>
         /// Registry ánh xạ tên hàm (string) → delegate Action.
@@ -35,14 +35,14 @@ namespace Script.Tutorial
             TutorialGuideArrowController arrowController,
             TutorialCoinCloudManager coinCloudManager,
             TutorialConditionChecker conditionChecker,
-            TutorialCoinButtonPulse buttonPulse,
-            TutorialUIStateManager uiStateManager = null)
+            TutorialUIStateManager uiStateManager = null,
+            TutorialSkillController skillController = null)
         {
             _arrowController = arrowController;
             _coinCloudManager = coinCloudManager;
             _conditionChecker = conditionChecker;
-            _buttonPulse = buttonPulse;
             _uiStateManager = uiStateManager;
+            _skillController = skillController;
 
             if (_coinCloudManager != null)
                 _coinCloudManager.OnCoinCloudFinished += OnCoinCloudFinished;
@@ -58,11 +58,20 @@ namespace Script.Tutorial
         {
             _actionRegistry = new Dictionary<string, System.Action<TutorialActionData>>
             {
-                { "SpawnCoinCloud",         Action_SpawnCoinCloud },
-                { "ShowArrow",              Action_ShowArrowToTownCenter },
-                { "PulseCoinButton",        Action_PulseCoinButton },
+                { "ActiveCoinCloud",        Action_ActiveCoinCloud },
+                { "ShowArrowToTownCenter",  Action_ShowArrowToTownCenter },
                 { "SetUIElementActive",     Action_SetUIElementActive },
                 { "SetAllUIActive",         Action_SetAllUIActive },
+                { "HideAllUI",              Action_HideAllUI },
+                { "ShowAllUI",              Action_ShowAllUI },
+                { "HideElement",            Action_HideElement },
+                { "ShowElement",            Action_ShowElement },
+                { "SetSkillActive",         Action_SetSkillActive },
+                { "AddSkill",               Action_AddSkill },
+                { "RemoveSkill",            Action_RemoveSkill },
+                { "ClearSkills",            Action_ClearSkills },
+                { "AddBuildingToTutorialBuildMenu", Action_AddBuildingToTutorialBuildMenu },
+                { "ClearTutorialBuildMenu", Action_ClearTutorialBuildMenu },
             };
         }
 
@@ -106,7 +115,7 @@ namespace Script.Tutorial
         //  Thêm action mới: viết hàm ở đây rồi đăng ký trong RegisterActions()
         // ─────────────────────────────────────────────────────────────
 
-        private void Action_SpawnCoinCloud(TutorialActionData data)
+        private void Action_ActiveCoinCloud(TutorialActionData data)
         {
             _coinCloudManager?.SpawnCoinCloud(data.position, data.param);
         }
@@ -114,11 +123,6 @@ namespace Script.Tutorial
         private void Action_ShowArrowToTownCenter(TutorialActionData data)
         {
             _arrowController?.StartArrowToTownCenter();
-        }
-
-        private void Action_PulseCoinButton(TutorialActionData data)
-        {
-            _buttonPulse?.StartPulse();
         }
 
         private void Action_SetUIElementActive(TutorialActionData data)
@@ -130,6 +134,59 @@ namespace Script.Tutorial
         private void Action_SetAllUIActive(TutorialActionData data)
         {
             _uiStateManager?.SetActiveAll(data.boolParam);
+        }
+
+        private void Action_HideAllUI(TutorialActionData data) => _uiStateManager?.SetActiveAll(false);
+        private void Action_ShowAllUI(TutorialActionData data) => _uiStateManager?.SetActiveAll(true);
+        private void Action_HideElement(TutorialActionData data) => _uiStateManager?.SetActiveElement(data.stringParam, false);
+        private void Action_ShowElement(TutorialActionData data) => _uiStateManager?.SetActiveElement(data.stringParam, true);
+
+        private void Action_AddBuildingToTutorialBuildMenu(TutorialActionData data)
+        {
+            var bm = GetComponent<Script.Tutorial.Core.Managers.TutorialBuildingManager>();
+            if (bm != null)
+            {
+                if (System.Enum.TryParse<Script.Manager.Building.BuildingType>(data.stringParam, true, out var type))
+                {
+                    bm.AddBuildingToTutorialBuildMenu(type);
+                }
+                else
+                {
+                    Debug.LogError($"[TutorialActionExecutor] BuildingType không hợp lệ: {data.stringParam}");
+                }
+            }
+            else
+            {
+                Debug.LogError("[TutorialActionExecutor] KHÔNG TÌM THẤY TutorialBuildingManager trên GameObject này! Vui lòng Add Component 'Tutorial Building Manager' vào GameObject.");
+            }
+        }
+        private void Action_ClearTutorialBuildMenu(TutorialActionData data)
+        {
+            var bm = GetComponent<Script.Tutorial.Core.Managers.TutorialBuildingManager>();
+            if (bm != null)
+            {
+                bm.ClearTutorialBuildMenu();
+            }
+        }
+        
+        private void Action_SetSkillActive(TutorialActionData data)
+        {
+            _skillController?.SetSkillManagerActive(data.boolParam);
+        }
+
+        private void Action_AddSkill(TutorialActionData data)
+        {
+            _skillController?.AddSkillByName(data.stringParam, data.param);
+        }
+
+        private void Action_RemoveSkill(TutorialActionData data)
+        {
+            _skillController?.RemoveSkillFromPlayer(data.param);
+        }
+
+        private void Action_ClearSkills(TutorialActionData data)
+        {
+            _skillController?.ClearAllSkills();
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -145,7 +202,6 @@ namespace Script.Tutorial
         public void StopAllActions()
         {
             _arrowController?.StopAllArrows();
-            _buttonPulse?.StopPulse();
         }
 
         public void Cleanup()

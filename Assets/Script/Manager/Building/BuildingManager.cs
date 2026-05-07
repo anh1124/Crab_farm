@@ -65,7 +65,7 @@ namespace Script.Manager.Building
         [Header("Available Structures (Debug)")]
         [SerializeField]
         [Header("Danh sách công trình có thể xây hiện tại")]
-        private List<StructureInfo> availableStructures = new List<StructureInfo>();
+        public List<StructureInfo> availableStructures = new List<StructureInfo>();
         
         public GameObject currentTownCenter { get; set; }
        
@@ -166,9 +166,21 @@ namespace Script.Manager.Building
         }
         public void UpdateAvailableBuildings()
         {
+            UpdateAvailableBuildings(null);
+        }
+
+        public void UpdateAvailableBuildings(List<StructureInfo> customList)
+        {
             // xóa danh sách hiện tại
             availableStructures.Clear();
             
+            if (customList != null)
+            {
+                availableStructures.AddRange(customList);
+                Debug.Log("[BuildingManager] Đã cập nhật availableStructures từ Custom List (Tutorial).");
+                return;
+            }
+
             // kiểm tra currentTownCenter có null không
             if (currentTownCenter == null)
             {
@@ -201,6 +213,7 @@ namespace Script.Manager.Building
                 if (currentConfig.buildAvailableStructuresList != null)
                 {
                     availableStructures.AddRange(currentConfig.buildAvailableStructuresList);
+
                     Debug.Log($"[UpdateAvailableBuildings] Cập nhật build rule cho cấp TownCenter {currentTownCenterLevel}:");
                     foreach (var structureInfo in availableStructures)
                     {
@@ -212,7 +225,7 @@ namespace Script.Manager.Building
                 {
                     Debug.LogError($"Không có công trình khả dụng được định nghĩa cho town center tier {currentTownCenterLevel}");
                 }
-                    Debug.Log("BuildingManager đã thông báo BuildMenu cập nhật danh sách công trình khả dụng");
+                Debug.Log("BuildingManager đã thông báo BuildMenu cập nhật danh sách công trình khả dụng");
             }
             else
             {

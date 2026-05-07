@@ -8,7 +8,8 @@ namespace Script.Manager.Building
 {
     public class BuildingPlacementManager : MonoBehaviour, IPlacementProvider
     {
-    
+        public static event System.Action<BuildingType> OnBuildingPlaced;
+
         [Header("Visual Feedback")] 
         private readonly Color validPlacementColor = new Color(0, 1, 0, 0.3f);    // Green
         private readonly Color invalidPlacementColor = new Color(1, 0, 0, 0.3f);   // Red
@@ -599,7 +600,14 @@ namespace Script.Manager.Building
                     var buildMenu = FindObjectOfType<BuildMenu>();
                     if (buildMenu != null) buildMenu.ResetShowBuildMenuState();
                     
-                    if (_buildingProvider != null) _buildingProvider.UpdateAvailableBuildings();
+                    if (_buildingProvider != null)
+                    {
+                        _buildingProvider.UpdateAvailableBuildings();
+                        if (buildingType.HasValue)
+                        {
+                            OnBuildingPlaced?.Invoke(buildingType.Value);
+                        }
+                    }
                     return true;
                 }
             }

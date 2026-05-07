@@ -10,14 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 91f9e0862126440428e1c8853c712881, type: 3}
-  m_Name: Dialog_05_Welcome
+  m_Name: Dialog_03_Building
   m_EditorClassIdentifier: 
   speakerName: HolyCrab
-  content: Hold the coin-shaped button. After inserting enough coins, your building
-    will upgrade.
+  content: The number of available structures will increase with each campfire level.
   avatar: {fileID: 0}
-  dialogType: 1
-  conditionName: TownCenterUpgraded
-  onStartAction: 3
-  onStartParam: 0
-  onStartPosition: {x: 0, y: 0, z: 0}
+  dialogType: 0
+  conditionName: 
+  onStartActions: []
