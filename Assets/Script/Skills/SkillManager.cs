@@ -11,6 +11,7 @@ namespace Script.Game.PlayerCharacter.Skills
     [RequireComponent(typeof(Script.Audio.AudioEmitter))]
     public class SkillManager : MonoBehaviour
     {
+        public static event Action<string> OnSkillExecuted;
         // ── Nested Types ──────────────────────────────────────────────────
 
         public enum SkillState
@@ -122,6 +123,8 @@ namespace Script.Game.PlayerCharacter.Skills
             }
 
             LogDebug($"[SkillManager] Executed skill '{slot.skill.skillName}' at slot {index}");
+            
+            OnSkillExecuted?.Invoke(slot.skill.skillName);
 
             // Nếu skill không dùng animation, kết thúc ngay lập tức để vào Cooldown
             if (!slot.skill.useAnimation)

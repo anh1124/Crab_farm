@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Script.Game.Structures.TownCenter;
+using Script.Game.Mobs.Subjects;
 
 namespace Script.Tutorial
 {
@@ -28,6 +29,9 @@ namespace Script.Tutorial
             else Destroy(gameObject);
             Script.Manager.Building.BuildingPlacementManager.OnBuildingPlaced += OnBuildingConstructed;
             BuildMenu.OnBuildMenuOpened += OnBuildMenuOpened;
+            Script.Game.PlayerCharacter.Skills.SkillManager.OnSkillExecuted += OnSkillExecuted;
+            Script.Game.Mobs.Denizen.Core.DenizenRoleController.OnRoleChanged += OnDenizenRoleChanged;
+            Script.Game.Structures.SellingShop.ItemSeller.OnItemAdded += OnVendorItemAdded;
         }
         
         /// <summary>
@@ -63,6 +67,9 @@ namespace Script.Tutorial
             }
             Script.Manager.Building.BuildingPlacementManager.OnBuildingPlaced -= OnBuildingConstructed;
             BuildMenu.OnBuildMenuOpened -= OnBuildMenuOpened;
+            Script.Game.PlayerCharacter.Skills.SkillManager.OnSkillExecuted -= OnSkillExecuted;
+            Script.Game.Mobs.Denizen.Core.DenizenRoleController.OnRoleChanged -= OnDenizenRoleChanged;
+            Script.Game.Structures.SellingShop.ItemSeller.OnItemAdded -= OnVendorItemAdded;
             if (_currentCoinSlotVisual != null)
             {
                 _currentCoinSlotVisual.OnSlotsShown -= OnCoinSlotsShown;
@@ -119,6 +126,34 @@ namespace Script.Tutorial
         private void OnBuildMenuOpened()
         {
             TriggerCondition("BuildMenuOpened");
+        }
+
+        private void OnSkillExecuted(string skillName)
+        {
+            if (skillName == "SpawnVagrantSkill")
+            {
+                TriggerCondition("SummonVagrantUsed");
+            }
+        }
+
+        private void OnDenizenRoleChanged(GameObject denizen, NPCRole role)
+        {
+            if (role == NPCRole.Villager)
+            {
+                TriggerCondition("RoleChangedToVillager");
+            }
+            else if (role == NPCRole.Archer)
+            {
+                TriggerCondition("RoleChangedToArcher");
+            }
+        }
+
+        private void OnVendorItemAdded(Script.Game.Structures.SellingShop.ItemSeller.ItemType type, GameObject item)
+        {
+            if (type == Script.Game.Structures.SellingShop.ItemSeller.ItemType.BowVendor)
+            {
+                TriggerCondition("BowPurchased");
+            }
         }
         
         /// <summary>

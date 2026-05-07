@@ -1,29 +1,23 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
-using Script.Tutorial;
 using Script.Manager;
 
 namespace Script.Tutorial
 {
     /// <summary>
     /// Controller điều phối arrow trong tutorial.
-    /// Sử dụng API của ArrowGuideManager để chỉ dẫn đến TownCenter hoặc UI Button.
+    /// Sử dụng API của ArrowGuideManager để chỉ dẫn đến các đối tượng dựa trên Tag.
     /// </summary>
     public class TutorialGuideArrowController : MonoBehaviour
     {
-        [Header("Targets")]
-        [Tooltip("TownCenter trong Hierarchy để arrow chỉ về (kéo từ Hierarchy).")]
-        [SerializeField] private Transform townCenter;
-
         [Header("Settings")]
         [Tooltip("Giữ arrow hiển thị vô thời hạn thay vì tự biến mất.")]
         [SerializeField] private bool infiniteLifetime = true;
 
+        private Coroutine _arrowLoopCoroutine;
 
         private void Awake()
         {
-            // Đảm bảo ArrowGuideManager tồn tại
             if (ArrowGuideManager.Instance == null)
             {
                 Debug.LogError("[TutorialGuideArrowController] ArrowGuideManager instance not found!");
@@ -31,38 +25,45 @@ namespace Script.Tutorial
         }
 
         /// <summary>
-        /// Bắt đầu hiển thị arrow chỉ về TownCenter.
-        /// Nếu đang chỉ CoinButton sẽ dừng lại trước.
-        private Coroutine _arrowLoopCoroutine;
-
-        /// <summary>
-        /// Bắt đầu hiển thị arrow chỉ về TownCenter với vòng lặp 2s.
+        /// Bắt đầu hiển thị arrow chỉ về đối tượng có Tag tương ứng với vòng lặp 2s.
         /// </summary>
-        public void StartArrowToTownCenter()
+        public void StartGuideArrowToTag(string tag)
         {
             StopAllArrows();
-
-            if (townCenter == null)
-            {
-                Debug.LogError("[TutorialGuideArrowController] TownCenter reference is MISSING in Inspector! Logic is now centralized, please assign it.");
-                return;
-            }
-
-            _arrowLoopCoroutine = StartCoroutine(TownCenterArrowLoop());
+            if (string.IsNullOrEmpty(tag)) return;
+            _arrowLoopCoroutine = StartCoroutine(TagArrowLoop(tag));
         }
 
-        private IEnumerator TownCenterArrowLoop()
+        private IEnumerator TagArrowLoop(string tag)
         {
             while (true)
             {
-                // Reset arrow bằng cách ẩn và hiện lại
+                // Reset arrow bằng cách ẩn để vòng sau nó bay từ Player
                 ArrowGuideManager.Instance?.HideGuide();
                 yield return null; // Chờ 1 frame
 
-                ArrowGuideManager.Instance?.SetTarget(townCenter);
-                ApplyLifetimePolicy();
-                
-                Debug.Log("[TutorialGuideArrowController] Arrow loop reset: Target TownCenter");
+                GameObject targetObj = null;
+                try 
+                { 
+                    targetObj = GameObject.FindWithTag(tag); 
+                }
+                catch (System.Exception)
+                {
+                    Debug.LogError($"[TutorialGuideArrowController] Tag '{tag}' không tồn tại trong Tag Manager!");
+                    yield break;
+                }
+
+                if (targetObj != null)
+                {
+                    ArrowGuideManager.Instance?.SetTarget(targetObj.transform);
+                    ApplyLifetimePolicy();
+                }
+                else
+                {
+                    // Nếu không thấy target, có thể ẩn guide tạm thời hoặc chờ loop sau
+                    // ArrowGuideManager.Instance?.HideGuide();
+                }
+
                 yield return new WaitForSeconds(2f);
             }
         }
@@ -88,19 +89,9 @@ namespace Script.Tutorial
             ArrowGuideManager.Instance?.HideGuide();
         }
 
-        /// <summary>
-        /// Kích hoạt chế độ hiển thị vĩnh viễn (không tự biến mất) cho tutorial.
-        /// </summary>
         private void ApplyLifetimePolicy()
         {
-            if (infiniteLifetime)
-            {
-                ArrowGuideManager.Instance?.SetInfiniteLifetime(true);
-            }
-            else
-            {
-                ArrowGuideManager.Instance?.SetInfiniteLifetime(false);
-            }
+            ArrowGuideManager.Instance?.SetInfiniteLifetime(infiniteLifetime);
         }
     }
 }

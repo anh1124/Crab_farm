@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 7519356731727938331}
   - component: {fileID: 8266501493748427368}
   - component: {fileID: 241830316126106013}
+  - component: {fileID: -7335292592607388474}
   m_Layer: 15
   m_Name: Wall
   m_TagString: Wall
@@ -246,6 +247,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _debugInRange: 0
+--- !u!50 &-7335292592607388474
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5531189184210328128}
+  m_BodyType: 2
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
 --- !u!1 &7788292574185275152
 GameObject:
   m_ObjectHideFlags: 0

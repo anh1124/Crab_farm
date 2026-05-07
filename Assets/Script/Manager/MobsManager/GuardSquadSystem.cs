@@ -323,35 +323,48 @@ namespace Script.Game.Mobs.MobsManager
             GameObject wall = (guardManager && guardManager.Wall) ? guardManager.Wall.GetCurrentDefensiveWall(isLeft) : null;
             
             int index = flankList.IndexOf(archer);
-            if (index == -1) return archer.transform.position;
+            if (index == -1)
+            {
+                // [SAFETY] — Archer không nằm trong danh sách Flank? 
+                // Cho nó chạy về Plaza thay vì đứng im tại chỗ.
+                var tc = (BM != null) ? BM.currentTownCenter : null;
+                return tc != null ? tc.transform.position : Vector3.zero;
+            }
 
             int slotInRow = index % archerSlotCount;
             int rowIndex = index / archerSlotCount;
 
             if (wall == null)
             {
-                if (BM != null && BM.currentTownCenter != null)
+                // [CRITICAL FIX] — Luôn ưu tiên rút về Plaza nếu không có tường.
+                // Tránh trả về archer.transform.position vì sẽ làm AI đứng im tại chỗ.
+                var townCenter = (BM != null) ? BM.currentTownCenter : null;
+                
+                // Cố gắng tìm TownCenter nếu biến cache bị null
+                if (townCenter == null) townCenter = GameObject.FindWithTag(Script.Utils.GameTags.TownCenter);
+
+                if (townCenter != null)
                 {
-                    var tc = BM.currentTownCenter;
-                    Vector3 tcPos = tc.transform.position;
-                    
+                    Vector3 tcPos = townCenter.transform.position;
                     float plazaRadius = 5f;
-                    var tcBehavior = tc.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
+                    var tcBehavior = townCenter.GetComponent<Script.Game.Structures.TownCenter.TownCenterBehavior>();
                     if (tcBehavior != null) plazaRadius = tcBehavior.plazaDistance;
 
                     float plazaHorizontalOffsetInRow = slotInRow * archerSlotSpacing;
                     float plazaTotalRowDepth = rowIndex * rowDepthOffset;
                     float requestedOffset = defaultSlotOffset + plazaHorizontalOffsetInRow + plazaTotalRowDepth;
 
-                    // Không có wall: toàn bộ đội hình phải đứng trong Plaza (đường trắng của TownCenter).
-                    // Clamp offset để không vượt biên plaza dù số lượng archer lớn.
                     float maxSafeOffset = Mathf.Max(0.5f, plazaRadius - 0.5f);
                     float clampedOffset = Mathf.Min(requestedOffset, maxSafeOffset);
                     float boundaryX = tcPos.x + (isLeft ? -plazaRadius : plazaRadius);
                     float offsetTowardCenter = isLeft ? clampedOffset : -clampedOffset;
+                    
                     return new Vector3(boundaryX + offsetTowardCenter, tcPos.y, archer.transform.position.z);
                 }
-                return archer.transform.position;
+
+                // Hard fallback: Về gốc tọa độ (thường là TownCenter) nếu mất dấu hoàn toàn, 
+                // TUYỆT ĐỐI không trả về vị trí hiện tại của Archer.
+                return Vector3.zero; 
             }
 
             float direction = isLeft ? 1f : -1f;

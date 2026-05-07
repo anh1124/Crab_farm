@@ -749,7 +749,7 @@ namespace Script.Game.Structures.Wall_And_Stump
         {
             if (status != null)
             {
-                status.currentHp = status.maxHp;
+                status.CurrentHp = status.MaxHp;
                 Debug.Log($"[WallBehavior] {gameObject.name} HP reset to full: {status.currentHp}/{status.maxHp}");
             }
         }
@@ -858,8 +858,13 @@ namespace Script.Game.Structures.Wall_And_Stump
                 // Sử dụng helper để khởi tạo từ tier mới và state Wall
                 InitializeFromTier(nextTierData, WallState.Wall);
 
-                // Hiển thị số hồi máu khi nâng cấp xong (thường nâng cấp sẽ reset máu đầy)
-                Script.Utils.CombatUtility.ShowFloatDamage(transform.position, status.maxHp, Script.FloatingText.FloatingTextType.Heal);
+                // FIX: Khi nâng cấp xong, hồi máu phần chênh lệch (user request: add hp = maxhp - currenthp)
+                // Sử dụng hàm Heal để tự động kích hoạt floating text và event OnHealed
+                float healAmount = status.maxHp - status.currentHp;
+                if (healAmount > 0)
+                {
+                    status.Heal(healAmount);
+                }
 
                 // QUAN TRỌNG: Reset CoinUser state để có thể nhận coin tiếp
                 if (coinUser != null)

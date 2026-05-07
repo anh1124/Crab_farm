@@ -15,6 +15,7 @@ namespace Script.Game.Structures.SellingShop
 {
     public class ItemSeller : MonoBehaviour, ISaveable, ICoinUserOwner
     {
+        public static event Action<ItemType, GameObject> OnItemAdded;
         public enum ItemType
         {
             BowVendor, HammerVendor, ScytheVendor, SwordVendor, SpikeVendor
@@ -188,6 +189,8 @@ namespace Script.Game.Structures.SellingShop
                 }
                 
                 currentItems.Add(newItem);
+                
+                OnItemAdded?.Invoke(itemType, newItem);
 
                 // Gắn thêm SellerItemNotifier và gán seller cho nó
                 SellerItemNotifier notifier = newItem.GetComponent<SellerItemNotifier>();

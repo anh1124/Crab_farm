@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Dialog_05_Building
   m_EditorClassIdentifier: 
   speakerName: HolyCrab
-  content: Structures cannot be placed overlapping each other.
+  content: ' Choose a building , Structures cannot be placed overlapping each other.'
   avatar: {fileID: 0}
   dialogType: 1
   conditionName: BuildingPlacementSuccess

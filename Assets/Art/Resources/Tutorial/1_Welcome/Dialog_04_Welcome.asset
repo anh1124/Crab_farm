@@ -18,8 +18,8 @@ MonoBehaviour:
   dialogType: 1
   conditionName: TownCenterEntered
   onStartActions:
-  - methodName: ShowArrowToTownCenter
+  - methodName: ShowGuideArrowToTarget
     param: 0
-    stringParam: 
+    stringParam: TownCenter
     boolParam: 0
     position: {x: 0, y: 0, z: 0}

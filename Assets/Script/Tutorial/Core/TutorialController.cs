@@ -36,6 +36,7 @@ namespace Script.Tutorial
         [SerializeField] private TutorialActionExecutor actionExecutor;
         [SerializeField] private Core.Managers.TutorialUIStateManager uiStateManager;
         [SerializeField] private Core.Managers.TutorialSkillController skillController;
+        [SerializeField] private Core.Managers.TutorialRabbitManager rabbitManager;
         
         [Header("Completion Dialog Text")]
         [SerializeField] private string completionTitle = "";
@@ -109,7 +110,7 @@ namespace Script.Tutorial
         {
             if (actionExecutor != null)
             {
-                actionExecutor.Initialize(arrowController, coinCloudManager, TutorialConditionChecker.Instance, uiStateManager, skillController);
+                actionExecutor.Initialize(arrowController, coinCloudManager, TutorialConditionChecker.Instance, uiStateManager, skillController, rabbitManager);
                 // Subscribe để advance dialog khi coin cloud hoàn thành
                 actionExecutor.OnCoinCloudComplete += AdvanceDialog;
             }
@@ -213,6 +214,12 @@ namespace Script.Tutorial
             {
                 case TutorialDialogType.Skipable:
                     _waitingForCondition = false;
+                    // Cảnh báo nếu dev thiết lập sai: Skipable nhưng vẫn có Condition
+                    if (!string.IsNullOrEmpty(line.conditionName))
+                    {
+                        Debug.LogWarning($"[TutorialController] Dialog '{line.name}' có type là Skipable nhưng lại chứa Condition '{line.conditionName}'. " +
+                                         "Hệ thống sẽ bỏ qua Condition này và cho phép Click/Next bình thường.");
+                    }
                     break;
                     
                 case TutorialDialogType.ExitConditional:
@@ -260,8 +267,8 @@ namespace Script.Tutorial
             
             if (conditionName == _currentCondition)
             {
-                // Condition đúng cái đang đợi - dừng arrow tương ứng
-                arrowController?.StopArrowByCondition(conditionName);
+                // Condition đúng cái đang đợi - dừng arrow tương ứng (đã comment để dev tự HideGuideArrow nếu cần)
+                // arrowController?.StopArrowByCondition(conditionName);
                 _waitingForCondition = false;
                 _currentCondition = "";
                 AdvanceDialog();

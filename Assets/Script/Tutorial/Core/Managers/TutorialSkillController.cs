@@ -61,7 +61,13 @@ namespace Script.Tutorial.Core.Managers
         public void AddSkillToPlayer(SkillBase skill, int slotIndex)
         {
             var sm = GetSkillManager();
-            if (sm != null) sm.EquipSkill(slotIndex, skill);
+            if (sm != null)
+            {
+                sm.EquipSkill(slotIndex, skill);
+                
+                // Thông báo cho UI cập nhật lại vì có thể Tutorial chạy trước khi UI kịp Init
+                Script.Controller.GUI_Controller.PlayerGui.PlayerGui.Instance?.RefreshSkillManagerCache();
+            }
         }
 
         /// <summary>
@@ -70,7 +76,11 @@ namespace Script.Tutorial.Core.Managers
         public void RemoveSkillFromPlayer(int slotIndex)
         {
             var sm = GetSkillManager();
-            if (sm != null) sm.EquipSkill(slotIndex, null);
+            if (sm != null)
+            {
+                sm.EquipSkill(slotIndex, null);
+                Script.Controller.GUI_Controller.PlayerGui.PlayerGui.Instance?.RefreshSkillManagerCache();
+            }
         }
 
         /// <summary>
@@ -80,11 +90,13 @@ namespace Script.Tutorial.Core.Managers
         {
             var sm = GetSkillManager();
             if (sm == null) return;
-
+ 
             for (int i = 0; i < sm.SlotCount; i++)
             {
                 sm.EquipSkill(i, null);
             }
+            
+            Script.Controller.GUI_Controller.PlayerGui.PlayerGui.Instance?.RefreshSkillManagerCache();
         }
     }
 }

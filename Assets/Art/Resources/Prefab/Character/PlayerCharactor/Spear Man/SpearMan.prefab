@@ -101,6 +101,9 @@ GameObject:
   - component: {fileID: 7654288856252759774}
   - component: {fileID: 3282066763086950246}
   - component: {fileID: 4566194524667276563}
+  - component: {fileID: 4412052794622601103}
+  - component: {fileID: 7934049668014588636}
+  - component: {fileID: -1649241417622814181}
   m_Layer: 13
   m_Name: SpearMan
   m_TagString: Player
@@ -332,6 +335,7 @@ MonoBehaviour:
   positionX: 0
   positionY: 0
   isGround: 0
+  _coin: 0
 --- !u!114 &3731640909503210370
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -354,6 +358,7 @@ MonoBehaviour:
   - skill: {fileID: 0}
     state: 0
     cooldownTimer: 0
+  isDebug: 0
   playerBehavior: {fileID: 0}
 --- !u!114 &955563581396219822
 MonoBehaviour:
@@ -369,6 +374,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canPickupCoin: 1
   canPickupTool: 0
+  autoPickupWithoutReceiver: 0
   isDebug: 0
 --- !u!114 &3167184854126006450
 MonoBehaviour:
@@ -430,6 +436,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14ec8e95a6dd1fd4a92413e2eb5387f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &4412052794622601103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f09cc8d5d3b296343bee5bce317fc93f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _debugInRange: 0
+--- !u!114 &7934049668014588636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80088dad74f9105468c72e48d085991a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flashWhiteColor: {r: 1, g: 1, b: 1, a: 0.8}
+  flashRedColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hitSoundKey: onhitsound
+  flashWhiteDuration: 0.1
+  flashRedDuration: 0.1
+  usePropertyBlock: 1
+  colorPropertyName: _Color
+--- !u!114 &-1649241417622814181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5938808828433451200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 222237acd93955649a6b400813037389, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  showGizmo: 0
+  gizmoColor: {r: 0, g: 1, b: 0.5, a: 0.6}
+  isDebug: 0
+  _emitterCountInRange: 0
 --- !u!1 &6591141932145495929
 GameObject:
   m_ObjectHideFlags: 0

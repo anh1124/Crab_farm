@@ -153,7 +153,7 @@ namespace Script.Utils
         /// </summary>
         private void ExecutePickup(PhysicalItem drop, GameObject itemObject)
         {
-            Debug.Log($"[LootPickup] ExecutePickup called. itemType={drop.itemType}, _coinPool={_coinPool != null}");
+            if (isDebug) Debug.Log($"[LootPickup] ExecutePickup called. itemType={drop.itemType}, _coinPool={_coinPool != null}");
 
             // Đánh dấu chủ sở hữu (nếu có _ownerNpc, ngược lại lấy gameObject của trigger)
             drop.pickedBy = _ownerNpc != null ? _ownerNpc.gameObject : gameObject;
@@ -163,10 +163,10 @@ namespace Script.Utils
             // Phát âm thanh khi nhặt coin (cho cả Player, Denizen, Enemy)
             if (drop.itemType == ItemType.Coin)
             {
-                Debug.Log($"[LootPickup] Picking up coin. _audioEmitter={_audioEmitter != null}, owner={_ownerNpc?.name}");
+                if (isDebug) Debug.Log($"[LootPickup] Picking up coin. _audioEmitter={_audioEmitter != null}, owner={_ownerNpc?.name}");
                 if (_audioEmitter != null)
                     _audioEmitter.PlaySound("Coin_Pickup", PlaySoundConfig.Default);
-                else
+                else if (isDebug)
                     Debug.LogWarning("[LootPickup] _audioEmitter is null! Cannot play Coin_Pickup sound.");
             }
 
@@ -180,17 +180,17 @@ namespace Script.Utils
                 if (pool != null)
                 {
                     pool.ReturnCoin(itemObject);
-                    Debug.Log($"[LootPickup] Coin returned to pool");
+                    if (isDebug) Debug.Log($"[LootPickup] Coin returned to pool");
                 }
                 else
                 {
-                    Debug.LogWarning("[LootPickup] CoinPool not found! Destroying coin.");
+                    if (isDebug) Debug.LogWarning("[LootPickup] CoinPool not found! Destroying coin.");
                     Destroy(itemObject, 0.1f);
                 }
             }
             else
             {
-                Debug.Log($"[LootPickup] Not coin. itemType={drop.itemType}");
+                if (isDebug) Debug.Log($"[LootPickup] Not coin. itemType={drop.itemType}");
                 Destroy(itemObject, 0.1f);
             }
         }

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 739bf8fa17c4c764087b6400b8bda22c, type: 3}
+  m_Name: TutorialScript_Denizen
+  m_EditorClassIdentifier: 
+  tutorialName: TutorialScript_Welcome
+  dialogLines:
+  - {fileID: 11400000, guid: d1ad87dd69e45e04294b229c4af3a2fa, type: 2}
+  - {fileID: 11400000, guid: f0cdfbe60d76fe7448a8bfed283e9b36, type: 2}
+  - {fileID: 11400000, guid: b408a4992765eee45a58d09d1d21b59a, type: 2}
+  - {fileID: 11400000, guid: 097806a50d679564da2f401269348518, type: 2}
+  - {fileID: 11400000, guid: 6b88f3ef30e21c34e8834b4c21f55591, type: 2}
+  - {fileID: 11400000, guid: 6e940881858cf8140a53052908096ca7, type: 2}
+  - {fileID: 11400000, guid: 4330473796d664b459c6b55418de0cdf, type: 2}
+  - {fileID: 11400000, guid: f99df1e57e41f1f4a815a6959929507f, type: 2}
+  - {fileID: 11400000, guid: f377436d60686284ab0924a673567a6c, type: 2}

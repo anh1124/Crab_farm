@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 739bf8fa17c4c764087b6400b8bda22c, type: 3}
+  m_Name: TutorialScript_Coin
+  m_EditorClassIdentifier: 
+  tutorialName: TutorialScript_Welcome
+  dialogLines:
+  - {fileID: 11400000, guid: c960ecfe0a7965f4ca0486d3c9cfda62, type: 2}
+  - {fileID: 11400000, guid: c8820adb046ae0e47b96ddd253d17a56, type: 2}
+  - {fileID: 11400000, guid: 54cfeddb29f0ef240b8126d14c962e59, type: 2}
+  - {fileID: 11400000, guid: 48d7e5bf32b4f5446afb587b29b50bae, type: 2}
+  - {fileID: 11400000, guid: 7bb21ce49174b8441adbb6b12cfd73f6, type: 2}
+  - {fileID: 11400000, guid: e7202a566fc9d7244ac4ee505240c625, type: 2}

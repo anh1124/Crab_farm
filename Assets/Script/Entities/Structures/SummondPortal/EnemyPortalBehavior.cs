@@ -16,10 +16,13 @@ namespace Script.Entities.Structures.SummondPortal
     [RequireComponent(typeof(EnemyPortalStatus))]
     [RequireComponent(typeof(Script.Utils.DamageFlashEffect))]
     [RequireComponent(typeof(Script.Audio.AudioEmitter))]
+    [RequireComponent(typeof(Rigidbody2D))] 
+    [RequireComponent(typeof(Collider2D))] // Phải có Collider mới va chạm được
     public class EnemyPortalBehavior : MonoBehaviour, IDamageable, ISaveable
     {
         private EnemyPortalStatus status;
         private Script.Audio.AudioEmitter _audioEmitter;
+        private Rigidbody2D _rb;
 
         public bool IsReadyToSpawn 
         { 
@@ -59,11 +62,29 @@ namespace Script.Entities.Structures.SummondPortal
         [SerializeField] private float spawnIntervalRate = 0.2f; // Tên biến khác với spawnInterval (logic spawn)
         [SerializeField] private float spawnTiltAngle = 3f;
 
+        [Header("Debug")]
+        [SerializeField] private bool isDebug = false;
+
         private void Awake()
         {
             status = GetComponent<EnemyPortalStatus>();
             visualAnimator = GetComponentInChildren<PortalVisualAnimator>();
             _audioEmitter = GetComponent<Script.Audio.AudioEmitter>();
+            _rb = GetComponent<Rigidbody2D>();
+            
+            // Cấu hình RB để va chạm chính xác khi di chuyển
+            if (_rb != null)
+            {
+                if (_rb.bodyType != RigidbodyType2D.Kinematic)
+                {
+                    Debug.LogError($"[EnemyPortalBehavior] Rigidbody2D trên {gameObject.name} PHẢI là Kinematic để di chuyển và va chạm đúng. Hiện tại là {_rb.bodyType}.");
+                }
+
+                _rb.sleepMode = RigidbodySleepMode2D.NeverSleep;
+                _rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+                _rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                _rb.useFullKinematicContacts = true; // Bắt buộc để Kinematic va chạm được với Static Wall
+            }
         }
 
         private void Start()
@@ -367,11 +388,21 @@ namespace Script.Entities.Structures.SummondPortal
                 float t = _moveElapsedTime / _moveTotalDuration;
                 // Smooth step interpolation
                 t = t * t * (3f - 2f * t);
-                transform.position = Vector3.Lerp(_moveStartPos, _moveTargetPos, t);
+                
+                Vector3 targetPos = Vector3.Lerp(_moveStartPos, _moveTargetPos, t);
+                if (_rb != null)
+                {
+                    _rb.MovePosition(targetPos);
+                }
+                else
+                {
+                    transform.position = targetPos;
+                }
                 yield return null;
             }
 
-            transform.position = _moveTargetPos;
+            if (_rb != null) _rb.MovePosition(_moveTargetPos);
+            else transform.position = _moveTargetPos;
             _isMoving = false;
             _moveCoroutine = null;
             
@@ -379,6 +410,23 @@ namespace Script.Entities.Structures.SummondPortal
             CalculateMoveDurationBasedOnDistance();
             
             Debug.Log($"[EnemyPortalBehavior] Portal đã di chuyển xong đến x={_moveTargetPos.x:F1}");
+        }
+
+        [ContextMenu("Debug: Move Towards TownCenter")]
+        public void DebugMoveTowardsCenter()
+        {
+            var townCenter = WorldUtility.GetTownCenter();
+            if (townCenter == null) return;
+            
+            if (EnemyPortalManager.Instance == null) return;
+
+            float speed = EnemyPortalManager.Instance.portalMoveSpeed;
+            float baseDuration = EnemyPortalManager.Instance.basePortalMoveDuration;
+            float increase = EnemyPortalManager.Instance.durationIncreasePer100Distance;
+            
+            float duration = CalculateMoveDuration(baseDuration, increase);
+            
+            TryMoveTowards(townCenter.transform.position.x, speed, duration);
         }
 
         // --- IDamageable Implementation ---
@@ -390,6 +438,19 @@ namespace Script.Entities.Structures.SummondPortal
         // --- Wall Erosion (Bào mòn tường) ---
         private void OnCollisionEnter2D(Collision2D collision)
         {
+            HandleCollision(collision);
+        }
+
+        private void OnCollisionStay2D(Collision2D collision)
+        {
+            // Dự phòng nếu Enter bị bỏ lỡ do di chuyển quá nhanh hoặc đã chạm sẵn
+            HandleCollision(collision);
+        }
+
+        private void HandleCollision(Collision2D collision)
+        {
+            if (isDebug) Debug.Log($"[EnemyPortalBehavior] Va chạm với {collision.gameObject.name} (tag: {collision.gameObject.tag})");
+
             // Chỉ bào mòn khi đã active (đang spawn enemy)
             if (!status.isReadyToSpawn) return;
             
@@ -397,7 +458,7 @@ namespace Script.Entities.Structures.SummondPortal
             if (collision.gameObject.CompareTag(Script.Utils.GameTags.Wall))
             {
                 var wallBehavior = collision.gameObject.GetComponent<Script.Game.Structures.Wall_And_Stump.WallBehavior>();
-                if (wallBehavior != null)
+                if (wallBehavior != null && wallBehavior.Status != null)
                 {
                     Debug.Log($"[EnemyPortalBehavior] Portal tại {transform.position} bào mòn tường {collision.gameObject.name}!");
                     // Gây sát thương lớn để phá hủy wall ngay lập tức

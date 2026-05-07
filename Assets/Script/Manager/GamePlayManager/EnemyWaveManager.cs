@@ -45,6 +45,12 @@ namespace Script.Manager.GamePlayManager
 
         private int currentWavePower;
         
+        [Header("Wave Power Balancing")]
+        [SerializeField] private int initialPower = 5;
+        [SerializeField] private int powerIncreaseInterval = 2; // Cứ mỗi X ngày tăng thêm power
+        [SerializeField] private int powerIncreaseAmount = 5;
+        [SerializeField] private int destroyedPortalPowerPenalty = 5;
+
         [Header("Storm Invasion - Extra Power")]
         [Tooltip("Power cộng thêm khi portal bị phá (cộng dồn mỗi khi có portal bị phá)")]
         [SerializeField] private int extraPower = 0;
@@ -104,8 +110,9 @@ namespace Script.Manager.GamePlayManager
             int daysElapsed = _timeProvider.GetElapsedDays();
             int displayDay = daysElapsed + 1; // GameDay hiển thị (1-based)
             currentWavePower = CalculateWavePower(daysElapsed);
+            int basePowerForLog = initialPower + (daysElapsed / powerIncreaseInterval) * powerIncreaseAmount;
             StartWaveTracking(currentWavePower); // [DEBUG] Khởi tạo track
-            Debug.Log($"[EnemyWaveManager] [DEBUG] Đêm GameDay={displayDay} (daysElapsed={daysElapsed}) với tổng Power: {currentWavePower} | ExtraPower: {extraPower} | Base: {(daysElapsed > 1 ? (daysElapsed - 1) * 5 : 0)}");
+            Debug.Log($"[EnemyWaveManager] [DEBUG] Đêm GameDay={displayDay} (daysElapsed={daysElapsed}) với tổng Power: {currentWavePower} | ExtraPower: {extraPower} | Base: {basePowerForLog}");
 
             // Tạo danh sách các enemy cho trận chiến
             var selectedMonsters = _enemyDataProvider.SelectMonstersByPower(currentWavePower);
@@ -145,12 +152,8 @@ namespace Script.Manager.GamePlayManager
 
         private int CalculateWavePower(int daysElapsed)
         {
-            // Ngày 1 (daysElapsed=0): 5 power
-            // Từ ngày 2: tăng 5 power mỗi ngày (tuyến tính)
-            // Ngày 1: 5 power (1 enemy), Ngày 2: 10 power (2 enemy)
-            // Ngày 3: 15 power (3 enemy), Ngày 4: 20 power (4 enemy)...
-            // daysElapsed: 0 = day 1, 1 = day 2, 2 = day 3, ...
-            int basePower = (daysElapsed + 1) * 5;
+            // Cấu hình mới: dùng tham số thay vì magic number
+            int basePower = initialPower + (daysElapsed / powerIncreaseInterval) * powerIncreaseAmount;
             
             // Cộng thêm extraPower từ việc phá portal
             int totalPower = basePower + extraPower;
@@ -166,12 +169,10 @@ namespace Script.Manager.GamePlayManager
         /// </summary>
         public void AddExtraPowerFromDestroyedPortal()
         {
-            if (_timeProvider == null) return;
+            // 1 portal bị phá tăng cố định power penalty
+            extraPower += destroyedPortalPowerPenalty;
             
-            int currentDay = _timeProvider.GetElapsedDays();
-            extraPower += currentDay;
-            
-            Debug.Log($"[EnemyWaveManager] Portal bị phá! Cộng thêm {currentDay} power. ExtraPower hiện tại: {extraPower}");
+            Debug.Log($"[EnemyWaveManager] Portal bị phá! Cộng thêm {destroyedPortalPowerPenalty} power. ExtraPower hiện tại: {extraPower}");
         }
         
         /// <summary>

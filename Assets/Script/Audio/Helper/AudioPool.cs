@@ -58,7 +58,8 @@ namespace Script.Audio
         // Check nếu đã vượt quá maxPoolSize
         if (_available.Count == 0 && _inUse.Count >= maxPoolSize)
         {
-            Debug.LogWarning($"[AudioPool] Đã đạt giới hạn maxPoolSize ({maxPoolSize}). Không thể phát thêm âm thanh.");
+            if (AudioManager.Instance != null && AudioManager.Instance.IsDebug)
+                Debug.LogWarning($"[AudioPool] Đã đạt giới hạn maxPoolSize ({maxPoolSize}). Không thể phát thêm âm thanh.");
             return null;
         }
 
@@ -69,7 +70,8 @@ namespace Script.Audio
         // Guard: source vẫn có thể null/destroyed nếu queue bị corrupted
         if (source == null)
         {
-            Debug.LogWarning("[AudioPool] Dequeued a destroyed AudioSource, creating new one.");
+            if (AudioManager.Instance != null && AudioManager.Instance.IsDebug)
+                Debug.LogWarning("[AudioPool] Dequeued a destroyed AudioSource, creating new one.");
             source = CreateSource();
             if (source == null) return null;
         }

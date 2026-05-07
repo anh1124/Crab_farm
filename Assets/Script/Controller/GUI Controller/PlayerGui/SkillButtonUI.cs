@@ -48,14 +48,27 @@ namespace Script.Controller.GUI_Controller.PlayerGui
             _skillManager   = manager;
             _playerBehavior = behavior;
             _slotIndex      = index;
-
+ 
             if (button != null)
             {
                 button.onClick.RemoveAllListeners();
                 button.onClick.AddListener(OnClick);
             }
+ 
+            // Cập nhật trạng thái hiển thị ngay lập tức vì nếu object đang Unactive, Update() sẽ không chạy
+            var skill = _skillManager?.GetSkill(_slotIndex);
+            _lastSkillReference = skill;
+            
+            if (skill != null)
+            {
+                gameObject.SetActive(true);
+                RefreshStaticUI();
+            }
+            else
+            {
+                gameObject.SetActive(false);
+            }
 
-            RefreshStaticUI();
             SetupKeyHint();
         }
 

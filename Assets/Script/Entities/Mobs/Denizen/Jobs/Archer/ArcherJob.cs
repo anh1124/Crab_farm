@@ -301,6 +301,12 @@ namespace Script.Game.Mobs.Denizen.Jobs.Archer
             // Chỉ đổi state nếu hiện tại khác hoặc null
             if (CurrentState == null || CurrentState != newState)
             {
+                // Nếu là Retreat, khôi phục target từ assignedWall đã lưu
+                if (newState == RetreatState && Context.Status.assignedWall != null)
+                {
+                    RetreatState.SetRetreatTarget(Context.Status.assignedWall);
+                }
+
                 ChangeState(newState);
             }
             

@@ -36,6 +36,7 @@ namespace Script.Game.Mobs.Denizen.Core
     [RequireComponent(typeof(AudioEmitter))]
     public class DenizenRoleController : MonoBehaviour, ISaveable, IDamageable, Script.Interfaces.IHealthReactive
     {
+        public static event System.Action<GameObject, NPCRole> OnRoleChanged;
         [Header("Role Configuration")]
         public NPCRole CurrentRole = NPCRole.Vagrant;//role mặc định tránh lỗi khởi tạo
 
@@ -287,6 +288,8 @@ namespace Script.Game.Mobs.Denizen.Core
             // Đồng bộ lại role dữ liệu
             CurrentRole = role;
             if (_status != null) _status.Role = role;
+            
+            OnRoleChanged?.Invoke(gameObject, role);
 
             if (ContainerEntityManager.Instance != null)
             {

@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 2522193137709731418}
   - component: {fileID: 3074951147828301203}
   - component: {fileID: 476727788232743784}
+  - component: {fileID: 6407950905130537877}
   m_Layer: 16
   m_Name: WindPointPortal
   m_TagString: EnemyPortal
@@ -284,6 +285,33 @@ MonoBehaviour:
   triggerDisplayDuration: 2
   fadeSpeed: 2
   useFade: 1
+--- !u!50 &6407950905130537877
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5445083948091886820}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
 --- !u!1 &5722965613567170278
 GameObject:
   m_ObjectHideFlags: 0
