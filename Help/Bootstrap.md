@@ -201,10 +201,15 @@ public void InitializeData(PrefabData context)
 
 ## 🎯 Best Practices
 
-### Order Management
-- **100-199**: Data Lists (WallDataList: 100, TownCenterDataList: 110, etc.)
-- **200-299**: Manager Scripts
-- **300+**: Specialized Systems
+### Order Management (đang dùng trong scene)
+
+Xem danh sách đăng ký trong `IDataListBootstrap.cs` và `Bootstrap_Analysis.md`.
+
+- **0**: `WallAndStumpManager` (trước defense)
+- **1**: `GuardManager`
+- **110**: `TownCenterDataList`
+
+Dải 100–199 / 200–299 trong bản guide cũ **không** khớp implementation (`WallDataList` là ScriptableObject, không bootstrap). Khi thêm list mới, tránh trùng 0 / 1 / 110.
 
 ### Error Handling
 ```csharp

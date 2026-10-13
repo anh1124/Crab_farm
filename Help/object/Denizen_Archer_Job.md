@@ -43,6 +43,9 @@ Quy trình tấn công được thiết kế để đồng bộ hóa hoàn toàn
 HoldWallState: AI đọc dữ liệu Slot Offset từ GuardManager để xác định vị trí đứng chính xác sau bức tường, đảm bảo khoảng cách đều nhau (archerSlotSpacing) và không bị chồng chéo.
 RetreatState: Được gọi khi tường hiện tại bị phá hủy. AI nhận tham chiếu tường phòng thủ lùi sâu hơn từ GuardManager và di chuyển đến đó.
 
+### Trạng thái Rơi xu (ArcherDropCoinState)
+Thêm so với pipeline chiến thuật: đứng chia/rơi coin qua `DenizenCoinSharing` khi điều kiện cho phép, rồi quay về Idle / phòng thủ tùy `isEnemyAttack` và ngày/đêm.
+
 ### Trạng thái Rút lui Khẩn cấp (TownCenter Emergency)
 Luồng sự kiện khi TownCenter nhận sát thương:
 1. TownCenter báo cáo cho GuardManager.

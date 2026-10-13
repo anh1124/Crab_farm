@@ -1,59 +1,85 @@
 # Báo cáo Hệ thống State Machine: Villager (Dân làng)
 
-Villager đóng vai trò xương sống của nền kinh tế, chịu trách nhiệm thực thi các công việc tại các công trình và duy trì sự ổn định bên trong vương quốc.
+Villager là role kinh tế trung gian: lang thang plaza, nhặt coin/tool, đổi thành Archer khi nhặt cung. **Chưa** thực thi công việc tại công trình (gõ búa, nông nghiệp) — `Worker` / `Farmer` chưa có Job.
 
-## 1. Logic Vận hành và Cảm biến
+## 1. Logic vận hành và cảm biến
 
-Hệ thống điều khiển VillagerJob quản lý các hành vi kinh tế thông qua sự phối hợp của các Module sau:
+### Cổng sợ hãi (Fear Gate)
 
-### Cổng Ưu tiên Sợ hãi (Fear Gate)
-- Điều kiện: Cờ isFearPending được bật khi Villager nhận sát thương hoặc phát hiện kẻ thù quá gần.
-- Phản hồi: Villager sẽ bỏ dở mọi công việc hiện tại, kích hoạt runSpeed để rút lui về sau các bức tường hoặc Plaza.
+Ưu tiên cao nhất trong `VillagerJob.UpdateBehavior` (sau watchdog detector và skill lock).
 
-### VillagerSensorHandler (Cảm biến RayCast)
-- Cơ chế: Sử dụng RayCastHelper để quét các vật thể tương tác theo hướng nhìn.
-- Ưu tiên quét: Phát hiện Coin và các Tools nằm trên mặt đất. Khi phát hiện Item hợp lệ, Villager sẽ tự động chuyển trạng thái để tiếp cận và nhặt.
+- Bật `isFearPending` khi nhận sát thương còn coin.
+- Bỏ dở Idle / RunTool / ToTown, vào `VillagerFearState`, dùng `runSpeed`.
 
----
+### VillagerSensorHandler
 
-## 2. Phân tích chi tiết các Trạng thái (Detailed States)
+`RayCastHelper` quét theo hướng nhìn (watchdog bật lại nếu detector tắt). Ưu tiên coin và tool trên đất; item hợp lệ thì tiếp cận / để `LootPickupTrigger` + `VillagerItemHandler` xử lý.
 
-### VillagerIdleState (Trạng thái Nghỉ)
-- Hành vi: Di chuyển lang thang ngẫu nhiên trong vùng Plaza an toàn.
-- Nhiệm vụ: Đứng chờ lệnh giao việc hoặc chờ Coin từ người chơi.
+### Cổng đêm
 
-### VillagerRunToolState (Trạng thái Thực thi công việc)
-- Kích hoạt: Xảy ra khi Villager được sở hữu một công cụ (currentTool) và có một mục tiêu công trình.
-- Logic: Villager di chuyển đến vị trí công trình, kích hoạt các diễn họa làm việc (vd: gõ búa, cắt cỏ) và gửi tín hiệu hoàn thành công việc cho hệ thống quản lý công trình.
-
-### VillagerToTownState (Trạng thái Rút lui ban đêm)
-- Điều kiện: Sau 19h tối.
-- Logic: Villager sẽ dừng mọi hoạt động lang thang bên ngoài (nếu có) để quay về trung tâm Plaza, nơi được bảo vệ bởi các lớp tường phòng thủ dày nhất.
-
-### VillagerFearState (Trạng thái Hoảng loạn)
-- Hành vi: Chạy trốn khỏi nguồn nguy hiểm theo hướng ngược lại.
-- Chấm dứt: Trạng thái này chỉ kết thúc khi Villager đã vào được vùng an toàn hoặc mối đe dọa biến mất.
+`GameTimeManager.IsDaytime == false` (`NIGHT_HOUR = 19`). Nếu không đứng trong plaza → `VillagerToTownState`.
 
 ---
 
-## 3. Cơ chế Kinh tế đặc thù
+## 2. Các trạng thái
 
-### Quản lý Công cụ (Tool Management)
-- Villager có khả năng cầm nắm các loại công cụ khác nhau như Búa (Xây dựng), Rìu (Chặt cây), Liềm (Nông nghiệp).
-- Loại công cụ đang sở hữu sẽ trực tiếp quy định loại công việc mà Villager có thể thực hiện.
+### VillagerIdleState
 
-### Cơ chế Hình phạt Sát thương (Coin Loss Penalty)
-Đây là logic quan trọng nhất trong việc quản lý quần thể dân làng:
-1. Khi bị trúng đòn: Villager không mất máu mà mất 1 Coin mỗi lần.
-2. Rơi Item: Đồng Coin bị mất sẽ văng ra mặt đất thông qua hàm Spawner.Instance.DropFromDenizenHit().
-3. Giáng cấp (Degrade): Nếu số lượng Coin về 0, Villager sẽ lập tức bị tước bỏ công cụ hiện có và chuyển vai trò trở lại thành Vagrant thông qua DenizenRoleController.
+Lang thang trong vùng plaza. Chờ `ToolManager` gán tool hoặc nhặt coin.
+
+### VillagerRunToolState
+
+**Không** phải “làm việc tại công trình”.
+
+Kích hoạt khi `AssignTool(PhysicalItem)` — `currentTool` trỏ tool **trên đất**, `AssignedCarrier` = Villager.
+
+Logic: chạy (`runSpeed`) tới transform của tool, anim `run`. Tới nơi thì `Stop()` và chờ trigger pickup (cooldown item có thể làm chưa nhặt ngay). Tool mất / bị người khác `pickedBy` → về Idle.
+
+Nhặt xong: `VillagerItemHandler` đổi role theo `ItemType` (Bow live; Hammer/Scythe bị RoleController từ chối).
+
+### VillagerToTownState
+
+Ban đêm, ra khỏi plaza: dừng lang thang, về plaza.
+
+### VillagerFearState
+
+Chạy khỏi nguồn nguy hiểm. Kết thúc khi hết fear / vào vùng an toàn (theo logic state).
+
+### VillagerDropCoinState
+
+Đứng yên (`CanMove = false`), `DenizenCoinSharing.TryDropCoin()` khi `CanDropCoin()`. Nguy hiểm, hết coin, hoặc không drop được → Idle.
 
 ---
 
-## 4. Tham số Kỹ thuật Quan trọng
+## 3. Kinh tế
 
-- isFearPending: Cờ hiệu khẩn cấp điều hướng AI sang trạng thái phòng vệ.
-- currentTool: Biến lưu trữ loại công cụ hiện tại để quyết định logic làm việc trong RunToolState.
-- walkSpeed / runSpeed: Tốc độ di chuyển tương ứng giữa trạng thái bình thường và trạng thái sợ hãi.
+### Công cụ
+
+`ToolManager` + `DenizenStatus.currentTool` (`PhysicalItem`).
+
+| ItemType | Ý định | Thực tế |
+|----------|--------|---------|
+| `Tool_Bow` | Archer | `ChangeRole(Archer)` thành công |
+| `Tool_Hammer` | Worker | `ChangeRole` bị chặn |
+| `Tool_Scythe` | Farmer | `ChangeRole` bị chặn |
+
+Không có rìu / chặt cây trong handler hiện tại.
+
+### Hình phạt sát thương
+
+Trong `VillagerJob.ReceiveDamage`:
+
+1. Còn coin: `SubtractCoin(1)` + `Spawner.DropFromDenizenHit`.
+2. `CurrentCoins <= 0` → `ChangeRole(Vagrant)` ngay.
+3. Còn coin → `isFearPending = true`.
+
+Villager không dùng HP; coin là “máu kinh tế”.
 
 ---
+
+## 4. Tham số
+
+- `isFearPending`: ép Fear.
+- `currentTool`: tool đang được giao để **chạy tới nhặt**, không phải công cụ cầm làm việc công trình.
+- `walkSpeed` / `runSpeed`: đi thường vs sợ / chạy lấy tool.
+- `villagerState`: enum lưu state (Idle, ToTown, RunTool, Fear, DropCoin) cho save/load.

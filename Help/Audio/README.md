@@ -39,6 +39,8 @@ Chỉ dùng `AudioManager` trực tiếp cho các âm thanh toàn cục (Global)
 
 **KHÔNG** dùng cho SFX không gian (enemy attack, footstep, v.v.).
 
+**Ngoại lệ còn trong code** (nên dọn về Emitter khi đụng file đó): `DamageHandler` / `DamageFlashEffect` (`Hit`), `Spawner` (`Coin_Drop`), `BuildingPlacementManager` (place building), `RabbitDeadState` (`NPC_Blood_Dead`).
+
 ---
 
 ## Cấu Trúc Hệ Thống
@@ -97,7 +99,7 @@ AudioEmitter (Component trên Entity)
 
 ### 6. PlayerAudioZone.cs
 **Vị trí**: `Assets/Script/Audio/Helper/PlayerAudioZone.cs`
-**Mô tả**: Sensor trên Player, thực hiện "Poll" (kiểm tra) `AudioEmitterRegistry` mỗi 0.1s để cập nhật trạng thái `InRange` cho các emitter. Đây là cơ chế giúp hệ thống không tốn CPU cho các object ở quá xa.
+**Mô tả**: Gắn trên Player. Việc còn lại: gán `AudioManager.PlayerTransform`, vẽ gizmo vùng nghe, debug log. **Poll `SetInRange` đã chuyển sang `AudioManager.Update()`** mỗi `EMITTER_POLL_INTERVAL` (**0.3s**, không còn 0.1s trên zone).
 
 ### 7. AudioConstants.cs
 **Vị trí**: `Assets/Script/Audio/Helper/AudioConstants.cs`

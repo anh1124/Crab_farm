@@ -29,10 +29,8 @@ public class MyNewDataList : MonoBehaviour, IDataListBootstrap
 // Xác định thứ tự chạy (hỏi team để tránh conflict)
 public int Order => 120; // Ví dụ: chạy sau TownCenterDataList (110)
 
-// Guidelines:
-// 100-199: Data Lists (WallDataList: 100, TownCenterDataList: 110, MyDataList: 120)
-// 200-299: Manager Scripts
-// 300+: Specialized Systems
+// Order đang dùng: WallAndStumpManager 0, GuardManager 1, TownCenterDataList 110.
+// Tránh trùng các giá trị trên. WallDataList không bootstrap (ScriptableObject).
 ```
 
 ### Bước 3: Implement InitializeData Method
@@ -326,11 +324,8 @@ private void InitializeInternal(PrefabData context)
 ```
 
 ### 4. Order Coordination
-- **100-109**: Core Data Lists (WallDataList)
-- **110-119**: Structure Data Lists (TownCenterDataList)
-- **120-129**: Entity Data Lists (EnemyDataList, NPCDataList)
-- **130-139**: Special Data Lists (WeatherDataList, etc.)
-- **140+**: Custom Data Lists
+
+Thực tế hiện tại: **0** WallAndStumpManager, **1** GuardManager, **110** TownCenterDataList. List mới lấy số khác (ví dụ 120) và ghi vào comment trong `IDataListBootstrap.cs`.
 
 ---
 

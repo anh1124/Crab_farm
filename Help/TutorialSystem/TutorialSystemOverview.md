@@ -1,95 +1,132 @@
 # Hệ Thống Tutorial - Tổng Quan và Cách Hoạt Động
 
-## 1. Kiến Trúc Tổng Quan
+## 1. Kiến Trúc
 
-Hệ thống Tutorial được xây dựng theo hướng 
-- Data-Driven (Dựa trên dữ liệu) 
-- Event-Based (Dựa trên sự kiện).
+Hệ thống Tutorial **data-driven** (ScriptableObject) và **event-based** (condition string).
 
- (Controller)
- (ScriptableObjects)
- (Executor)
- (Condition Checker)
+### Thành phần chính
 
-### Các Thành Phần Chính:
+- `TutorialController`: chạy lần lượt các `TutorialScriptSO` trong registry.
+- `TutorialScriptSO` / `TutorialDialogLineSO`: dữ liệu hội thoại, action, điều kiện thoát.
+- `TutorialActionExecutor`: map **tên chuỗi** `methodName` → hàm (dictionary, không còn enum `TutorialActionType` hay switch-case).
+- `TutorialConditionChecker`: lắng nghe event thế giới, gọi `TriggerCondition(name)` khi xong bước `ExitConditional`.
+- `TutorialDialogPanel`: UI hội thoại.
 
-*   TutorialController (Core): Quản lý chính ,chạy lần lượt các tutorial trong tutorial registry
-*   TutorialScriptSO & TutorialDialogLineSO (Data)
-*   TutorialActionExecutor (Logic): Thực hiện các hành động cụ thể khi một bước tutorial bắt đầu (ví dụ: spawn tiền, hiện mũi tên chỉ dẫn).
-*   TutorialConditionChecker (Logic): Lắng nghe các sự kiện từ thế giới game (như người chơi nâng cấp nhà, đi vào vùng chỉ định) lắng nghe để khi  nào thì next tutoral
-*   TutorialDialogPanel (UI): Hiển thị nội dung hội thoại lên màn hình cho người chơi.
+Controller `RequireComponent` thêm: `TutorialGuideArrowController`, `TutorialCoinCloudManager`, `TutorialUIStateManager`, `TutorialSkillController`, `TutorialUIOverrideManager`, `TutorialBuildingManager`. `TutorialRabbitManager` được inject vào executor khi init.
 
 ---
 
-## 2. Quy Trình Hoạt Động (Workflow)
+## 2. Workflow
 
-### Bước 1: Khởi tạo
-Khi Scene Tutorial bắt đầu, `TutorialController` sẽ:
-1. Load danh sách các `TutorialScriptSO` được cấu hình.
-2. Thiết lập các listener thông qua `TutorialConditionChecker` để theo dõi các đối tượng trong game (như TownCenter).
-3. Bắt đầu script đầu tiên ở dialog đầu tiên.
+### Khởi tạo
 
-### Bước 2: Hiển thị Dialog và Thực thi Action
-Với mỗi dòng hội thoại (`TutorialDialogLineSO`):
-1. `TutorialDialogPanel` hiển thị tên người nói và nội dung.
-2. `TutorialActionExecutor` kiểm tra xem dòng này có `onStartAction` nào không (ví dụ: `SpawnCoinCloud`) và thực hiện nó ngay lập tức.
+Khi scene tutorial chạy, `TutorialController`:
 
-### Bước 3: Chờ đợi và Chuyển tiếp
-Hệ thống sẽ chờ để chuyển sang dòng tiếp theo dựa trên `dialogType`:
-*   Skipable: Người chơi chỉ cần click vào dialog để tiếp tục.
-*   ExitConditional: Hệ thống sẽ "khóa" việc click. Nó chờ `TutorialConditionChecker` gửi tín hiệu rằng `conditionName` tương ứng (ví dụ: "TownCenterUpgraded") đã hoàn thành.
+1. Load danh sách `TutorialScriptSO`.
+2. `TutorialConditionChecker.SetupTownCenterListener` / `SetupCoinSlotListener` khi có TownCenter.
+3. Bắt đầu script đầu, dòng dialog đầu.
 
-### Bước 4: Hoàn thành
-Khi hết các dòng trong một script, Controller chuyển sang script tiếp theo. Khi hết tất cả script, một thông báo hoàn thành sẽ hiện ra và đưa người chơi về Main Menu.
+### Dialog + Action
 
----
+Mỗi `TutorialDialogLineSO`:
 
-## 3. Các Loại Action và Condition Hiện Có
+1. Panel hiện speaker + nội dung.
+2. `TutorialActionExecutor.ExecuteOnStartAction` chạy mọi phần tử trong `onStartActions` (nhiều action / dòng).
 
-### Action (Hành động khi bắt đầu):
-*   `SpawnCoinCloud`: Tạo một cụm xu rơi xuống tại vị trí chỉ định.
-*   `ShowArrowToTownCenter`: Hiển thị mũi tên chỉ vào Nhà Chính.
-*   `PulseCoinButton`: Làm nút dùng xu nhấp nháy để thu hút sự chú ý.
+Gõ đúng `methodName` đã đăng ký. Tên cũ (`SpawnCoinCloud`, `ShowArrowToTownCenter`, `PulseCoinButton`) **không còn** trong registry.
 
-### Condition (Điều kiện để vượt qua):
-*   `TownCenterEntered`: Người chơi đi vào vùng của Nhà Chính.
-*   `TownCenterUpgraded`: Nhà Chính đã được nâng cấp thành công.
-*   `CoinSlotsShown`: Các ô nạp xu của công trình hiện ra.
-*   `ToUseCoinButton`: Người chơi đã nhấn vào nút dùng xu.
+### Chuyển dòng (`TutorialDialogType`)
+
+- `Skipable`: click dialog để next.
+- `ExitConditional`: khóa click; chờ `conditionName` khớp `OnConditionMet`.
+
+### Hoàn thành
+
+Hết dòng → script kế. Hết registry → hoàn thành tutorial (luồng menu do Controller xử lý).
 
 ---
 
-## 4. Đánh Giá Thực Trạng (Assessment)
+## 3. Action registry hiện tại
 
-### Ưu điểm:
-1.  Tính Modular cao: Dễ dàng bảo trì và mở rộng bằng cách thêm các Action hoặc Condition mới mà không làm ảnh hưởng đến luồng chính.
-2.  Dễ sử dụng cho Game Designer: Việc tạo thêm tutorial mới chủ yếu thực hiện thông qua việc tạo và cấu hình ScriptableObject trong Unity Editor, không cần viết thêm code cho mỗi bước.
-3.  Tách biệt UI và Logic: Panel hội thoại hoạt động độc lập, có thể thay đổi giao diện dễ dàng.
+Khóa phải khớp `TutorialActionData.methodName`:
 
-### Nhược điểm và Hạn chế:
-1.  String-based Conditions: Việc sử dụng chuỗi văn bản (`string`) để định danh condition dễ dẫn đến sai sót (typo) khi cấu hình trong Editor.
-2.  Khả năng mở rộng Action: Hiện tại các Action được xử lý bằng `switch-case` trong `TutorialActionExecutor`. Nếu số lượng action tăng lên quá nhiều, file này sẽ trở nên cồng kềnh.
-3.  Phụ thuộc vào TownCenter: `TutorialConditionChecker` hiện đang code cứng việc tìm kiếm và lắng nghe `TownCenterBehavior`. Nếu tutorial cần tương tác với nhiều loại công trình khác nhau, cần refactor lại phần này theo hướng generic hơn.
+| methodName | Tham số chính | Việc làm |
+|------------|---------------|----------|
+| `ActiveCoinCloud` | `position`, `param` (số coin) | Spawn cụm xu |
+| `ShowGuideArrowToTarget` | `stringParam` = tag Unity | Mũi tên chỉ object theo tag |
+| `HideGuideArrow` | — | Tắt mọi mũi tên hướng dẫn |
+| `SetUIElementActive` | `stringParam`, `boolParam` | Bật/tắt 1 UI |
+| `SetAllUIActive` | `boolParam` | Bật/tắt toàn bộ UI tutorial |
+| `HideAllUI` / `ShowAllUI` | — | Shortcut all false / all true |
+| `HideElement` / `ShowElement` | `stringParam` | Shortcut 1 element |
+| `SetSkillActive` | `boolParam` | Bật/tắt SkillManager |
+| `AddSkill` | `stringParam` tên skill, `param` slot | Thêm skill |
+| `RemoveSkill` | `param` slot | Gỡ skill |
+| `ClearSkills` | — | Xóa hết skill |
+| `AddBuildingToTutorialBuildMenu` | `stringParam` = `BuildingType` | Thêm building vào menu tutorial |
+| `ClearTutorialBuildMenu` | — | Xóa menu building tutorial |
+| `SpawnRabbits` | `param` số lượng | Spawn thỏ |
+
+Không còn `TutorialCoinButtonPulse` / action `PulseCoinButton`.
 
 ---
 
-## 5. Các File Liên Quan
+## 4. Condition hiện có
 
-**Core (Logic & Controller)**
+`TutorialConditionChecker.TriggerCondition`:
+
+| Tên | Nguồn |
+|-----|--------|
+| `TownCenterEntered` | Player vào vùng TownCenter |
+| `TownCenterUpgraded` | TownCenter nâng cấp |
+| `CoinSlotsShown` | `CoinSlotVisual.OnSlotsShown` |
+| `BuildingPlacementSuccess` | `BuildingPlacementManager.OnBuildingPlaced` |
+| `BuildMenuOpened` | `BuildMenu.OnBuildMenuOpened` |
+| `SummonVagrantUsed` | Skill `SpawnVagrantSkill` execute |
+| `RoleChangedToVillager` | `DenizenRoleController.OnRoleChanged` |
+| `RoleChangedToArcher` | cùng event, role Archer |
+| `BowPurchased` | Vendor thêm item `BowVendor` |
+
+`ToUseCoinButton` **không** còn trong checker.
+
+---
+
+## 5. Đánh giá thực trạng
+
+Ưu điểm: tách data/UI/logic; designer cấu hình SO; action mới = thêm 1 entry dictionary.
+
+Hạn chế:
+
+1. Condition và action vẫn là **string** — typo trên SO sẽ chỉ ra warning runtime.
+2. ConditionChecker vẫn gắn TownCenter cụ thể cho enter/upgrade; các event khác đã generic hơn (building, skill, role, vendor).
+
+---
+
+## 6. File liên quan
+
+**Core**
+
 - `Assets/Script/Tutorial/Core/TutorialController.cs`
 - `Assets/Script/Tutorial/Core/TutorialActionExecutor.cs`
 - `Assets/Script/Tutorial/Core/TutorialConditionChecker.cs`
+- `Assets/Script/Tutorial/Core/TownCenterTutorialTrigger.cs`
 
-**Core/Managers (Quản lý các chức năng phụ)**
-- `Assets/Script/Tutorial/Core/Managers/TutorialGuideArrowController.cs`
-- `Assets/Script/Tutorial/Core/Managers/TutorialCoinCloudManager.cs`
-- `Assets/Script/Tutorial/Core/Managers/TutorialCoinButtonPulse.cs`
+**Managers**
 
-**Data (Dữ liệu & Cấu hình)**
-- `Assets/Script/Tutorial/Data/TutorialScriptSO.cs`
-- `Assets/Script/Tutorial/Data/TutorialDialogLineSO.cs`
-- `Assets/Script/Tutorial/Data/TutorialActionType.cs`
-- `Assets/Script/Tutorial/Data/TutorialDialogType.cs`
+- `TutorialGuideArrowController.cs`
+- `TutorialCoinCloudManager.cs`
+- `TutorialUIStateManager.cs`
+- `TutorialSkillController.cs`
+- `TutorialUIOverrideManager.cs`
+- `TutorialBuildingManager.cs`
+- `TutorialRabbitManager.cs`
 
-**UI (Giao diện)**
-- `Assets/Script/Tutorial/UI/TutorialDialogPanel.cs`
+**Data**
+
+- `TutorialScriptSO.cs`
+- `TutorialDialogLineSO.cs`
+- `TutorialDialogType.cs`
+
+**UI**
+
+- `TutorialDialogPanel.cs`
